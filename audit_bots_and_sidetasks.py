@@ -19,7 +19,16 @@ UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKE
 
 def load_tokens_db():
     tokens = {}
-    if UPSTASH_URL and UPSTASH_TOKEN:
+    local_path = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
+    if os.path.exists(local_path):
+        try:
+            with open(local_path, "r") as f:
+                tokens = json.load(f)
+                print(f"Loaded {len(tokens)} accounts from local fleet_miniapp_tokens.json")
+        except Exception as e:
+            print(f"⚠️ Error reading local fleet_miniapp_tokens.json: {e}")
+
+    if len(tokens) < 20 and UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
                 f"{UPSTASH_URL}/keys/fleet:tokens:*",
@@ -28,40 +37,23 @@ def load_tokens_db():
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
                 keys = data.get("result", [])
-                for k in keys:
-                    uid = k.split(":")[-1]
-                    r_k = urllib.request.Request(
-                        f"{UPSTASH_URL}/get/{k}",
-                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-                    )
-                    try:
-                        with urllib.request.urlopen(r_k, timeout=4) as kr:
-                            kd = json.loads(kr.read().decode())
-                            raw = kd.get("result")
-                            if raw:
-                                parsed = json.loads(raw) if isinstance(raw, str) else raw
+                pipeline_cmds = [["GET", k] for k in keys]
+                p_req = urllib.request.Request(
+                    f"{UPSTASH_URL}/pipeline",
+                    data=json.dumps(pipeline_cmds).encode(),
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(p_req, timeout=8) as presp:
+                    pipeline_res = json.loads(presp.read().decode())
+                    for k, item in zip(keys, pipeline_res):
+                        uid = k.split(":")[-1]
+                        raw = item.get("result")
+                        if raw:
+                            parsed = json.loads(raw) if isinstance(raw, str) else raw
+                            if uid not in tokens or len(parsed) > len(tokens.get(uid, {})):
                                 tokens[uid] = parsed
-                    except Exception:
-                        pass
         except Exception as e:
-            print(f"⚠️ Upstash fleet:tokens:* fetch note: {e}")
-
-    if len(tokens) < 18 and UPSTASH_URL and UPSTASH_TOKEN:
-        try:
-            req = urllib.request.Request(
-                f"{UPSTASH_URL}/get/fleet_miniapp_tokens",
-                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-            )
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                data = json.loads(resp.read().decode())
-                raw = data.get("result")
-                if raw:
-                    parsed = json.loads(raw) if isinstance(raw, str) else raw
-                    for k, v in parsed.items():
-                        if k not in tokens:
-                            tokens[k] = v
-        except Exception:
-            pass
+            print(f"⚠️ Upstash fleet:tokens:* pipeline fetch note: {e}")
 
     return tokens
 
@@ -197,7 +189,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         tasks = med.get("tasks", [])
                         comp_ids = set(med.get("completedTaskIds", []))
                         pending_cnt = len([t for t in tasks if t.get("taskId") not in comp_ids])
-                        b_rep["side_tasks"].append(f"Task System: {len(comp_ids)} Completed, {pending_cnt} Pending Tasks")
+                        b_rep["side_tasks"].append(f"Tasks: {len(comp_ids)} Completed, {pending_cnt} Pending")
                         
                         ton_conn = u_obj.get("isTonConnected")
                         ton_addr = u_obj.get("tonWalletAddress", "None")
@@ -212,6 +204,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["1. MRG Miner"] = b_rep
+        else:
+            report["bots"]["1. MRG Miner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 2. ATF Miner
         atf_init = tokens.get("atf_init_data")
@@ -250,6 +244,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["2. ATF Miner"] = b_rep
+        else:
+            report["bots"]["2. ATF Miner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 3. Victor's Company
         vic_init = tokens.get("victors_init_data")
@@ -296,6 +292,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["3. Victor's Company"] = b_rep
+        else:
+            report["bots"]["3. Victor's Company"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 4. VyroDrop
         vyro_init = tokens.get("vyro_init_data")
@@ -331,6 +329,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["4. VyroDrop"] = b_rep
+        else:
+            report["bots"]["4. VyroDrop"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 5. Kynex Network
         kynex_init = tokens.get("kynex_init_data")
@@ -372,6 +372,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["5. Kynex Network"] = b_rep
+        else:
+            report["bots"]["5. Kynex Network"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 6. DiggoMiner
         diggo_init = tokens.get("diggo_init_data")
@@ -418,6 +420,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["6. DiggoMiner"] = b_rep
+        else:
+            report["bots"]["6. DiggoMiner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 7. Astra Airdrop
         astra_init = tokens.get("astra_init_data")
@@ -446,6 +450,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["7. Astra Airdrop"] = b_rep
+        else:
+            report["bots"]["7. Astra Airdrop"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 8. PepeGram
         pepe_init = tokens.get("pepegram_init_data")
@@ -465,6 +471,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["8. PepeGram"] = b_rep
+        else:
+            report["bots"]["8. PepeGram"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 9. AdxEarn AI
         adx_init = tokens.get("adxearn_init_data")
@@ -486,22 +494,17 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["9. AdxEarn AI"] = b_rep
+        else:
+            report["bots"]["9. AdxEarn AI"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
     return report
 
-async def main():
-    print("="*80)
-    print("🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
-    print("="*80)
-    
-    fleet_reports = {}
-    total = len(ACCOUNTS)
-    
-    for idx, acc in enumerate(ACCOUNTS, 1):
+async def audit_single_account(acc, idx, total, tokens_db, sem):
+    async with sem:
         uid = str(acc.get("user_id"))
         name = f"{acc.get('first_name', '')} {acc.get('last_name', '')}".strip() or acc.get("name") or f"Account {idx}"
         is_master = (uid == MASTER_UID)
-        tokens = TOKENS_DB.get(uid, {})
+        tokens = tokens_db.get(uid, {})
         
         # If tokens missing from batch, attempt individual Upstash fetch
         if not tokens or not any(k.endswith("_init_data") for k in tokens.keys()):
@@ -519,12 +522,25 @@ async def main():
             except Exception:
                 pass
 
-        print(f"\n[{idx:02d}/{total}] Auditing {'👑 Master' if is_master else '👷 Worker'}: {name} (UID: {uid})...")
+        print(f"[{idx:02d}/{total}] Auditing {'👑 Master' if is_master else '👷 Worker'}: {name} (UID: {uid})...")
         res = await test_bot_farming_and_sidetasks(uid, name, tokens, acc)
-        fleet_reports[uid] = res
-        
         bots_ok = sum(1 for b, v in res.get("bots", {}).items() if not v.get("error"))
-        print(f"   -> {bots_ok}/{len(res.get('bots', {}))} bots active/responsive")
+        print(f"   -> [{idx:02d}] {name}: {bots_ok}/{len(res.get('bots', {}))} bots active/responsive")
+        return uid, res
+
+async def main():
+    print("="*80)
+    print("🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
+    print("="*80)
+    
+    fleet_reports = {}
+    total = len(ACCOUNTS)
+    sem = asyncio.Semaphore(4)
+    tasks = [audit_single_account(acc, idx, total, TOKENS_DB, sem) for idx, acc in enumerate(ACCOUNTS, 1)]
+    results = await asyncio.gather(*tasks)
+    
+    for uid, res in results:
+        fleet_reports[uid] = res
 
     with open(os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json"), "w") as rf:
         json.dump(fleet_reports, rf, indent=2)
