@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔒 Isolated Runner Architecture & Complete Repository Privacy Enforced (October 25, 2026)**:
+  - **Standby Repository Made 100% Private**:
+    * Switched `AAA0002/my-agy-fleet-standby` to `private: True` (`Visibility: private`) via GitHub REST API, ensuring both core repositories (`ATL` and `my-agy-fleet-standby`) are completely confidential.
+  - **Dedicated Zero-Secret Runner Repo Provisioned (`AAA0002/cloud-fleet-solver`)**:
+    * Created dedicated decoupled runner repository (`AAA0002/cloud-fleet-solver`) strictly for running headless browser Turnstile challenges.
+    * Contains ZERO credentials, ZERO account sessions, ZERO private keys, and ZERO fleet documents.
+    * Provisioned encrypted secrets directly into GitHub Actions Secrets vault (`UPSTASH_URL`, `UPSTASH_TOKEN`, `ALERT_BOT_TOKEN`, `OWNER_ID`, `WEBSHARE_KEY`, `WEBSHARE_KEY_2`).
+    * Inherits **100% UNLIMITED FREE RUNNER MINUTES** on GitHub Actions without consuming a single private runner minute from your account.
+  - **Disabled Heavy Runner on Private Standby Repo**:
+    * Disabled `mrg_turnstile_solver.yml` (ID `386680141`) on `AAA0002/my-agy-fleet-standby`, restricting private repo usage strictly to the lightweight 1.5-minute daily sentinel (< 50 minutes/month).
+    * Dispatched and verified live execution on `AAA0002/cloud-fleet-solver` (`id=40213137175`).
+
 - **🎮 Victor's Company Arcade Game Expansion, Reverse-Engineered Task Verification & GitHub Actions Quota Protection (October 25, 2026)**:
   - **Eradicated Private GitHub Actions Runner Quota Burn**:
     * Identified that `AAA0002/ATL` (private repository) was running 332 workflow runs against the 2,000 monthly private minutes quota until limits were reached.
