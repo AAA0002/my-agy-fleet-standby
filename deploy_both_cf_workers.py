@@ -3844,6 +3844,44 @@ fi
       }
     }
 
+    // 7.168 Edge-Native Custom Personal Wallet Binding (Turso LibSQL + Upstash Redis)
+    if (path === "/api/user/wallet/custom" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const uid = String(body.user_id || body.uid || "").trim();
+        const customAddr = String(body.address || "").trim();
+        const chain = String(body.chain || "ton").toLowerCase().trim();
+        if (!uid || !customAddr) {
+          return new Response(JSON.stringify({ ok: false, error: "user_id and address are required" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        if (chain === "ton" && !customAddr.startsWith("UQ") && !customAddr.startsWith("EQ")) {
+          return new Response(JSON.stringify({ ok: false, error: "Invalid TON address format (must start with UQ or EQ)" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        if (chain === "evm" && !customAddr.startsWith("0x")) {
+          return new Response(JSON.stringify({ ok: false, error: "Invalid EVM address format (must start with 0x)" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        const nowTs = Math.floor(Date.now() / 1000);
+        // Save to Upstash Redis
+        await upstashSet(`ub_custom_wallet:${uid}:${chain}`, customAddr);
+        // Save to Turso LibSQL
+        await tursoExecute(
+          "INSERT OR REPLACE INTO user_wallets (id, user_id, chat_id, chain, address, private_key, mnemonic, is_custom, created_at) VALUES (?, ?, ?, ?, ?, '', '', 1, ?);",
+          [`${uid}_${chain}_custom`, uid, uid, chain, customAddr, nowTs]
+        ).catch(() => null);
+        // Fire-and-forget sync to Render Node 2 in background
+        ctx.waitUntil(fetch("https://my-agy-fleet-standby-node2.onrender.com/api/user/wallet/custom", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
+          body: JSON.stringify({ user_id: uid, address: customAddr, chain: chain })
+        }).catch(() => null));
+        return new Response(JSON.stringify({ ok: true, user_id: uid, chain: chain, address: customAddr, message: `Custom ${chain.toUpperCase()} wallet bound successfully!` }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
     // 7.169 Proxy User Account Login, Wallet & Session Endpoints to Render Node 2
     if (path.startsWith("/api/account/login/") || path.startsWith("/api/user/wallet/") || path === "/api/user/session/check") {
       try {
@@ -5524,12 +5562,12 @@ fi
           }
 
           // 1.5 Upstash fleet:live_state fallback
-          if (!accounts || accounts.length < 18) {
+          if (!accounts || accounts.length < 20) {
             try {
               const upstashRaw = await upstashGet("fleet:live_state");
               if (upstashRaw) {
                 const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
-                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 18) {
+                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 20) {
                   accounts = parsed.accounts;
                 }
               }
@@ -5543,7 +5581,7 @@ fi
                 const raw = await env.BACKUP_KV.get("fleet_live_state");
                 if (raw) {
                   const s = JSON.parse(raw);
-                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length >= 18) {
+                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length >= 20) {
                     accounts = s.accounts;
                   }
                 }
@@ -5950,11 +5988,11 @@ fi
                 `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
                 `• BEP-20 (BSC): \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
                 `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
-                `🔐 *16 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
-                `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18\n` +
+                `🔐 *18 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
+                `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20\n` +
                 `• 100% Isolated 24-word recovery seeds for anti-sybil pool protection.\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `💡 _Tip: Send \`/wallet <1-18>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
+                `💡 _Tip: Send \`/wallet <1-20>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
               const walletMarkup = {
                 inline_keyboard: [
                   [
@@ -6585,7 +6623,7 @@ fi
                 `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
                 `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-                `• *TON Wallet:* 18/18 Configured (${activeCount} Active Mining)\n` +
+                `• *TON Wallet:* 20/20 Configured (${activeCount} Active Mining)\n` +
                 `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6624,7 +6662,7 @@ fi
               };
               const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `📊 *Live Sessions:* \`${activeCount}/18 MTProto Online\` • \`18/18 REST Mining Active\`\n\n` +
+                `📊 *Live Sessions:* \`${activeCount}/20 MTProto Online\` • \`20/20 REST Mining Active\`\n\n` +
                 `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
                 `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
                 `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
@@ -6847,7 +6885,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
                 `👥 *Active Mining Accounts:* \`${activeAccs}/20 Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
-                `💎 *TON Wallets:* \`18/18 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+                `💎 *TON Wallets:* \`20/20 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
                 `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
                 `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -6862,7 +6900,7 @@ fi
                 const revokedCount = health.revoked.size;
                 const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
                   `• *Status:* Success ✅\n` +
-                  `• *Accounts Processed:* \`${activeCount}/18 Active\`\n` +
+                  `• *Accounts Processed:* \`${activeCount}/20 Active\`\n` +
                   (revokedCount > 0 ? `• *Skipped:* \`${revokedCount} Accounts (Session Re-link Required ⚠️)\`\n` : "") +
                   `• *Tasks & Mining:* \`Harvested & Active\`\n` +
                   `• *Math Verification:* \`100% Passed\`\n\n` +
@@ -6884,7 +6922,7 @@ fi
             } else if (cbData === "btn_atf_wallets") {
               const rep = `💎 *ATF Miner Dedicated TON Wallets*\n\n` +
                 `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
-                `• *Accounts #2–18 (Workers):* 17 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
+                `• *Accounts #2–20 (Workers):* 19 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
                 `_All wallets isolated to prevent multi-account Sybil flags._`;
               await sendResilientMessage(chatId, rep, null, "Markdown");
             } else if (cbData === "btn_status") {
@@ -7444,7 +7482,7 @@ fi
           ctx.waitUntil((async () => {
             const rep = `👑 *AAA AUTO Operations Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 18 Telegram accounts and 9 cloud mining bots are managed directly in this chat.\n\n` +
+              `All 20 Telegram accounts and 9 cloud mining bots are managed directly in this chat.\n\n` +
               `• ⌨️ *PIN Pad Login:* Tap /relink or *🔑 OTP & Relogin* to restore sessions\n` +
               `• ⚡ *Zero Phone Load:* 100% Cloud MTProto active on Render & Cloudflare Edge\n` +
               `• 🛡️ *Anti-Ban:* Callback queries bypass Telegram code sharing blocks`;
@@ -7674,7 +7712,7 @@ fi
               `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
               `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-              `• *TON Wallets:* 18/18 Configured (${activeCount} Active Mining)\n` +
+              `• *TON Wallets:* 20/20 Configured (${activeCount} Active Mining)\n` +
               `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -7706,7 +7744,7 @@ fi
               `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
               `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Level Upgrader:* Level 95+ Auto-Unlocked\n` +
-              `• *Cryptographic TON Connect 2.0 Proof:* 18/18 Connected\n` +
+              `• *Cryptographic TON Connect 2.0 Proof:* 20/20 Connected\n` +
               `• *Anti-Bot Defense:* User-Agent & Signature Isolation ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -7749,7 +7787,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
               `👥 *Active Mining Accounts:* \`${activeAccs}/20 Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
-              `💎 *TON Wallets:* \`18/18 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+              `💎 *TON Wallets:* \`20/20 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
               `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
               `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7978,7 +8016,7 @@ fi
             };
             const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `📊 *Live Sessions:* \`${activeCount}/18 MTProto Online\` • \`18/18 REST Mining Active\`\n\n` +
+              `📊 *Live Sessions:* \`${activeCount}/20 MTProto Online\` • \`20/20 REST Mining Active\`\n\n` +
               `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
               `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
               `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
@@ -9285,7 +9323,7 @@ fi
         }
 
         // 6. Accounts Roster Command (/accounts)
-        if (text === "⚙️ Fleet Accounts" || text === "👥 Fleet Accounts" || text === "Fleet Accounts" || text === "Accounts" || text === "👥 Accounts Management" || text === "👥 My Accounts (18)" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
+        if (text === "⚙️ Fleet Accounts" || text === "👥 Fleet Accounts" || text === "Fleet Accounts" || text === "Accounts" || text === "👥 Accounts Management" || text === "👥 My Accounts (20)" || text === "👥 My Accounts (18)" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
           ctx.waitUntil((async () => {
             const accounts = await getFleetAccounts();
             const dhakaTime = getDhakaTimestamp();

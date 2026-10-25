@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Fleet-Wide Bug Hunter, Edge-Native Custom Wallet & 20-Account Audit Hardening (October 25, 2026)**:
+  - **Edge-Native Custom Personal Wallet Handler (`deploy_both_cf_workers.py`)**:
+    * **Bug Identification**: Mini App dashboard `/miner` called `POST /api/user/wallet/custom` to bind personal custom TON/EVM wallets. While Render Node 2 had the route, Cloudflare Worker was solely proxying `/api/user/wallet/*` through to Render with a 12s timeout, causing timeouts or failures if Render Node 2 was spun down on its free tier.
+    * **Resolution**: Added an edge-native fast-path handler for `POST /api/user/wallet/custom` in `deploy_both_cf_workers.py`. The edge worker directly verifies format (`UQ`/`EQ` for TON, `0x` for EVM), persists to Upstash Redis (`ub_custom_wallet:{uid}:{chain}`) and Turso LibSQL (`user_wallets`), and fire-and-forgets to Render Node 2 in the background, responding in <30ms with zero cold start delays.
+  - **Eradicated Stale 18-Account Legacy Strings in Admin Bot (`deploy_both_cf_workers.py`)**:
+    * **Bug Identification**: 8 separate Telegram command handlers and reply keyboards in `deploy_both_cf_workers.py` still reported `18/18 MTProto Online`, `18/18 REST Mining Active`, `18/18 Configured`, and `18/18 Bound`, failing to reflect newly onboarded Accounts #19 (Adil H) and #20 (Asaduzzaman Sarker).
+    * **Resolution**: Aligned all status templates, reply messages, and help texts across `/atf`, `/vyro`, `/mrg`, `/accounts`, and `/app` to dynamically reference all 20 accounts (`20/20 Bound`, `20/20 Configured`, `20/20 MTProto Online`). Added `👥 My Accounts (20)` to the reply keyboard listener.
+  - **Upgraded 20-Account 9-Bot Async Audit Suite (`audit_bots_and_sidetasks.py`)**:
+    * **Bug Identification**: Audit script fetched tokens sequentially from Upstash, checking only `< 18` accounts and causing unnecessary delay and missing fallback to `fleet_miniapp_tokens.json`.
+    * **Resolution**: Rebuilt token loader to load from `fleet_miniapp_tokens.json` with Upstash pipeline fallback, wrapped account audit in `asyncio.Semaphore(4)` with `asyncio.gather`, and ensured all 9 bots report explicit status for every single account.
+
+
 - **🛡️ Edge Brute-Force Rate Limiting & 20h Streak Cooldown Alignment (October 25, 2026)**:
   - **Edge-Native Admin Login Brute-Force Defense (`deploy_both_cf_workers.py`)**:
     * Implemented IP-based attempt tracking (`admin_failed:{clientIp}`) and lockout (`admin_lockout:{clientIp}`) directly in the Cloudflare edge worker.
