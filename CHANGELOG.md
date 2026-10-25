@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 User Bot WebApp URL Migration to Cloudflare Edge & Progressive Streak System Synchronization (October 25, 2026)**:
+  - **Identified & Resolved Outdated WebApp Routing Bug**:
+    * **Root Cause Diagnosis**: All 15 inline buttons and persistent keyboard launchers inside `deploy_both_cf_workers.py` were hardcoded to point to `https://agy-henna.vercel.app/miner`. Because Vercel deployments were 403 Forbidden due to an expired Vercel token, `agy-henna.vercel.app/miner` was serving an obsolete 81 KB static file with only 5 bots and deprecated references to `LeafEarn`.
+    * **Cloudflare Edge Direct Routing Migration**: Replaced all 15 occurrences of `https://agy-henna.vercel.app/miner` across `deploy_both_cf_workers.py` with the high-speed, live Cloudflare Edge URL `https://restore-agy.agorameet.workers.dev/miner`. This guarantees users always load the latest 134 KB modern cyber-fintech dashboard with all 9 pools directly from edge workers in < 50ms.
+    * **Admin Console URL Fix**: Replaced obsolete launcher URL `https://aaa-admin-portal.pages.dev/` with `https://restore-agy.agorameet.workers.dev/user-admin` for `👑 User Admin Console`.
+    * **Admin Bot Menu Fix**: Updated Admin Bot menu button payload from `agy-aaa000.vercel.app/admin` to `https://restore-agy.agorameet.workers.dev/admin`.
+  - **User Bot Daily Streak & Bonus System Alignment**:
+    * **Progressive 7-Day Stepper Alignment**: Synchronized the User Bot's `/daily` and `ub_daily_claim` streak points calculation with the Web App:
+      - Day 1: `+100 Pts`
+      - Day 2: `+150 Pts`
+      - Day 3: `+200 Pts`
+      - Day 4: `+250 Pts`
+      - Day 5: `+300 Pts`
+      - Day 6: `+400 Pts`
+      - Day 7+: `+500 Pts/d MAX`
+    * Replaced outdated +50..+100 hardcoded rewards and outdated text labels with dynamic 7-day streak rewards and clear cooldown countdowns.
+  - **Live Verification & Zero Mixing**:
+    * Deployed to Node 4 Cloudflare Edge Gateway (`https://restore-agy.agorameet.workers.dev`).
+    * Verified `/miner` (134,711 bytes), `/user-admin` (103,622 bytes), `/admin` (105,686 bytes), and `/ads` (122,965 bytes) all return `HTTP 200 OK`.
+    * Confirmed persistent Telegram Chat Menu Button on User Bot (`@AAAPREMIUMAPPSbot`) remains `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
+    * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🚀 Fleet Wallets Directory, On-Chain Deposit QR Modals, Token Reward Chips & User Roster Export (October 24, 2026)**:
   - **Executive Fleet Operations Console (`public_admin/admin.html` & `public/admin.html` at `/admin`)**:
     * **Integrated 20-Account 5-Chain Wallets Directory**: Injected `FLEET_WALLETS_REGISTRY` covering 20 MTProto accounts across TON, EVM, TRON, SOL, and BTC into Tab 2 (Wallets). Added chain selector pills (`ALL`, `TON`, `EVM`, `TRON`, `SOL`, `BTC`), search query filter, 1-tap fast copy, and direct block explorer deep links (Tonviewer, BscScan, Tronscan, Solscan, Mempool.space).

@@ -204,6 +204,12 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Ads Portal Untouched & Menu Button Verified**: `public_ads/index.html` 100% untouched. User Bot Telegram Chat Menu Button verified as `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
     - **Edge Deployment & Verification**: Deployed to Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). All 4 endpoints return HTTP 200 OK.
     - **Disaster Recovery Backup**: Fresh archive delivered to `@myagyai` via `backup_manager.py`.
+27. **User Bot WebApp URL Migration to Cloudflare Edge & Progressive Streak System Synchronization**:
+    - **Cloudflare Edge Direct URL Migration**: Replaced all 15 instances in `deploy_both_cf_workers.py` where buttons opened `agy-henna.vercel.app/miner` (which was serving an outdated 81 KB file with 5 bots due to expired Vercel tokens) to `https://restore-agy.agorameet.workers.dev/miner`. Users now reliably open the latest 134 KB modern cyber-fintech dashboard with all 9 pools directly from Cloudflare Edge in < 50ms.
+    - **Admin Console URL Fix**: Replaced legacy `https://aaa-admin-portal.pages.dev/` with `https://restore-agy.agorameet.workers.dev/user-admin` for `👑 User Admin Console`.
+    - **Admin Bot Menu Fix**: Updated Admin Bot menu button payload to `https://restore-agy.agorameet.workers.dev/admin`.
+    - **Daily Bonus Streak Synchronization**: Updated streak rewards in `deploy_both_cf_workers.py` to match the Web App (Day 1: +100, Day 2: +150, Day 3: +200, Day 4: +250, Day 5: +300, Day 6: +400, Day 7+: +500 Pts).
+    - **Disaster Recovery Backup**: Streamed fresh archive to Telegram vault `@myagyai` via `backup_manager.py`.
 
 ---
 
