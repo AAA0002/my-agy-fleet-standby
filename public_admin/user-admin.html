@@ -143,7 +143,10 @@ const ICONS = {
   external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />',
   sparkles: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />',
-  send: '<line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />'
+  send: '<line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />',
+  unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" />',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" />'
 };
 
 function Icon({ name, className = "w-4 h-4" }) {
@@ -187,6 +190,9 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
   const [loading, setLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [hasPasskeyLocally, setHasPasskeyLocally] = useState(() => {
+    try { return Boolean(localStorage.getItem("admin_passkey_cred_id")); } catch (_) { return false; }
+  });
 
   const PIN_LENGTH = 4; // Commander Arif's signature 4-digit PIN 2743
 
@@ -207,6 +213,22 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
     if (soundEnabled) playSound("click");
   };
 
+  // Physical keyboard listener for desktop numpad / keys
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (loading || biometricLoading) return;
+      if (e.key >= "0" && e.key <= "9") {
+        handleDigit(e.key);
+      } else if (e.key === "Backspace") {
+        handleBackspace();
+      } else if (e.key === "Escape" || e.key === "c" || e.key === "C") {
+        setPin("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pin, loading, biometricLoading]);
+
   const submitAuth = async (pinValue) => {
     setLoading(true);
     setAuthError("");
@@ -225,11 +247,13 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
         setAuthError(res?.error || "Invalid PIN (2743). Try again.");
         setPin("");
         haptic("error");
+        if (soundEnabled) playSound("error");
       }
     } catch (e) {
       setAuthError("Auth error: " + e.message);
       setPin("");
       haptic("error");
+      if (soundEnabled) playSound("error");
     } finally {
       setLoading(false);
     }
@@ -272,6 +296,7 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
         if (res && (res.authenticated || res.ok || res.token)) {
           haptic("success");
           if (soundEnabled) playSound("success");
+          try { localStorage.setItem("admin_passkey_cred_id", assertion.id); } catch (_) {}
           onSuccess(res.token || res.session_token, res);
           return;
         } else {
@@ -290,29 +315,29 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
   return React.createElement("div", {
     className: `min-h-screen flex flex-col items-center justify-center px-4 py-8 max-w-sm mx-auto ${isDarkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`
   },
-    React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-3xl mb-3 shadow-lg shadow-blue-500/20" }, "👑"),
+    React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-3xl mb-3 shadow-lg shadow-blue-500/20 animate-pulse" }, "👑"),
     React.createElement("h1", { className: "text-lg font-black tracking-tight mb-0.5 uppercase" }, "User Bot Operations"),
-    React.createElement("p", { className: "text-xs text-slate-400 mb-5 text-center" }, "Commander Arif · PIN (2743) or Biometric Sensor"),
+    React.createElement("p", { className: "text-xs text-slate-400 mb-4 text-center" }, "Commander Arif · PIN 2743 or Fingerprint Sensor"),
 
     // 1-Tap Biometric Fingerprint / Passkey Button
     React.createElement("button", {
       type: "button",
       onClick: handleBiometricLogin,
       disabled: biometricLoading || loading,
-      className: "w-full py-3 px-4 mb-5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-black shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 disabled:opacity-50"
+      className: `w-full py-3 px-4 mb-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-black shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 disabled:opacity-50 ${hasPasskeyLocally ? "ring-2 ring-emerald-400/40" : ""}`
     },
       React.createElement("span", { className: "text-base" }, "👆"),
-      biometricLoading ? "Scanning Fingerprint..." : "Unlock with Fingerprint / Passkey"
+      biometricLoading ? "Scanning Fingerprint Sensor..." : (hasPasskeyLocally ? "Unlock with Registered Fingerprint" : "Unlock with Fingerprint / Passkey")
     ),
 
-    React.createElement("div", { className: "flex items-center gap-2 w-full mb-5" },
+    React.createElement("div", { className: "flex items-center gap-2 w-full mb-4" },
       React.createElement("div", { className: `flex-1 border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}` }),
       React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono" }, "Or Enter PIN 2743"),
       React.createElement("div", { className: `flex-1 border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}` })
     ),
 
     // PIN Dots (4 digits)
-    React.createElement("div", { className: "flex items-center gap-4 mb-6" },
+    React.createElement("div", { className: "flex items-center gap-4 mb-5" },
       [0, 1, 2, 3].map(idx => React.createElement("div", {
         key: idx,
         className: `w-4 h-4 rounded-full transition-all duration-200 ${
@@ -383,6 +408,64 @@ function App() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(authToken));
+  const [isLocked, setIsLocked] = useState(false);
+  const [hasPasskey, setHasPasskey] = useState(() => {
+    try { return Boolean(localStorage.getItem("admin_passkey_cred_id")); } catch (_) { return false; }
+  });
+  const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
+
+  const handleLock = () => {
+    setIsLocked(true);
+    haptic("medium");
+    if (soundEnabled) playSound("click");
+    showToast("User Operations Console Locked 🔒", "info");
+  };
+
+  const handleLogout = () => {
+    setAuthToken("");
+    setIsAuthenticated(false);
+    setIsLocked(false);
+    try {
+      sessionStorage.removeItem("atf_admin_token");
+      localStorage.removeItem("atf_admin_token");
+    } catch (_) {}
+    fetchMeshApi("/api/admin/auth/logout", { method: "POST" });
+    haptic("warning");
+    showToast("Logged Out Successfully", "info");
+  };
+
+  // 15-Minute Auto-Lock & Background Lock Timer
+  useEffect(() => {
+    if (!isAuthenticated || isLocked) return;
+    let timer = null;
+    const resetTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        setIsLocked(true);
+        showToast("Auto-locked due to inactivity (15m) 🔒", "info");
+      }, 15 * 60 * 1000);
+    };
+    const events = ["mousedown", "mousemove", "keydown", "touchstart", "scroll"];
+    events.forEach(evt => window.addEventListener(evt, resetTimer, { passive: true }));
+    resetTimer();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        timer = setTimeout(() => {
+          setIsLocked(true);
+        }, 5 * 60 * 1000);
+      } else {
+        resetTimer();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      events.forEach(evt => window.removeEventListener(evt, resetTimer));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isAuthenticated, isLocked]);
   const [activeNavTab, setActiveNavTab] = useState("users"); // "users" | "wallets" | "broadcast" | "pools" | "economy"
   const [broadcastTarget, setBroadcastTarget] = useState("no_account"); // "no_account" | "revoked" | "all" | "active"
   const [broadcastTemplate, setBroadcastTemplate] = useState("onboard");
@@ -694,6 +777,8 @@ function App() {
           try {
             localStorage.setItem("admin_passkey_cred_id", credential.id);
           } catch (_) {}
+          setHasPasskey(true);
+          setShowPasskeyPrompt(false);
           showToast("Fingerprint passkey registered successfully! 👆", "success");
           haptic("success");
           if (soundEnabled) playSound("success");
@@ -791,15 +876,20 @@ function App() {
     });
   }, [adminUsers, walletChainFilter, walletTypeFilter, userSearchQuery]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isLocked) {
     return React.createElement(AdminAuthGate, {
-      onSuccess: (token) => {
+      onSuccess: (token, res) => {
         setAuthToken(token);
         setIsAuthenticated(true);
+        setIsLocked(false);
         try {
           sessionStorage.setItem("atf_admin_token", token);
           localStorage.setItem("atf_admin_token", token);
         } catch (_) {}
+        if (res && res.has_passkey) setHasPasskey(true);
+        if (typeof window !== "undefined" && window.PublicKeyCredential && !localStorage.getItem("admin_passkey_cred_id")) {
+          setShowPasskeyPrompt(true);
+        }
         showToast("Authenticated as Commander Arif!", "success");
         fetchStatus(true);
       },
@@ -866,11 +956,19 @@ function App() {
         ),
         React.createElement("button", {
           onClick: registerBiometricPasskey,
-          title: "Register Fingerprint Passkey for One-Tap Unlock",
+          title: hasPasskey ? "Fingerprint Passkey Active (Tap to Re-Register)" : "Register Fingerprint Passkey for One-Tap Unlock",
           className: `tap-target px-2 py-1 rounded-xl border text-[10px] font-bold transition active:scale-95 cursor-pointer flex items-center gap-1 ${isDarkMode ? "bg-slate-900 border-slate-800 text-emerald-400 hover:bg-slate-850" : "bg-white border-slate-200 text-emerald-600 shadow-2xs hover:bg-slate-50"}`
         },
           React.createElement("span", { className: "text-xs" }, "👆"),
-          "Passkey"
+          React.createElement("span", { className: "hidden xs:inline" }, "Passkey"),
+          React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${hasPasskey ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-amber-400 animate-pulse"}` })
+        ),
+        React.createElement("button", {
+          onClick: handleLock,
+          title: "Lock User Operations Console",
+          className: `tap-target p-2 rounded-xl border transition active:scale-95 cursor-pointer flex items-center justify-center ${isDarkMode ? "bg-slate-900 border-slate-800 text-cyan-400 hover:bg-slate-850" : "bg-white border-slate-200 text-cyan-600 shadow-2xs hover:bg-slate-50"}`
+        },
+          React.createElement(Icon, { name: "lock", className: "w-4 h-4" })
         ),
         React.createElement("button", {
           onClick: toggleTheme,
@@ -886,6 +984,29 @@ function App() {
         },
           React.createElement(Icon, { name: "refresh", className: "w-4 h-4" })
         )
+      )
+    ),
+
+    // First-Time Passkey Enrollment Prompt Banner
+    showPasskeyPrompt && !hasPasskey && React.createElement("div", {
+      className: `p-3 rounded-2xl border mb-3 flex items-center justify-between gap-3 text-left animate-slide-up ${isDarkMode ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`
+    },
+      React.createElement("div", { className: "flex items-center gap-2.5" },
+        React.createElement("span", { className: "text-xl" }, "👆"),
+        React.createElement("div", null,
+          React.createElement("div", { className: "text-xs font-bold" }, "Enable 1-Tap Fingerprint Unlock?"),
+          React.createElement("div", { className: "text-[10px] opacity-80" }, "Register this device's sensor to unlock without typing PIN 2743.")
+        )
+      ),
+      React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+        React.createElement("button", {
+          onClick: registerBiometricPasskey,
+          className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black shadow-sm transition active:scale-95 cursor-pointer"
+        }, "Register ⚡"),
+        React.createElement("button", {
+          onClick: () => setShowPasskeyPrompt(false),
+          className: "p-1.5 text-slate-400 hover:text-slate-200 text-xs transition cursor-pointer"
+        }, "✕")
       )
     ),
 

@@ -226,6 +226,23 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Comprehensive 9-Bot Audit Suite (`audit_bots_and_sidetasks.py`)**: Expanded audit coverage from 4 to all 9 bots across all 20 accounts. Fixed ATF Miner balance/level parsing. Fixed Kynex Network `verifyTelegramAuth` and Firebase token exchange. Integrated DiggoMiner 30-day JWT fallback. Added graceful handling of Astra Airdrop developer Supabase egress quota pause (`HTTP 402`).
     - **Render Node 2 Side-Task Sweep Verified**: Executed cloud side-task sweep via `POST /api/tasks/sweep-all` on Render Node 2 (Frankfurt) with 0 local phone load.
     - **Disaster Recovery Backup**: Fresh archive streamed to `@myagyai` via `backup_manager.py`.
+31. **Comprehensive Admin Dashboard Lock System Overhaul, Auto-Lock, Multi-Device Passkeys & Cyber Numeric Keypads**:
+    - **Executive Fleet Operations Console (`admin.html`) Lock Overhaul**:
+      * Upgraded to full 4-digit cyber-fintech numeric keypad (`1-9`, `👆`, `0`, `⌫`) with 4 glowing interactive neon dots that auto-submit on `2743`.
+      * Added physical keyboard listeners (`0-9`, Backspace, Escape) for desktop users.
+      * Added dual auth mode toggle (`"Or use master password 🔏"` / `"Switch to 4-Digit PIN Pad 🔢"`).
+      * Integrated `playSound()` Web Audio synthesizer engine and Telegram haptic feedback.
+    - **Instant Lock Console & 15-Minute Auto-Lock System**:
+      * Added dedicated `🔒 Lock` button in header bar of both consoles for instant locking without losing state.
+      * Added 15-minute inactivity auto-lock and 5-minute tab background lock across both consoles.
+      * Added dedicated `🚪 Logout` button for full session purge.
+    - **Multi-Device Passkey Architecture & First-Time Enrollment Prompts**:
+      * Added multi-device credential array `admin_passkeys:6727787768` to support enrolling multiple devices simultaneously.
+      * Bypassed cache lag in `upstashGet` for `admin_sess:` and `admin_passkey`.
+      * Added live status dot on `👆 Passkey` header button (🟢 active / 🟡 unlinked).
+      * Added smart first-login passkey enrollment banner prompt.
+    - **Deployment & DR**: Deployed live to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified live PIN 2743 auth. Streamed disaster recovery backup to `@myagyai`.
+
 30. **Cyber-Fintech "Add Account & Login" Overhaul, 1-Tap Device Link & Seamless Auth Fallback Upgrade**:
     - **Admin Dashboard PIN 2743 & Biometric Fingerprint / Passkey Lock Implementation**:
       * **PIN Standardized to 4-Digit `2743`**: User Bot Admin Console (`public_admin/user-admin.html`) was updated from 6 digits to Commander Arif's signature 4-digit PIN `2743`, with 4 interactive dots that auto-submit immediately on the 4th digit. Executive Fleet Console (`public_admin/admin.html`) security gate now accepts PIN `2743` directly.

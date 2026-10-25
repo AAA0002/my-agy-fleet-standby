@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔒 Comprehensive Admin Dashboard Lock System Overhaul, Auto-Lock, Multi-Device Passkeys & Cyber Numeric Keypads (October 25, 2026)**:
+  - **Executive Fleet Operations Console (`admin.html`) Lock Overhaul**:
+    * **Full 4-Digit Cyber-Fintech Numeric Keypad**: Replaced the plain HTML text input with the complete responsive 3x4 cyber keypad (`1-9`, `👆`, `0`, `⌫`) with 4 glowing interactive neon dots (`[0, 1, 2, 3]`) that auto-submits upon typing `2743`.
+    * **Physical Keyboard Listener**: Added native `keydown` listeners on `window` supporting desktop numpad/keys (`0-9`, `Backspace`, `Escape`), allowing instant unlocking from physical keyboards without mouse clicks.
+    * **Dual Authentication Mode**: Added instant toggle button (`"Or use master password 🔏"` / `"Switch to 4-Digit PIN Pad 🔢"`), preserving backwards compatibility for text-based passwords.
+    * **Audio & Haptic Feedback Engine**: Implemented `playSound()` Web Audio synthesizer engine (sine click, triangle success fanfare, sawtooth error buzz) and Telegram WebApp haptic vibrations (`light`, `medium`, `success`, `error`), resolving a previously missing `playSound` definition.
+  - **Instant Lock Console & 15-Minute Auto-Lock System**:
+    * **1-Tap Lock Button (`🔒 Lock`)**: Added dedicated lock buttons in the top navigation bar of both `admin.html` and `user-admin.html`. Tapping `🔒 Lock` immediately displays the security gate without dropping cached telemetry, allowing instant re-entry via Fingerprint or PIN `2743`.
+    * **Auto-Lock Security Timer**: Added proactive activity listeners (`mousedown`, `mousemove`, `keydown`, `touchstart`, `scroll`) that automatically lock the consoles after 15 minutes of inactivity. Also added background visibility listeners (`visibilitychange`) that auto-lock if the tab is hidden for 5 minutes.
+    * **Dedicated Logout Button (`🚪 Logout`)**: Added an explicit sign out button that purges session tokens from `sessionStorage`, `localStorage`, and Upstash Redis (`/api/admin/auth/logout`).
+  - **Multi-Device Passkey Architecture & First-Time Enrollment Prompts**:
+    * **Multi-Device Credential Array (`admin_passkeys:6727787768`)**: Upgraded `/api/admin/auth/register-passkey` and `/api/admin/auth/login` in `deploy_both_cf_workers.py` to maintain an array of valid credentials, allowing Commander Arif to enroll multiple devices (e.g. phone fingerprint and desktop WebAuthn) simultaneously without overwriting previous credentials.
+    * **Bypassed Cache Lag in `upstashGet`**: Added `admin_sess:` and `admin_passkey` keys to `maxAgeMs = 0` in `upstashGet`, completely eliminating up to 15 minutes of cache lag during passkey registration and verification.
+    * **Live Passkey Status Indicator**: Added live status dots (🟢 green if active/enrolled on device, 🟡 amber if unlinked) to the `"👆 Passkey"` button in the header.
+    * **Smart First-Login Enrollment Banner**: Added a dismissible banner prompt (`"👆 Enable 1-Tap Fingerprint Unlock for this device?"`) that guides users to register their physical fingerprint sensor immediately after logging in with PIN `2743`.
+  - **Synchronization, Zero Ecosystem Mixing & Deployment**:
+    * Synchronized all updates to mirror files in `public/admin.html` and `public/user-admin.html`.
+    * Deployed live to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Kept User Bot Ads Portal (`public_ads/index.html` at `/ads` / `https://agy-henna.vercel.app/`) **100% UNTOUCHED**.
+    * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🔐 Admin Dashboard PIN 2743 & Biometric Fingerprint / Passkey Lock Implementation (October 25, 2026)**:
   - **Admin PIN Standardized to 4-Digit `2743`**:
     * **User Bot Admin Console (`public_admin/user-admin.html` & `public/user-admin.html`)**: Replaced the previous 6-digit PIN requirement with Commander Arif's signature 4-digit PIN `2743`. Redesigned the auth keypad with 4 responsive dots (`[0, 1, 2, 3]`) that auto-submit immediately when 4 digits are entered.

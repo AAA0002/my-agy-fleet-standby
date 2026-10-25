@@ -1562,7 +1562,7 @@ async function upstashExpire(key, seconds) {
 }
 
 async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache to protect 10k/day quota
-  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:") || key.startsWith("ub_user:") || key.startsWith("fleet:daily_ads:")) {
+  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:") || key.startsWith("ub_user:") || key.startsWith("fleet:daily_ads:") || key.startsWith("admin_sess:") || key.startsWith("admin_passkey")) {
     maxAgeMs = 0; // Interactive real-time flow keys bypass caching completely
   }
   if (key.startsWith("fleet:revoked_sessions") || key.startsWith("fleet:healthy_sessions") || key.startsWith("fleet:live_state") || key.startsWith("fleet:status") || key.startsWith("fleet:tokens_state") || key.startsWith("fleet:accounts")) {
@@ -3122,9 +3122,25 @@ fi
             authMethod = "passkey";
           } else {
             const cachedCred = await upstashGet("admin_passkey:6727787768");
-            if (cachedCred && (credId === cachedCred || credId === cachedCred.credential_id)) {
+            let parsedCred = cachedCred;
+            if (typeof cachedCred === "string") {
+              try { parsedCred = JSON.parse(cachedCred); } catch (_) {}
+            }
+            const savedId = typeof parsedCred === "object" ? (parsedCred?.credential_id || parsedCred?.id) : parsedCred;
+            if (credId === savedId || credId === cachedCred) {
               authValid = true;
               authMethod = "passkey";
+            } else {
+              const rawList = await upstashGet("admin_passkeys:6727787768");
+              let passkeyList = [];
+              if (Array.isArray(rawList)) passkeyList = rawList;
+              else if (typeof rawList === "string") {
+                try { passkeyList = JSON.parse(rawList); } catch (_) {}
+              }
+              if (Array.isArray(passkeyList) && passkeyList.includes(credId)) {
+                authValid = true;
+                authMethod = "passkey";
+              }
             }
           }
         }
@@ -3202,6 +3218,18 @@ fi
 
         await upstashSet("admin_passkey:6727787768", { credential_id, public_key, transports });
 
+        try {
+          const rawExisting = await upstashGet("admin_passkeys:6727787768");
+          let list = [];
+          if (Array.isArray(rawExisting)) list = rawExisting;
+          else if (typeof rawExisting === "string") {
+            try { list = JSON.parse(rawExisting); } catch (_) {}
+          }
+          if (!Array.isArray(list)) list = [];
+          if (!list.includes(credential_id)) list.push(credential_id);
+          await upstashSet("admin_passkeys:6727787768", list);
+        } catch (_) {}
+
         await supabaseUpdateAdminAuth("6727787768", {
           passkey_credential_id: credential_id,
           passkey_public_key: public_key || null,
@@ -3212,6 +3240,7 @@ fi
         return new Response(JSON.stringify({
           ok: true,
           success: true,
+          credential_id,
           message: "Biometric Passkey registered successfully in Supabase and Edge Mesh!"
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3225,12 +3254,14 @@ fi
       try {
         const adminCheck = await verifyAdminRequest(request);
         const sbAdmin = await supabaseGetAdminAuth("6727787768");
+        const cachedCred = await upstashGet("admin_passkey:6727787768");
+        const hasPasskey = Boolean(sbAdmin?.passkey_credential_id || cachedCred);
         return new Response(JSON.stringify({
           ok: true,
           authenticated: adminCheck.ok,
           user: adminCheck.ok ? (adminCheck.user || "arif") : null,
           uid: "6727787768",
-          has_passkey: Boolean(sbAdmin?.passkey_credential_id)
+          has_passkey: hasPasskey
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
