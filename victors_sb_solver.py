@@ -25,13 +25,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("victors_sb_solver")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN") or ""
 OWNER_ID = os.getenv("OWNER_ID") or "6727787768"
 
 if not UPSTASH_TOKEN:
-    env_file = os.path.join(os.path.dirname(__file__), ".env")
+    env_file = os.path.join(BASE_DIR, ".env")
     if os.path.exists(env_file):
         try:
             with open(env_file, "r", encoding="utf-8", errors="replace") as f:

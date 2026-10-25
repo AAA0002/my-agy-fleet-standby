@@ -138,6 +138,9 @@ def push_app():
     vic_sb = os.path.join(BASE_DIR, "victors_sb_solver.py")
     if os.path.exists(vic_sb):
         push_file(vic_sb, "victors_sb_solver.py", "feat: Victor's Company CDP stealth Turnstile solver and Level 1 unlock")
+    vic_cpl = os.path.join(BASE_DIR, "victors_cloud_phone_launcher.py")
+    if os.path.exists(vic_cpl):
+        push_file(vic_cpl, "victors_cloud_phone_launcher.py", "feat: Victor's Company cloud phone launcher")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
