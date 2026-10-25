@@ -689,8 +689,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
                 val = float(clean_s)
                 age_s = now_ts - (val / 1000.0 if val > 1e11 else val)
             else:
-                from datetime import datetime
-                dt = datetime.fromisoformat(clean_s.replace("Z", "+00:00"))
+                dt = datetime.datetime.fromisoformat(clean_s.replace("Z", "+00:00"))
                 age_s = now_ts - dt.timestamp()
         else:
             return True
@@ -703,9 +702,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     key_tokens = [
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
-        "kynex_init_data", "diggo_init_data",
-        "astra_init_data", "pepegram_init_data",
-        "adxearn_init_data"
+        "kynex_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -1549,12 +1546,15 @@ async def token_health_and_refresh_watchdog():
                                 except Exception:
                                     synced_ts = 0
                         # Dynamic WebApp Session Freshness Guard:
-                        # DiggoMiner expires in 1h (3600s), VyroDrop in ~1.5h.
-                        # Proactively refresh tokens if missing or older than 45 minutes (2700s).
+                        # Proactively refresh tokens if missing or older than 4 hours (14400s).
                         has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in tok.items())
+                        has_mrg = bool(tok.get("mrg_init_data"))
+                        has_atf = bool(tok.get("atf_init_data"))
+                        has_victors = bool(tok.get("victors_init_data"))
                         has_vyro = bool(tok.get("vyro_init_data"))
-                        has_diggo = bool(tok.get("diggo_init_data"))
-                        is_stale = (now - synced_ts > 2700) or ((not has_vyro or not has_diggo) and (now - synced_ts > 900))
+                        has_kynex = bool(tok.get("kynex_init_data"))
+                        has_all_active_5 = (has_mrg and has_atf and has_victors and has_vyro and has_kynex)
+                        is_stale = (now - synced_ts > 14400) or ((not has_all_active_5) and (now - synced_ts > 1800))
                         if not tok or not has_any_token or is_stale:
                             stale_or_missing_accs.append(acc)
 
@@ -1629,7 +1629,7 @@ async def autonomous_fleet_ad_farmer_loop():
                 await asyncio.sleep(min(rem + 5, 60))
                 continue
 
-            today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+            today_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
             FLEET_AD_FARMER_STATE["today"] = today_str
             FLEET_AD_FARMER_STATE["status"] = "active"
 
@@ -1786,6 +1786,23 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                     headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
                     timeout=aiohttp.ClientTimeout(total=5)
                 )
+
+                # Also sync into monolithic miniapp_tokens dictionary for legacy runner compatibility
+                try:
+                    async with s.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as r_all:
+                        if r_all.status == 200:
+                            all_d = await r_all.json()
+                            raw_all = all_d.get("result")
+                            master_dict = json.loads(raw_all) if isinstance(raw_all, str) else raw_all or {}
+                            master_dict[str(uid)] = clean_merged
+                            await s.post(
+                                f"{UPSTASH_URL}/set/miniapp_tokens",
+                                data=json.dumps(master_dict),
+                                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+                                timeout=aiohttp.ClientTimeout(total=5)
+                            )
+                except Exception:
+                    pass
             except Exception as ue:
                 logger.warning(f"Upstash token sync note: {ue}")
 
@@ -6616,9 +6633,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                             synced_ts = 0
 
                 has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
-                has_vyro = bool(t_dict.get("vyro_init_data"))
-                has_diggo = bool(t_dict.get("diggo_init_data"))
-                needs_refresh = (not has_any_token) or (not has_vyro) or (not has_diggo) or is_token_data_expired(t_dict, max_age_hours=18.0)
+                needs_refresh = (not has_any_token) or is_token_data_expired(t_dict, max_age_hours=18.0)
 
                 if needs_refresh and (a_dict.get("session_string") or a_dict.get("session")):
                     try:
@@ -6833,9 +6848,8 @@ async def api_farm_single_account(uid: str, request: Request):
                     except Exception:
                         synced_ts = 0
 
-            has_vyro = bool(acc_tok.get("vyro_init_data"))
-            has_diggo = bool(acc_tok.get("diggo_init_data"))
-            is_stale = (now_s - synced_ts > 2700) or ((not has_vyro or not has_diggo) and (now_s - synced_ts > 900))
+            has_active_tokens = any(bool(acc_tok.get(f"{b}_init_data")) for b in ["mrg", "atf", "victors", "vyro", "kynex"])
+            is_stale = (now_s - synced_ts > 14400) or ((not has_active_tokens) and (now_s - synced_ts > 1800))
             missing_tokens = refresh_mode or (not acc_tok) or missing_any or is_stale
             if missing_tokens:
                 fresh = await extract_tokens_for_account(target_acc)

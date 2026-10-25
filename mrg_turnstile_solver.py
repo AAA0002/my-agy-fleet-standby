@@ -1073,139 +1073,41 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     
         # Step 2: If not solved, locate Turnstile iframe and simulate clean human click if visible
         if not acquired_token and not acquired_pass:
-            try:
-                ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
-                if await ts_iframe.count() > 0:
-                    box = await ts_iframe.bounding_box()
-                    if box and box["width"] >= 200 and box["height"] >= 45:
-                        click_x = box["x"] + 32.0
-                        click_y = box["y"] + (box["height"] / 2.0)
-                        logger.info(f"🖱️ [Victor's] Humanized mouse interaction at ({click_x:.1f}, {click_y:.1f}) for UID {uid}...")
-                        await page.mouse.move(click_x - 30, click_y - 15)
-                        await asyncio.sleep(0.1)
-                        await page.mouse.move(click_x, click_y, steps=8)
-                        await asyncio.sleep(0.15)
-                        await page.mouse.down()
-                        await asyncio.sleep(0.12)
-                        await page.mouse.up()
-            except Exception as ce:
-                logger.warning(f"[Victor's] UID {uid} iframe click note: {ce}")
-    
-            # Wait up to 15s after click for token or humanPass
-            for _ in range(15):
-                tok = await page.evaluate("() => window.__victorsTurnstileToken || (document.querySelector('[name=\"cf-turnstile-response\"]')?.value) || (document.querySelector('[name=\"g-recaptcha-response\"]')?.value) || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
-                acquired_token = tok or acquired_token_dict.get("token")
-                if acquired_token and len(acquired_token) > 20:
+            for click_round in range(1, 4):
+                if acquired_token or acquired_pass:
                     break
-                hp = await page.evaluate("() => window.__victorsHumanPass || null")
-                acquired_pass = hp or acquired_pass_dict.get("pass")
-                if acquired_pass:
-                    break
-                await asyncio.sleep(1.0)
-    
-        # Step 3: Programmatic fallback render with exact Turnstile parameters
-        if not acquired_token and not acquired_pass:
-            logger.info(f"⚡ [Victor's] UID {uid}: Attempting programmatic Turnstile render with action='login'...")
-            try:
-                has_ts = await page.evaluate("() => typeof window.turnstile?.render === 'function'")
-                if not has_ts:
-                    logger.info(f"Adding Turnstile script tag via Playwright for Victor's UID {uid}...")
-                    await page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")
-                    try:
-                        await page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)
-                    except Exception:
-                        pass
-            except Exception as tse:
-                logger.warning(f"Victor's Turnstile script tag note: {tse}")
-
-            solve_js = f"""
-                async () => {{
-                    return new Promise((resolve) => {{
-                        let container = document.getElementById('cf-vic-slot');
-                        if (!container) {{
-                            container = document.createElement('div');
-                            container.id = 'cf-vic-slot';
-                            container.style.position = 'fixed';
-                            container.style.top = '50%';
-                            container.style.left = '50%';
-                            container.style.transform = 'translate(-50%, -50%)';
-                            container.style.width = '300px';
-                            container.style.height = '65px';
-                            container.style.zIndex = '9999999';
-                            container.style.background = '#1a1147';
-                            document.body.appendChild(container);
-                        }} else {{
-                            container.innerHTML = '';
-                        }}
-
-                        function renderWidget() {{
-                            try {{
-                                window.turnstile.render(container, {{
-                                    sitekey: '{VICTORS_SITEKEY}',
-                                    action: 'login',
-                                    theme: 'dark',
-                                    appearance: 'interaction-only',
-                                    callback: function(tok) {{
-                                        window.__victorsTurnstileToken = tok;
-                                        resolve({{ success: true, token: tok }});
-                                    }},
-                                    'error-callback': function(err) {{
-                                        resolve({{ success: false, error: String(err) }});
-                                    }}
-                                }});
-                            }} catch (e) {{
-                                resolve({{ success: false, error: String(e) }});
-                            }}
-                        }}
-
-                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            renderWidget();
-                        }} else {{
-                            let attempts = 0;
-                            const iv = setInterval(() => {{
-                                attempts++;
-                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    clearInterval(iv);
-                                    renderWidget();
-                                }} else if (attempts > 200) {{
-                                    clearInterval(iv);
-                                    resolve({{ success: false, error: 'turnstile_load_timeout' }});
-                                }}
-                            }}, 100);
-                        }}
-
-                        setTimeout(() => {{
-                            resolve({{ success: false, error: 'timeout_25s' }});
-                        }}, 25000);
-                    }});
-                }}
-            """
-            try:
-                solve_task = asyncio.create_task(page.evaluate(solve_js))
-                for _ in range(16):
-                    ts_iframe = page.locator("#cf-vic-slot iframe, iframe[src*='challenges.cloudflare.com']").first
+                try:
+                    ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
                     if await ts_iframe.count() > 0:
                         box = await ts_iframe.bounding_box()
                         if box and box["width"] >= 200 and box["height"] >= 45:
                             click_x = box["x"] + 32.0
                             click_y = box["y"] + (box["height"] / 2.0)
-                            logger.info(f"🖱️ [Victor's] Clicking programmatic Turnstile checkbox at ({click_x:.1f}, {click_y:.1f})...")
-                            await page.mouse.move(click_x - 20, click_y - 10)
+                            logger.info(f"🖱️ [Victor's] Humanized mouse interaction #{click_round} at ({click_x:.1f}, {click_y:.1f}) for UID {uid}...")
+                            await page.mouse.move(click_x - 30, click_y - 15)
                             await asyncio.sleep(0.1)
-                            await page.mouse.move(click_x, click_y, steps=8)
-                            await asyncio.sleep(0.2)
+                            await page.mouse.move(click_x, click_y, steps=6)
+                            await asyncio.sleep(0.15)
                             await page.mouse.down()
                             await asyncio.sleep(0.12)
                             await page.mouse.up()
-                            break
-                    await asyncio.sleep(0.6)
+                except Exception as ce:
+                    logger.warning(f"[Victor's] UID {uid} iframe click note: {ce}")
     
-                render_res = await asyncio.wait_for(solve_task, timeout=28.0)
-                if render_res and render_res.get("success") and render_res.get("token"):
-                    acquired_token = render_res["token"]
-            except Exception as re:
-                logger.warning(f"[Victor's] UID {uid} programmatic render note: {re}")
-    
+                # Wait up to 6s after each click for token or humanPass
+                for _ in range(6):
+                    tok = await page.evaluate("() => window.__victorsTurnstileToken || (document.querySelector('[name=\"cf-turnstile-response\"]')?.value) || (document.querySelector('[name=\"g-recaptcha-response\"]')?.value) || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
+                    acquired_token = tok or acquired_token_dict.get("token")
+                    if acquired_token and len(acquired_token) > 20:
+                        break
+                    hp = await page.evaluate("() => window.__victorsHumanPass || null")
+                    acquired_pass = hp or acquired_pass_dict.get("pass")
+                    if acquired_pass:
+                        break
+                    await asyncio.sleep(1.0)
+                if acquired_token or acquired_pass:
+                    break
+
         await context.close()
     
         acquired_pass = acquired_pass or acquired_pass_dict.get("pass")

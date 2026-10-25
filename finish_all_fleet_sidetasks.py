@@ -1221,22 +1221,6 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
         account_report["results"]["kynex"] = kynex_res
 
-        # 6. DiggoMiner
-        diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), acc)
-        account_report["results"]["diggo"] = diggo_res
-
-        # 7. Astra Airdrop
-        astra_res = await sweep_astra_tasks(session, uid, name, acc_toks.get("astra_init_data", ""), acc)
-        account_report["results"]["astra"] = astra_res
-
-        # 8. PepeGram
-        pepe_res = await sweep_pepegram_tasks(session, uid, name, acc_toks.get("pepegram_init_data", ""), acc)
-        account_report["results"]["pepegram"] = pepe_res
-
-        # 9. AdxEarn AI
-        adx_res = await sweep_adxearn_tasks(session, uid, name, acc_toks.get("adxearn_init_data", ""), acc)
-        account_report["results"]["adxearn"] = adx_res
-
         # Sync tokens to Cloudflare Workers if newly refreshed
         await sync_token_to_cf(session, uid, acc_toks)
 
@@ -1262,7 +1246,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 70)
-        logger.info("📊 9-BOT FLEET SIDE-TASK HARVEST SUMMARY")
+        logger.info("📊 5-BOT FLEET SIDE-TASK HARVEST SUMMARY")
         logger.info("=" * 70)
         total_tasks = 0
         for rep in reports:
@@ -1273,13 +1257,9 @@ async def main():
             vic_cl = res.get("victors", {}).get("tasks_claimed", 0)
             vyr_cl = res.get("vyro", {}).get("tasks_claimed", 0)
             kyn_cl = res.get("kynex", {}).get("tasks_claimed", 0)
-            dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
-            ast_cl = res.get("astra", {}).get("tasks_claimed", 0)
-            pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
-            adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + dig_cl + ast_cl + pep_cl + adx_cl
+            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} DIG:{dig_cl} AST:{ast_cl} PEP:{pep_cl} ADX:{adx_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} | Tot: {acc_total}")
 
         logger.info("=" * 70)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
