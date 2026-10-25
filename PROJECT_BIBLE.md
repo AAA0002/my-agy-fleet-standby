@@ -1705,6 +1705,11 @@ Whenever you perform work in this repository:
   - **Mobile Ergonomics & Bottom Dock Overhaul**: Updated body padding to `padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 76px)` preventing content from being obscured behind the fixed bottom navigation dock. Added `.tap-target` utility ensuring a minimum 44px touch target on all dock buttons with Web Audio click synthesizer and haptic pulses.
   - **Seamless Cross-Dashboard Navigation**: Integrated an Executive Console cross-link banner in `admin.html` jumping to `/user-admin`, mirroring the `/admin` link in `user-admin.html` for instant 1-tap switching between fleet operations and community miner management.
   - **Disaster Recovery Pipeline Hardening**: Added `MASTER_SYSTEM_DIRECTORY.md`, `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`, and `FLEET_MEMORY_CORE.md` to `CORE_BOT_FILES` in `backup_manager.py`. Deployed to Node 4 Edge Gateway and streamed fresh disaster recovery backup archive to `@myagyai`.
+* **Deep Bug Hunt: Elimination of Latency Bottlenecks, Timeout Aborts & Cloud Configuration Discrepancies (October 25, 2026)**:
+  - **Resolved Premature Client Abort in `/api/admin/users` (10.59s -> 1.61s, 6.5x Speedup)**: Identified that `user-admin.html` aborted after 6s because edge worker queried Upstash, Supabase, and Turso sequentially and executed an individual HTTP loop for missing profiles. Replaced with `Promise.all` parallelization, batch PostgREST queries, and a 15-second edge in-memory cache (`memAdminUsersPayload`). Increased `fetchMeshApi` timeout from 6s to 12s across all dashboards.
+  - **Resolved Render Node 2 Turso Connectivity**: Injected `TURSO_URL`, `TURSO_TOKEN`, and `TURSO_DB_TOKEN` into Render Standby Node 2 via Render REST API, triggered deploy, and verified direct HTTP 200 response on `/api/user/session/check-all`. Added resilient edge worker fallback to Turso LibSQL.
+  - **Resolved Payload Inflexibility in `/api/admin/user-action`**: Unified handling to accept either `body.uid` or `body.user_id`, eliminating HTTP 400 Bad Request errors. Added automatic edge cache invalidation.
+
 
 
 

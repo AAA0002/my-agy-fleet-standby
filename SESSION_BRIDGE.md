@@ -293,6 +293,11 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Cross-Dashboard Navigation Hub**: Added direct link banner in `admin.html` jumping to `/user-admin`, complementing the `/admin` link in `user-admin.html`.
     - **Hardened Disaster Recovery Core**: Added `MASTER_SYSTEM_DIRECTORY.md`, `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`, and `FLEET_MEMORY_CORE.md` to `CORE_BOT_FILES` in `backup_manager.py`. Deployed to Node 4 Edge Gateway.
 
+36. **Deep Bug Hunt: Elimination of Latency Bottlenecks, Timeout Aborts & Cloud Configuration Discrepancies**:
+    - **Resolved Fatal Premature Abort in `/api/admin/users` (10.59s -> 1.61s, 6.5x Speedup)**: Parallelized Upstash, Supabase, and Turso queries with `Promise.all`, batched profile queries via PostgREST `id=in.(...)`, and added a 15s in-memory edge cache (`memAdminUsersPayload`). Increased `fetchMeshApi` abort timeout in both `user-admin.html` and `admin.html` from 6s to 12s.
+    - **Resolved Render Node 2 Turso Connectivity**: Added `TURSO_URL`, `TURSO_TOKEN`, and `TURSO_DB_TOKEN` to Render Node 2 service environment variables via Render API, triggered redeploy, and verified direct HTTP 200 response. Added a resilient fallback to Edge Turso query if Render ever restarts.
+    - **Resolved Payload Mismatch in `/api/admin/user-action`**: Unified handling to accept either `body.uid` or `body.user_id`, eliminating HTTP 400 errors. Added instant edge cache invalidation.
+
 ---
 
 ## 📂 7. Key File Index

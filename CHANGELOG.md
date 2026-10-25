@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Deep Bug Hunter & System-Wide Latency & Connectivity Elimination (October 25, 2026)**:
+  - **Resolved Fatal Premature Abort in `/api/admin/users` (10.59s -> 1.61s, 6.5x Speedup)**:
+    * **Root Cause**: In `deploy_both_cf_workers.py`, `/api/admin/users` was sequentially awaiting Upstash, Supabase, and Turso queries, followed by a sequential `for` loop issuing individual `await fetch()` calls to Supabase for missing user profiles. Total execution took 10.59s, which exceeded the client-side `fetchMeshApi` abort timeout of 6000ms (6s), causing the user admin dashboard to constantly abort and display cached/empty telemetry.
+    * **Resolution**: Parallelized data retrieval via `Promise.all` across Upstash, Supabase, Turso accounts, and Turso wallets. Replaced the sequential profile fetch loop with a single batch PostgREST query (`id=in.(...)`). Implemented an in-memory edge cache with 15-second TTL (`memAdminUsersPayload`). Increased `fetchMeshApi` abort timeout in both `user-admin.html` and `admin.html` from 6000ms to 12000ms. Response latency dropped to **1.61s on fresh fetch and sub-second on subsequent hits**.
+  - **Resolved Render Node 2 Turso Connectivity (`Turso database not configured`)**:
+    * **Root Cause**: Render Standby Node 2 was missing `TURSO_URL`, `TURSO_TOKEN`, and `TURSO_DB_TOKEN` in its service environment settings, causing `/api/user/session/check-all` to return `{"ok": false, "error": "Turso database not configured"}`.
+    * **Resolution**: Updated Render Node 2 service environment variables with `TURSO_URL` and `TURSO_DB_TOKEN` via Render REST API, triggered a clean redeploy, and verified direct HTTP 200 response (`{"ok": true, "total": 0, "valid": 0, "revoked": 0}`). Added a resilient edge fallback in `deploy_both_cf_workers.py` that queries Turso user accounts directly from Cloudflare Worker if Render ever times out or restarts.
+  - **Resolved Payload Mismatch in `/api/admin/user-action` (HTTP 400)**:
+    * **Root Cause**: Handler checked only `body.uid`, returning `400 Bad Request` if requests submitted `user_id` instead.
+    * **Resolution**: Added unified support for `const uid = body.uid || body.user_id;`, and added edge cache invalidation (`memAdminUsersPayload = null;`) upon action completion.
+
+
 - **🔧 Comprehensive System-Wide Audit, Syntax Error Elimination & Cross-Dashboard Navigation (October 25, 2026)**:
   - **Eliminated Critical Syntax Error in `admin.html`**:
     * **Bug Identification**: Script #3 in `public_admin/admin.html` (and mirror `public/admin.html`) was throwing a fatal JavaScript `SyntaxError: Unexpected token '}'` due to previously stripped string literals on lines 1784, 1795, 1819, 1823, 1824, 1825, 1827, 1842, and 2208 (`className:`, dangling commas, and missing arguments).

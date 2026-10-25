@@ -1303,6 +1303,8 @@ let memHeartbeat = null;
 let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
+let memAdminUsersPayload = null;
+let memAdminUsersTimestamp = 0;
 
 const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex"];
 
@@ -3288,65 +3290,73 @@ fi
     if (path === "/api/admin/users" || path === "/api/admin/community" || path === "/api/admin/stats" || path === "/api/community/users" || path === "/api/users") {
       const adminCheck = await verifyAdminRequest(request);
       if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
+
+      // Fast edge cache check (15s in-memory TTL unless forced)
+      const forceRefresh = url.searchParams.get("force") === "true" || url.searchParams.get("force") === "1";
+      if (!forceRefresh && memAdminUsersPayload && (Date.now() - memAdminUsersTimestamp < 15000)) {
+        return new Response(JSON.stringify(memAdminUsersPayload), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            ...corsHeaders
+          }
+        });
+      }
+
       try {
         let uids = [];
-        try {
-          const res = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
-            headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
-          });
-          if (res.ok) {
-            const d = await res.json();
-            uids = d.result || [];
-          }
-        } catch (_) {}
-
-        // Fallback: merge with Supabase Postgres community_miners
-        try {
-          const sRes = await fetch(`${SUPABASE_URL}/rest/v1/community_miners?select=id`, {
-            headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-          });
-          if (sRes.ok) {
-            const sArr = await sRes.json();
-            for (const r of (sArr || [])) {
-              if (r.id && !uids.includes(String(r.id))) {
-                uids.push(String(r.id));
-              }
-            }
-          }
-        } catch (_) {}
-
-        // Turso LibSQL isolated user tables: user_accounts & user_wallets
         let tursoAccounts = [];
         let tursoWallets = [];
-        try {
-          const tAccRes = await tursoExecute("SELECT id, user_id, chat_id, name, phone, status, created_at FROM user_accounts;");
-          if (tAccRes && tAccRes.rows) {
-            const cols = (tAccRes.cols || []).map(c => c.name);
-            tursoAccounts = tAccRes.rows.map(r => {
-              const obj = {};
-              cols.forEach((col, idx) => { obj[col] = r[idx]?.value; });
-              return obj;
-            });
-            tursoAccounts.forEach(a => {
-              const sUid = String(a.user_id || a.chat_id);
-              if (sUid && !uids.includes(sUid)) uids.push(sUid);
-            });
-          }
 
-          const tWalRes = await tursoExecute("SELECT id, user_id, chat_id, chain, address, is_custom, created_at FROM user_wallets;");
-          if (tWalRes && tWalRes.rows) {
-            const cols = (tWalRes.cols || []).map(c => c.name);
-            tursoWallets = tWalRes.rows.map(r => {
-              const obj = {};
-              cols.forEach((col, idx) => { obj[col] = r[idx]?.value; });
-              return obj;
-            });
-            tursoWallets.forEach(w => {
-              const sUid = String(w.user_id || w.chat_id);
-              if (sUid && !uids.includes(sUid)) uids.push(sUid);
-            });
+        // Fetch Upstash, Supabase, and Turso concurrently via Promise.all
+        const [resUpstash, resSupabase, tAccRes, tWalRes] = await Promise.all([
+          fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
+            headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch(`${SUPABASE_URL}/rest/v1/community_miners?select=id`, {
+            headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
+          tursoExecute("SELECT id, user_id, chat_id, name, phone, status, created_at FROM user_accounts;").catch(() => null),
+          tursoExecute("SELECT id, user_id, chat_id, chain, address, is_custom, created_at FROM user_wallets;").catch(() => null)
+        ]);
+
+        if (resUpstash && resUpstash.result) {
+          uids = resUpstash.result || [];
+        }
+
+        if (resSupabase && Array.isArray(resSupabase)) {
+          for (const r of resSupabase) {
+            if (r.id && !uids.includes(String(r.id))) {
+              uids.push(String(r.id));
+            }
           }
-        } catch (_) {}
+        }
+
+        if (tAccRes && tAccRes.rows) {
+          const cols = (tAccRes.cols || []).map(c => c.name);
+          tursoAccounts = tAccRes.rows.map(r => {
+            const obj = {};
+            cols.forEach((col, idx) => { obj[col] = r[idx]?.value; });
+            return obj;
+          });
+          tursoAccounts.forEach(a => {
+            const sUid = String(a.user_id || a.chat_id);
+            if (sUid && !uids.includes(sUid)) uids.push(sUid);
+          });
+        }
+
+        if (tWalRes && tWalRes.rows) {
+          const cols = (tWalRes.cols || []).map(c => c.name);
+          tursoWallets = tWalRes.rows.map(r => {
+            const obj = {};
+            cols.forEach((col, idx) => { obj[col] = r[idx]?.value; });
+            return obj;
+          });
+          tursoWallets.forEach(w => {
+            const sUid = String(w.user_id || w.chat_id);
+            if (sUid && !uids.includes(sUid)) uids.push(sUid);
+          });
+        }
 
         // Strict filter: purge all fake, test, and fleet worker accounts from community roster (Zero Ecosystem Mixing)
         const FLEET_WORKER_SET = new Set([
@@ -3376,21 +3386,32 @@ fi
 
         const userKeys = uids.map(uid => `ub_user:${uid}`);
         const userProfiles = await upstashMget(userKeys);
+
+        // Batch query any missing profiles from Supabase in ONE single request
+        const missingUids = [];
         for (let i = 0; i < uids.length; i++) {
-          let u = userProfiles[i];
-          if (!u) {
-            try {
-              const suRes = await fetch(`${SUPABASE_URL}/rest/v1/community_miners?id=eq.${uids[i]}&select=*`, {
-                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-              });
-              if (suRes.ok) {
-                const suArr = await suRes.json();
-                if (suArr && suArr.length > 0) {
-                  u = suArr[0].profile_data || suArr[0];
+          if (!userProfiles[i]) missingUids.push(uids[i]);
+        }
+
+        const supabaseProfiles = {};
+        if (missingUids.length > 0) {
+          try {
+            const suRes = await fetch(`${SUPABASE_URL}/rest/v1/community_miners?id=in.(${missingUids.join(",")})&select=*`, {
+              headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+            });
+            if (suRes && suRes.ok) {
+              const suArr = await suRes.json();
+              for (const r of (suArr || [])) {
+                if (r.id) {
+                  supabaseProfiles[String(r.id)] = r.profile_data || r;
                 }
               }
-            } catch (_) {}
-          }
+            }
+          } catch (_) {}
+        }
+
+        for (let i = 0; i < uids.length; i++) {
+          let u = userProfiles[i] || supabaseProfiles[String(uids[i])];
           if (u) {
             users.push(u);
             const pts = (u.points || 0);
@@ -3487,7 +3508,7 @@ fi
           return (b.points || 0) - (a.points || 0);
         });
 
-        return new Response(JSON.stringify({
+        const respObj = {
           ok: true,
           timestamp: Date.now(),
           stats: {
@@ -3502,7 +3523,11 @@ fi
             poolsCount: 9
           },
           users
-        }), {
+        };
+        memAdminUsersPayload = respObj;
+        memAdminUsersTimestamp = Date.now();
+
+        return new Response(JSON.stringify(respObj), {
           headers: {
             "Content-Type": "application/json",
             "Cache-Control": "no-store, no-cache, must-revalidate",
@@ -3545,8 +3570,9 @@ fi
       if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
       try {
         const body = await request.json().catch(() => ({}));
-        const { uid, action, amount, tier, days } = body;
-        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing uid" }), { status: 400, headers: corsHeaders });
+        const uid = body.uid || body.user_id;
+        const { action, amount, tier, days } = body;
+        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing uid or user_id" }), { status: 400, headers: corsHeaders });
 
         const rawU = await upstashGet(`ub_user:${uid}`);
         if (!rawU) return new Response(JSON.stringify({ ok: false, error: "User not found" }), { status: 404, headers: corsHeaders });
@@ -3607,6 +3633,7 @@ fi
         }
 
         await upstashSet(`ub_user:${uid}`, user);
+        memAdminUsersPayload = null;
         return new Response(JSON.stringify({ ok: true, user }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
@@ -3729,10 +3756,25 @@ fi
           headers: { "Content-Type": "application/json" }
         }).catch(() => null);
         if (renderRes && renderRes.ok) {
-          const rData = await renderRes.json();
-          return new Response(JSON.stringify(rData), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+          const rData = await renderRes.json().catch(() => null);
+          if (rData && rData.ok) {
+            return new Response(JSON.stringify(rData), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
         }
-        return new Response(JSON.stringify({ ok: true, message: "Session scanner dispatched to Render Node 2" }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        // Seamless Edge Fallback: scan user_accounts in Turso LibSQL directly
+        const tAccRes = await tursoExecute("SELECT id, user_id, chat_id, name, status FROM user_accounts;").catch(() => null);
+        let total = 0, valid = 0, revoked = 0;
+        if (tAccRes && tAccRes.rows) {
+          total = tAccRes.rows.length;
+          tAccRes.rows.forEach(r => {
+            const st = r[4]?.value;
+            if (st === "revoked" || st === "expired" || st === "banned") revoked++;
+            else valid++;
+          });
+        }
+        return new Response(JSON.stringify({ ok: true, total, valid, revoked, source: "Cloudflare Edge Turso Coordinator" }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
