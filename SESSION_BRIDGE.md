@@ -298,6 +298,10 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Resolved Render Node 2 Turso Connectivity**: Added `TURSO_URL`, `TURSO_TOKEN`, and `TURSO_DB_TOKEN` to Render Node 2 service environment variables via Render API, triggered redeploy, and verified direct HTTP 200 response. Added a resilient fallback to Edge Turso query if Render ever restarts.
     - **Resolved Payload Mismatch in `/api/admin/user-action`**: Unified handling to accept either `body.uid` or `body.user_id`, eliminating HTTP 400 errors. Added instant edge cache invalidation.
 
+37. **Authentic Edge Mesh Network Monitoring & Mirror Route Hardening**:
+    - **Ground-Truth Network Telemetry (`admin.html`)**: Replaced fake hardcoded initial latency values (68ms, 74ms, etc.) with real probing state (`status: "probing"`, `ping: null`), dynamic status dots (🟢 live, 🟡 probing, 🔴 offline), and automatic background mesh ping on operator login (`testMeshNodes()`). Synchronized to `public/admin.html` and `public_admin/admin/index.html`.
+    - **Static Mirror Route Hardening (`public/miner/index.html`)**: Provisioned `public/miner/index.html` as direct mirror of `public_ads/miner/index.html` to eliminate 404 risks across all static routing paths. Synchronized `public_admin/user-admin/index.html`.
+
 ---
 
 ## 📂 7. Key File Index

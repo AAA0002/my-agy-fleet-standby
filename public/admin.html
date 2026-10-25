@@ -1077,11 +1077,12 @@ function App() {
 
   // Mesh Monitoring State
   const [meshPings, setMeshPings] = useState({
-    "aaaai2": { status: "live", ping: 68 },
-    "aaa-bot": { status: "live", ping: 74 },
-    "aaa222": { status: "live", ping: 71 },
-    "agorameet": { status: "live", ping: 82 },
-    "aaaai": { status: "live", ping: 75 }
+    "aaaai2": { status: "probing", ping: null },
+    "aaa-bot": { status: "probing", ping: null },
+    "aaa222": { status: "probing", ping: null },
+    "agorameet": { status: "probing", ping: null },
+    "aaaai": { status: "probing", ping: null },
+    "render_node2": { status: "probing", ping: null }
   });
   const [testingMesh, setTestingMesh] = useState(false);
 
@@ -1125,6 +1126,7 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchStatus(false);
+      testMeshNodes();
     }
   }, [isAuthenticated, fetchStatus]);
 
@@ -1142,7 +1144,7 @@ function App() {
         const latency = Math.round(performance.now() - start);
         results[key] = { status: resp.ok ? "live" : "degraded", ping: latency };
       } catch (_) {
-        results[key] = { status: "live", ping: 75 };
+        results[key] = { status: "offline", ping: null };
       }
     }));
     try {
@@ -1151,7 +1153,7 @@ function App() {
       const rLatency = Math.round(performance.now() - rStart);
       results["render_node2"] = { status: rResp.ok ? "live" : "degraded", ping: rLatency };
     } catch (_) {
-      results["render_node2"] = { status: "live", ping: 142 };
+      results["render_node2"] = { status: "offline", ping: null };
     }
     setMeshPings(results);
     setTestingMesh(false);
@@ -2066,19 +2068,24 @@ function App() {
             { name: "Node 4 (aaafreeai)", key: "agorameet", host: "agorameet.workers.dev" },
             { name: "Node 5 (aaaai-engine)", key: "aaaai", host: "aaaai.workers.dev" }
           ].map(n => {
-            const pingData = meshPings[n.key] || { status: "live", ping: 72 };
+            const pingData = meshPings[n.key] || { status: "probing", ping: null };
+            const isLive = pingData.status === "live";
+            const isProbing = pingData.status === "probing";
+            const dotColor = isLive ? 'bg-emerald-400 animate-pulse' : (isProbing ? 'bg-amber-400 animate-ping' : 'bg-rose-500');
+            const textColor = isLive ? 'text-emerald-400' : (isProbing ? 'text-amber-400' : 'text-rose-400');
+            const pingText = pingData.ping !== null ? `${pingData.ping}ms` : (isProbing ? "..." : "OFFLINE");
             return React.createElement("div", {
               key: n.key,
               className: `p-2.5 rounded-xl border flex items-center justify-between ${subCardBg}`
             },
               React.createElement("div", { className: "flex items-center gap-2" },
-                React.createElement("span", { className: `w-2 h-2 rounded-full ${pingData.status === "live" ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}` }),
+                React.createElement("span", { className: `w-2 h-2 rounded-full ${dotColor}` }),
                 React.createElement("div", null,
                   React.createElement("div", { className: `font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'}` }, n.name),
                   React.createElement("div", { className: "text-[10px] text-slate-500 font-mono" }, n.host)
                 )
               ),
-              React.createElement("span", { className: "font-mono font-bold text-xs text-emerald-400" }, `${pingData.ping}ms`)
+              React.createElement("span", { className: `font-mono font-bold text-xs ${textColor}` }, pingText)
             );
           })
         )
@@ -2088,20 +2095,25 @@ function App() {
         React.createElement("h4", { className: `font-black text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}` }, "Render Standby Collectors & Redis"),
         React.createElement("div", { className: "space-y-1.5 font-mono text-xs" },
           [
-            { name: "Render Node 2 (Frankfurt)", status: "Active Coordinator", ping: meshPings["render_node2"]?.ping || 142 },
-            { name: "Upstash Redis Edge (State)", status: "Active Fast State", ping: 48 },
-            { name: "Turso LibSQL (Encrypted DB)", status: "Active Primary", ping: 55 }
+            {
+              name: "Render Node 2 (Frankfurt)",
+              status: meshPings["render_node2"]?.status === "live" ? "Active Coordinator" : (meshPings["render_node2"]?.status === "probing" ? "Probing..." : "Offline"),
+              ping: meshPings["render_node2"]?.ping,
+              isOffline: meshPings["render_node2"]?.status === "offline"
+            },
+            { name: "Upstash Redis Edge (State)", status: "Active Fast State", ping: 48, isOffline: false },
+            { name: "Turso LibSQL (Encrypted DB)", status: "Active Primary", ping: 55, isOffline: false }
           ].map((r, rIdx) => React.createElement("div", {
             key: rIdx,
             className: `p-2.5 rounded-xl border flex items-center justify-between ${subCardBg}`
           },
             React.createElement("div", { className: "flex items-center gap-2" },
-              React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
+              React.createElement("span", { className: `w-2 h-2 rounded-full ${r.isOffline ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'}` }),
               React.createElement("span", { className: `font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}` }, r.name)
             ),
             React.createElement("div", { className: "flex items-center gap-2" },
-              React.createElement("span", { className: "text-emerald-400 text-[10px] font-bold" }, r.status),
-              React.createElement("span", { className: "text-cyan-400 text-[10px] font-bold" }, `${r.ping}ms`)
+              React.createElement("span", { className: `${r.isOffline ? 'text-rose-400' : 'text-emerald-400'} text-[10px] font-bold` }, r.status),
+              React.createElement("span", { className: `${r.isOffline ? 'text-rose-400' : 'text-cyan-400'} text-[10px] font-bold` }, r.ping !== null && r.ping !== undefined ? `${r.ping}ms` : (r.isOffline ? "OFFLINE" : "..."))
             )
           ))
         )

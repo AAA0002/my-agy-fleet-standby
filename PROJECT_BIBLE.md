@@ -1709,6 +1709,10 @@ Whenever you perform work in this repository:
   - **Resolved Premature Client Abort in `/api/admin/users` (10.59s -> 1.61s, 6.5x Speedup)**: Identified that `user-admin.html` aborted after 6s because edge worker queried Upstash, Supabase, and Turso sequentially and executed an individual HTTP loop for missing profiles. Replaced with `Promise.all` parallelization, batch PostgREST queries, and a 15-second edge in-memory cache (`memAdminUsersPayload`). Increased `fetchMeshApi` timeout from 6s to 12s across all dashboards.
   - **Resolved Render Node 2 Turso Connectivity**: Injected `TURSO_URL`, `TURSO_TOKEN`, and `TURSO_DB_TOKEN` into Render Standby Node 2 via Render REST API, triggered deploy, and verified direct HTTP 200 response on `/api/user/session/check-all`. Added resilient edge worker fallback to Turso LibSQL.
   - **Resolved Payload Inflexibility in `/api/admin/user-action`**: Unified handling to accept either `body.uid` or `body.user_id`, eliminating HTTP 400 Bad Request errors. Added automatic edge cache invalidation.
+* **Authentic Edge Mesh Network Monitoring & Mirror Route Hardening (October 25, 2026)**:
+  - **Ground-Truth Network Telemetry (`admin.html`)**: Replaced fake hardcoded initial latency values with real probing states (`status: "probing"`, `ping: null`), dynamic status dots (🟢 live, 🟡 probing, 🔴 offline), and automatic background mesh ping on operator login (`testMeshNodes()`). Synchronized to `public/admin.html` and `public_admin/admin/index.html`.
+  - **Static Mirror Route Hardening (`public/miner/index.html`)**: Provisioned `public/miner/index.html` as direct mirror of `public_ads/miner/index.html` to eliminate 404 risks across all static routing paths. Synchronized `public_admin/user-admin/index.html`.
+
 
 
 

@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Authentic Edge Mesh Network Monitoring & Mirror Route Hardening (October 25, 2026)**:
+  - **Ground-Truth Edge Network Telemetry (`admin.html`)**:
+    * Purged fake hardcoded initial latency values (68ms, 74ms, 71ms, 82ms, 75ms) from `meshPings` state.
+    * Replaced with live probing state (`status: "probing"`, `ping: null`), dynamic status dots (🟢 live, 🟡 probing, 🔴 offline), and automatic background mesh ping on operator login (`testMeshNodes()`).
+    * Synchronized to `public/admin.html` and `public_admin/admin/index.html`.
+  - **Static Mirror Route Hardening (`public/miner/index.html`)**:
+    * Provisioned `public/miner/index.html` as a direct mirror of `public_ads/miner/index.html` ensuring static file handlers and reverse proxies never return 404 on `/miner` routes.
+    * Synchronized `public_admin/user-admin/index.html` to match the latest mobile-first User Bot Admin Console.
+
+
 - **⚡ Deep Bug Hunter & System-Wide Latency & Connectivity Elimination (October 25, 2026)**:
   - **Resolved Fatal Premature Abort in `/api/admin/users` (10.59s -> 1.61s, 6.5x Speedup)**:
     * **Root Cause**: In `deploy_both_cf_workers.py`, `/api/admin/users` was sequentially awaiting Upstash, Supabase, and Turso queries, followed by a sequential `for` loop issuing individual `await fetch()` calls to Supabase for missing user profiles. Total execution took 10.59s, which exceeded the client-side `fetchMeshApi` abort timeout of 6000ms (6s), causing the user admin dashboard to constantly abort and display cached/empty telemetry.
