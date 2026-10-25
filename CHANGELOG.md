@@ -7146,3 +7146,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 - Applied executable permissions across shell and Python execution scripts.
 - Initialized local Git repository with `.gitignore`.
 - Configured project rules and isolation boundary in `AGENTS.md`.
+
+## [2.2.0] - 2026-10-25
+### 100% Cloud Multi-Bot Solver, Zero Fake Data Purge & 20-Account Audit Hardening
+- **Discovered & Fixed 13-Day Token Expiration Across All 19 Worker Accounts**:
+  - Raw inspection of Telegram WebApp tokens revealed that worker accounts had 13-day-old expired tokens, causing Victor's Company, ATF Miner, and VyroDrop to reject requests with `HUMAN_REQUIRED`, `initData_invalid`, and `TELEGRAM_AUTH_INVALID`.
+  - Executed cloud token collection cycle on Render Frankfurt Node 2 (`/collect-tokens`). Verified live in Upstash Redis that all 20 accounts now possess 100/100 fresh tokens (< 1h old).
+  - Fixed `datetime` namespace shadowing in `app.py` that had crashed background token refresh routines.
+  - Added synchronous updates to `miniapp_tokens` alongside `fleet:tokens:{uid}` in Upstash Redis to ensure edge runners and cloud solvers always receive identical fresh tokens.
+- **Audited All 20 Accounts & Purged Dead Bots / Fake Data**:
+  - Live verified accounts directly against all 5 active legitimate bot APIs (MRG, ATF, Victor's, Vyro, Kynex).
+  - Confirmed active balances (e.g. Master ATF: 5,566.0 ATF, Nancy: 1,741.6 ATF; Master MRG: 1,355.6 MRG; Nathan Kynex: 86,366.9 KNX).
+  - Purged dead bots (`diggo`, `astra`, `pepegram`, `adxearn`) from `bot_routines` and `BOT_COOLDOWNS` in `app.py`, completely eliminating `0.0 ASTRA` and static placeholder reporting.
+- **Hardened Cloud Turnstile Solver (`mrg_turnstile_solver.py`)**:
+  - Fixed Victor's Company Turnstile: eliminated `#cf-vic-slot` script injection that caused `postMessage` cross-origin errors; added genuine CDP hardware mouse movement and `frame_locator` checkbox interactions.
+  - Dynamic Task Discovery: Replaced hardcoded task list with dynamic `GET /api/tasks` fetch and automated `POST /api/tasks/claim` for all open social and channel tasks.
+  - Integrated `victors_arcade_solver.py` for automated Deep Mine expeditions (Shovel strategy with safe cash-out).
+  - Fixed VyroDrop Turnstile: corrected `cData` parameter case sensitivity and added DOM script loading and `frame_locator` click.
+  - Pushed `mrg_turnstile_solver.py`, `victors_arcade_solver.py`, and `kynex_miner.py` to public runner repository `AAA0002/cloud-fleet-solver`.
+

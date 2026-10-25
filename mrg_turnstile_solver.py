@@ -585,23 +585,40 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         # Check if Turnstile has expanded to an interactive visible checkbox (>= 200px wide, >= 45px tall)
         if not clicked_checkbox:
             try:
-                ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
-                if await ts_iframe.count() > 0:
-                    box = await ts_iframe.bounding_box()
-                    if box and box["width"] >= 200 and box["height"] >= 45:
-                        click_x = box["x"] + 32.0
-                        click_y = box["y"] + (box["height"] / 2.0)
-                        logger.info(f"🖱️ Found visible Turnstile checkbox for MRG UID {uid}! Dispatched genuine CDP hardware click at ({click_x:.1f}, {click_y:.1f})...")
-                        # Always use genuine hardware CDP mouse click with human movement (isTrusted: true)
-                        # Avoid double-clicking with touchscreen.tap to prevent Turnstile cancellation
-                        await page.mouse.move(click_x - 30, click_y - 15)
-                        await asyncio.sleep(0.1)
-                        await page.mouse.move(click_x, click_y, steps=8)
-                        await asyncio.sleep(0.15)
-                        await page.mouse.down()
-                        await asyncio.sleep(0.12)
-                        await page.mouse.up()
-                        clicked_checkbox = True
+                # 1. Try frame locator click directly inside challenge frame
+                for fl in [
+                    page.frame_locator("iframe[src*='challenges.cloudflare.com']"),
+                    page.frame_locator("iframe[src*='cloudflare']"),
+                    page.frame_locator("iframe[title*='Cloudflare']"),
+                    page.frame_locator("iframe[title*='Turnstile']")
+                ]:
+                    try:
+                        cb = fl.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body").first
+                        if await cb.count() > 0 and await cb.is_visible():
+                            await cb.click(timeout=1000)
+                            clicked_checkbox = True
+                            logger.info(f"🖱️ Clicked Turnstile checkbox via frame_locator for MRG UID {uid}")
+                            break
+                    except Exception:
+                        pass
+
+                # 2. Hardware CDP mouse click on bounding box
+                if not clicked_checkbox:
+                    ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com'], iframe[src*='cloudflare']").first
+                    if await ts_iframe.count() > 0:
+                        box = await ts_iframe.bounding_box()
+                        if box and box["width"] >= 200 and box["height"] >= 45:
+                            click_x = box["x"] + 32.0
+                            click_y = box["y"] + (box["height"] / 2.0)
+                            logger.info(f"🖱️ Found visible Turnstile checkbox for MRG UID {uid}! Dispatched genuine CDP hardware click at ({click_x:.1f}, {click_y:.1f})...")
+                            await page.mouse.move(click_x - 30, click_y - 15)
+                            await asyncio.sleep(0.1)
+                            await page.mouse.move(click_x, click_y, steps=8)
+                            await asyncio.sleep(0.15)
+                            await page.mouse.down()
+                            await asyncio.sleep(0.12)
+                            await page.mouse.up()
+                            clicked_checkbox = True
             except Exception:
                 pass
 
@@ -684,21 +701,28 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     }}
                 }}
 
-                if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                if (window.turnstile && typeof window.turnstile.render === 'function') {
                     renderWidget();
-                }} else {{
+                } else {
+                    if (!document.querySelector('script[src*=\"challenges.cloudflare.com/turnstile\"]')) {
+                        const s = document.createElement('script');
+                        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                        s.async = true;
+                        s.defer = true;
+                        document.head.appendChild(s);
+                    }
                     let attempts = 0;
-                    const iv = setInterval(() => {{
+                    const iv = setInterval(() => {
                         attempts++;
-                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {
                             clearInterval(iv);
                             renderWidget();
-                        }} else if (attempts > 120) {{
+                        } else if (attempts > 120) {
                             clearInterval(iv);
-                            resolve({{ success: false, error: 'turnstile_load_timeout' }});
-                        }}
-                    }}, 100);
-                }}
+                            resolve({ success: false, error: 'turnstile_load_timeout' });
+                        }
+                    }, 100);
+                }
 
                 setTimeout(() => {{
                     resolve({{ success: false, error: 'timeout_20s' }});
@@ -1077,6 +1101,21 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                 if acquired_token or acquired_pass:
                     break
                 try:
+                    # 1. Frame locator click
+                    for fl in [
+                        page.frame_locator("iframe[src*='challenges.cloudflare.com']"),
+                        page.frame_locator("iframe[src*='cloudflare']")
+                    ]:
+                        try:
+                            cb = fl.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body").first
+                            if await cb.count() > 0 and await cb.is_visible():
+                                await cb.click(timeout=1000)
+                                logger.info(f"🖱️ Clicked Turnstile checkbox via frame_locator for Victor's UID {uid}")
+                                break
+                        except Exception:
+                            pass
+
+                    # 2. Hardware CDP mouse click
                     ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
                     if await ts_iframe.count() > 0:
                         box = await ts_iframe.bounding_box()
@@ -1183,18 +1222,34 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                 c_code, c_res = safe_post(f"{VICTORS_API}/wallet/connect", conn_body, extra_headers=v_authed_headers)
                 logger.info(f"💼 [Victor's] UID {uid}: Connected TON wallet {friendly_addr[:12]}... (code: {c_code}, walletOwned=True)")
 
-        # Claim free social tasks
-        for tid in ["follow-victors-company-on-x", "like-retweet-comment-on-x", "subscribe-vic-on-youtube"]:
-            safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=v_authed_headers)
+        # Dynamic task discovery & claim across ALL available tasks
+        try:
+            _, tk_data = safe_get(f"{VICTORS_API}/tasks", extra_headers=v_authed_headers)
+            if isinstance(tk_data, dict):
+                raw_tasks = tk_data.get("tasks") or (tk_data.get("data", {}).get("tasks") if isinstance(tk_data.get("data"), dict) else [])
+                if isinstance(raw_tasks, list):
+                    for task_item in raw_tasks:
+                        if isinstance(task_item, dict):
+                            t_status = task_item.get("status")
+                            is_claimed = task_item.get("claimed", False)
+                            tid = task_item.get("id") or task_item.get("taskId")
+                            if tid and (t_status in ("open", "READY_TO_CLAIM", "PENDING", "COMPLETED") or not is_claimed):
+                                t_kind = task_item.get("kind", "")
+                                if t_kind in ("onchain_hold", "nft_hold"):
+                                    continue
+                                c_stat, c_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=v_authed_headers)
+                                logger.info(f"📋 [Victor's] UID {uid} task '{tid}' claim result: {c_stat} {c_res}")
+        except Exception as t_err:
+            logger.warning(f"[Victor's] UID {uid} task sweep error: {t_err}")
 
-        # 3. Claim daily passive mining
+        # 3. Claim daily passive mining (Shift Cart)
         m_code, m_res = safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_authed_headers)
-        logger.info(f"⛏️ [Victor's] UID {uid}: Mining claim: {m_code} {m_res}")
+        logger.info(f"⛏️ [Victor's] UID {uid}: Mining shift cart claim: {m_code} {m_res}")
 
         # 4. Check profile and unlock levels if available
         p_code, p_res = safe_get(f"{VICTORS_API}/me", extra_headers=v_authed_headers)
         if p_code == 200 and isinstance(p_res, dict):
-            u_info = p_res.get("user") or p_res
+            u_info = p_res.get("user") or p_res.get("state", {}).get("user") or p_res
             cur_lvl = u_info.get("level", 1)
             manual_lvl = u_info.get("manualUnlockedLevel", 0)
             if manual_lvl < 1 or cur_lvl < 1:
@@ -1207,18 +1262,11 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
 
         # 5. Play arcade minigame
         try:
-            _, arc_d = safe_get(f"{VICTORS_API}/arcade", extra_headers=v_authed_headers)
-            if arc_d and isinstance(arc_d, dict) and arc_d.get("runsLeft", 0) > 0:
-                st_c, _ = safe_post(f"{VICTORS_API}/arcade/mine/start", {"tool": "pickaxe", "items": []}, extra_headers=v_authed_headers)
-                if st_c in (200, 201):
-                    for d in range(4):
-                        _, d_res = safe_post(f"{VICTORS_API}/arcade/mine/dig", {"x": 4, "y": d}, extra_headers=v_authed_headers)
-                        if not d_res or (isinstance(d_res, dict) and d_res.get("result") == "bust"):
-                            break
-                    safe_post(f"{VICTORS_API}/arcade/mine/end", {}, extra_headers=v_authed_headers)
-                    logger.info(f"🎮 [Victor's] UID {uid}: Arcade run completed.")
-        except Exception:
-            pass
+            import victors_arcade_solver
+            async with aiohttp.ClientSession() as arc_session:
+                await victors_arcade_solver.solve_deep_mine_expeditions(arc_session, v_authed_headers, f"UID {uid}", max_runs=2)
+        except Exception as arc_e:
+            logger.debug(f"[Victor's] UID {uid} arcade note: {arc_e}")
 
         # 6. If Master Account: sweep referral hiring bonuses & commissions
         if is_master:
@@ -1497,7 +1545,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 window.turnstile.render(container, {{
                                     sitekey: '{ts_sitekey}',
                                     action: '{ts_action}',
-                                    cdata: '{ts_cdata}',
+                                    cData: '{ts_cdata}',
                                     theme: 'dark',
                                     appearance: 'interaction-only',
                                     callback: function(tok) {{
@@ -1516,6 +1564,13 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             renderWidget();
                         }} else {{
+                            if (!document.querySelector('script[src*=\"challenges.cloudflare.com/turnstile\"]')) {{
+                                const s = document.createElement('script');
+                                s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                                s.async = true;
+                                s.defer = true;
+                                document.head.appendChild(s);
+                            }}
                             let attempts = 0;
                             const iv = setInterval(() => {{
                                 attempts++;
@@ -1540,6 +1595,21 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                 solve_task = asyncio.create_task(page.evaluate(solve_js))
                 for _ in range(16):
                     try:
+                        # 1. Frame locator click directly in challenge
+                        for fl in [
+                            page.frame_locator("#cf-vyro-slot iframe"),
+                            page.frame_locator("iframe[src*='challenges.cloudflare.com']"),
+                            page.frame_locator("iframe[src*='cloudflare']")
+                        ]:
+                            try:
+                                cb = fl.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body").first
+                                if await cb.count() > 0 and await cb.is_visible():
+                                    await cb.click(timeout=1000)
+                                    logger.info(f"🖱️ Clicked VyroDrop Turnstile via frame_locator for UID {uid}")
+                                    break
+                            except Exception:
+                                pass
+
                         ts_iframe = page.locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']").first
                         if await ts_iframe.count() > 0:
                             box = await ts_iframe.bounding_box()
@@ -2050,10 +2120,24 @@ async def run_mrg_auto_solver():
                             raw_tasks = tk_data.get("tasks") or (tk_data.get("data", {}).get("tasks") if isinstance(tk_data.get("data"), dict) else [])
                             if isinstance(raw_tasks, list):
                                 for task_item in raw_tasks:
-                                    if isinstance(task_item, dict) and task_item.get("status") in ("READY_TO_CLAIM", "PENDING", "COMPLETED") and not task_item.get("claimed"):
+                                    if isinstance(task_item, dict):
+                                        t_status = task_item.get("status")
+                                        is_claimed = task_item.get("claimed", False)
                                         tid = task_item.get("id") or task_item.get("taskId")
-                                        if tid:
-                                            safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=test_h)
+                                        if tid and (t_status in ("open", "READY_TO_CLAIM", "PENDING", "COMPLETED") or not is_claimed):
+                                            t_kind = task_item.get("kind", "")
+                                            if t_kind in ("onchain_hold", "nft_hold"):
+                                                continue
+                                            c_stat, c_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=test_h)
+                                            logger.info(f"📋 [Victor's] UID {v_uid} task '{tid}' claim result: {c_stat} {c_res}")
+
+                        # Run arcade expeditions
+                        try:
+                            import victors_arcade_solver
+                            async with aiohttp.ClientSession() as arc_session:
+                                await victors_arcade_solver.solve_deep_mine_expeditions(arc_session, test_h, f"UID {v_uid}", max_runs=2)
+                        except Exception:
+                            pass
                         victors_solved += 1
                         continue
                     else:

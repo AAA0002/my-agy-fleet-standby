@@ -6475,17 +6475,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["adxearn"] = "skipped (no initData)"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (All 10 Bots)
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (5 Active Legitimate Bots)
     BOT_COOLDOWNS = {
         "atf": (1200, 2400),      # 20m - 40m
         "mrg": (1800, 3600),      # 30m - 60m
         "victors": (3600, 7200),  # 1h - 2h
         "vyro": (2400, 4800),     # 40m - 80m
         "kynex": (2400, 4800),    # 40m - 80m
-        "diggo": (1800, 3600),    # 30m - 60m
-        "astra": (1800, 3600),    # 30m - 60m
-        "pepegram": (1800, 3600), # 30m - 60m
-        "adxearn": (1800, 3600)   # 30m - 60m
     }
 
     bot_routines = [
@@ -6494,10 +6490,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
-        {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data"))},
-        {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
-        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
-        {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
     ]
 
     for b in bot_routines:
