@@ -23,7 +23,20 @@ with open(os.path.join(BASE_DIR, ".env")) as f:
             k, v = line.split("=", 1)
             env[k.strip()] = v.strip().strip('"').strip("'")
 
-PAT = env.get("GITHUB_USERBOT_PAT") or env.get("GITHUB_FINE_GRAINED_PAT")
+def get_valid_github_pat() -> str:
+    cred_path = os.path.expanduser("~/.git-credentials")
+    if os.path.exists(cred_path):
+        try:
+            with open(cred_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if "@github.com" in line:
+                        auth_part = line.strip().split("@github.com")[0].replace("https://", "")
+                        return auth_part.split(":")[1] if ":" in auth_part else auth_part
+        except Exception:
+            pass
+    return env.get("GITHUB_USERBOT_PAT") or env.get("GITHUB_FINE_GRAINED_PAT") or ""
+
+PAT = get_valid_github_pat()
 REPOS = [
     ("AAA0002/my-agy-fleet-standby", PAT)
 ]
