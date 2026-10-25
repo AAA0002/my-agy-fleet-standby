@@ -3096,7 +3096,8 @@ fi
     if (path === "/api/admin/auth/login" && request.method === "POST") {
       try {
         const body = await request.json().catch(() => ({}));
-        const { password, passkey_credential_id, passkey_response } = body;
+        const { passkey_credential_id, passkey_response } = body;
+        const password = body.password || body.pin;
 
         let authValid = false;
         let authMethod = "";

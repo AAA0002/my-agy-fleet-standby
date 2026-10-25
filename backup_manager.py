@@ -94,7 +94,10 @@ CORE_BOT_FILES = [
     "public_ads/vercel.json",
     "public/app/index.html",
     "public/app/ad/index.html",
-    "SESSION_BRIDGE.md"
+    "SESSION_BRIDGE.md",
+    "MASTER_SYSTEM_DIRECTORY.md",
+    "DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md",
+    "FLEET_MEMORY_CORE.md"
 ]
 
 
