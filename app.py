@@ -926,8 +926,42 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # Strictly 5 Active Bots: MRG, ATF, Victor's, VyroDrop, Kynex Network
-    # Defunct bots (DiggoMiner, Astra, PepeGram, AdxEarn) permanently purged.
+    # 6. PepeGram (@Pepe_gram_bot - Silent WebApp query)
+    pepe_tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
+    if pepe_tok:
+        tokens["pepegram_init_data"] = pepe_tok
+    await asyncio.sleep(random.uniform(0.3, 0.8))
+
+    # 7. AdxEarn AI (@AdxEarnAibot - Silent WebApp query)
+    adx_param = None if is_master else ADXEARN_REFERRAL_CODE
+    adx_tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
+    if adx_tok:
+        tokens["adxearn_init_data"] = adx_tok
+    await asyncio.sleep(random.uniform(0.3, 0.8))
+
+    # 8. DiggoMiner (@Diggominer_bot - Silent WebApp query with immediate 30-day JWT exchange)
+    dig_param = None if is_master else DIGGO_REFERRAL_CODE
+    dig_tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=dig_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["app", "miner"])
+    if dig_tok:
+        tokens["diggo_init_data"] = dig_tok
+        # Immediate JWT exchange while auth_date is < 30s old
+        try:
+            async with aiohttp.ClientSession() as http_s:
+                async with http_s.post(
+                    "https://diggo.linkpc.net/api/auth/telegram",
+                    json={"initData": dig_tok},
+                    headers={"Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        jwt_tok = d.get("token")
+                        if jwt_tok:
+                            tokens["diggo_jwt"] = jwt_tok
+        except Exception as de:
+            logger.debug(f"Diggo immediate JWT exchange note: {de}")
+
+    # Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner
     return tokens
 
 
@@ -1729,7 +1763,7 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                         if raw_res:
                             ex_toks = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
                 merged = {**ex_toks, **tokens}
-                clean_merged = {k: v for k, v in merged.items() if (k in ("account_id", "name", "synced_at", "updated_at", "phone") or k.endswith("_init_data")) and v}
+                clean_merged = {k: v for k, v in merged.items() if (k in ("account_id", "name", "synced_at", "updated_at", "phone", "diggo_jwt") or k.endswith("_init_data")) and v}
                 await s.post(
                     f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
                     data=json.dumps(clean_merged),

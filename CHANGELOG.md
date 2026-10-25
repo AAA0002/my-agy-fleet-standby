@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 9-Bot Ecosystem Forensic Intelligence, REST Re-integration & Multi-Repo Privacy Hardening (October 25, 2026)**:
+  - **Multi-Repository Secrets Synchronization & Privacy Hardening**:
+    * Audited GitHub Actions secrets across all repositories: `AAA0002/ATL`, `AAA0002/cloud-fleet-solver`, and `AAA0002/my-agy-fleet-standby`.
+    * Synchronized all 26+ runtime secrets across repositories.
+    * Discovered that `AAA0002/my-agy-fleet-standby` had hit GitHub's 100-secret limit and was incorrectly set to PUBLIC. Safely deleted 13 obsolete legacy keys (`PUZL_*`, `UBICLOUD_*`, `CIRCLECI_*`, `PINATA_*`), provisioned critical runtime secrets (`UPSTASH_URL`, `USER_BOT_TOKEN`, `REPORT_CHAT_ID`, `PAYOUT_CHANNEL_ID`, `TONAPI_KEY`), and set standby repository visibility to strictly 100% PRIVATE.
+  - **Ground-Truth Forensic Live Probe Across All 9 Bots**:
+    * Conducted comprehensive live HTTP probing and cryptographic signature handshakes across all 9 bots using real tokens from Master Account Commander Arif (`6727787768`).
+    * Proved that **PepeGram** and **AdxEarn AI** are 100% operational with active balances: Commander Arif possesses **578.07 PEPE, 8,985 Power, and 21 Referrals (40,000 Ref Power)** in PepeGram, and **335 Points, 18 Referrals, and a 5-day check-in streak** in AdxEarn AI.
+    * Identified that **DiggoMiner**'s server (`diggo.linkpc.net`) is alive but rejects WebApp tokens older than ~5 minutes (`expired_init_data`), requiring immediate exchange for a 30-day JWT upon extraction.
+    * Confirmed **Astra Airdrop** is dead worldwide due to Supabase egress quota suspension (`exceed_egress_quota`).
+    * Authored exhaustive fleet intelligence report [NINE_BOTS_OPERATIONAL_STUDY.md](./NINE_BOTS_OPERATIONAL_STUDY.md).
+  - **8-Bot Multi-Farming Cloud Turnstile Solver Engine (`mrg_turnstile_solver.py`)**:
+    * Added `check_and_farm_pepegram_rest`, `check_and_farm_adxearn_rest`, and `check_and_farm_diggo_rest` to Phase 1 Rapid REST Pre-Flight & Instant Harvesting.
+    * Tested live execution: harvested +141.33 PEPE hashes, initiated a 6-hour production contract, and verified AdxEarn check-in.
+    * Upgraded Audit Summary and Telegram telemetry alerts to report yields across all 8 active bots.
+  - **Autonomous Cloud Token Extractor Upgraded (`app.py`)**:
+    * Re-enabled silent MTProto WebApp queries for PepeGram, AdxEarn AI, and DiggoMiner in `extract_tokens_with_client`.
+    * Implemented immediate 30-day JWT exchange for DiggoMiner upon extracting fresh `initData`.
+    * Updated `clean_merged` filter in `sync_account_tokens_to_clouds` to preserve `diggo_jwt` in Upstash Redis and monolithic `miniapp_tokens`.
+  - **Public Runner Cloud Deployment (`AAA0002/cloud-fleet-solver`)**:
+    * Pushed updated solver to `AAA0002/cloud-fleet-solver` via GitHub API.
+    * Dispatched and verified live workflow run `40226601206` on GitHub Actions with unlimited free runner minutes.
+
+
 - **🛡️ Full System Hardening, Dead Bot Purge & Solver Architecture Documentation (October 25, 2026)**:
   - **Excised Defunct Bot Queries from Cloud Token Extractor (`app.py`)**:
     * Slashed legacy MTProto WebApp queries for dead bots (`Diggominer_bot`, `ASTRA_AIRDROP_BOT`, `Pepe_gram_bot`, `AdxEarnAibot`) from `extract_tokens_with_client`. Token collection on Render Frankfurt Node 2 now executes strictly across the 5 active legitimate bots, cutting collection time by > 50% and preventing upstream timeouts.

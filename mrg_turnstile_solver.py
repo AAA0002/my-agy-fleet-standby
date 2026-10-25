@@ -55,6 +55,15 @@ ATF_SITEKEY = "0x4AAAAAAEbiOQ5xhVRMXGgt"
 ATF_ORIGIN = "https://atfminers.asloni.online"
 ATF_API = "https://atfminers.asloni.online/miner/index.php"
 
+PEPE_ORIGIN = "https://app.miniempire.app"
+PEPE_API = "https://app.miniempire.app/miniapp"
+
+ADX_ORIGIN = "https://app.adxearnai.xyz"
+ADX_API = "https://api.adxearnai.xyz/api"
+
+DIGGO_ORIGIN = "https://diggo.linkpc.net"
+DIGGO_API = "https://diggo.linkpc.net/api"
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FLEET_TON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 
@@ -2143,6 +2152,125 @@ def check_and_farm_atf_rest(a_acc: dict) -> tuple[bool, bool]:
     return False, True
 
 
+def check_and_farm_pepegram_rest(p_acc: dict) -> tuple[bool, float]:
+    """
+    Fast REST handler for PepeGram (@Pepe_gram_bot).
+    Authenticates, claims accumulated PEPE tokens, starts 6h production, spins free slot.
+    Returns: (is_success, claimed_pepe)
+    """
+    p_uid = p_acc["uid"]
+    p_init = p_acc["init_data"]
+    pepe_h = {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+        "Content-Type": "application/json",
+        "Origin": PEPE_ORIGIN,
+        "Referer": f"{PEPE_ORIGIN}/miniapp/"
+    }
+    auth_code, auth_data = safe_post(
+        f"{PEPE_API}/auth?tid=1449",
+        {"initData": p_init, "tid": 1449},
+        extra_headers=pepe_h
+    )
+    if auth_code != 200 or not isinstance(auth_data, dict):
+        return False, 0.0
+
+    claimed_pepe = 0.0
+    safe_post(f"{PEPE_API}/claim-welcome-bonus?tid=1449", {"initData": p_init, "tid": 1449}, extra_headers=pepe_h)
+    cl_code, cl_data = safe_post(f"{PEPE_API}/claim?tid=1449", {"initData": p_init, "tid": 1449}, extra_headers=pepe_h)
+    if cl_code == 200 and isinstance(cl_data, dict):
+        claimed_pepe = float(cl_data.get("hashes_added") or cl_data.get("amount") or 0.0)
+
+    safe_post(f"{PEPE_API}/start-production?tid=1449", {"initData": p_init, "tid": 1449}, extra_headers=pepe_h)
+    safe_post(f"{PEPE_API}/tasks/mine?tid=1449", {"initData": p_init, "tid": 1449}, extra_headers=pepe_h)
+    safe_post(f"{PEPE_API}/tasks/slot-spin?tid=1449", {"initData": p_init, "tid": 1449}, extra_headers=pepe_h)
+
+    logger.info(f"🐸 [PepeGram] UID {p_uid}: Successfully farmed via REST (+{claimed_pepe:.2f} PEPE hashes).")
+    return True, claimed_pepe
+
+
+def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
+    """
+    Fast REST handler for AdxEarn AI (@AdxEarnAibot).
+    Checks in, claims farming points, and sweeps rewards.
+    Returns: (is_success, claimed_points)
+    """
+    a_uid = a_acc["uid"]
+    a_init = a_acc["init_data"]
+    adx_h = {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+        "Content-Type": "application/json",
+        "Origin": ADX_ORIGIN,
+        "Referer": f"{ADX_ORIGIN}/",
+        "X-Telegram-Init-Data": a_init
+    }
+    sess_code, sess_data = safe_post(f"{ADX_API}/user/session", {"initData": a_init}, extra_headers=adx_h)
+    if sess_code not in (200, 201) or not isinstance(sess_data, dict):
+        return False, 0
+
+    claimed_pts = 0
+    chk_code, chk_data = safe_post(f"{ADX_API}/rewards/checkin", {}, extra_headers=adx_h)
+    if chk_code == 200 and isinstance(chk_data, dict):
+        claimed_pts += int(chk_data.get("points") or chk_data.get("reward") or 0)
+
+    farm_code, farm_data = safe_post(f"{ADX_API}/rewards/farming", {}, extra_headers=adx_h)
+    if farm_code == 200 and isinstance(farm_data, dict):
+        claimed_pts += int(farm_data.get("claimed") or farm_data.get("points") or 0)
+
+    logger.info(f"🤖 [AdxEarn] UID {a_uid}: Successfully farmed via REST (+{claimed_pts} pts).")
+    return True, claimed_pts
+
+
+def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
+    """
+    Fast REST handler for DiggoMiner (@Diggominer_bot).
+    Uses cached 30-day JWT or attempts exchange to claim mining.
+    Returns: (is_success, claimed_amount)
+    """
+    d_uid = d_acc["uid"]
+    d_jwt = d_acc.get("jwt")
+    if not d_jwt:
+        try:
+            r = safe_get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{d_uid}", extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+            if r and isinstance(r[1], dict) and r[1].get("result"):
+                d_jwt = r[1]["result"]
+        except Exception:
+            pass
+
+    if not d_jwt and d_acc.get("init_data"):
+        diggo_h = {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+            "Content-Type": "application/json",
+            "Origin": DIGGO_ORIGIN,
+            "Referer": f"{DIGGO_ORIGIN}/"
+        }
+        auth_code, auth_data = safe_post(
+            f"{DIGGO_API}/auth/telegram",
+            {"initData": d_acc["init_data"]},
+            extra_headers=diggo_h
+        )
+        if auth_code == 200 and isinstance(auth_data, dict) and auth_data.get("token"):
+            d_jwt = auth_data["token"]
+            safe_post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{d_uid}", {"value": d_jwt}, extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+
+    if not d_jwt:
+        return False, 0.0
+
+    claim_h = {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {d_jwt}",
+        "Origin": DIGGO_ORIGIN,
+        "Referer": f"{DIGGO_ORIGIN}/"
+    }
+    cl_code, cl_data = safe_post(f"{DIGGO_API}/miner/claim", {}, extra_headers=claim_h)
+    claimed_amt = 0.0
+    if cl_code == 200 and isinstance(cl_data, dict):
+        claimed_amt = float(cl_data.get("claimed") or cl_data.get("amount") or 0.0)
+        logger.info(f"⛏️ [Diggo] UID {d_uid}: Successfully farmed via REST (+{claimed_amt:.2f} DIGGO).")
+        return True, claimed_amt
+    return False, 0.0
+
+
 async def run_mrg_auto_solver():
     """Main workflow: audits all 20 accounts across 5 bots, solves needed challenges, connects wallets, and auto-claims."""
     logger.info("====================================================================")
@@ -2165,7 +2293,13 @@ async def run_mrg_auto_solver():
     victors_solved = 0
     vyro_wallets_connected = 0
     atf_solved = 0
+    pepe_solved = 0
+    adx_solved = 0
+    diggo_solved = 0
     total_claimed_mrg = 0.0
+    total_claimed_pepe = 0.0
+    total_claimed_adx = 0
+    total_claimed_diggo = 0.0
 
     # 1. Fetch tokens and execute Fast REST Audits & Instant Harvesting
     logger.info("⚡ Phase 1: Rapid REST Pre-Flight & Instant Multi-Bot Harvesting...")
@@ -2212,6 +2346,31 @@ async def run_mrg_auto_solver():
         # Kynex Network Collector
         if kynex_init:
             kynex_accounts.append({"uid": uid, "init_data": kynex_init})
+
+        # PepeGram Fast REST Check
+        pepe_init = tok_dict.get("pepegram_init_data") or tok_dict.get("pepe_init_data")
+        if pepe_init:
+            p_handled, p_claimed = check_and_farm_pepegram_rest({"uid": uid, "init_data": pepe_init})
+            if p_handled:
+                pepe_solved += 1
+                total_claimed_pepe += p_claimed
+
+        # AdxEarn AI Fast REST Check
+        adx_init = tok_dict.get("adxearn_init_data") or tok_dict.get("adx_init_data")
+        if adx_init:
+            a_handled, a_pts = check_and_farm_adxearn_rest({"uid": uid, "init_data": adx_init})
+            if a_handled:
+                adx_solved += 1
+                total_claimed_adx += a_pts
+
+        # DiggoMiner Fast REST Check
+        diggo_jwt = tok_dict.get("diggo_jwt")
+        diggo_init = tok_dict.get("diggo_init_data")
+        if diggo_jwt or diggo_init:
+            d_handled, d_claimed = check_and_farm_diggo_rest({"uid": uid, "init_data": diggo_init, "jwt": diggo_jwt})
+            if d_handled:
+                diggo_solved += 1
+                total_claimed_diggo += d_claimed
 
         # MRG Status Check
         if not mrg_init:
@@ -2262,7 +2421,10 @@ async def run_mrg_auto_solver():
         f"Victor's browser solves: {len(victors_needing_solver)} ({victors_solved} verified via REST). "
         f"VyroDrop browser solves: {len(vyro_needing_solver)} ({vyro_wallets_connected} connected via REST). "
         f"ATF browser solves: {len(atf_needing_solver)} ({atf_solved} logged in via REST). "
-        f"Kynex accounts: {len(kynex_accounts)}."
+        f"Kynex accounts: {len(kynex_accounts)}. "
+        f"PepeGram: {pepe_solved} farmed. "
+        f"AdxEarn AI: {adx_solved} farmed. "
+        f"DiggoMiner: {diggo_solved} farmed."
     )
 
     # 2. Targeted Browser Solving (ONLY for accounts that actually require Turnstile/Captcha)
@@ -2481,14 +2643,16 @@ async def run_mrg_auto_solver():
 
     # 7. Telegram Telemetry Notification
     report_msg = (
-        f"🚀 <b>5-Bot Fleet Cloud Turnstile & Multi-Farming Engine Report</b>\n\n"
+        f"🚀 <b>Fleet Cloud Multi-Farming & Turnstile Solver Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> {len(FLEET_UIDS)}\n"
-        f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_mrg}\n"
+        f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_mrg} (+{total_claimed_mrg:.2f} MRG)\n"
         f"• <b>ATF Captcha / Login:</b> {atf_solved}/{len(atf_accounts)}\n"
         f"• <b>Victor's Pass & Mining:</b> {victors_solved}/{len(victors_accounts)}\n"
         f"• <b>VyroDrop Wallets & Mining:</b> {vyro_wallets_connected}/{len(vyro_accounts)}\n"
         f"• <b>Kynex Network Farmed:</b> {kynex_farmed}/{len(kynex_accounts)} (+{total_claimed_knx:.2f} KNX)\n"
-        f"• <b>Total MRG Harvested:</b> {total_claimed_mrg:.2f} MRG\n"
+        f"• <b>PepeGram Farmed:</b> {pepe_solved} (+{total_claimed_pepe:.2f} PEPE)\n"
+        f"• <b>AdxEarn AI Farmed:</b> {adx_solved} (+{total_claimed_adx} Pts)\n"
+        f"• <b>DiggoMiner Farmed:</b> {diggo_solved} (+{total_claimed_diggo:.2f} DIGGO)\n"
         f"• <b>Execution Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
         f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
     )
@@ -2498,7 +2662,8 @@ async def run_mrg_auto_solver():
         f"Victor's Solved {victors_solved}/{len(victors_accounts)}, "
         f"Vyro Connected {vyro_wallets_connected}/{len(vyro_accounts)}, "
         f"Kynex Farmed {kynex_farmed}/{len(kynex_accounts)}, "
-        f"Claimed {total_claimed_mrg:.2f} MRG, {total_claimed_knx:.2f} KNX."
+        f"Pepe Farmed {pepe_solved}, Adx Farmed {adx_solved}, Diggo Farmed {diggo_solved}, "
+        f"Claimed {total_claimed_mrg:.2f} MRG, {total_claimed_knx:.2f} KNX, {total_claimed_pepe:.2f} PEPE."
     )
     send_tg_alert(report_msg)
 
