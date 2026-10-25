@@ -18,6 +18,10 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
       - Day 6: `+400 Pts`
       - Day 7+: `+500 Pts/d MAX`
     * Replaced outdated +50..+100 hardcoded rewards and outdated text labels with dynamic 7-day streak rewards and clear cooldown countdowns.
+  - **REST API & Edge Gateway Inconsistency Fix**:
+    * **Purged Legacy Streak System in `/api/user/claim-daily`**: Upgraded the REST API endpoint `/api/user/claim-daily` to use `STREAK_REWARDS` (+100 to +500 Pts), eliminating the discrepancy where web claims granted old rewards.
+    * **Updated Command Descriptions**: Updated `/daily` description in Telegram bot command list to reflect `(+100-500 Pts)`.
+    * **Purged Dead `agy-aaa000.vercel.app` Remnants**: Replaced all remaining legacy links to `agy-aaa000.vercel.app` in login notifications and app URLs with `https://restore-agy.agorameet.workers.dev/admin`.
   - **Live Verification & Zero Mixing**:
     * Deployed to Node 4 Cloudflare Edge Gateway (`https://restore-agy.agorameet.workers.dev`).
     * Verified `/miner` (134,711 bytes), `/user-admin` (103,622 bytes), `/admin` (105,686 bytes), and `/ads` (122,965 bytes) all return `HTTP 200 OK`.

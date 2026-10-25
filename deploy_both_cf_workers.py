@@ -3772,7 +3772,7 @@ fi
               `• Phone: \`${phone}\`\n` +
               `• Result: ${res.ok ? "✅ OTP Dispatched to Telegram" : "⚠️ " + (res.error || "Failed")}\n` +
               `• Time: \`${dhakaTime} BST\`\n` +
-              `• Manage: [Open Mini App](https://agy-aaa000.vercel.app/)`;
+              `• Manage: [Open Fleet Console](https://restore-agy.agorameet.workers.dev/admin)`;
             ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -3798,7 +3798,7 @@ fi
               `• Phone: \`${phone}\`\n` +
               `• Time: \`${dhakaTime} BST\`\n` +
               `• Status: 🟢 MTProto Session Active & Cloud Farm Synchronized\n` +
-              `• Manage: [Open Mini App](https://agy-aaa000.vercel.app/)`;
+              `• Manage: [Open Fleet Console](https://restore-agy.agorameet.workers.dev/admin)`;
             ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -4712,8 +4712,8 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const appUrl = "https://agy-aaa000.vercel.app/";
-        const adminConsoleUrl = "https://agy-aaa000.vercel.app/admin";
+        const appUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
+        const adminConsoleUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
         const dashUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
 
         const getDhakaTimestamp = () => new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Dhaka)";
@@ -11308,8 +11308,9 @@ Reply to Arif naturally:`;
 
         const streakContinues = lastClaim > 0 && elapsed < (48 * 3600 * 1000);
         const streak = streakContinues ? ((profile.daily_streak || 0) + 1) : 1;
-        const bonusPts = streak === 1 ? 50 : (streak === 2 ? 60 : (streak === 3 ? 75 : (streak === 4 ? 85 : 100)));
-        const nextPts = streak < 5 ? (streak === 1 ? 60 : (streak === 2 ? 75 : (streak === 3 ? 85 : 100))) : 100;
+        const STREAK_REWARDS = [100, 150, 200, 250, 300, 400, 500];
+        const bonusPts = streak <= 7 ? STREAK_REWARDS[streak - 1] : 500;
+        const nextPts = streak < 7 ? STREAK_REWARDS[streak] : 500;
 
         profile.daily_streak = streak;
         profile.points = (profile.points || 0) + bonusPts;
@@ -15377,7 +15378,7 @@ async def main():
                     {"command": "connect", "description": "➕ Add Account via QR / Phone / WebApp"},
                     {"command": "points", "description": "💎 Points Balance & VIP Passes"},
                     {"command": "ads", "description": "🎬 Watch Rewarded Video Ads (+20 Pts)"},
-                    {"command": "daily", "description": "🎁 Claim Daily Streak Bonus (+50-100 Pts)"},
+                    {"command": "daily", "description": "🎁 Claim Daily Streak Bonus (+100-500 Pts)"},
                     {"command": "invite", "description": "👥 Viral Referral Link (+500 Pts)"},
                     {"command": "stars", "description": "🌟 Telegram Stars VIP Passes & Slots"},
                     {"command": "leaderboard", "description": "🏆 Community Miners Leaderboard"},

@@ -208,7 +208,7 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Cloudflare Edge Direct URL Migration**: Replaced all 15 instances in `deploy_both_cf_workers.py` where buttons opened `agy-henna.vercel.app/miner` (which was serving an outdated 81 KB file with 5 bots due to expired Vercel tokens) to `https://restore-agy.agorameet.workers.dev/miner`. Users now reliably open the latest 134 KB modern cyber-fintech dashboard with all 9 pools directly from Cloudflare Edge in < 50ms.
     - **Admin Console URL Fix**: Replaced legacy `https://aaa-admin-portal.pages.dev/` with `https://restore-agy.agorameet.workers.dev/user-admin` for `👑 User Admin Console`.
     - **Admin Bot Menu Fix**: Updated Admin Bot menu button payload to `https://restore-agy.agorameet.workers.dev/admin`.
-    - **Daily Bonus Streak Synchronization**: Updated streak rewards in `deploy_both_cf_workers.py` to match the Web App (Day 1: +100, Day 2: +150, Day 3: +200, Day 4: +250, Day 5: +300, Day 6: +400, Day 7+: +500 Pts).
+    - **Daily Bonus Streak Synchronization**: Updated streak rewards in `deploy_both_cf_workers.py` and `/api/user/claim-daily` REST API to match the Web App (Day 1: +100, Day 2: +150, Day 3: +200, Day 4: +250, Day 5: +300, Day 6: +400, Day 7+: +500 Pts). Purged remaining `agy-aaa000` URLs.
     - **Disaster Recovery Backup**: Streamed fresh archive to Telegram vault `@myagyai` via `backup_manager.py`.
 
 ---
