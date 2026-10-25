@@ -13,6 +13,7 @@
 * **Workspace**: `/root/workspace` (PRoot / Phone) & `/data/workspace/AAA_AUTO` (Cloud VM).
 * **Git Repository**: `AAA0002/ATL` (clean HTTPS remotes: `origin` and `standby_repo`).
 * **Architecture**: 100% Cloud-First Autonomous Telegram Mini-App Mining & Multi-Chain Wallet Fleet.
+* **Master System Navigation Hub**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for the universal cheat sheet, credential index, route map, and navigation hub.
 * **Accounts**: **20 Telegram Accounts** (1 Master Account + 17 Static Worker Accounts + Account #19 Adil H + Account #20 Asaduzzaman Sarker) farming in parallel.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
 * **5 Active Legitimate Fleet Bots**:
@@ -270,10 +271,15 @@ Certain farming bots require a connected wallet before mining will unlock or pro
       * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
       * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
 
+32. **Master System Directory, Centralized Documentation & Universal Operational Hub**:
+    - **Created `MASTER_SYSTEM_DIRECTORY.md`**: Authored authoritative single source of truth documenting all 4 dashboards, standardized PIN `2743`, WebAuthn biometric passkeys, dual bot separation, 20-account fleet roster, 9 mining protocols, multi-cloud edge mesh topology, comprehensive REST API routes directory, operational runbook, and repository file map.
+    - **Updated Core Reference Manuals**: Synchronized `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`, `PROJECT_BIBLE.md`, `README.md`, and `CHANGELOG.md` to ensure Commander Arif and any AI agent can instantly navigate and operate any part of the system without friction or confusion.
+
 ---
 
 ## 📂 7. Key File Index
 
+- **Master System Directory**: [`MASTER_SYSTEM_DIRECTORY.md`](file:///data/workspace/AAA_AUTO/MASTER_SYSTEM_DIRECTORY.md) (All-in-one index, cheat sheet & operational hub).
 - **Master System Bible**: [`PROJECT_BIBLE.md`](file:///data/workspace/AAA_AUTO/PROJECT_BIBLE.md) (Full technical architecture, 1300+ lines).
 - **Dashboards Ground Truth & Anti-Fake Guide**: [`DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`](file:///data/workspace/AAA_AUTO/DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md) (Authoritative 4-dashboard roles, URLs, files & sanity checklist).
 - **Audit Changelog**: [`CHANGELOG.md`](file:///data/workspace/AAA_AUTO/CHANGELOG.md) (All git commits and milestone logs).

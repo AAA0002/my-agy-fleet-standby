@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧭 Master System Directory, Centralized Documentation & Universal Operational Hub (October 25, 2026)**:
+  - **Comprehensive Master Navigation Directory (`MASTER_SYSTEM_DIRECTORY.md`)**:
+    * Created the authoritative Single Source of Truth (SSOT) navigation manual and operational cheat sheet for Commander Arif and any AI agent.
+    * **Executive Quick-Reference Cheat Sheet**: Consolidated Master Account ID (`6727787768` / `@Arif2743aaa`), Admin PIN (`2743` and SHA-256 hash), WebAuthn passkey keys, Admin Bot (`@myagyai`) vs User Bot (`@AAAPREMIUMAPPSbot`), master on-chain vaults (TON `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`, EVM `0x7856d39352e8045610e7c53d0e9a56eefbf19b5c`), and primary live Edge URLs on Node 4.
+    * **Complete 4-Dashboard Roster**: Detailed breakdown of User Mining Mini App (`/miner`), User Bot Admin Console (`/user-admin`), Dedicated Ads Portal (`/ads`), and Executive Fleet Operations Console (`/admin`), mapping source paths, mirrors, auth methods, and key features.
+    * **Hardened Security & Lock Architecture**: Comprehensive documentation of the 3x4 numeric keypad, 4 glowing auto-submitting neon dots on PIN `2743`, WebAuthn multi-device passkeys (`admin_passkeys:6727787768`), 1-tap lock, 15m/5m inactivity auto-lock, physical keyboard shortcuts (`0-9`, Backspace, Escape), and Web Audio synthesizer sound engine.
+    * **Dual Bot Ecosystems ("Zero Ecosystem Mixing")**: Complete boundary specification between `@myagyai` (ID: 8858823950) and `@AAAPREMIUMAPPSbot` (ID: 8167732110), isolating tokens, commands, webhooks, databases, and Telegram channels.
+    * **20 Telegram Accounts Fleet Directory**: Complete roster of 20 accounts (#1-#18 static, #19 Adil H `8937908003`, #20 Asaduzzaman Sarker `8609131528`), 5-chain non-custodial wallet suites, and immutability directives.
+    * **9 Fleet Mining Protocols**: Comprehensive solving and handshake mechanics across MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, and Adx.
+    * **Master REST API Route Directory**: Documented every public, admin, user-admin, and fleet endpoint on Cloudflare Edge.
+    * **Repository File System Map**: Detailed index mapping all files in the repository to their functions and roles.
+  - **Core System Documentation Synchronized**:
+    * Updated `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md` with Section 4 detailing the Master Lock & Passkey system.
+    * Updated `PROJECT_BIBLE.md` with Directive 14 and cross-references to the master directory.
+    * Updated `SESSION_BRIDGE.md` with Key File Index prioritization and continuity milestone 32.
+    * Updated `README.md` to link directly to `MASTER_SYSTEM_DIRECTORY.md`.
+  - **Disaster Recovery Backup**:
+    * Streamed updated disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🔒 Comprehensive Admin Dashboard Lock System Overhaul, Auto-Lock, Multi-Device Passkeys & Cyber Numeric Keypads (October 25, 2026)**:
   - **Executive Fleet Operations Console (`admin.html`) Lock Overhaul**:
     * **Full 4-Digit Cyber-Fintech Numeric Keypad**: Replaced the plain HTML text input with the complete responsive 3x4 cyber keypad (`1-9`, `👆`, `0`, `⌫`) with 4 glowing interactive neon dots (`[0, 1, 2, 3]`) that auto-submits upon typing `2743`.

@@ -2,6 +2,7 @@
 
 > **AUTHORITATIVE GROUND-TRUTH SYSTEM REFERENCE**:
 > This document provides an exhaustive, bug-free, zero-fake specification of the entire AAA AUTO (MY AGY AI) system, its bot ecosystems, exact dashboard boundaries, and operational invariants.
+> **Master Navigation Hub**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for the universal directory and cheat sheet.
 > **Rule of Thumb**: Whenever debugging, inspecting, or enhancing features, follow this guide to guarantee 100% authentic data, zero simulated mockups, and strict ecosystem separation.
 
 ---
@@ -93,7 +94,35 @@ The architecture is divided into two 100% strictly isolated ecosystems (Rule 1 &
 
 ---
 
-## 🚫 4. "Zero Fake Things" Policy & Prohibited Patterns
+## 🔐 4. Master Authentication, Lock & Biometric Passkey System
+
+Both administrative dashboards (`/admin` and `/user-admin`) are fortified with an identical high-security cyber-fintech authentication gate:
+
+### 1. 4-Digit Numeric PIN Pad (`2743`)
+- **Standardized PIN**: `2743` (Commander Arif's master PIN).
+- **Auto-Submission**: 4 glowing neon dots (`[0, 1, 2, 3]`) illuminate sequentially on keypad tap. Upon entering the 4th digit, the PIN is validated and submitted automatically.
+- **Physical Keyboard Support**: Desktop operators can type `0-9` on their keyboard, `Backspace` to delete, and `Escape` to clear.
+- **Dual Mode Toggle**: Operators can switch seamlessly between `"Switch to 4-Digit PIN Pad 🔢"` and `"Or use master password 🔏"`.
+
+### 2. WebAuthn Biometric Passkeys (Fingerprints / Touch ID / Face ID)
+- **Hardware-Bound Security**: FIDO2 asymmetric challenge-response via `/api/admin/auth/passkey-challenge` and `/api/admin/auth/verify-passkey`.
+- **Multi-Device Credential Array**: Stored in Upstash Redis `admin_passkeys:6727787768` (Set) and Supabase `admin_auth`. Multiple phones, laptops, and desktop passkeys can be enrolled concurrently without overwriting existing devices.
+- **Cache-Bypass**: Queries for `admin_passkey` and `admin_sess:` bypass the 15-minute worker cache (`maxAgeMs = 0`), ensuring immediate login usability across devices.
+- **Header Status & Enrollment Prompt**: Active passkey status dot (🟢 active / 🟡 unlinked) on the header `👆 Passkey` button, with an automatic first-login banner prompt.
+
+### 3. Inactivity Auto-Lock & 1-Tap Lock
+- **1-Tap Lock Button (`🔒 Lock`)**: Present in both dashboard headers. Locks the interface immediately without clearing session credentials.
+- **15-Minute Inactivity Auto-Lock**: Automatically locks the console after 15 minutes of idle time (`mousemove`, `keydown`, `touchstart`).
+- **5-Minute Background Tab Auto-Lock**: Automatically locks if the tab is minimized or switched away for > 5 minutes via the Page Visibility API (`document.hidden`).
+- **Dedicated Logout Button (`🚪 Logout`)**: Completely invalidates session tokens in Cloudflare Edge and local storage.
+
+### 4. Zero-Asset Audio & Telegram Haptics
+- **Web Audio API**: Synthetic audio oscillators (`playSound('click')`, `playSound('success')`, `playSound('error')`) provide immediate tactile feedback with 0 external network requests.
+- **Haptics**: Leverages `Telegram.WebApp.HapticFeedback` for crisp mobile feedback.
+
+---
+
+## 🚫 5. "Zero Fake Things" Policy & Prohibited Patterns
 
 To ensure complete production integrity, the following patterns are **STRICTLY PROHIBITED**:
 
@@ -112,7 +141,7 @@ To ensure complete production integrity, the following patterns are **STRICTLY P
 
 ---
 
-## 🐞 5. Master Bug-Hunting & Sanity Verification Checklist
+## 🐞 6. Master Bug-Hunting & Sanity Verification Checklist
 
 Execute this checklist whenever auditing the system or preparing for deployment:
 
@@ -178,8 +207,9 @@ python3 backup_manager.py
 
 ---
 
-## 📝 6. Key Code Locations & Handover Rules
+## 📝 7. Key Code Locations & Handover Rules
 
+- **Master System Directory**: [`MASTER_SYSTEM_DIRECTORY.md`](./MASTER_SYSTEM_DIRECTORY.md) (All-in-one index & quick reference).
 - **Cloudflare Edge Worker Bundle**: [`deploy_both_cf_workers.py`](./deploy_both_cf_workers.py) (15,500+ lines).
 - **User Dashboard Source**: [`public_ads/miner/index.html`](./public_ads/miner/index.html).
 - **User Bot Admin Dashboard Source**: [`public_admin/user-admin.html`](./public_admin/user-admin.html).

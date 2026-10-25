@@ -1,15 +1,16 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 24, 2026*
+> *Last Updated: October 25, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
+> *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*
 
 ---
 
 ## 🎯 1. Executive Summary & Purpose
 
-If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
+If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first** (and consult [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for quick lookups). It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
 **AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **20 Telegram accounts** (1 Master Account + 19 Worker Accounts, including Account #19 Adil H `8937908003` and Account #20 Asaduzzaman Sarker `8609131528`) that continuously farm yield, satoshis, and tokens across **9 high-conviction fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI — LeafEarn, PumpkinEarn, and all scammer/discontinued bots permanently purged), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
@@ -89,6 +90,12 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Dashboard 3: Dedicated Ads Portal (`/ads`)**: `public_ads/index.html` hosted at `https://agy-henna.vercel.app/` and `/ads`. Dedicated ad player with HilltopAds, Clickadu, GigaPub, and Monetag. **The persistent Telegram Chat Menu Button of `@AAAPREMIUMAPPSbot` is explicitly bound to `🎬 Watch Ads` pointing directly to this portal**.
     - **Two-Step 2FA Phone Login**: `phone-step-3` handles 2FA Cloud Passwords seamlessly without locking users out.
     - **Community Quests Engine**: Free points (+50 Pts each, +150 Pts total) for joining official channels (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) verified and credited via `/api/user/claim-quest`.
+14. **🔐 Master Authentication, Lock & Biometric Passkey Directive**:
+    - **Standardized PIN**: `2743` across both admin dashboards (`/admin` and `/user-admin`), auto-submitting on the 4th digit. Verified directly and via SHA-256 hash `4d5f60d62b859ce230607dc271d27378a876b60c24c5de0832f2df98c0b46b9b` on Cloudflare Edge.
+    - **WebAuthn Biometric Passkeys**: Hardware-bound fingerprint / Touch ID / Face ID passkeys registered via `/api/admin/auth/register-passkey` and saved in Upstash Redis `admin_passkeys:6727787768` (supporting multiple concurrent devices) and Supabase `admin_auth`. Queries bypass worker cache (`maxAgeMs = 0`).
+    - **Auto-Lock & Inactivity Guards**: Instant 1-tap `🔒 Lock` button, 15-minute inactivity auto-lock, and 5-minute background tab auto-lock via Page Visibility API (`document.hidden`).
+    - **Desktop Ergonomics & Sound**: Physical keyboard listeners (`0-9`, Backspace, Escape), dual auth mode switch, zero-asset Web Audio API synthesizer (`playSound()`), and Telegram haptics.
+    - **Master Directory Reference**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for complete technical architecture and cheat sheet.
 
 ---
 
