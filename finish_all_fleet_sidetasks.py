@@ -595,7 +595,8 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
         res["success"] = True
         st = m_d.get("state", {}) if isinstance(m_d, dict) else {}
         me = st.get("user") or m_d.get("user") or m_d
-        res["level"] = me.get("level", 1)
+        cur_level = me.get("level", 0)
+        res["level"] = cur_level
         res["balance"] = me.get("miningBalance", 0)
 
         # 2. Tutorial
@@ -607,7 +608,27 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
         async with session.post("https://server.victors.company/api/checkin", json={}, headers=v_h) as cr:
             if cr.status == 200: res["notes"].append("checkin_done")
 
-        # 4. Connect TON wallet if needed (TonConnect 2.0 Proof-of-Ownership)
+        # 4. Level 1 Miner Unlock (Continuous +100 V/day passive yield)
+        if cur_level < 1:
+            try:
+                async with session.post("https://server.victors.company/api/levels/unlock", json={"level": 1}, headers=v_h) as lr:
+                    if lr.status in (200, 201):
+                        res["notes"].append("miner_lvl1_unlocked")
+            except Exception:
+                pass
+
+        # 5. Claim Accumulated Mining Balance
+        try:
+            async with session.post("https://server.victors.company/api/mining/claim", json={}, headers=v_h) as mr:
+                if mr.status in (200, 201):
+                    m_claim = await mr.json()
+                    claimed_amt = m_claim.get("claimed", 0) if isinstance(m_claim, dict) else 0
+                    if claimed_amt > 0:
+                        res["notes"].append(f"mined_+{claimed_amt:.1f}VIC")
+        except Exception:
+            pass
+
+        # 6. Connect TON wallet if needed (TonConnect 2.0 Proof-of-Ownership)
         ton_addr = get_ton_wallet_address(acc, uid)
         if ton_addr and (not me.get("walletAddress") or not me.get("walletOwned")):
             connected = False
@@ -631,8 +652,8 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
                                     }
                                     async with session.post("https://server.victors.company/api/wallet/connect", json=conn_body, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as cwr:
                                         if cwr.status in (200, 201):
-                                            connected = True
-                                            res["notes"].append("ton_wallet_proof_connected")
+                                             connected = True
+                                             res["notes"].append("ton_wallet_proof_connected")
             except Exception as pe:
                 logger.debug(f"[{name}] Victor's proof connect note: {pe}")
 
@@ -646,7 +667,7 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
                 async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": "connect-wallet"}, headers=v_h) as twr:
                     if twr.status == 200: res["notes"].append("wallet_task_claimed")
 
-        # 5. Discover & Claim tasks
+        # 7. Discover & Claim Jobs Board Tasks (with 4.2s link verification debounce)
         async with session.get("https://server.victors.company/api/tasks", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as tr:
             if tr.status == 200:
                 t_d = await tr.json()
@@ -654,28 +675,34 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
                 for t in tasks:
                     if isinstance(t, dict):
                         tid = t.get("taskId") or t.get("id")
+                        t_kind = t.get("kind", "")
                         if tid and (t.get("status") == "open" or not t.get("claimed")):
-                            await jitter(0.4, 0.9)
+                            # Link-visit / partner-api tasks enforce 4.0s debounce before claim
+                            if t_kind in ("link_visit", "telegram_channel", "partner_api") or t.get("url"):
+                                await asyncio.sleep(4.2)
+                            else:
+                                await jitter(0.3, 0.6)
                             async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": tid}, headers=v_h) as tcr:
-                                if tcr.status == 200:
+                                if tcr.status in (200, 201):
                                     res["tasks_claimed"] += 1
                                     res["notes"].append(f"task_{tid}")
 
-        # 6. Referral claims (Hiring Bonus + Commission)
+        # 8. Referral claims (Hiring Bonus + Commission)
         if str(uid) == MASTER_UID or vic_pass:
             async with session.post("https://server.victors.company/api/referral/claim-bonus", json={}, headers=v_h) as rbr:
                 if rbr.status == 200: res["notes"].append("ref_bonus_claimed")
             async with session.post("https://server.victors.company/api/referral/claim-commission", json={}, headers=v_h) as rcr:
                 if rcr.status == 200: res["notes"].append("ref_commission_claimed")
 
-        # 7. Deep Mine Arcade Expeditions
+        # 9. Deep Mine Arcade Expeditions & Arcade Mode Discovery
         try:
             import victors_arcade_solver
             arc_res = await victors_arcade_solver.solve_deep_mine_expeditions(session, v_h, name, max_runs=2)
             if arc_res.get("runs_played", 0) > 0:
-                res["notes"].append(f"arcade_runs_{arc_res['runs_played']}_+{(arc_res.get('final_balance', 0) - arc_res.get('initial_balance', 0)):.0f}VIC")
+                net_profit = arc_res.get("net_vic", 0.0)
+                res["notes"].append(f"arcade_{arc_res['runs_played']}runs_{net_profit:+.1f}VIC")
         except Exception as e:
-            pass
+            logger.debug(f"[{name}] Victor's arcade solver note: {e}")
 
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")
