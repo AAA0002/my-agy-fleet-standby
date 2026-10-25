@@ -768,7 +768,11 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
   - Validation: Every run first validates the cached JWT via `GET /api/state` with `Authorization: Bearer <JWT>`. If HTTP 200, it proceeds directly without re-authenticating `initData`.
   - Claims & Tasks: Mining claims (`POST /api/claims/mining`), referral commissions (`POST /api/referrals/claim`), checkins (`POST /api/tasks/claim`), and social tasks (`/api/tasks/social/start` -> wait `confirmAt` -> `/api/tasks/social/confirm` -> `/api/tasks/claim`) are dispatched with `Idempotency-Key: <UUID>` and `Authorization: Bearer <JWT>`.
   - Automatic Token Rotation: If the cached JWT expires or returns 401, the engine seamlessly exchanges the latest MTProto `diggo_init_data` for a fresh 30-day JWT and caches it.
-- **Turnstile Cloudflare 403 Anti-Tamper Fix**: Removed JavaScript `Object.defineProperty(navigator, 'webdriver')` overrides in `mrg_turnstile_solver.py`. Patchright cleans `navigator.webdriver` at C++ level; JS overrides were detected as anti-tampering by Cloudflare Turnstile, causing 403 bot blocks. Now cleanly bypasses Turnstile.
+- **Turnstile Cloudflare 403 Anti-Tamper & Single-Click CDP Fix**:
+  - Removed JavaScript `Object.defineProperty(navigator, 'webdriver')` overrides in `mrg_turnstile_solver.py`. Patchright cleans `navigator.webdriver` at C++ level; JS overrides were detected as anti-tampering by Cloudflare Turnstile, causing 403 bot blocks.
+  - **Eliminated Double-Click Collision**: Removed redundant `await page.touchscreen.tap(click_x, click_y)` which was firing simultaneously with `mouse.down/up` in mobile mode, triggering Cloudflare Turnstile cancel / timeout errors. Now uses pure, humanized CDP mouse interactions (`mouse.move`, micro-delays, `mouse.down`, 120ms hold, `mouse.up`).
+  - **Restored `appearance: 'interaction-only'`**: Allowed Turnstile to solve silently/invisibly without forcing manual interactive widgets on clean runner browser contexts.
+  - **Clean Runner Execution**: Set `USE_BROWSER_PROXY: "0"` in `.github/workflows/mrg_turnstile_solver.yml` to prevent 403 rate-limiting on shared Webshare proxy IPs.
 
 ### 2. TonConnect 2.0 Wallet Binding for VyroDrop
 - **Root Cause of `wallet_required`**: VyroDrop requires a verified TonConnect 2.0 wallet proof to unlock cloud mining rewards (`POST /api/wallet/connect`).

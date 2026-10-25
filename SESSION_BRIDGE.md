@@ -220,6 +220,12 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **REST API Alignment**: Corrected `poolsCount: 9` (up from 8) at line 3447 of `deploy_both_cf_workers.py`.
     - **Production Deployment & Verification**: Deployed to Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). Verified all endpoints (`/miner?v=6.0`, `/user-admin?v=6.0`, `/admin?v=6.0`, `/ads`, and `/api/admin/users?secret=...`).
     - **Disaster Recovery Backup**: Fresh archive streamed to `@myagyai` via `backup_manager.py`.
+29. **9-Bot Fleet Farming Diagnostic, Turnstile Double-Click Elimination & Comprehensive 9-Bot Audit Suite**:
+    - **Cloudflare Turnstile Single-Click CDP Hardening**: Eliminated redundant `await page.touchscreen.tap` across all 5 Turnstile solving workflows in `mrg_turnstile_solver.py`. Fixed double-click collision on Cloudflare Turnstile checkbox. Replaced `appearance: 'always'` with `appearance: 'interaction-only'` for silent background solving.
+    - **Clean Runner IP Execution (`USE_BROWSER_PROXY: "0"`)**: Updated `.github/workflows/mrg_turnstile_solver.yml` to prevent 403 blocks from Cloudflare on shared Webshare proxy IPs.
+    - **Comprehensive 9-Bot Audit Suite (`audit_bots_and_sidetasks.py`)**: Expanded audit coverage from 4 to all 9 bots across all 20 accounts. Fixed ATF Miner balance/level parsing. Fixed Kynex Network `verifyTelegramAuth` and Firebase token exchange. Integrated DiggoMiner 30-day JWT fallback. Added graceful handling of Astra Airdrop developer Supabase egress quota pause (`HTTP 402`).
+    - **Render Node 2 Side-Task Sweep Verified**: Executed cloud side-task sweep via `POST /api/tasks/sweep-all` on Render Node 2 (Frankfurt) with 0 local phone load.
+    - **Disaster Recovery Backup**: Fresh archive streamed to `@myagyai` via `backup_manager.py`.
 
 ---
 

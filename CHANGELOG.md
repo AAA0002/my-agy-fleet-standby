@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 9-Bot Fleet Farming Diagnostic, Turnstile Double-Click Elimination & Comprehensive 9-Bot Audit Suite (October 25, 2026)**:
+  - **Identified & Resolved Auto-Mining Inactivity Causes Across Fleet Bots**:
+    * **Root Cause 1 (Cloudflare Turnstile Double-Click Collision)**: In `mrg_turnstile_solver.py`, the solver previously executed both `await page.touchscreen.tap(click_x, click_y)` and `await page.mouse.down() / mouse.up()` on the exact same pixel coordinates across 5 critical functions (`solve_turnstile_for_account`, programmatic MRG, `solve_victors_turnstile`, programmatic Victor's, and `solve_vyro_wallet_onboarding`). In mobile emulation mode (`is_mobile: True, has_touch: True`), firing a touch tap followed immediately by mouse down/up triggered a double-click collision on Cloudflare Turnstile, causing Cloudflare to cancel or reset the widget and fail with `turnstile_load_timeout` or HTTP 403.
+    * **Turnstile Single-Click Hardening**: Removed all redundant `touchscreen.tap` invocations, strictly standardizing on authentic CDP human hardware mouse interactions (`mouse.move` with random curves, micro-delays, `mouse.down`, 120ms hold, `mouse.up`).
+    * **Restored Non-Interactive Appearance (`interaction-only`)**: Replaced forced `appearance: 'always'` overrides with `appearance: 'interaction-only'` in `mrg_turnstile_solver.py` for MRG, VyroDrop, and ATF Miner widgets, enabling Cloudflare to resolve challenges silently and passively on clean browser contexts.
+    * **Proxy Deconfliction in GitHub Actions Runner (`USE_BROWSER_PROXY: 0`)**: Updated `.github/workflows/mrg_turnstile_solver.yml` to set `USE_BROWSER_PROXY: "0"`, ensuring the cloud Turnstile solver executes directly on clean Microsoft Azure GitHub Actions runner IPs without being flagged by Cloudflare WAF on shared Webshare proxy IPs.
+    * **Astra Airdrop Upstream Provider Diagnostic**: Ground-truth API testing revealed that Astra Airdrop's Supabase backend (`bcbwqnkfyrpjhctesvnp.supabase.co`) is currently responding with `HTTP 402 Payment Required: exceed_egress_quota`. The third-party bot developer exceeded their monthly bandwidth quota. Added resilient error handling so the farming engine gracefully flags Astra as `Paused Upstream (Developer Supabase Egress Quota Exceeded)` without hanging or halting the rest of the fleet.
+  - **Comprehensive 9-Bot Audit Suite Upgrade (`audit_bots_and_sidetasks.py`)**:
+    * **Full 9-Bot Roster Coverage**: Expanded `audit_bots_and_sidetasks.py` from only 4 bots to the full roster of 9 active mining pools:
+      1. MRG Miner (`@mrgminerbot`)
+      2. ATF Miner (`@ATF_AIRDROP_bot`)
+      3. Victor's Company (`@VictorsCompanybot`)
+      4. VyroDrop (`@vyrodrop_bot`)
+      5. Kynex Network (`@Kynex_miningbot`)
+      6. DiggoMiner (`@Diggominer_bot`)
+      7. Astra Airdrop (`@ASTRA_AIRDROP_BOT`)
+      8. PepeGram (`@Pepe_gram_bot`)
+      9. AdxEarn AI (`@AdxEarnAibot`)
+    * **Fixed ATF Miner Metric Parsing**: Corrected parsing to read `mined_balance`, `miner_level`, and `completed_tasks` from nested `atf_d.get("user", {})` rather than root object, accurately reflecting live active balances (e.g., Master Arif: 5,548.73 ATF at Level 160).
+    * **Fixed Kynex Network Authentication**: Upgraded endpoint from deprecated route to `verifyTelegramAuth` and authenticated Firebase Google Identity Toolkit token exchange. Verified Master Arif: 129,688.6 KNX, Koram Shah: 85,938.9 KNX.
+    * **DiggoMiner 30-Day JWT Fallback**: Integrated Upstash Redis 30-day JWT lookup (`fleet:diggo:jwt:{uid}`), allowing continuous audit and farming even if `initData` has passed the 24h window. Verified Koram Shah: 849.66 DIGGO at Level 64.
+  - **Render Standby Node 2 Autonomous Side-Task Execution**:
+    * Triggered authenticated cloud side-task sweep via `POST /api/tasks/sweep-all` on Render Node 2 (Frankfurt), executing all available daily check-ins, missions, and rewards in the cloud with zero mobile phone CPU load.
+
 - **🚀 Complete User Dashboard & Bot v6.0 Cache-Busting Upgrade & Direct Telegram Push (October 25, 2026)**:
   - **Purged Legacy Dual Currency Switcher & Rates from Admin Console**:
     * Completely eliminated legacy multi-currency conversion dictionary (`currencyRates`, `currencySymbols` with BDT `৳`, EUR `€`, INR `₹`) and `usd_bdt` rate state from [`public_admin/admin.html`](file:///data/workspace/AAA_AUTO/public_admin/admin.html) and [`public/admin.html`](file:///data/workspace/AAA_AUTO/public/admin.html).
