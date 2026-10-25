@@ -58,7 +58,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://rich-emu-106119.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
-TONAPI_KEY = os.getenv("TONAPI_KEY", "DVNSQF7W3LQJ3X77QKY")
+TONAPI_KEY = os.getenv("TONAPI_KEY", "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY")
 
 async def get_live_rates(session: aiohttp.ClientSession) -> dict:
     rates = {"bnb": 750.0, "ton": 1.60, "arb": 0.21, "bdt": 122.50}
