@@ -306,8 +306,8 @@ class AutonomousAriAgent:
         try:
             async with session.post(
                 f"{UPSTASH_URL}/set/fleet:pending_action",
-                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                json=json.dumps(payload),
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+                data=json.dumps(payload),
                 timeout=aiohttp.ClientTimeout(total=5)
             ) as r:
                 logger.info(f"⚡ [Action Dispatched] Queued '{action}' to fleet queue.")

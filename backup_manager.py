@@ -101,7 +101,8 @@ CORE_BOT_FILES = [
     "victors_arcade_solver.py",
     "mrg_turnstile_solver.py",
     "bot_registry.py",
-    "finish_all_fleet_sidetasks.py"
+    "finish_all_fleet_sidetasks.py",
+    "AUTOMATION_AND_SOLVER_ARCHITECTURE.md"
 ]
 
 

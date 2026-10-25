@@ -926,58 +926,8 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
-    diggo_param = None if is_master else DIGGO_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
-    if tok:
-        tokens["diggo_init_data"] = tok
-        if UPSTASH_URL and UPSTASH_TOKEN and uid and uid != "unknown":
-            try:
-                async with aiohttp.ClientSession() as http_dig:
-                    h_dig = {
-                        "Content-Type": "application/json",
-                        "Origin": "https://diggo.linkpc.net",
-                        "Referer": f"https://diggo.linkpc.net/?tgWebAppStartParam={diggo_param or 'ref_4088138f11effe8eef4b86ff'}",
-                        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0"
-                    }
-                    async with http_dig.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": tok}, headers=h_dig, timeout=aiohttp.ClientTimeout(total=8)) as dr:
-                        if dr.status == 200:
-                            dd = await dr.json()
-                            if dd.get("token"):
-                                await http_dig.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=dd["token"], headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3))
-                                logger.info(f"🔑 [DiggoMiner] Successfully exchanged & cached 30-day JWT for UID {uid}")
-            except Exception as dig_err:
-                logger.debug(f"[DiggoMiner] JWT exchange note for {uid}: {dig_err}")
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-    astra_param = None if is_master else ASTRA_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
-    if tok:
-        tokens["astra_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 9. PepeGram (@Pepe_gram_bot - meme token mining)
-    pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
-    if not is_master and not acc.get("pepegram_referral_bound"):
-        try:
-            await client.send_message(PEPEGRAM_BOT, f"/start {pepe_param}")
-            await asyncio.sleep(0.6)
-            acc["pepegram_referral_bound"] = True
-        except Exception:
-            pass
-    tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
-    if tok:
-        tokens["pepegram_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 10. AdxEarn AI (@AdxEarnAibot)
-    adx_param = None if is_master else ADXEARN_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
-    if tok:
-        tokens["adxearn_init_data"] = tok
-
-    # Anti-ban hardening: Zero channel joining during token extraction.
+    # Strictly 5 Active Bots: MRG, ATF, Victor's, VyroDrop, Kynex Network
+    # Defunct bots (DiggoMiner, Astra, PepeGram, AdxEarn) permanently purged.
     return tokens
 
 
@@ -1959,7 +1909,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_10_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "astra", "pepegram", "adxearn"]
+ALL_10_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex"]
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
     """Checks whether an account already has its master referrals bound across all 10 active fleet bots."""
@@ -2202,92 +2152,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    # 6. DiggoMiner (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("diggo_referral_bound"):
-        try:
-            try:
-                await client.send_message(DIGGO_BOT, f"/start {DIGGO_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=DIGGO_REFERRAL_CODE, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "startapp", "app", "miner", "miniapp"])
-            acc_entry["diggo_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] Diggo referral bind note: {e}")
-
-    # 8. Astra Airdrop (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("astra_referral_bound"):
-        try:
-            try:
-                await client.send_message(ASTRA_BOT, f"/start {ASTRA_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=ASTRA_REFERRAL_CODE, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
-            acc_entry["astra_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] Astra referral bind note: {e}")
-
-    # 9. PepeGram (Dual-Layer: Chat /start + Channel Join + Verification Click + WebApp handshake)
-    if force or not acc_entry.get("pepegram_referral_bound"):
-        try:
-            try:
-                await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
-                await asyncio.sleep(1.0)
-            except Exception:
-                pass
-
-            # Step A: Auto-join mandatory official channels required by PepeGram
-            for p_ch in ["pepe_grammmm", "Pepe_gram"]:
-                try:
-                    await client(JoinChannelRequest(p_ch))
-                except Exception:
-                    pass
-            await asyncio.sleep(1.0)
-
-            # Step B: Inspect incoming message for inline verification button and click it
-            try:
-                b_pepe = await client.get_input_entity(PEPEGRAM_BOT)
-                msgs = await client.get_messages(b_pepe, limit=4)
-                for m in msgs:
-                    if not m.out and m.buttons:
-                        for r_idx, row in enumerate(m.buttons):
-                            for c_idx, btn in enumerate(row):
-                                b_txt = (btn.text or "").lower()
-                                if any(k in b_txt for k in ["verify", "verification", "check", "joined"]):
-                                    await m.click(r_idx, c_idx)
-                                    logger.info(f"[{name}] 🐸 PepeGram: Clicked inline verification button '{btn.text}'!")
-                                    await asyncio.sleep(1.5)
-                                    break
-            except Exception as v_err:
-                logger.warning(f"[{name}] PepeGram verification click note: {v_err}")
-
-            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
-            acc_entry["pepegram_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
-
-    # 10. AdxEarn AI (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("adxearn_referral_bound"):
-        try:
-            try:
-                await client.send_message(ADXEARN_BOT, f"/start {ADXEARN_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
-            acc_entry["adxearn_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] AdxEarn referral bind note: {e}")
-
     if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_10_BOT_KEYS):
         acc_entry["all_10_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 10 fleet bots successfully bound to Master ID 6727787768!")
+    logger.info(f"[{name}] ✅ All 5 active fleet bots successfully bound to Master ID 6727787768!")
 
     # Wait 1.0s for Telegram bot backends to complete registration
     await asyncio.sleep(1.0)
@@ -3244,30 +3112,6 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as vye:
             logger.debug(f"[{name}] VyroDrop wallet bind note: {vye}")
 
-    # 5. Astra Airdrop TON Binding
-    if tokens.get("astra_init_data") and target_ton:
-        try:
-            a_init = tokens["astra_init_data"]
-            q = urllib.parse.parse_qs(a_init, keep_blank_values=True)
-            flat_q = {k: v[0] for k, v in q.items()}
-            hash_val = flat_q.pop("hash", "")
-            p_dcs = "\n".join(f"{k}={v}" for k, v in sorted(flat_q.items()))
-            astra_sb_url = "https://bcbwqnkfyrpjhctesvnp.supabase.co"
-            astra_sb_key = os.getenv("ASTRA_SB_KEY") or __import__("base64").b64decode("ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1KalluZHhibXRtZVhKd2FtaGpkR1Z6ZG01d0lpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT1RBeE5UVTRNVGtzSW1WNGNDSTZNakV3TlRjek1UZ3hPWDAuNi10aVQtaFdjaklPUEFwWkpLejZRdlgzRUVxbkhfRk1IR1hscllRN2xRZw==").decode()
-            astra_h = {
-                "apikey": astra_sb_key,
-                "Authorization": f"Bearer {astra_sb_key}",
-                "Content-Type": "application/json"
-            }
-            await http_session.post(
-                f"{astra_sb_url}/rest/v1/rpc/astra_sync_wallet",
-                json={"p_dcs": p_dcs, "p_hash": hash_val, "p_wallet": str(target_ton)},
-                headers=astra_h,
-                timeout=aiohttp.ClientTimeout(total=8)
-            )
-            logger.info(f"[{name}] 💎 Bound Astra Airdrop TON wallet: {target_ton[:12]}...")
-        except Exception as ase:
-            logger.debug(f"[{name}] Astra wallet bind note: {ase}")
 
 async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool = False):
     """Sends structured Telegram alert to Master Admin upon account onboarding or relink."""

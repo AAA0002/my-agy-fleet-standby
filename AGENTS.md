@@ -88,7 +88,7 @@
 - **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
   - **Executive Fleet Operations Console (`admin.html` / `/admin`)**:
     - Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**.
-    - Displays real-time status of the 19 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
+    - Displays real-time status of the 20 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
     - Does NOT manage public end-users, ad impressions, or public community points.
   - **User Bot Admin Console (`user-admin.html` / `/user-admin`)**:
     - Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**.

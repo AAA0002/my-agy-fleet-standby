@@ -5,6 +5,7 @@
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*
+> *Autonomous Solver Architecture: See [AUTOMATION_AND_SOLVER_ARCHITECTURE.md](./AUTOMATION_AND_SOLVER_ARCHITECTURE.md) for complete decoupled Turnstile solving, REST pre-flight, and multi-cloud topology.*
 
 ---
 

@@ -16,13 +16,13 @@
 * **Master System Navigation Hub**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for the universal cheat sheet, credential index, route map, and navigation hub.
 * **Accounts**: **20 Telegram Accounts** (1 Master Account + 17 Static Worker Accounts + Account #19 Adil H + Account #20 Asaduzzaman Sarker) farming in parallel.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
-* **5 Active Legitimate Fleet Bots**:
-  1. **MRG Miner** (`@mrg_miner_bot`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.
-  2. **ATF Miner** (`@atf_miner_bot`) — Cloud hash compounding, balance tracking, automatic claim loop.
-  3. **Victor's Company** (`@victorscompany_bot`) — HumanPass compounding, deep mining, wallet binding & Level 1 Miner hire.
-  4. **VyroDrop** (`@vyrodrop_bot`) — Autonomous 0.05 VYRO/h Cloud Solver, TonConnect 2.0 wallet binding & mining start.
-  5. **Kynex Network** (`@kynexnetwork_bot`) — 15-Min Energy Sweep & node farming.
-  *(Complementary bots: DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI).*
+* **5 Active Legitimate Fleet Bots (Strict 5-Bot Integrity)**:
+  1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.
+  2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`) — Cloud hash compounding, balance tracking, automatic claim loop.
+  3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`) — HumanPass compounding, deep mining, wallet binding & Level 1 Miner hire.
+  4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`) — Autonomous 0.05 VYRO/h Cloud Solver, TonConnect 2.0 wallet binding & mining start.
+  5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.net` / `kynex.top`) — 15-Min Energy Sweep & node farming.
+  *(Defunct bots DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI, LeafEarn, PumpkinEarn permanently purged).*
 
 ---
 
@@ -95,7 +95,7 @@ Certain farming bots require a connected wallet before mining will unlock or pro
 | **VyroDrop** | TON | 1. Signs or simulates TonConnect 2.0 challenge/proof.<br>2. Verifies wallet via `POST /api/auth/verify-wallet`.<br>3. Activates mining loop via `POST /api/mining/start`. |
 | **MRG Miner** | TON | Binds target TON wallet address during onboarding handshake for automated earnings. |
 | **ATF Miner** | TON | Syncs TON wallet to `atfminers.asloni.online/miner/index.php?action=sync_wallet`. |
-| **Astra Airdrop** | TON | Calls Supabase RPC `astra_sync_wallet` with target address. |
+| **Kynex Network** | TON | Synchronizes account state via Firebase Auth & RTDB profile onboarding. |
 
 ---
 

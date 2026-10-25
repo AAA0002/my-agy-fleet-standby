@@ -23,11 +23,7 @@ export const CONFIG = {
     { name: "ATF Miner", symbol: "ATF", bot: "@ATF_AIRDROP_bot", status: "Active" },
     { name: "Victor's Company", symbol: "VICTOR", bot: "@VictorsCompanybot", status: "Active" },
     { name: "VyroDrop", symbol: "VYRO", bot: "@vyrodrop_bot", status: "Active" },
-    { name: "Kynex Network", symbol: "KYNEX", bot: "@Kynex_miningbot", status: "Active" },
-    { name: "DiggoMiner", symbol: "DGO", bot: "@DiggoMinerBot", status: "Active" },
-    { name: "PepeGram", symbol: "PEPE", bot: "@PepeGramBot", status: "Active" },
-    { name: "AdxEarn AI", symbol: "ADX", bot: "@AdxEarnBot", status: "Active" },
-    { name: "Astra Airdrop", symbol: "AST", bot: "@astra_airdrop_bot", status: "Active" }
+    { name: "Kynex Network", symbol: "KYNEX", bot: "@Kynex_miningbot", status: "Active" }
   ],
   KNOWN_PHONES: {
     1: "+8801317342850",

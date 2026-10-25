@@ -35,7 +35,7 @@
 | **EVM Master Vault** | `0x7856d39352e8045610e7c53d0e9a56eefbf19b5c` | BNB Chain (BEP-20) & Arbitrum treasury |
 | **Primary Edge Gateway** | `https://restore-agy.agorameet.workers.dev` | Cloudflare Edge Mesh Node 4 (Frankfurt/Global) |
 | **Active Fleet Accounts** | **20 Accounts** (1 Master + 19 Workers) | 100% cloud-farmed across 9 verified pools |
-| **Active Mining Pools** | **9 Protocols** | MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx |
+| **Active Mining Pools** | **5 Protocols (Strict 5-Bot Integrity)** | MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network |
 | **Zero Phone Load** | **Samsung Galaxy A30** | STRICTLY pair-programming CLI. Zero local bots or daemons. |
 
 ### 📢 Telegram Channels Directory (Strictly Isolated)

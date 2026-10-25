@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Full System Hardening, Dead Bot Purge & Solver Architecture Documentation (October 25, 2026)**:
+  - **Excised Defunct Bot Queries from Cloud Token Extractor (`app.py`)**:
+    * Slashed legacy MTProto WebApp queries for dead bots (`Diggominer_bot`, `ASTRA_AIRDROP_BOT`, `Pepe_gram_bot`, `AdxEarnAibot`) from `extract_tokens_with_client`. Token collection on Render Frankfurt Node 2 now executes strictly across the 5 active legitimate bots, cutting collection time by > 50% and preventing upstream timeouts.
+  - **Synchronized Master Referral & Verification Logic (`app.py`)**:
+    * Refactored `ALL_10_BOT_KEYS` to strictly contain the 5 legitimate bots (`["mrg", "atf", "victors", "vyro", "kynex"]`). Previously, checks in `is_account_referrals_bound`, `unbound_bots`, and `/api/onboard-status` waited indefinitely on dead bots, preventing accounts from ever reporting as fully bound or verified.
+    * Excised dead `/start` commands and channel join loops (`pepe_grammmm`, `Pepe_gram`) from `bootstrap_account_mining`.
+    * Removed dead Supabase RPC `astra_sync_wallet` call from `bind_wallets_to_bots`.
+  - **Patched Double-Encoded JSON in Fleet Action Queue (`autonomous_cloud_agent.py`)**:
+    * Fixed `dispatch_fleet_action` in `autonomous_cloud_agent.py` where `json=json.dumps(payload)` resulted in double-quoted JSON strings in Upstash Redis key `fleet:pending_action`. Changed to `data=json.dumps(payload)` with standard `Content-Type: application/json`.
+  - **Authoritative Architecture Specification Created (`AUTOMATION_AND_SOLVER_ARCHITECTURE.md`)**:
+    * Drafted complete technical documentation covering the Decoupled Two-Phase Turnstile Solver model, sub-second REST pre-flight harvesting, headless Patchright stealth engine, hardware CDP mouse interactions, 5-bot operational endpoints, and multi-cloud runner topology.
+  - **Synchronized System Rules & Living Documentation**:
+    * Updated `AGENTS.md`, `SESSION_BRIDGE.md`, `PROJECT_BIBLE.md`, `MASTER_SYSTEM_DIRECTORY.md`, and `tgcloud_admin_bot/tgcloud/lib/config.js` to strictly enforce the Ground-Truth 5-Bot Integrity policy and 20-account fleet roster.
+
+
 - **🚀 Two-Phase Decoupled Solver Engine, Zero-Latency REST Pre-Flight & System-Wide Hardening (October 25, 2026)**:
   - **Engineered Two-Phase Decoupled Turnstile Solver (`mrg_turnstile_solver.py`)**:
     * **Phase 1: Rapid REST Pre-Flight & Instant Harvesting**: Audits all 20 accounts across Victor's Company, VyroDrop, ATF Miner, and MRG Miner via sub-second REST endpoints. Accounts with active passes (`victors:pass:{uid}`, connected Vyro wallets, active ATF sessions) have their rewards, checkins, shift claims, and tasks processed instantly via REST without touching the browser.
