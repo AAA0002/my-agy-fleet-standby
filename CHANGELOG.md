@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **📱 Mobile-First Redesign, Ergonomic Restructuring & Polish of User Bot Admin Dashboard (October 25, 2026)**:
+  - **Complete Mobile Ergonomic Overhaul (`user-admin.html`)**:
+    * **Target Device Optimization**: Fully rebuilt and styled specifically for smartphone screens (e.g. Samsung Galaxy A30 and modern mobile devices), adhering to a minimum 44-48px touch target standard (`.tap-target`) across all buttons, inputs, and interactive tabs.
+    * **Persistent Floating Bottom Navigation Dock (`.glass-dock`)**: Replaced bulky top-only controls with an ultra-sleek, thumb-reachable floating dock fixed at the screen bottom (`padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 76px)`). Allows Commander Arif to effortlessly switch between Miners, Wallets, Broadcast, 9 Pools, and Economy with one thumb anywhere on the screen.
+    * **Streamlined Header & Live Edge Ticker**: Compact cyber top bar displaying Commander Avatar badge `👑`, title `USER OPS`, live edge status `🟢 26 Miners • Node 4`, countdown timer (`15s`), and quick icon cluster (`[ 👆 Passkey ]`, `[ 🔒 Lock ]`, `[ 🌙/☀️ Theme ]`, `[ 🔄 Refresh ]`, `[ 🚪 Logout ]`). Accompanied by a dedicated crypto & node ticker pill (`💎 TON: $1.62 • 🟡 BNB: $750 • 9 Cloud Pools 24/7`).
+    * **High-Density Cyber KPI Grid & Monetization Hub**: 2x2 responsive metrics grid (`Community Users`, `Mining Accounts`, `Mining 24/7`, `Circulating Points`) featuring vibrant neon glow shadows (`shadow-glow-blue`, `shadow-glow-emerald`, `shadow-glow-amber`, `shadow-glow-purple`) and compact subtitles. Upgraded Rewarded Ads Monetization card with direct deep-link to the Ads Portal (`https://agy-henna.vercel.app/`).
+  - **Streamlined User Cards & "Miner Command Center" Bottom Sheet**:
+    * **Eliminated Horizontal Action Overflow**: Replaced the cluttered row of 8 horizontal buttons on each user card with a clean 4-item mobile action bar: `[ +100 Pts ]`, `[ 👑 VIP ]`, `[ ✈️ DM ]` (or Farming status toggle), and a high-visibility gradient `[ ⚙️ Manage ]` button.
+    * **Slide-Up "Miner Command Center" Bottom Sheet Modal**: Tapping any user card or `[ ⚙️ Manage ]` slides up a native-feeling mobile drawer with drag handle (`.sheet-handle`), rounded top corners (`rounded-t-3xl`), and backdrop blur.
+    * **Integrated In-Drawer Controls**:
+      - Real-time Points Adjustment Console with Mode Switch (`➕ Add` / `➖ Deduct`), preset chips (`+100`, `+250`, `+500`, `+1000` / `-50`, `-100`, `-200`, `-500`), and live projected balance & daily runway calculations.
+      - 1-Tap 30-Day VIP Pass grant (`👑 VIP`).
+      - 1-Tap Farming toggle (`⏸️ Pause Mining` / `▶️ Resume Mining`).
+      - 1-Tap Anti-Sybil Ban toggle (`🚫 Ban User` / `✅ Unban User`).
+      - Non-custodial multi-chain wallet addresses with 1-tap copy & block explorer links (`tonviewer`, `bscscan`, `tronscan`, `solscan`, `mempool`).
+      - Complete raw database JSON accordion with 1-tap `[ Copy JSON ]`.
+  - **Resolved Missing Handler Bug in Broadcast & Session Scanner**:
+    * **Bug Fix**: Identified that `handleSendBroadcast` and `handleScanSessions` were referenced in JSX onClick handlers but lacked function definitions in `user-admin.html`.
+    * **Implemented & Verified**: Added full async implementations communicating with Cloudflare Edge Node 4 endpoints `/api/admin/broadcast` (delivering customized or templated Telegram broadcasts to `no_account`, `revoked`, `all`, or `active` miners via `@AAAPREMIUMAPPSbot`) and `/api/admin/session/check-all` (scanning for revoked sessions across Render Standby Node 2 and Cloudflare).
+  - **Mirror Synchronization & Edge Gateway Deployment**:
+    * Synchronized `public_admin/user-admin.html` to `public/user-admin.html` and `public_admin/user-admin/index.html`.
+    * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified live HTTP 200 response and verified `/api/admin/users?secret=2743` returns 26 verified authentic users.
+    * Streamed disaster recovery backup to Telegram vault channel `@myagyai` via `backup_manager.py`.
+
 - **🧹 Elimination of Fake Users from Admin Dashboard & Adaptive Telegram WebView Biometrics (October 25, 2026)**:
   - **Eliminated All Fake & Test Users from User Admin Console**:
     * **Root Cause**: Past tests had inserted mock user records (`TestUser` with ID `999999999`, `TestNewMiner` with ID `8887776655`, and `test_99999`) into Supabase `community_miners` and Upstash Redis. Furthermore, background ad-farming loops for the 19 fleet accounts had populated generic `"Miner"` records into `ub_registered_users`, contaminating the community roster.

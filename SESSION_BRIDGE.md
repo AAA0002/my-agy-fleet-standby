@@ -280,6 +280,13 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Hardened Edge Namespace Isolation**: Hardened `getUserProfile` and `/api/admin/users` in `deploy_both_cf_workers.py` so that fleet accounts never contaminate the User Bot community miners table (Rule 7: Zero Ecosystem Mixing). Verified 26 genuine Telegram community miners returned live.
     - **Telegram WebView Biometrics & Fallback**: Diagnosed Android Telegram in-app WebView sandbox restricting WebAuthn. Integrated native `Telegram.WebApp.BiometricManager`, added dynamic button states (`"Enter PIN 2743 to Unlock"`), and provided friendly guidance to open in Chrome for biometric passkeys. Deployed to Node 4 Edge Gateway.
 
+34. **Mobile-First Redesign, Restructuring & Polish of User Bot Admin Dashboard**:
+    - **Mobile-First Cyber Architecture (`user-admin.html`)**: Redesigned specifically for smartphones (Samsung Galaxy A30 and modern mobile devices) with minimum 44-48px touch targets, Inter & JetBrains Mono typography, and high-contrast dark cyber styling.
+    - **Persistent Floating Bottom Navigation Dock (`.glass-dock`)**: Thumb-reachable 5-section dock (Miners, Wallets, Broadcast, 9 Pools, Economy) fixed at bottom of screen with safe-area insets.
+    - **Streamlined User Cards & Slide-Up "Miner Command Center" Drawer**: Eliminated row of 8 cramped horizontal buttons on cards; replaced with 4 clean primary taps (`[ +100 ]`, `[ 👑 VIP ]`, `[ ✈️ DM ]`, `[ ⚙️ Manage ]`). Tapping `Manage` opens a native-feeling bottom sheet with drag handle, Points console (Add/Deduct modes + chips + live projected runway preview), 1-tap farming toggle, 1-tap anti-sybil ban toggle, 5-chain non-custodial wallet explorer links, and raw database JSON inspection with 1-tap copy.
+    - **Resolved Missing Handler Bug**: Wired `handleSendBroadcast` and `handleScanSessions` to live Cloudflare Edge Node 4 `/api/admin/broadcast` and `/api/admin/session/check-all`.
+    - **Deployed & Synchronized**: Mirrored to `public/user-admin.html` and `public_admin/user-admin/index.html`, deployed to Node 4 (`https://restore-agy.agorameet.workers.dev`), and delivered disaster recovery backup to `@myagyai`.
+
 ---
 
 ## 📂 7. Key File Index
