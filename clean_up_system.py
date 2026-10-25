@@ -99,7 +99,12 @@ def clean_local_disk(dry_run: bool = False) -> dict:
                     logger.debug(f"Could not remove {dp}: {e}")
 
     # 1.2 Retain only the 2 most recent backup zips
-    backup_zips = sorted(glob.glob(os.path.join(BASE_DIR, "my_agy_ai_backup_*.zip")), key=os.path.getmtime, reverse=True)
+    backup_zips = sorted(
+        glob.glob(os.path.join(BASE_DIR, "backups", "my_agy_ai_backup_*.zip")) +
+        glob.glob(os.path.join(BASE_DIR, "my_agy_ai_backup_*.zip")),
+        key=os.path.getmtime,
+        reverse=True
+    )
     if len(backup_zips) > 2:
         for old_zip in backup_zips[2:]:
             try:
