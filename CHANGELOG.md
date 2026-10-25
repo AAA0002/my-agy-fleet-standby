@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Complete User Dashboard & Bot v6.0 Cache-Busting Upgrade & Direct Telegram Push (October 25, 2026)**:
+  - **Diagnosed Why User Saw Old Dashboard**:
+    * **Root Cause 1 (Old Chat Message URLs)**: In Telegram chat history, existing inline buttons on previously delivered messages permanently retained hardcoded links to the frozen Vercel build (`https://agy-henna.vercel.app/miner`, 81 KB file with 5 bots and LeafEarn from weeks ago). Tapping those historical buttons reloaded the outdated Vercel page.
+    * **Root Cause 2 (Telegram WebView Cache)**: Android System WebView in Telegram caches Web App resources aggressively by URL. Without explicit version query parameters, opening `/miner` continued serving cached assets from disk.
+    * **Root Cause 3 (Stale Persistent Keyboard)**: The sticky bottom reply keyboard on the user's phone (`[ 📖 User Guide ] [ 👑 User Admin Dashboard ⧉ ]`) retained legacy buttons because Telegram only replaces the persistent keyboard when the bot delivers a message containing a new `keyboard` payload.
+  - **Comprehensive Fixes & Enhancements Applied**:
+    * **Cache-Busting URL Migration (`?v=6.0`)**: Appended `?v=6.0` across all 20 `web_app` buttons for `/miner` and all 2 `web_app` buttons for `/user-admin` in `deploy_both_cf_workers.py`. This completely forces Telegram WebView to fetch the brand new 134 KB v6.0 application and bypasses all local disk caches.
+    * **Proactive Telegram Bot Push & Keyboard Refresh**: Delivered an immediate Telegram Bot message directly to Commander Arif (`chat_id: 6727787768`) via `USER_BOT_TOKEN` with the new launcher `🚀 Open Web App (v6.0) ⚡` and refreshed persistent 2-column keyboard.
+    * **Corrected Milestone Stepper in User Dashboard**: In `public_ads/miner/index.html` (and mirrors `public/index.html`, `public/app/index.html`), aligned all 7 stepper milestones with the official array: D1 (+100), D2 (+150), D3 (+200), D4 (+250), D5 (+300), D6 (+400), D7+ (+500). Upgraded brand version pill to `CLOUD V6.0`.
+    * **Aligned Pools Referral Deep Links**: In `public_admin/user-admin.html` (and mirror `public/user-admin.html`), updated `POOLS_LIST` referral URLs (`@atfminerbot`, `@VictorsCompanybot`, `@vyrodrop_bot`, `@ASTRA_AIRDROP_BOT`, `@Pepe_gram_bot`, `@AdxEarnAibot`) and updated `BLOCK_EXPLORERS.ton` to `tonviewer.com`.
+    * **Fixed `poolsCount: 9` in REST API**: Line 3447 of `deploy_both_cf_workers.py` in `/api/admin/users` now accurately reports `poolsCount: 9` (up from 8).
+    * **Auto-Refreshing Persistent Keyboards**: Updated `/start` and `/menu` handlers in `deploy_both_cf_workers.py` to deliver `activeUserKeyboard` whenever users interact with the bot.
+  - **Production Deployment & Verification**:
+    * Deployed to Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`).
+    * Verified `/miner?v=6.0`, `/user-admin?v=6.0`, `/admin?v=6.0`, and `/ads` all return `HTTP 200 OK`.
+    * Verified `/api/admin/users?secret=...` returns `{"ok": true, "stats": {..., "poolsCount": 9}}`.
+    * Streamed disaster recovery backup to Telegram vault `@myagyai` via `backup_manager.py`.
+
 - **🚀 User Bot WebApp URL Migration to Cloudflare Edge & Progressive Streak System Synchronization (October 25, 2026)**:
   - **Identified & Resolved Outdated WebApp Routing Bug**:
     * **Root Cause Diagnosis**: All 15 inline buttons and persistent keyboard launchers inside `deploy_both_cf_workers.py` were hardcoded to point to `https://agy-henna.vercel.app/miner`. Because Vercel deployments were 403 Forbidden due to an expired Vercel token, `agy-henna.vercel.app/miner` was serving an obsolete 81 KB static file with only 5 bots and deprecated references to `LeafEarn`.

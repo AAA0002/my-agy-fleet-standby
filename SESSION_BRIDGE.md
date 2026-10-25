@@ -210,6 +210,16 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Admin Bot Menu Fix**: Updated Admin Bot menu button payload to `https://restore-agy.agorameet.workers.dev/admin`.
     - **Daily Bonus Streak Synchronization**: Updated streak rewards in `deploy_both_cf_workers.py` and `/api/user/claim-daily` REST API to match the Web App (Day 1: +100, Day 2: +150, Day 3: +200, Day 4: +250, Day 5: +300, Day 6: +400, Day 7+: +500 Pts). Purged remaining `agy-aaa000` URLs.
     - **Disaster Recovery Backup**: Streamed fresh archive to Telegram vault `@myagyai` via `backup_manager.py`.
+28. **Complete User Dashboard & Bot v6.0 Cache-Busting Upgrade & Direct Telegram Push**:
+    - **Diagnosis & Resolution of "Old User Dashboard" Issue**:
+      * Identified that historical inline buttons in the Telegram chat were permanently bound to the obsolete Vercel URL (`https://agy-henna.vercel.app/miner`, 81 KB with 5 bots and LeafEarn from weeks ago).
+      * Addressed Android WebView caching in Telegram by appending `?v=6.0` to all 20 `web_app` buttons for `/miner` and 2 `web_app` buttons for `/user-admin` across `deploy_both_cf_workers.py`.
+      * Addressed stale persistent bottom reply keyboard (`[ 📖 User Guide ] [ 👑 User Admin Dashboard ⧉ ]`) by delivering a new keyboard payload from `@AAAPREMIUMAPPSbot` directly to Commander Arif (`6727787768`), immediately replacing the mobile keyboard with the modern 2-column layout.
+    - **User Mining Dashboard (`public_ads/miner/index.html` & mirrors)**: Aligned all 7 streak milestone stepper nodes in the HTML (D1: +100, D2: +150, D3: +200, D4: +250, D5: +300, D6: +400, D7+: +500) and upgraded the version badge to `CLOUD V6.0`.
+    - **User Bot Admin Console (`public_admin/user-admin.html` & mirror)**: Aligned `POOLS_LIST` referral deep links and updated `BLOCK_EXPLORERS.ton` to `tonviewer.com`.
+    - **REST API Alignment**: Corrected `poolsCount: 9` (up from 8) at line 3447 of `deploy_both_cf_workers.py`.
+    - **Production Deployment & Verification**: Deployed to Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). Verified all endpoints (`/miner?v=6.0`, `/user-admin?v=6.0`, `/admin?v=6.0`, `/ads`, and `/api/admin/users?secret=...`).
+    - **Disaster Recovery Backup**: Fresh archive streamed to `@myagyai` via `backup_manager.py`.
 
 ---
 

@@ -3444,7 +3444,7 @@ fi
             dailyBurnRate,
             totalAds,
             totalRefs,
-            poolsCount: 8
+            poolsCount: 9
           },
           users
         }), {
@@ -10445,7 +10445,7 @@ Reply to Arif naturally:`;
     const userMainKeyboard = {
       keyboard: [
         [
-          { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+          { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } },
           { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
         ],
         [
@@ -11946,19 +11946,22 @@ Reply to Arif naturally:`;
           const emptyBlocks = 8 - filledBlocks;
           const adBar = "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
 
-          const txt = `⚡ *AAA Cloud Dashboard*\n\n` +
-            `• *Miner:* ${senderName} (\`${uid}\`)\n` +
-            `• *Engine:* ${farmStatus}\n` +
-            `• *Balance:* \`${profile.points || 0} Pts\` (~${daysRemaining})\n` +
-            `• *Slots:* \`${accs.length}/${totalSlots}\` | *Streak:* 🔥 ${profile.daily_streak || 0}d\n` +
-            `• *Ads:* ${currentAdInCycle}/50 [${adBar}]\n` +
-            `• *Pass:* ${passBadge}\n\n` +
-            `⛏️ *9 Pools:* MRG • ATF • Victor's • Vyro • Kynex • Diggo • Astra • Pepe • AdxEarn`;
+          const streakDay = profile.daily_streak || 1;
+          const streakReward = [100, 150, 200, 250, 300, 400, 500][Math.min(streakDay - 1, 6)];
+          const txt = `⚡ *AAA AUTONOMOUS CLOUD MINER (v6.0)*\n\n` +
+            `👤 *Miner:* ${senderName} (\`${uid}\`)\n` +
+            `📡 *Status:* ${farmStatus}\n` +
+            `💎 *Balance:* \`${(profile.points || 0).toLocaleString()} Pts\` (~${daysRemaining})\n` +
+            `🔥 *Streak:* Day ${streakDay} (Claim +${streakReward} Pts)\n` +
+            `🖥️ *Slots:* \`${accs.length}/${totalSlots}\` Active\n` +
+            `🎬 *Ads:* ${currentAdInCycle}/50 [${adBar}]\n` +
+            `🎟️ *Pass:* ${passBadge}\n\n` +
+            `⛏️ *9 Verified Pools:* MRG • ATF • Victor's • Vyro • Kynex • Diggo • Astra • Pepe • AdxEarn`;
 
           const btns = {
             inline_keyboard: [
               [
-                { text: "🚀 Open Web App Mining Console ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }
+                { text: "🚀 Open Web App Mining Console (v6.0) ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }
               ],
               [
                 { text: "⛏️ 9 Mining Pools", callback_data: "ub_pools" },
@@ -12031,7 +12034,7 @@ Reply to Arif naturally:`;
               ],
               [
                 { text: "📊 Dashboard", callback_data: "ub_stats" },
-                { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }
+                { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }
               ]
             ]
           };
@@ -12043,7 +12046,7 @@ Reply to Arif naturally:`;
         const userMainKeyboard = {
           keyboard: [
             [
-              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } },
               { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ],
             [
@@ -12071,7 +12074,7 @@ Reply to Arif naturally:`;
         const ownerUserKeyboard = {
           keyboard: [
             [
-              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } },
               { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ],
             [
@@ -12088,7 +12091,7 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "👥 Invite Friends" },
-              { text: "👑 User Admin Console", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin" } }
+              { text: "👑 User Admin Console", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin?v=6.0" } }
             ]
           ],
           resize_keyboard: true,
@@ -12134,7 +12137,7 @@ Reply to Arif naturally:`;
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } },
               { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ]
           ]
@@ -12633,7 +12636,7 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
               ]
             }));
             return new Response("OK");
@@ -12743,7 +12746,7 @@ Reply to Arif naturally:`;
                 `• Balance: 💎 ${profile.points || 0} Points`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                  [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                   [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
@@ -12782,7 +12785,7 @@ Reply to Arif naturally:`;
               `• Status: ${statusTxt}`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -13188,7 +13191,7 @@ Reply to Arif naturally:`;
             ];
             inlineBtns.push(
               [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
-              [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }]
+              [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             );
             ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
             return new Response("OK");
@@ -13988,7 +13991,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "👑 Launch Admin Dashboard ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin" } }]
+                [{ text: "👑 Launch Admin Dashboard ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin?v=6.0" } }]
               ]
             });
             return;
@@ -14075,7 +14078,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
               ]
             });
             return;
@@ -14110,6 +14113,7 @@ Reply to Arif naturally:`;
           if (text.startsWith("/start") || text === "/menu") {
             const dash = renderMiningDashboard(profile, chatId, senderName);
             await sendUserReply(dash.text, dash.markup);
+            await sendUserReply(`⚡ *AAA Cloud Mining Active* • 9 Pools Running 24/7`, activeUserKeyboard);
 
             // Ensure persistent Chat Menu Button on User Bot launches the Ads Portal
             if (ctx && ctx.waitUntil) {
@@ -14144,7 +14148,7 @@ Reply to Arif naturally:`;
               `Tap below to launch your personal mining dashboard:`;
             await sendUserReply(minerMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open Cloud Mining Dashboard", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [{ text: "🚀 Open Cloud Mining Dashboard", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                 [{ text: "⛏️ 9 Supported Pools", callback_data: "ub_pools" }, { text: "💎 My Wallets", callback_data: "ub_wallets" }]
               ]
             });
@@ -14174,7 +14178,7 @@ Reply to Arif naturally:`;
             const qButtons = [
               [{ text: "📢 @AAAAutoMiner", url: "https://t.me/AAAAutoMiner" }, { text: "💬 @AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" }],
               [{ text: "⚡ @AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }],
-              [{ text: "🚀 Open Dashboard to Claim Rewards", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }]
+              [{ text: "🚀 Open Dashboard to Claim Rewards", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             ];
             await sendUserReply(qMsg, { inline_keyboard: qButtons });
             return;
@@ -14214,7 +14218,7 @@ Reply to Arif naturally:`;
             ];
             inlineBtns.push(
               [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
-              [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }]
+              [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             );
             await sendUserReply(accMsg, { inline_keyboard: inlineBtns });
             return;
@@ -14565,7 +14569,7 @@ Reply to Arif naturally:`;
                 `• *Balance:* 💎 ${profile.points || 0} Points`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                  [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                   [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
@@ -14604,7 +14608,7 @@ Reply to Arif naturally:`;
               `• *Status:* ${statusTxt}`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -14645,7 +14649,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                 [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
@@ -14682,7 +14686,7 @@ Reply to Arif naturally:`;
               `• *Your Points:* ${(profile.points || 0).toLocaleString()} Pts | *Streak:* 🔥 ${profile.daily_streak || 0}d`;
             await sendUserReply(boardMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }],
                 [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
@@ -14758,7 +14762,7 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+                  { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } },
                   { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
                 ],
                 [
@@ -14818,7 +14822,7 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+                { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } },
                 { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
