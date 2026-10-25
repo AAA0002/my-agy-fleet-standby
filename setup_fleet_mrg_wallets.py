@@ -19,7 +19,7 @@ except Exception:
     HAS_TON_SDK = False
 
 load_dotenv()
-API_ID = int(os.getenv("TELEGRAM_API_ID"))
+API_ID = int(os.getenv("TELEGRAM_API_ID") or os.getenv("API_ID") or 0)
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")

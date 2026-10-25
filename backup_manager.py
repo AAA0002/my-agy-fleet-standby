@@ -96,7 +96,12 @@ CORE_BOT_FILES = [
     "SESSION_BRIDGE.md",
     "MASTER_SYSTEM_DIRECTORY.md",
     "DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md",
-    "FLEET_MEMORY_CORE.md"
+    "FLEET_MEMORY_CORE.md",
+    "kynex_miner.py",
+    "victors_arcade_solver.py",
+    "mrg_turnstile_solver.py",
+    "bot_registry.py",
+    "finish_all_fleet_sidetasks.py"
 ]
 
 

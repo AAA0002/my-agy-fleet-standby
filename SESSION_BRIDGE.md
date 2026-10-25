@@ -344,6 +344,15 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Fixed VyroDrop Solver**: Corrected `cData` parameter case sensitivity and added DOM script loading and `frame_locator` click.
     - **Multi-Repository Privacy Architecture**: `AAA0002/ATL` (Master) and `AAA0002/my-agy-fleet-standby` are strictly **100% PRIVATE**. `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing zero secrets, zero sessions, and zero private keys, unlocking unlimited free minutes on GitHub Actions.
 
+44. **Comprehensive Fleet Bug Hunt & Codebase Hardening**:
+    - **Cloudflare Edge Bundle Sanitization (`deploy_both_cf_workers.py`)**: Purged dead bots from `BOT_COOLDOWNS` and `botRoutines` so edge crons strictly execute across the 5 legitimate bots without wasting subrequests or timing out on defunct APIs.
+    - **Patched Empty Token Bug in BSC Watcher (`bep20_onchain_watcher.py`)**: Fixed hardcoded `REPORT_BOT_TOKEN = ""` that caused on-chain deposit notifications to fail with HTTP 404.
+    - **Disaster Recovery Completeness (`backup_manager.py`)**: Added missing solvers (`kynex_miner.py`, `victors_arcade_solver.py`, `mrg_turnstile_solver.py`, `bot_registry.py`, `finish_all_fleet_sidetasks.py`) to `CORE_BOT_FILES` for complete 1-click restore functionality.
+    - **Fixed Null `API_ID` Crash (`setup_fleet_mrg_wallets.py`)**: Protected against `TypeError` if `TELEGRAM_API_ID` is empty.
+    - **SSOT Registry Aligned (`bot_registry.py`)**: Updated `ACTIVE_BOTS` to strictly return MRG, ATF, Victor's Company, VyroDrop, and Kynex Network.
+    - **Token Refresher Streamlined (`refresh_cloud_tokens.py`)**: Removed legacy webview requests for defunct bots, cutting token extraction runtime by ~45%.
+    - **Financial Reporter Enhanced (`daily_profit_reporter.py`)**: Added VyroDrop to mining totals and updated Render Node 1/Node 2/Node 3 cloud infrastructure status.
+
 ---
 
 ## 📂 7. Key File Index

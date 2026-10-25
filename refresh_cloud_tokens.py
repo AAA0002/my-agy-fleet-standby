@@ -46,32 +46,23 @@ CF_NODES = [
     "https://restore-agy.aaaai.workers.dev"
 ]
 
-# 10 Active Legitimate Fleet Bots & Referral Codes
+# 5 Active Legitimate Fleet Bots & Referral Codes
 MRG_BOT = "mrgminerbot"
 ATF_BOT = "ATF_AIRDROP_bot"
 VICTORS_BOT = "VictorsCompanybot"
 VYRO_BOT = "vyrodrop_bot"
 KYNEX_BOT = "Kynex_miningbot"
-DIGGO_BOT = "Diggominer_bot"
-ASTRA_BOT = "ASTRA_AIRDROP_BOT"
-PEPEGRAM_BOT = "Pepe_gram_bot"
-ADXEARN_BOT = "AdxEarnAibot"
 
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
 VICTORS_REF = "ref_A20AA96F18"
 VYRO_REF = "ref_myFjrqqE4WN_"
 KYNEX_REF = "6727787768"
-DIGGO_REF = "ref_4088138f11effe8eef4b86ff"
-ASTRA_REF = "ref_6727787768"
-PEPEGRAM_REF = "6727787768"
-ADXEARN_REF = "ref_6727787768"
 
 MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
-    "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
-    "Diggominer", "diggominer_news", "AstraAirdrop", "Pepe_gram", "pepe_grammmm", "AdxEarn"
+    "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"
 ]
 
 
@@ -356,67 +347,6 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if tok:
             tokens["kynex_init_data"] = tok
             print(f"  💎 Kynex Network: Collected")
-        await asyncio.sleep(0.5)
-
-        # 6. DiggoMiner (@Diggominer_bot)
-        diggo_p = None if is_master else DIGGO_REF
-        tok = await extract_bot_webapp_token(cl, DIGGO_BOT, start_param=diggo_p, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
-        if tok:
-            tokens["diggo_init_data"] = tok
-            print(f"  ⛏️ DiggoMiner: Collected")
-        await asyncio.sleep(0.5)
-
-        # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-        astra_p = None if is_master else ASTRA_REF
-        tok = await extract_bot_webapp_token(cl, ASTRA_BOT, start_param=astra_p, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
-        if tok:
-            tokens["astra_init_data"] = tok
-            print(f"  🚀 Astra Airdrop: Collected")
-        await asyncio.sleep(0.5)
-
-        # 9. PepeGram (@Pepe_gram_bot)
-        pepe_p = None if is_master else PEPEGRAM_REF
-        if not is_master and not acc.get("pepegram_referral_bound"):
-            try:
-                await cl.send_message(PEPEGRAM_BOT, f"/start {pepe_p}")
-                await asyncio.sleep(1.0)
-                # Auto-join required PepeGram channel @pepe_grammmm
-                try:
-                    await cl(JoinChannelRequest("pepe_grammmm"))
-                except Exception:
-                    pass
-                await asyncio.sleep(1.0)
-                # Click the inline "Verify" button sent by bot
-                try:
-                    b_pepe = await cl.get_input_entity(PEPEGRAM_BOT)
-                    msgs = await cl.get_messages(b_pepe, limit=4)
-                    for m in msgs:
-                        if not m.out and m.buttons:
-                            for r_idx, row in enumerate(m.buttons):
-                                for c_idx, btn in enumerate(row):
-                                    b_txt = (btn.text or "").lower()
-                                    if any(k in b_txt for k in ["verify", "verification", "check", "joined"]):
-                                        await m.click(r_idx, c_idx)
-                                        print(f"  🐸 PepeGram: Clicked '{btn.text}' button!")
-                                        await asyncio.sleep(1.5)
-                                        break
-                except Exception:
-                    pass
-                acc["pepegram_referral_bound"] = True
-            except Exception:
-                pass
-        tok = await extract_bot_webapp_token(cl, PEPEGRAM_BOT, start_param=pepe_p, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
-        if tok:
-            tokens["pepegram_init_data"] = tok
-            print(f"  🐸 PepeGram: Collected")
-        await asyncio.sleep(0.5)
-
-        # 10. AdxEarn AI (@AdxEarnAibot)
-        adx_p = None if is_master else ADXEARN_REF
-        tok = await extract_bot_webapp_token(cl, ADXEARN_BOT, start_param=adx_p, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
-        if tok:
-            tokens["adxearn_init_data"] = tok
-            print(f"  📈 AdxEarn AI: Collected")
 
         # Auto-join mandatory sponsor channels for side-task verification
         for s_ch in MANDATORY_SPONSOR_CHANNELS:

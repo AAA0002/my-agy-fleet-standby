@@ -158,7 +158,7 @@ import sys
 import re
 
 async def get_fleet_mining_totals() -> dict:
-    totals = {"mrg": 0.0, "atf": 0.0, "vic": 0.0, "knx": 0.0}
+    totals = {"mrg": 0.0, "atf": 0.0, "vic": 0.0, "knx": 0.0, "vyro": 0.0}
     rep_file = os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json")
     if os.path.exists(rep_file):
         try:
@@ -185,6 +185,11 @@ async def get_fleet_mining_totals() -> dict:
                     knx_txt = str(bots.get("5. Kynex Network", {}).get("core", {}))
                     m = re.search(r"([\d\.]+)\s*KNX", knx_txt)
                     if m: totals["knx"] += float(m.group(1))
+
+                    # 5. VyroDrop
+                    vyro_txt = str(bots.get("4. VyroDrop", {}).get("core", {}))
+                    m = re.search(r"([\d\.]+)\s*VYRO", vyro_txt)
+                    if m: totals["vyro"] += float(m.group(1))
         except Exception:
             pass
             
@@ -303,7 +308,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Cloudflare 5x Mesh:* APAC + Global edge nodes (Nodes 1, 2, 3, 4, 5)\n"
             f"• *Cloudflare Workers AI:* Serverless Llama 3.2 & DeepSeek R1 edge intelligence (0 keys)\n"
             f"• *Cloudflare D1 & R2:* Serverless SQL audit trail & zero-egress backup storage\n"
-            f"• *Render Standby:* Singapore & Frankfurt nodes auto-refreshing sessions\n"
+            f"• *Render Standby:* Node 2 (Frankfurt, Active) & Node 3 (Oregon, Standby)\n"
             f"• *Supabase & Upstash:* Cloud PostgreSQL + Redis live state replication\n\n"
             f"🤖 *4. AI Fleet Intelligence & Strategy (Cloudflare Workers AI):*\n"
             f"_{ai_briefing}_\n\n"

@@ -1202,17 +1202,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // Humanized Execution Pipeline: Active Fleet Mining Pools (9 Legitimate Bots)
+  // Humanized Execution Pipeline: Active Fleet Mining Pools (5 Authentic Legitimate Bots)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1200, maxSec: 2400 },
     mrg: { minSec: 1800, maxSec: 3600 },
     victors: { minSec: 3600, maxSec: 7200 },
     vyro: { minSec: 2400, maxSec: 4800 },
-    kynex: { minSec: 2400, maxSec: 4800 },
-    diggo: { minSec: 1800, maxSec: 3600 },
-    astra: { minSec: 1800, maxSec: 3600 },
-    pepegram: { minSec: 1800, maxSec: 3600 },
-    adxearn: { minSec: 1800, maxSec: 3600 }
+    kynex: { minSec: 2400, maxSec: 4800 }
   };
 
   const botRoutines = [
@@ -1220,11 +1216,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
-    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
-    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_init_data) },
-    { name: "astra", fn: farmAstra, hasData: Boolean(accData.astra_init_data) },
-    { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
-    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) },
+    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) }
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData && (!targetBot || targetBot === "all" || b.name === targetBot.toLowerCase()));
