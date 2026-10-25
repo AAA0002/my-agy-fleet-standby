@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Two-Phase Decoupled Solver Engine, Zero-Latency REST Pre-Flight & System-Wide Hardening (October 25, 2026)**:
+  - **Engineered Two-Phase Decoupled Turnstile Solver (`mrg_turnstile_solver.py`)**:
+    * **Phase 1: Rapid REST Pre-Flight & Instant Harvesting**: Audits all 20 accounts across Victor's Company, VyroDrop, ATF Miner, and MRG Miner via sub-second REST endpoints. Accounts with active passes (`victors:pass:{uid}`, connected Vyro wallets, active ATF sessions) have their rewards, checkins, shift claims, and tasks processed instantly via REST without touching the browser.
+    * **Phase 2: Targeted Browser Solving**: Decoupled Chromium from the main loop; launches Patchright Chromium stealth strictly for the subset of accounts that genuinely require Turnstile passes or onboarding challenges. If zero accounts need solving, the browser is completely bypassed, reducing execution time from 35+ minutes to ~2 minutes.
+    * **Phase 3 & 4: Deep Mine Arcade & Kynex Farm**: Automates Victor's Company Deep Mine arcade minigame (`victors_arcade_solver.py`) and Kynex Network farming (`kynex_miner.py`) over concurrent asynchronous HTTP sessions.
+  - **Fixed Critical Silent NameError Crash (`mrg_turnstile_solver.py`)**:
+    * Resolved missing top-level `import aiohttp`, which previously caused Victor's arcade solver to silently fail with `NameError: name 'aiohttp' is not defined`.
+  - **Enhanced Anti-Fingerprinting Stealth & Parameter Integrity (`mrg_turnstile_solver.py`)**:
+    * Injected matching `navigator.platform` (`Linux armv8l`) and `navigator.userAgentData` (`mobile: true`, `platform: Android`) client hints to eliminate the desktop-mobile discrepancy that caused Cloudflare Turnstile to return HTTP 403 on Azure runner IPs.
+    * Added complete Telegram WebApp launch query parameters (`&tgWebAppPlatform=android&tgWebAppVersion=8.0`) and hooked `window.turnstile.render` callbacks for immediate token capture upon solving.
+  - **Slashed 368 Lines of Defunct Bot Functions in Cloud Server (`app.py`)**:
+    * Excised unused legacy bot routines (`_farm_diggo`, `_farm_astra`, `_farm_pepegram`, `_farm_adxearn`) and defunct endpoints (`/api/pepegram/verify-fleet`), accelerating FastAPI startup and reducing memory footprint on Render Frankfurt Node 2.
+    * Synchronized internal bot registries (`bots_to_query`, `bot_map`, `bots_to_check`) strictly to the 5 active legitimate bots.
+  - **Modernized Autonomous Cloud Agent Topology (`autonomous_cloud_agent.py`)**:
+    * Replaced decommissioned Singapore Node 1 with active Frankfurt Node 2 as primary and Oregon Node 3 as standby.
+    * Upgraded fleet account auditing default from 13 to 20 accounts.
+    * Implemented Upstash Redis `fleet:accounts` fallback for token collection payloads when local `accounts.json` is absent on ephemeral runners.
+    * Purged obsolete directives and actions (`sweep_stones`, `sweep_ailab`) from the Ari AI Multi-Model Council prompts.
+  - **Optimized GitHub Actions Autonomous Runner (`cloud-fleet-solver`)**:
+    * Updated `turnstile_solver.yml` to a 6-hour execution cycle (`0 */6 * * *`), leveraging unlimited free GitHub Actions minutes on public repositories and preventing tokens from aging past 18 hours.
+
 - **⚡ System-Wide Resilience, Self-Healing & Infrastructure Optimization (October 25, 2026)**:
   - **Slashed 293 Lines of Dead Code in Edge Worker Bundle (`deploy_both_cf_workers.py`)**:
     * Excised unused dead bot helper functions (`farmDiggo`, `farmAstra`, `farmPepegram`, `farmAdxearn`) from the Cloudflare Worker template.

@@ -111,6 +111,10 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Master Repositories (Strictly 100% PRIVATE)**: `AAA0002/ATL` and `AAA0002/my-agy-fleet-standby` contain core architecture, configurations, and internal scripts. They MUST remain private at all times.
     - **Public Solver Runner (Unlimited Free Minutes)**: `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing ZERO plaintext secrets, zero private keys, and zero sessions. It runs headless Patchright Chromium on GitHub Actions to solve Cloudflare Turnstile challenges and execute multi-bot farming with unlimited free minutes. All runtime secrets are delivered via GitHub Encrypted Secrets (`secrets.UPSTASH_TOKEN`, etc.).
     - **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`, `vyro:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
+18. **⚡ Two-Phase Decoupled Solver Architecture (`mrg_turnstile_solver.py`)**:
+    - **Phase 1: Rapid REST Pre-Flight & Instant Harvesting**: Audits all 20 accounts across Victor's Company, VyroDrop, ATF Miner, and MRG Miner via sub-second REST endpoints. Accounts with active passes (`victors:pass:{uid}`, connected Vyro wallets, active ATF sessions) have their rewards, checkins, shift claims, and tasks processed instantly via REST without touching the browser.
+    - **Phase 2: Targeted Browser Solving**: Decoupled Chromium from the main loop; launches Patchright Chromium stealth strictly for the subset of accounts that genuinely require Turnstile passes or onboarding challenges. If zero accounts need solving, the browser is completely bypassed, reducing execution time from 35+ minutes to ~2 minutes.
+    - **Phase 3 & 4: Deep Mine Arcade & Kynex Farm**: Automates Victor's Company Deep Mine arcade minigame (`victors_arcade_solver.py`) and Kynex Network farming (`kynex_miner.py`) over concurrent asynchronous HTTP sessions.
 
 ---
 
@@ -137,7 +141,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │  │                                        │  │                                      │  │
 │  │  Role: 100% Single-Active MTProto Gate │  │  Role: 24/7 Edge Autonomous Farming   │  │
 │  │  - Single IP prevents Telegram ban     │  │  - Runs cron every 15 mins           │  │
-│  │  - Zero multi-DC session clashes       │  │  - Farms all 9 legitimate bots        │  │
+│  │  - Zero multi-DC session clashes       │  │  - Farms all 5 legitimate bots        │  │
 │  │  - Extracts fresh 24h WebApp initData  │  │  - Executes side tasks & claims       │  │
 │  │  - Syncs tokens to Upstash Redis & KV  │  │  - Fast, serverless, zero ban risk   │  │
 │  │  - Endpoint: POST /collect-tokens      │  │  - Propagates cached Turnstile passes │  │

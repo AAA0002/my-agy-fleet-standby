@@ -64,9 +64,8 @@ CF_AI_NODES = [
 
 # Render Standby Token Collection Nodes (100% Free Cloud Failover)
 RENDER_STANDBY_NODES = [
-    ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens"),
-    ("Render Node 3 (Oregon)", "https://my-agy-fleet-standby-node3.onrender.com/collect-tokens"),
-    ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/collect-tokens")
+    ("Render Node 2 (Frankfurt - Primary)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens"),
+    ("Render Node 3 (Oregon - Standby)", "https://my-agy-fleet-standby-node3.onrender.com/collect-tokens")
 ]
 
 
@@ -162,18 +161,17 @@ Current Live State:
 
 Past Lessons & Directives (NEVER VIOLATE THESE RULES):
 {lessons_text}
-- ATF Miner is strictly in 100% FARMING & ACCUMULATION MODE (NO withdrawals; let balance grow).
-- Main account (6727787768) must NEVER withdraw from AI Lab Robot or Stones Miners (preserves balance/compounds hash).
-- Worker accounts auto-withdraw AI Lab Robot when balance >= $0.02 USD to BEP-20 vault {MASTER_EVM_VAULT}.
-- Worker accounts auto-withdraw Stones Miners when balance >= 500 STONES to Arbitrum One {MASTER_EVM_VAULT} (never when on cooldown).
-- Worker accounts auto-withdraw Ainovum when balance >= 0.10 USDT to dedicated isolated EVM addresses.
+- The fleet exclusively operates 5 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network.
+- ATF Miner is strictly in 100% FARMING & ACCUMULATION MODE (NO premature withdrawals; allow hash and balance to compound).
+- Master account (6727787768) maintains maximum compound hash and acts as primary referrer.
+- Worker accounts auto-harvest and compound mining cycles according to optimal cooldown intervals.
 - If tokens are stale (>12h old) or GitHub Actions hit limits, action must be 'refresh_tokens_render'.
-- BNB Galaxy is permanently blocked and disabled (scam protection).
+- Defunct bots (DiggoMiner, Astra, PepeGram, AdxEarn, LeafEarn, PumpkinEarn) are permanently purged.
 
 Decide the best next operational step. Output JSON ONLY:
 {{
   "thought": "Your tactical reasoning",
-  "action": "harvest" | "sweep_stones" | "sweep_ailab" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest",
+  "action": "harvest" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest",
   "target_account": "all" or specific account ID,
   "confidence": 0.0 to 1.0
 }}
@@ -201,7 +199,7 @@ Return JSON ONLY:
 {{
   "approved": true or false,
   "reason": "Detailed critique",
-  "sanitized_action": "harvest" | "sweep_stones" | "sweep_ailab" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest"
+  "sanitized_action": "harvest" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest"
 }}
 """
         judge_str = await self.query_safety_judge(session, judge_prompt)
@@ -295,7 +293,7 @@ class AutonomousAriAgent:
                             return json.loads(res) if isinstance(res, str) else res
             except Exception:
                 pass
-        return {"accounts_total": 13, "status": "nominal"}
+        return {"accounts_total": 20, "status": "nominal"}
 
     async def dispatch_fleet_action(self, session: aiohttp.ClientSession, action: str):
         """Pushes command to Upstash Redis queue for instantaneous daemon/edge execution."""
@@ -318,8 +316,8 @@ class AutonomousAriAgent:
 
     async def trigger_render_token_collection(self, session: aiohttp.ClientSession) -> Dict[str, Any]:
         """
-        Autonomously triggers MTProto session token collection on Render Standby Node 1,
-        with instant automatic fallback to Render Standby Node 2.
+        Autonomously triggers MTProto session token collection on Render Standby Node 2 (Frankfurt),
+        with instant automatic fallback to Render Standby Node 3 (Oregon).
         Fulfills user directive: if GitHub Actions limits are up, Render collects tokens.
         """
         logger.info("🔄 [Render Failover] Triggering MTProto session token collection on Render Standby...")
@@ -335,6 +333,18 @@ class AutonomousAriAgent:
                     acc_payload = json.load(af)
         except Exception:
             pass
+
+        # Fallback: load accounts from Upstash Redis if local accounts.json is absent
+        if not acc_payload:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:accounts", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        res = d.get("result")
+                        if res:
+                            acc_payload = json.loads(res) if isinstance(res, str) else res
+            except Exception as e:
+                logger.debug(f"[Render Failover] Could not fetch accounts from Redis: {e}")
 
         req_body = {"source": "AriAutonomousDecision"}
         if acc_payload:
@@ -353,7 +363,7 @@ class AutonomousAriAgent:
                         data = await resp.json()
                         logger.info(f"✅ [{name}] MTProto token collection succeeded! Result: {data.get('message')}")
                         self.last_token_refresh = time.time()
-                        return {"success": True, "node": name, "collected": data.get("collected", 13), "details": data}
+                        return {"success": True, "node": name, "collected": data.get("collected", 20), "details": data}
                     else:
                         logger.warning(f"⚠️ [{name}] HTTP {resp.status}. Trying next standby node...")
             except Exception as e:
@@ -391,7 +401,7 @@ class AutonomousAriAgent:
                     session,
                     f"🔄 *[Ari AI Council — Cloud Failover]*\n\n"
                     f"MTProto tokens exceeded 12h threshold (GitHub Actions limit or schedule delay).\n"
-                    f"Autonomously collected fresh tokens via **{res.get('node')}** across all 13 accounts!"
+                    f"Autonomously collected fresh tokens via **{res.get('node')}** across all 20 accounts!"
                 )
                 return
 
@@ -405,16 +415,10 @@ class AutonomousAriAgent:
         # 3. Act
         if act == "harvest":
             await self.dispatch_fleet_action(session, "harvest")
-            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 8 platforms.\n_Reason:_ {thought}")
-        elif act == "sweep_stones":
-            await self.dispatch_fleet_action(session, "sweep_stones")
-            await self.send_telegram_alert(session, f"💎 *[Ari AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
-        elif act == "sweep_ailab":
-            await self.dispatch_fleet_action(session, "sweep_ailab")
-            await self.send_telegram_alert(session, f"🧪 *[Ari AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 5 active bots (MRG, ATF, Victor's, Vyro, Kynex).\n_Reason:_ {thought}")
         elif act == "sweep_all":
             await self.dispatch_fleet_action(session, "sweep")
-            await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep (AI Lab + Stones + On-Chain Consolidation).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep & Referral Harvest.\n_Reason:_ {thought}")
         elif act == "refresh_tokens_render":
             res = await self.trigger_render_token_collection(session)
             if res.get("success"):
@@ -450,9 +454,9 @@ async def main():
         await agent.send_telegram_alert(
             session,
             "🚀 *Ari Autonomous Cloud Agent Activated!*\n\n"
-            "• **Host:** Cloud-Native / Render Node 3 (Singapore)\n"
+            "• **Host:** Cloud-Native / Render Node 2 (Frankfurt)\n"
             "• **Council:** `Cloudflare Workers AI` (DeepSeek R1 + Llama 3.2 Dual-Verification)\n"
-            "• **Failover:** Render Standby (Singapore + Frankfurt) auto-collection armed\n"
+            "• **Failover:** Render Standby (Frankfurt + Oregon) auto-collection armed\n"
             "• **Memory:** Serverless Persistent Reflexion Vector Store\n"
             "• **Status:** Overseeing 20 accounts 24/7 autonomously."
         )

@@ -17,6 +17,7 @@ import struct
 import hashlib
 import base64
 import asyncio
+import aiohttp
 import logging
 import urllib.parse
 import urllib.request
@@ -448,11 +449,25 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     page = await context.new_page()
 
     # Always strictly URL-encode initData inside tgWebAppData hash to prevent & delimiter truncation
-    target_url = f"{APP_ORIGIN}/#tgWebAppData={urllib.parse.quote(m_init, safe='')}"
+    target_url = (
+        f"{APP_ORIGIN}/#tgWebAppData={urllib.parse.quote(m_init, safe='')}"
+        f"&tgWebAppPlatform=android"
+        f"&tgWebAppVersion=8.0"
+        f"&tgWebAppThemeParams=%7B%22bg_color%22%3A%22%2318181b%22%2C%22text_color%22%3A%22%23ffffff%22%7D"
+    )
 
     json_m_init = json.dumps(m_init)
 
     await page.add_init_script(f"""
+        // Anti-fingerprinting consistency (matches SM-S928B Android user agent)
+        try {{
+            Object.defineProperty(navigator, 'platform', {{ get: () => 'Linux armv8l' }});
+            if (navigator.userAgentData) {{
+                Object.defineProperty(navigator.userAgentData, 'mobile', {{ get: () => true }});
+                Object.defineProperty(navigator.userAgentData, 'platform', {{ get: () => 'Android' }});
+            }}
+        }} catch(e) {{}}
+
         // 0. Pre-fill sessionStorage so telegram-web-app.js SDK initializes full initData
         try {{
             sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
@@ -474,7 +489,10 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             version: '8.0',
             platform: 'android',
             colorScheme: 'dark',
-            themeParams: {{}},
+            themeParams: {{
+                bg_color: '#18181b',
+                text_color: '#ffffff'
+            }},
             isExpanded: true,
             viewportHeight: 915,
             viewportStableHeight: 915,
@@ -521,6 +539,26 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         }} catch(e) {{}}
 
         window.__mrgTurnstileToken = null;
+
+        // Hook window.turnstile.render to capture token on generation
+        let _cfPoll = setInterval(() => {{
+            if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                clearInterval(_cfPoll);
+                const _origRender = window.turnstile.render;
+                window.turnstile.render = function(container, options) {{
+                    try {{
+                        if (options) {{
+                            const _origCb = options.callback;
+                            options.callback = function(tok) {{
+                                window.__mrgTurnstileToken = tok;
+                                if (_origCb) _origCb(tok);
+                            }};
+                        }}
+                    }} catch(e) {{}}
+                    return _origRender.call(this, container, options);
+                }};
+            }}
+        }}, 30);
 
         const origFetch = window.fetch;
         window.fetch = async function(...args) {{
@@ -1915,8 +1953,198 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
     return False
 
 
+def check_and_farm_victors_rest(v_acc: dict, is_master: bool = False) -> tuple[bool, bool]:
+    """
+    Fast REST handler for Victor's Company (@VictorsCompanybot).
+    Checks cached humanPass in Upstash Redis. If valid, harvests rewards via REST.
+    Returns: (is_handled_via_rest, needs_browser_solve)
+    """
+    v_uid = v_acc["uid"]
+    v_init = v_acc["init_data"]
+
+    cached_pass = None
+    try:
+        c_resp = safe_get(f"{UPSTASH_URL}/get/victors:pass:{v_uid}", extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+        if c_resp and isinstance(c_resp[1], dict) and c_resp[1].get("result"):
+            raw_r = c_resp[1]["result"]
+            try:
+                parsed_r = json.loads(raw_r) if isinstance(raw_r, str) else raw_r
+            except Exception:
+                parsed_r = raw_r
+            cached_pass = parsed_r.get("humanPass") if isinstance(parsed_r, dict) else str(parsed_r)
+            if cached_pass in ("null", "nil", "None", ""):
+                cached_pass = None
+    except Exception:
+        pass
+
+    if cached_pass:
+        test_h = {
+            "Authorization": f"tma {v_init}",
+            "Origin": VICTORS_ORIGIN,
+            "Referer": f"{VICTORS_ORIGIN}/",
+            "x-human-pass": str(cached_pass)
+        }
+        t_code, t_d = safe_get(f"{VICTORS_API}/me", extra_headers=test_h)
+        if t_code == 200 and isinstance(t_d, dict) and (t_d.get("success") is True or "state" in t_d or "user" in t_d):
+            logger.info(f"✅ [Victor's] UID {v_uid}: Human pass valid in Redis! Harvesting via REST.")
+            safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=test_h)
+            safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=test_h)
+            safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=test_h)
+            u_res = t_d.get("user") or t_d
+            if isinstance(u_res, dict) and u_res.get("manualUnlockedLevel", 0) < 1:
+                safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, extra_headers=test_h)
+            if is_master or v_uid == 6727787768:
+                safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=test_h)
+                safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=test_h)
+            # Fetch and claim pending tasks
+            _, tk_data = safe_get(f"{VICTORS_API}/tasks", extra_headers=test_h)
+            if isinstance(tk_data, dict):
+                raw_tasks = tk_data.get("tasks") or (tk_data.get("data", {}).get("tasks") if isinstance(tk_data.get("data"), dict) else [])
+                if isinstance(raw_tasks, list):
+                    for task_item in raw_tasks:
+                        if isinstance(task_item, dict):
+                            t_status = task_item.get("status")
+                            is_claimed = task_item.get("claimed", False)
+                            tid = task_item.get("id") or task_item.get("taskId")
+                            if tid and (t_status in ("open", "READY_TO_CLAIM", "PENDING", "COMPLETED") or not is_claimed):
+                                t_kind = task_item.get("kind", "")
+                                if t_kind in ("onchain_hold", "nft_hold"):
+                                    continue
+                                c_stat, c_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=test_h)
+                                logger.info(f"📋 [Victor's] UID {v_uid} task '{tid}' claim result: {c_stat} {c_res}")
+            v_acc["authed_headers"] = test_h
+            return True, False
+        else:
+            logger.info(f"⚠️ [Victor's] UID {v_uid}: Cached pass expired (HTTP {t_code}). Needs browser solve.")
+    else:
+        logger.info(f"⚠️ [Victor's] UID {v_uid}: No cached pass in Redis. Needs browser solve.")
+
+    return False, True
+
+
+def check_and_farm_vyro_rest(uid: int, vyro_init: str, wallet_entry: dict, is_master: bool = False) -> tuple[bool, bool]:
+    """
+    Fast REST handler for VyroDrop (@vyrodrop_bot).
+    Checks bootstrap status. If wallet connected, claims mining & sweeps referrals.
+    If not connected, attempts REST challenge with TonConnect signature.
+    Returns: (is_handled_via_rest, needs_browser_solve)
+    """
+    v_headers = {
+        "Authorization": f"tma {vyro_init}",
+        "Content-Type": "application/json",
+        "Origin": VYRO_ORIGIN,
+        "Referer": f"{VYRO_ORIGIN}/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+    }
+
+    # 1. Check bootstrap status first
+    boot_status, boot_data = safe_get(f"{VYRO_API}/bootstrap", extra_headers=v_headers)
+    if not isinstance(boot_data, dict):
+        boot_data = {}
+
+    is_wallet_connected = boot_data.get("wallet", {}).get("connected", False)
+    mining_status = boot_data.get("mining", {}).get("status", "IDLE")
+
+    if is_wallet_connected:
+        logger.info(f"⚡ [VyroDrop] UID {uid}: Wallet already connected ({boot_data.get('wallet', {}).get('friendlyAddress')}).")
+        if mining_status == "IDLE":
+            st_code, m_res = safe_post(f"{VYRO_API}/mining/start", {}, extra_headers=v_headers)
+            if st_code in (200, 201):
+                logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining successfully started: {m_res.get('mining', {}).get('status', 'ACTIVE')}")
+            else:
+                logger.warning(f"[VyroDrop] UID {uid} mining/start response: {st_code} {m_res}")
+
+        # Claim mining if active or ready
+        mining_obj = boot_data.get("mining", {})
+        session_id = mining_obj.get("sessionId")
+        if session_id and (mining_status in ("READY", "ACTIVE") or float(mining_obj.get("claimablePreviewRaw") or 0) > 0):
+            cl_code, cl_res = safe_post(f"{VYRO_API}/mining/claim", {"sessionId": session_id}, extra_headers=v_headers)
+            logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining claimed: {cl_code} {cl_res}")
+
+        if is_master or uid == 6727787768 or str(uid) == str(OWNER_ID):
+            ref_code, ref_res = safe_post(f"{VYRO_API}/referrals/claim", {}, extra_headers=v_headers)
+            logger.info(f"👑 [VyroDrop] Master referral sweep: {ref_code} {ref_res}")
+        return True, False
+
+    # 2. Wallet needs connection. Check if we have dedicated TON wallet
+    if not wallet_entry or not wallet_entry.get("mnemonic"):
+        logger.info(f"ℹ️ [VyroDrop] UID {uid}: No dedicated TON mnemonic for wallet signature, skipping onboarding challenge.")
+        return True, False
+
+    # 3. Request challenge first to determine if human verification is required
+    ch_code, ch_body = safe_post(f"{VYRO_API}/wallet/challenge", {}, extra_headers=v_headers)
+    nonce = None
+
+    if ch_code in (200, 201) and isinstance(ch_body, dict) and ch_body.get("payload"):
+        nonce = ch_body["payload"]
+        logger.info(f"🔑 [VyroDrop] UID {uid}: Challenge nonce received directly: {nonce[:12]}...")
+    elif ch_code == 403 and isinstance(ch_body, dict):
+        ts_info = ch_body.get("error", {}).get("turnstile", {})
+        ts_sitekey = ts_info.get("siteKey") or VYRO_SITEKEY
+        ts_action = ts_info.get("action") or "wallet_onboarding"
+        ts_cdata = ts_info.get("cdata") or ""
+        logger.info(f"🛡️ [VyroDrop] UID {uid}: Turnstile challenge requested. Attempting API solver...")
+
+        api_token = solve_turnstile_via_api(ts_sitekey, VYRO_ORIGIN, action=ts_action, cdata=ts_cdata)
+        if api_token:
+            logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved via API: {api_token[:16]}...")
+            save_vyro_pass_to_upstash(uid, api_token)
+            ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": api_token}, extra_headers=v_headers)
+            if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
+                nonce = ch_body2["payload"]
+                logger.info(f"🔑 [VyroDrop] UID {uid}: Nonce received via API solved challenge: {nonce[:12]}...")
+
+    if not nonce:
+        return False, True
+
+    try:
+        connect_payload = create_ton_proof(wallet_entry, nonce)
+        conn_code, conn_body = safe_post(f"{VYRO_API}/wallet/connect", connect_payload, extra_headers=v_headers)
+        if conn_code in (200, 201):
+            logger.info(f"🎉 [VyroDrop] UID {uid}: Wallet connected via REST! Address: {wallet_entry.get('address')[:12]}...")
+            safe_post(f"{VYRO_API}/mining/start", {}, extra_headers=v_headers)
+            if is_master or uid == 6727787768 or str(uid) == str(OWNER_ID):
+                safe_post(f"{VYRO_API}/referrals/claim", {}, extra_headers=v_headers)
+            return True, False
+    except Exception as e:
+        logger.warning(f"[VyroDrop] UID {uid} REST connect error: {e}")
+
+    return False, True
+
+
+def check_and_farm_atf_rest(a_acc: dict) -> tuple[bool, bool]:
+    """
+    Fast REST handler for ATF Miner (@atfminers_bot).
+    Checks login status. If valid without captcha, claims mining rewards.
+    Returns: (is_handled_via_rest, needs_browser_solve)
+    """
+    a_uid = a_acc["uid"]
+    a_init = a_acc["init_data"]
+    p_chk = {
+        "initData": a_init,
+        "tg_id": a_uid,
+        "username": "",
+        "request_id": f"rq-chk-{a_uid}",
+        "device_id": f"dev-chk-{a_uid}"
+    }
+    atf_h = {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/json",
+        "Referer": f"{ATF_ORIGIN}/miner/index.html",
+        "Origin": ATF_ORIGIN
+    }
+    chk_code, chk_d = safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+    needs_atf_captcha = (chk_code == 403) or (isinstance(chk_d, dict) and chk_d.get("reason") in ("entry_captcha_required", "captcha_required"))
+    if not needs_atf_captcha and chk_code == 200:
+        logger.info(f"✅ [ATF] UID {a_uid}: Login valid without captcha! Auto-claiming rewards.")
+        safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+        return True, False
+    return False, True
+
+
 async def run_mrg_auto_solver():
-    """Main workflow: audits all 18 accounts, solves needed challenges, connects wallets, and auto-claims."""
+    """Main workflow: audits all 20 accounts across 5 bots, solves needed challenges, connects wallets, and auto-claims."""
     logger.info("====================================================================")
     logger.info("🚀 Starting 100% Cloud Fleet Auto-Farming & Turnstile Solver Cycle")
     logger.info("====================================================================")
@@ -1926,11 +2154,21 @@ async def run_mrg_auto_solver():
     accounts_data = []
     accounts_needing_solver = []
     victors_accounts = []
+    victors_needing_solver = []
+    victors_active = []
     vyro_accounts = []
+    vyro_needing_solver = []
     atf_accounts = []
+    atf_needing_solver = []
     kynex_accounts = []
 
-    # 1. Fetch tokens and inspect account states
+    victors_solved = 0
+    vyro_wallets_connected = 0
+    atf_solved = 0
+    total_claimed_mrg = 0.0
+
+    # 1. Fetch tokens and execute Fast REST Audits & Instant Harvesting
+    logger.info("⚡ Phase 1: Rapid REST Pre-Flight & Instant Multi-Bot Harvesting...")
     for idx, uid in enumerate(FLEET_UIDS, 1):
         tok_dict = get_token_from_upstash(uid, miniapp_cache=miniapp_cache)
         mrg_init = tok_dict.get("mrg_init_data")
@@ -1939,32 +2177,45 @@ async def run_mrg_auto_solver():
         vyro_init = tok_dict.get("vyro_init_data")
         kynex_init = tok_dict.get("kynex_init_data")
 
+        # ATF Fast REST Check
         if atf_init:
-            atf_accounts.append({
-                "uid": uid,
-                "init_data": atf_init
-            })
+            a_acc = {"uid": uid, "init_data": atf_init}
+            atf_accounts.append(a_acc)
+            handled, needs_b = check_and_farm_atf_rest(a_acc)
+            if handled:
+                atf_solved += 1
+            elif needs_b:
+                atf_needing_solver.append(a_acc)
 
+        # Victor's Company Fast REST Check
         if vic_init:
-            victors_accounts.append({
-                "uid": uid,
-                "init_data": vic_init
-            })
+            v_acc = {"uid": uid, "init_data": vic_init}
+            victors_accounts.append(v_acc)
+            handled, needs_b = check_and_farm_victors_rest(v_acc, is_master=(uid == 6727787768))
+            if handled:
+                victors_solved += 1
+                victors_active.append(v_acc)
+            elif needs_b:
+                victors_needing_solver.append(v_acc)
 
+        # VyroDrop Fast REST Check
         if vyro_init:
-            vyro_accounts.append({
-                "uid": uid,
-                "init_data": vyro_init
-            })
+            vy_acc = {"uid": uid, "init_data": vyro_init}
+            vyro_accounts.append(vy_acc)
+            w_entry = fleet_ton_wallets.get(str(uid)) or fleet_ton_wallets.get(uid)
+            handled, needs_b = check_and_farm_vyro_rest(uid, vyro_init, w_entry, is_master=(uid == 6727787768))
+            if handled:
+                vyro_wallets_connected += 1
+            elif needs_b:
+                vyro_needing_solver.append(vy_acc)
 
+        # Kynex Network Collector
         if kynex_init:
-            kynex_accounts.append({
-                "uid": uid,
-                "init_data": kynex_init
-            })
+            kynex_accounts.append({"uid": uid, "init_data": kynex_init})
 
+        # MRG Status Check
         if not mrg_init:
-            logger.warning(f"[{idx:02d}/18] UID {uid}: No mrg_init_data found in Upstash. Skipping.")
+            logger.warning(f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: No mrg_init_data found in Upstash. Skipping.")
             continue
 
         if mrg_init.startswith("user%3D") or "%257B" in mrg_init or "%2522" in mrg_init:
@@ -1972,7 +2223,7 @@ async def run_mrg_auto_solver():
 
         stat = check_account_status(mrg_init)
         if not stat.get("success"):
-            logger.warning(f"[{idx:02d}/18] UID {uid}: Could not fetch account status ({stat.get('error')}).")
+            logger.warning(f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: Could not fetch account status ({stat.get('error')}).")
             continue
 
         has_active_pass = is_human_pass_active(stat.get("humanVerifiedUntil"))
@@ -1988,34 +2239,38 @@ async def run_mrg_auto_solver():
         if not has_active_pass:
             accounts_needing_solver.append(acc_info)
             logger.info(
-                f"[{idx:02d}/18] UID {uid}: ⚠️ Human pass needed. "
+                f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: ⚠️ MRG Human pass needed. "
                 f"Bal: {stat['inAppBalance']:.1f} MRG, Unclaimed: {stat['unclaimed']:.2f} MRG (Lvl {stat['manualUnlockedLevel']})"
             )
         else:
             logger.info(
-                f"[{idx:02d}/18] UID {uid}: ✅ Human pass already active until {stat['humanVerifiedUntil']}. "
+                f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: ✅ MRG Human pass active until {stat['humanVerifiedUntil']}. "
                 f"Bal: {stat['inAppBalance']:.1f} MRG, Unclaimed: {stat['unclaimed']:.2f} MRG"
             )
 
-    needed_count = len(accounts_needing_solver)
-    logger.info(
-        f"📊 Audit Summary: {len(accounts_data)} accounts connected. "
-        f"{needed_count} accounts require MRG Turnstile. "
-        f"{len(victors_accounts)} accounts found with Victor's Company. "
-        f"{len(vyro_accounts)} accounts found with VyroDrop. "
-        f"{len(atf_accounts)} accounts found with ATF Miner. "
-        f"{len(kynex_accounts)} accounts found with Kynex Network."
+    needed_mrg = len(accounts_needing_solver)
+    total_browser_solves_needed = (
+        needed_mrg +
+        len(victors_needing_solver) +
+        len(vyro_needing_solver) +
+        len(atf_needing_solver)
     )
 
-    # 2. Launch stealth browser and process accounts needing verification
-    solved_count = 0
-    total_claimed_mrg = 0.0
-    victors_solved = 0
-    vyro_wallets_connected = 0
-    atf_solved = 0
+    logger.info(
+        f"📊 Audit Summary: {len(accounts_data)} accounts connected. "
+        f"MRG browser solves: {needed_mrg}. "
+        f"Victor's browser solves: {len(victors_needing_solver)} ({victors_solved} verified via REST). "
+        f"VyroDrop browser solves: {len(vyro_needing_solver)} ({vyro_wallets_connected} connected via REST). "
+        f"ATF browser solves: {len(atf_needing_solver)} ({atf_solved} logged in via REST). "
+        f"Kynex accounts: {len(kynex_accounts)}."
+    )
 
-    if needed_count > 0 or len(victors_accounts) > 0 or len(vyro_accounts) > 0 or len(atf_accounts) > 0:
-        # Import patchright (or fallback to playwright)
+    # 2. Targeted Browser Solving (ONLY for accounts that actually require Turnstile/Captcha)
+    solved_count = 0
+    if total_browser_solves_needed == 0:
+        logger.info("🎉 [Fast Path] 100% of fleet accounts are active and verified across all bots! Browser launch bypassed.")
+    else:
+        logger.info(f"🛡️ Phase 2: Launching stealth Chromium for {total_browser_solves_needed} specific accounts requiring Turnstile...")
         try:
             from patchright.async_api import async_playwright
             logger.info("🛡️ Using Patchright stealth browser engine.")
@@ -2025,15 +2280,14 @@ async def run_mrg_auto_solver():
 
         # Prioritize Master Account (6727787768) first in every queue
         accounts_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        victors_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        vyro_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        atf_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        victors_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        vyro_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        atf_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
 
         is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
         headless_flag = False if is_xvfb else True
         logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
 
-        # Cloudflare Challenge Platform proxies are attached dynamically per context (MRG uses Webshare residential proxies, Victor's/Vyro run directly).
         launch_kwargs = {
             "headless": headless_flag,
             "args": [
@@ -2043,7 +2297,6 @@ async def run_mrg_auto_solver():
                 "--window-size=1280,800"
             ]
         }
-        logger.info("🛡️ Launching Chromium with per-context dynamic proxy isolation.")
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(**launch_kwargs)
@@ -2063,86 +2316,19 @@ async def run_mrg_auto_solver():
 
                 if success:
                     solved_count += 1
-                    # Claim accumulated mining rewards
                     claim_res = claim_mining_reward(m_init)
                     claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
                     total_claimed_mrg += claimed_amt
                     logger.info(f"⛏️ UID {uid}: Successfully claimed {claimed_amt:.2f} MRG! Miner restarted.")
-
-                    # Auto-upgrade level if balance allows (including dedicated TON wallet balance)
                     new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.5)
 
-            # B. Solve Victor's Company passes & qualify recruits
-            for v_acc in victors_accounts:
+            # B. Solve Victor's Company passes
+            for v_acc in victors_needing_solver:
                 v_uid = v_acc["uid"]
                 v_init = v_acc["init_data"]
-
-                # Fast pre-check: If account already has a working humanPass in Upstash Redis, test it and skip heavy browser launch!
-                cached_pass = None
-                try:
-                    c_resp = safe_get(f"{UPSTASH_URL}/get/victors:pass:{v_uid}", extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
-                    if c_resp and isinstance(c_resp[1], dict) and c_resp[1].get("result"):
-                        raw_r = c_resp[1]["result"]
-                        try:
-                            parsed_r = json.loads(raw_r) if isinstance(raw_r, str) else raw_r
-                        except Exception:
-                            parsed_r = raw_r
-                        cached_pass = parsed_r.get("humanPass") if isinstance(parsed_r, dict) else str(parsed_r)
-                        if cached_pass in ("null", "nil", "None", ""):
-                            cached_pass = None
-                except Exception:
-                    pass
-
-                if cached_pass:
-                    test_h = {
-                        "Authorization": f"tma {v_init}",
-                        "Origin": VICTORS_ORIGIN,
-                        "Referer": f"{VICTORS_ORIGIN}/",
-                        "x-human-pass": str(cached_pass)
-                    }
-                    t_code, t_d = safe_get(f"{VICTORS_API}/me", extra_headers=test_h)
-                    if t_code == 200 and isinstance(t_d, dict) and (t_d.get("success") is True or "state" in t_d or "user" in t_d):
-                        logger.info(f"✅ [Victor's] UID {v_uid}: Human pass already active and valid in Upstash Redis! Skipping browser solve.")
-                        safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=test_h)
-                        safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=test_h)
-                        safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=test_h)
-                        u_res = t_d.get("user") or t_d
-                        if isinstance(u_res, dict) and u_res.get("manualUnlockedLevel", 0) < 1:
-                            safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, extra_headers=test_h)
-                        safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=test_h)
-                        safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=test_h)
-                        # Fetch and claim pending tasks
-                        _, tk_data = safe_get(f"{VICTORS_API}/tasks", extra_headers=test_h)
-                        if isinstance(tk_data, dict):
-                            raw_tasks = tk_data.get("tasks") or (tk_data.get("data", {}).get("tasks") if isinstance(tk_data.get("data"), dict) else [])
-                            if isinstance(raw_tasks, list):
-                                for task_item in raw_tasks:
-                                    if isinstance(task_item, dict):
-                                        t_status = task_item.get("status")
-                                        is_claimed = task_item.get("claimed", False)
-                                        tid = task_item.get("id") or task_item.get("taskId")
-                                        if tid and (t_status in ("open", "READY_TO_CLAIM", "PENDING", "COMPLETED") or not is_claimed):
-                                            t_kind = task_item.get("kind", "")
-                                            if t_kind in ("onchain_hold", "nft_hold"):
-                                                continue
-                                            c_stat, c_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=test_h)
-                                            logger.info(f"📋 [Victor's] UID {v_uid} task '{tid}' claim result: {c_stat} {c_res}")
-
-                        # Run arcade expeditions
-                        try:
-                            import victors_arcade_solver
-                            async with aiohttp.ClientSession() as arc_session:
-                                await victors_arcade_solver.solve_deep_mine_expeditions(arc_session, test_h, f"UID {v_uid}", max_runs=2)
-                        except Exception:
-                            pass
-                        victors_solved += 1
-                        continue
-                    else:
-                        logger.info(f"⚠️ [Victor's] UID {v_uid}: Cached pass expired (HTTP {t_code}). Launching browser solver...")
-
                 try:
                     v_res = await asyncio.wait_for(
                         solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),
@@ -2150,14 +2336,15 @@ async def run_mrg_auto_solver():
                     )
                     if v_res:
                         victors_solved += 1
+                        victors_active.append(v_acc)
                 except asyncio.TimeoutError:
                     logger.warning(f"Victor's solve timed out (55s) for UID {v_uid}")
                 except Exception as ve:
                     logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.5)
 
-            # C. Solve VyroDrop wallet onboarding & start mining
-            for vy_acc in vyro_accounts:
+            # C. Solve VyroDrop wallet onboarding
+            for vy_acc in vyro_needing_solver:
                 vy_uid = vy_acc["uid"]
                 vy_init = vy_acc["init_data"]
                 w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
@@ -2172,52 +2359,45 @@ async def run_mrg_auto_solver():
                     logger.warning(f"VyroDrop solve timed out (55s) for UID {vy_uid}")
                 except Exception as vye:
                     logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.5)
 
-            # D. Solve ATF Miner entry captcha passes (5-day security check & new accounts)
-            for atf_acc in atf_accounts:
+            # D. Solve ATF Miner entry captcha
+            for atf_acc in atf_needing_solver:
                 a_uid = atf_acc["uid"]
                 a_init = atf_acc["init_data"]
-                # Fast pre-check: Check if login requires captcha
-                p_chk = {
-                    "initData": a_init,
-                    "tg_id": a_uid,
-                    "username": "",
-                    "request_id": f"rq-chk-{a_uid}",
-                    "device_id": f"dev-chk-{a_uid}"
-                }
-                atf_h = {
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Content-Type": "application/json",
-                    "Referer": f"{ATF_ORIGIN}/miner/index.html",
-                    "Origin": ATF_ORIGIN
-                }
-                chk_code, chk_d = safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
-                needs_atf_captcha = (chk_code == 403) or (isinstance(chk_d, dict) and chk_d.get("reason") in ("entry_captcha_required", "captcha_required"))
-                if needs_atf_captcha:
-                    logger.info(f"⚠️ [ATF] UID {a_uid} requires entry captcha. Solving Turnstile (0x4AAAAAAEbiOQ5xhVRMXGgt)...")
-                    try:
-                        atf_res = await asyncio.wait_for(
-                            solve_atf_turnstile(browser, a_uid, a_init),
-                            timeout=55.0
-                        )
-                        if atf_res:
-                            atf_solved += 1
-                            # Immediately login & start mining post-solve
-                            safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
-                            safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
-                    except asyncio.TimeoutError:
-                        logger.warning(f"ATF solve timed out (55s) for UID {a_uid}")
-                    except Exception as ae:
-                        logger.warning(f"ATF solve exception for UID {a_uid}: {ae}")
-                    await asyncio.sleep(1.0)
-                else:
-                    logger.info(f"✅ [ATF] UID {a_uid}: Login valid without captcha. Skipping.")
+                try:
+                    atf_res = await asyncio.wait_for(
+                        solve_atf_turnstile(browser, a_uid, a_init),
+                        timeout=55.0
+                    )
+                    if atf_res:
+                        atf_solved += 1
+                        p_chk = {
+                            "initData": a_init,
+                            "tg_id": a_uid,
+                            "username": "",
+                            "request_id": f"rq-chk-{a_uid}",
+                            "device_id": f"dev-chk-{a_uid}"
+                        }
+                        atf_h = {
+                            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Content-Type": "application/json",
+                            "Referer": f"{ATF_ORIGIN}/miner/index.html",
+                            "Origin": ATF_ORIGIN
+                        }
+                        safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                        safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                except asyncio.TimeoutError:
+                    logger.warning(f"ATF solve timed out (55s) for UID {a_uid}")
+                except Exception as ae:
+                    logger.warning(f"ATF solve exception for UID {a_uid}: {ae}")
+                await asyncio.sleep(0.5)
 
             await browser.close()
+            logger.info("🛡️ Phase 2 Complete: Chromium closed successfully.")
 
-    # 3. Also claim rewards for accounts that already had an active pass
+    # 3. Claim rewards for MRG accounts that already had an active pass
     for acc in accounts_data:
         if acc["has_active_pass"]:
             uid = acc["uid"]
@@ -2228,7 +2408,6 @@ async def run_mrg_auto_solver():
                     claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
                     total_claimed_mrg += claimed_amt
                     logger.info(f"⛏️ UID {uid}: Auto-claimed active pass reward: {claimed_amt:.2f} MRG.")
-                    # Auto-upgrade level if balance allows (including dedicated TON wallet balance)
                     new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
@@ -2240,15 +2419,46 @@ async def run_mrg_auto_solver():
         safe_post(f"{API_BASE}/api/user/claim-one-time-bonus", {"initData": m_init})
         logger.info("👑 Master Account referral commission and team bonus claimed.")
 
-    # 5. Kynex Network Multi-Account Cloud Auto-Farming
+    # 5. Victor's Arcade Expeditions (Deep Mine Minigame)
+    logger.info("🎮 Phase 3: Executing Victor's Deep Mine Arcade expeditions for active accounts...")
+    try:
+        import victors_arcade_solver
+        async with aiohttp.ClientSession() as arc_session:
+            for v_act in victors_active:
+                v_uid = v_act["uid"]
+                v_h = v_act.get("authed_headers")
+                if not v_h:
+                    v_init = v_act["init_data"]
+                    c_resp = safe_get(f"{UPSTASH_URL}/get/victors:pass:{v_uid}", extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+                    if c_resp and isinstance(c_resp[1], dict) and c_resp[1].get("result"):
+                        r_raw = c_resp[1]["result"]
+                        try:
+                            r_parsed = json.loads(r_raw) if isinstance(r_raw, str) else r_raw
+                        except Exception:
+                            r_parsed = r_raw
+                        h_pass = r_parsed.get("humanPass") if isinstance(r_parsed, dict) else str(r_parsed)
+                        if h_pass:
+                            v_h = {
+                                "Authorization": f"tma {v_init}",
+                                "Origin": VICTORS_ORIGIN,
+                                "Referer": f"{VICTORS_ORIGIN}/",
+                                "x-human-pass": str(h_pass)
+                            }
+                if v_h:
+                    try:
+                        await victors_arcade_solver.solve_deep_mine_expeditions(arc_session, v_h, f"UID {v_uid}", max_runs=2)
+                    except Exception as arc_e:
+                        logger.debug(f"[Victor's Arcade] UID {v_uid} error: {arc_e}")
+    except Exception as e:
+        logger.debug(f"Victor's arcade batch error: {e}")
+
+    # 6. Kynex Network Multi-Account Cloud Auto-Farming
     kynex_farmed = 0
     total_claimed_knx = 0.0
     if kynex_accounts:
-        logger.info(f"⚡ Starting Kynex Network Auto-Farming for {len(kynex_accounts)} accounts...")
+        logger.info(f"⚡ Phase 4: Starting Kynex Network Auto-Farming for {len(kynex_accounts)} accounts...")
         try:
-            import aiohttp
             from kynex_miner import farm_kynex_account
-
             async with aiohttp.ClientSession() as kyn_session:
                 for k_acc in kynex_accounts:
                     kuid = k_acc["uid"]
@@ -2269,13 +2479,13 @@ async def run_mrg_auto_solver():
         except Exception as kerr:
             logger.warning(f"⚠️ Kynex fleet farm exception: {kerr}")
 
-    # 6. Telegram Telemetry Notification
+    # 7. Telegram Telemetry Notification
     report_msg = (
         f"🚀 <b>5-Bot Fleet Cloud Turnstile & Multi-Farming Engine Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> {len(FLEET_UIDS)}\n"
-        f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_count}\n"
-        f"• <b>ATF Captcha Solved:</b> {atf_solved}/{len(atf_accounts)}\n"
-        f"• <b>Victor's Pass Solved:</b> {victors_solved}/{len(victors_accounts)}\n"
+        f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_mrg}\n"
+        f"• <b>ATF Captcha / Login:</b> {atf_solved}/{len(atf_accounts)}\n"
+        f"• <b>Victor's Pass & Mining:</b> {victors_solved}/{len(victors_accounts)}\n"
         f"• <b>VyroDrop Wallets & Mining:</b> {vyro_wallets_connected}/{len(vyro_accounts)}\n"
         f"• <b>Kynex Network Farmed:</b> {kynex_farmed}/{len(kynex_accounts)} (+{total_claimed_knx:.2f} KNX)\n"
         f"• <b>Total MRG Harvested:</b> {total_claimed_mrg:.2f} MRG\n"
@@ -2283,7 +2493,7 @@ async def run_mrg_auto_solver():
         f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
     )
     logger.info(
-        f"📢 Telemetry: MRG Solved {solved_count}/{needed_count}, "
+        f"📢 Telemetry: MRG Solved {solved_count}/{needed_mrg}, "
         f"ATF Solved {atf_solved}/{len(atf_accounts)}, "
         f"Victor's Solved {victors_solved}/{len(victors_accounts)}, "
         f"Vyro Connected {vyro_wallets_connected}/{len(vyro_accounts)}, "

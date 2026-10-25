@@ -2,14 +2,14 @@ name: "MY AGY AI — 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming"
 
 on:
   schedule:
-    # Runs twice a day (every 12h) to conserve free minutes (leaving 580+ min safety margin on 2,000 quota)
-    - cron: '0 */12 * * *'
+    # Runs every 6 hours on public runner with unlimited free minutes
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
   solve_and_farm_mrg:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
 
     steps:
       - name: Checkout Repository
