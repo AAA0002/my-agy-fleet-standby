@@ -158,7 +158,7 @@ import sys
 import re
 
 async def get_fleet_mining_totals() -> dict:
-    totals = {"mrg": 0.0, "atf": 0.0, "knx": 0.0, "diggo": 0.0, "pepe": 0.0}
+    totals = {"mrg": 0.0, "atf": 0.0, "vic": 0.0, "knx": 0.0}
     rep_file = os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json")
     if os.path.exists(rep_file):
         try:
@@ -166,30 +166,25 @@ async def get_fleet_mining_totals() -> dict:
                 data = json.load(f)
                 for uid, info in data.items():
                     bots = info.get("bots", {})
-                    # MRG
+                    # 1. MRG
                     mrg_txt = str(bots.get("1. MRG Miner", {}).get("core", {}))
                     m = re.search(r"([\d\.]+)\s*MRG", mrg_txt)
                     if m: totals["mrg"] += float(m.group(1))
                     
-                    # ATF
+                    # 2. ATF
                     atf_txt = str(bots.get("2. ATF Miner", {}).get("core", {}))
                     m = re.search(r"([\d\.]+)\s*ATF", atf_txt)
                     if m: totals["atf"] += float(m.group(1))
+
+                    # 3. Victor's Company
+                    vic_txt = str(bots.get("3. Victor's Company", {}).get("core", {}))
+                    m = re.search(r"([\d\.]+)\s*VIC", vic_txt)
+                    if m: totals["vic"] += float(m.group(1))
                     
-                    # KNX
+                    # 4. Kynex Network
                     knx_txt = str(bots.get("5. Kynex Network", {}).get("core", {}))
                     m = re.search(r"([\d\.]+)\s*KNX", knx_txt)
                     if m: totals["knx"] += float(m.group(1))
-                    
-                    # Diggo
-                    dgo_txt = str(bots.get("6. DiggoMiner", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*DIGGO", dgo_txt)
-                    if m: totals["diggo"] += float(m.group(1))
-                    
-                    # Pepe
-                    pepe_txt = str(bots.get("8. PepeGram", {}).get("core", {}))
-                    m = re.search(r"Mining Hashes:\s*([\d\.]+)", pepe_txt)
-                    if m: totals["pepe"] += float(m.group(1))
         except Exception:
             pass
             
@@ -295,15 +290,12 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Live On-Chain Balance:* `{wallet_bnb:.6f} BNB` (`~${wallet_usd:.2f} USD` / `~৳{wallet_bdt:.0f} BDT`)\n"
             f"• *Historical Distributions:* `{total_payouts_count} payouts` totaling `{total_payouts_bnb:.6f} BNB`\n"
             f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n\n"
-            f"💎 *2. Multi-Chain 9-Bot Autonomous Mining Treasury:*\n"
-            f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 163+, Cloud Turnstile Auto-Claim)\n"
+            f"💎 *2. Multi-Chain 5-Bot Autonomous Mining Treasury:*\n"
+            f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 164+, Cloud Turnstile Auto-Claim)\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
+            f"• *Victor's Company:* `{fleet_totals['vic']:,.2f} VIC` mined (Levels up to 58+, HumanPass Verified)\n"
             f"• *Kynex Network:* `{fleet_totals['knx']:,.2f} KNX` mined (Firebase RTDB Node Auto-Claim)\n"
-            f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Levels up to 74+, Upstash JWT Auth)\n"
-            f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} Hashes` mined (Power up to 8,996)\n"
-            f"• *VyroDrop:* DEX liquidity speed miner active across all 20 accounts (TonConnect 2.0 signed proof)\n"
-            f"• *Victor's Company:* 24h GameFi yield & Level 1 Miner compounding\n"
-            f"• *AdxEarn AI & Astra:* 24h daily check-in loops & edge challenge solvers\n"
+            f"• *VyroDrop:* DEX speed miner active across all 20 accounts (TonConnect 2.0 signed proof)\n"
             f"• *On-Chain Target TON:* `{TON_PRIMARY_WALLET}`\n"
             f"• *Live On-Chain TON Balance:* `{wallet_ton:.4f} TON` (`~${wallet_ton_usd:.2f} USD` / `~৳{wallet_ton_bdt:.0f} BDT`)\n"
             f"• *TON Price (TonAPI):* `${ton_price:.2f} USD`\n\n"
