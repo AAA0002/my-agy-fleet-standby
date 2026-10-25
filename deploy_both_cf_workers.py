@@ -1564,7 +1564,7 @@ async function upstashExpire(key, seconds) {
 }
 
 async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache to protect 10k/day quota
-  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:") || key.startsWith("ub_user:") || key.startsWith("fleet:daily_ads:") || key.startsWith("admin_sess:") || key.startsWith("admin_passkey")) {
+  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:") || key.startsWith("ub_user:") || key.startsWith("fleet:daily_ads:") || key.startsWith("admin_sess:") || key.startsWith("admin_passkey") || key.startsWith("admin_failed:") || key.startsWith("admin_lockout:")) {
     maxAgeMs = 0; // Interactive real-time flow keys bypass caching completely
   }
   if (key.startsWith("fleet:revoked_sessions") || key.startsWith("fleet:healthy_sessions") || key.startsWith("fleet:live_state") || key.startsWith("fleet:status") || key.startsWith("fleet:tokens_state") || key.startsWith("fleet:accounts")) {
@@ -3101,6 +3101,19 @@ fi
         const { passkey_credential_id, passkey_response } = body;
         const password = body.password || body.pin;
 
+        // Security: Edge Brute-Force Defense (Max 5 failed attempts per 5 minutes per IP)
+        const clientIp = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() || "global";
+        const lockKey = `admin_lockout:${clientIp}`;
+        const attemptsKey = `admin_failed:${clientIp}`;
+
+        const isLockedOut = await upstashGet(lockKey);
+        if (isLockedOut) {
+          return new Response(JSON.stringify({
+            ok: false,
+            error: "🔒 Security Lockout: Too many failed PIN attempts. Access suspended for 5 minutes."
+          }), { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
         let authValid = false;
         let authMethod = "";
         const sbAdmin = await supabaseGetAdminAuth("6727787768");
@@ -3149,11 +3162,28 @@ fi
         }
 
         if (!authValid) {
-          return new Response(JSON.stringify({ ok: false, error: "Invalid password or biometric passkey" }), {
+          const failCount = await upstashIncr(attemptsKey);
+          await upstashExpire(attemptsKey, 300);
+          if (failCount >= 5) {
+            await upstashSet(lockKey, "locked");
+            await upstashExpire(lockKey, 300);
+            return new Response(JSON.stringify({
+              ok: false,
+              error: "🔒 Security Lockout Triggered: 5 failed PIN attempts. Access suspended for 5 minutes."
+            }), { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+          return new Response(JSON.stringify({
+            ok: false,
+            error: `Invalid PIN or biometric passkey (${5 - failCount} attempts remaining)`
+          }), {
             status: 401,
             headers: { "Content-Type": "application/json", ...corsHeaders }
           });
         }
+
+        // On successful auth: clear failure records
+        await upstashDel(attemptsKey).catch(() => {});
+        await upstashDel(lockKey).catch(() => {});
 
         const randBytes = new Uint8Array(24);
         crypto.getRandomValues(randBytes);
@@ -11197,12 +11227,13 @@ Reply to Arif naturally:`;
       const hasActivePass = profile.subscription_expiry && profile.subscription_expiry > now;
       const dailyCost = hasActivePass ? 0 : (accs.length * 100);
       const elapsedDaily = now - (profile.last_daily_claim || 0);
-      const COOLDOWN_DAILY_MS = 24 * 3600 * 1000;
+      const COOLDOWN_DAILY_MS = 20 * 3600 * 1000; // 20 hours comfortable calendar-day window
       const canClaimDaily = elapsedDaily >= COOLDOWN_DAILY_MS;
       const dailyRemainingMs = canClaimDaily ? 0 : (COOLDOWN_DAILY_MS - elapsedDaily);
       const streakContinues = (profile.last_daily_claim || 0) > 0 && elapsedDaily < (48 * 3600 * 1000);
       const expectedStreak = canClaimDaily ? (streakContinues ? ((profile.daily_streak || 0) + 1) : 1) : (profile.daily_streak || 1);
-      const nextDailyReward = expectedStreak === 1 ? 50 : (expectedStreak === 2 ? 60 : (expectedStreak === 3 ? 75 : (expectedStreak === 4 ? 85 : 100)));
+      const STREAK_REWARDS_TIERS = [100, 150, 200, 250, 300, 400, 500];
+      const nextDailyReward = expectedStreak <= 7 ? STREAK_REWARDS_TIERS[expectedStreak - 1] : 500;
 
       let userWallets = null;
       try {
@@ -11411,7 +11442,7 @@ Reply to Arif naturally:`;
         const now = Date.now();
         const lastClaim = profile.last_daily_claim || 0;
         const elapsed = now - lastClaim;
-        const COOLDOWN_MS = 24 * 3600 * 1000;
+        const COOLDOWN_MS = 20 * 3600 * 1000; // 20 hours comfortable calendar-day window
 
         if (elapsed < COOLDOWN_MS) {
           const remMs = COOLDOWN_MS - elapsed;
@@ -12867,7 +12898,7 @@ Reply to Arif naturally:`;
             const now = Date.now();
             const lastClaim = profile.last_daily_claim || 0;
             const elapsed = now - lastClaim;
-            const COOLDOWN_MS = 24 * 3600 * 1000;
+            const COOLDOWN_MS = 20 * 3600 * 1000; // 20 hours comfortable calendar-day window
             
             if (elapsed < COOLDOWN_MS) {
               const remMs = COOLDOWN_MS - elapsed;
@@ -14701,7 +14732,7 @@ Reply to Arif naturally:`;
             const now = Date.now();
             const lastClaim = profile.last_daily_claim || 0;
             const elapsed = now - lastClaim;
-            const COOLDOWN_MS = 24 * 3600 * 1000;
+            const COOLDOWN_MS = 20 * 3600 * 1000; // 20 hours comfortable calendar-day window
             
             if (elapsed < COOLDOWN_MS) {
               const remMs = COOLDOWN_MS - elapsed;

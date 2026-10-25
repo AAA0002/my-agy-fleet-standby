@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Edge Brute-Force Rate Limiting & 20h Streak Cooldown Alignment (October 25, 2026)**:
+  - **Edge-Native Admin Login Brute-Force Defense (`deploy_both_cf_workers.py`)**:
+    * Implemented IP-based attempt tracking (`admin_failed:{clientIp}`) and lockout (`admin_lockout:{clientIp}`) directly in the Cloudflare edge worker.
+    * Allows max 5 failed PIN/passkey attempts within 5 minutes. On 5th failure, access is suspended for 300 seconds (HTTP 429), defending the 4-digit PIN `2743` against automated guessing.
+    * Successful authentication instantly purges the client's failure counter.
+  - **20-Hour Comfortable Daily Streak Window**:
+    * Reduced daily claim cooldown from strict 24 hours down to 20 hours (`COOLDOWN_DAILY_MS = 20 * 3600 * 1000`).
+    * Prevents daily claim time creep where users are forced later into the day and risk losing their consecutive 48h streak.
+  - **Streak Reward Progression Alignment**:
+    * Resolved discrepancy in `/api/user/profile` where `nextDailyReward` was calculated using deprecated values (`50, 60, 75, 85, 100`).
+    * Aligned calculation to the official 7-day progression `[100, 150, 200, 250, 300, 400, 500]`, matching Mini App button labels, Telegram notifications, and the 7-day milestone stepper.
+
+
 - **🌐 Authentic Edge Mesh Network Monitoring & Mirror Route Hardening (October 25, 2026)**:
   - **Ground-Truth Edge Network Telemetry (`admin.html`)**:
     * Purged fake hardcoded initial latency values (68ms, 74ms, 71ms, 82ms, 75ms) from `meshPings` state.

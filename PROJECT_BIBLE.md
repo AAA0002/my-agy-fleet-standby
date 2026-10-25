@@ -1712,6 +1712,11 @@ Whenever you perform work in this repository:
 * **Authentic Edge Mesh Network Monitoring & Mirror Route Hardening (October 25, 2026)**:
   - **Ground-Truth Network Telemetry (`admin.html`)**: Replaced fake hardcoded initial latency values with real probing states (`status: "probing"`, `ping: null`), dynamic status dots (🟢 live, 🟡 probing, 🔴 offline), and automatic background mesh ping on operator login (`testMeshNodes()`). Synchronized to `public/admin.html` and `public_admin/admin/index.html`.
   - **Static Mirror Route Hardening (`public/miner/index.html`)**: Provisioned `public/miner/index.html` as direct mirror of `public_ads/miner/index.html` to eliminate 404 risks across all static routing paths. Synchronized `public_admin/user-admin/index.html`.
+* **Edge Brute-Force Rate Limiting & 20h Streak Cooldown Alignment (October 25, 2026)**:
+  - **Admin Login Brute-Force Defense**: Added IP-based attempt tracking (`admin_failed:{clientIp}`) and lockout (`admin_lockout:{clientIp}`) directly in Cloudflare edge worker (max 5 failed attempts per 5 minutes before 300s lockout). Successful login clears failure counter.
+  - **20-Hour Daily Claim Window**: Reduced daily claim cooldown from 24h to 20h (`COOLDOWN_DAILY_MS = 20 * 3600 * 1000`) across edge REST API, User Bot `/daily`, and callback handlers, preventing claim time creep.
+  - **Streak Progression Alignment**: Aligned `/api/user/profile` `nextDailyReward` calculation with the 7-day progression `[100, 150, 200, 250, 300, 400, 500]`. Deployed to Node 4 and backed up to `@myagyai`.
+
 
 
 
