@@ -2000,11 +2000,15 @@
       // Populate Custom Payout Routing Status
       if (p.custom_wallet) {
         const cwEl = document.getElementById('custom-wallet-status');
+        const cwInput = document.getElementById('input-custom-wallet');
+        const cwAddr = typeof p.custom_wallet === 'object' ? p.custom_wallet.address : p.custom_wallet;
+        const cwChain = ((typeof p.custom_wallet === 'object' ? p.custom_wallet.chain : "TON") || "TON").toUpperCase();
         if (cwEl) {
-          const cwAddr = typeof p.custom_wallet === 'object' ? p.custom_wallet.address : p.custom_wallet;
-          const cwChain = ((typeof p.custom_wallet === 'object' ? p.custom_wallet.chain : "TON") || "TON").toUpperCase();
           cwEl.textContent = `🟢 Payouts route to personal ${cwChain} wallet: ${cwAddr.slice(0, 8)}...${cwAddr.slice(-6)}`;
           cwEl.className = "text-[10px] text-emerald-400 font-mono font-semibold";
+        }
+        if (cwInput && !cwInput.value) {
+          cwInput.value = cwAddr;
         }
       }
     }
