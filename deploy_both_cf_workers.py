@@ -2535,18 +2535,27 @@ export default {
       }
     };
 
-    // 1. Health check & Diagnostics
-    if (path === "/health" || path === "/api/health") {
+    // 1. Health check, Diagnostics & Mesh Topology
+    if (path === "/health" || path === "/api/health" || path === "/api/mesh/status" || path === "/api/mesh") {
+      const colo = request.cf ? request.cf.colo : "APAC";
+      const country = request.cf ? request.cf.country : "GLOBAL";
       return new Response(JSON.stringify({
         ok: true,
-        service: "MY AGY AI Edge Gateway (3x Sharded Cloud Mesh)",
+        service: "MY AGY AI Edge Gateway (5-Node Cloud Mesh)",
         node: CURRENT_SUBDOMAIN,
+        colo: colo,
+        country: country,
         shard_index: NODE_SHARD_INDEX,
         siblings: SIBLING_URLS,
-        features: ["backup_storage", "sentinel", "rates_oracle", "fleet_sync", "payouts", "ai_llama", "3x_sharding", "autonomous_cloud_farming"],
+        role: CURRENT_SUBDOMAIN === "agorameet" ? "PRIMARY_ACTIVE" : "STANDBY_FAILOVER",
+        features: ["backup_storage", "sentinel", "rates_oracle", "fleet_sync", "payouts", "ai_llama", "5x_mesh", "autonomous_cloud_farming", "edge_cache_v2"],
         timestamp: new Date().toISOString()
       }), {
-        headers: { "Content-Type": "application/json", ...corsHeaders }
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=5, s-maxage=10",
+          ...corsHeaders
+        }
       });
     }
 
@@ -4200,49 +4209,52 @@ fi
       }
     }
 
-    // 7.5 High-Speed Dedicated Dashboards & Watch Ads Separation
-    // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
-    if (path === "/miner" || path === "/miner/" || path === "/dashboard" || path === "/mining-app" || path === "/atf") {
-      return new Response(__USER_MINI_APP_HTML_JSON__, {
+    // 7.5 High-Speed Dedicated Dashboards with Edge Caching & ETag HTTP 304 Support
+    const serveDashboard = (htmlContent, etagKey) => {
+      const etag = `"${etagKey}"`;
+      const isVersioned = url.searchParams.has("v");
+      const cacheControl = isVersioned
+        ? "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+        : "public, max-age=30, s-maxage=120, stale-while-revalidate=600";
+      
+      if (request.headers.get("If-None-Match") === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: {
+            "ETag": etag,
+            "Cache-Control": cacheControl,
+            ...corsHeaders
+          }
+        });
+      }
+      return new Response(htmlContent, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": cacheControl,
+          "ETag": etag,
           ...corsHeaders
         }
       });
+    };
+
+    // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
+    if (path === "/miner" || path === "/miner/" || path === "/dashboard" || path === "/mining-app" || path === "/atf") {
+      return serveDashboard(__USER_MINI_APP_HTML_JSON__, "v6.1-miner");
     }
 
     // Watch Ads Portals (Dedicated Ad Player & Reward Flow)
     if (path === "/ads" || path === "/app/ad" || path === "/app/ad/" || path === "/ad" || path === "/adsgram" || path === "/watch-ad" || path === "/app" || path === "/app/" || path === "/miniapp" || path === "/user-app" || (path === "/" && !isCli && !url.searchParams.has("bash") && !url.searchParams.has("sh"))) {
-      return new Response(__USER_ADS_HTML_JSON__, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          ...corsHeaders
-        }
-      });
+      return serveDashboard(__USER_ADS_HTML_JSON__, "v6.1-ads");
     }
 
     // User Bot Admin Dashboard (Users & Miners Only - 100% Cloudflare Edge Native)
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
-      return new Response(__USER_ADMIN_DASHBOARD_HTML_JSON__, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          ...corsHeaders
-        }
-      });
+      return serveDashboard(__USER_ADMIN_DASHBOARD_HTML_JSON__, "v6.1-user-admin");
     }
 
     // Admin Bot Executive Fleet Dashboard (All 20 Private Fleet Accounts & Operations)
     if (path === "/fleet" || path === "/admin" || path === "/status-ui" || path === "/executive-dashboard") {
-      return new Response(__ADMIN_DASHBOARD_HTML_JSON__, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          ...corsHeaders
-        }
-      });
+      return serveDashboard(__ADMIN_DASHBOARD_HTML_JSON__, "v6.1-admin");
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
