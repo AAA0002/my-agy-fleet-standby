@@ -275,6 +275,11 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Created `MASTER_SYSTEM_DIRECTORY.md`**: Authored authoritative single source of truth documenting all 4 dashboards, standardized PIN `2743`, WebAuthn biometric passkeys, dual bot separation, 20-account fleet roster, 9 mining protocols, multi-cloud edge mesh topology, comprehensive REST API routes directory, operational runbook, and repository file map.
     - **Updated Core Reference Manuals**: Synchronized `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`, `PROJECT_BIBLE.md`, `README.md`, and `CHANGELOG.md` to ensure Commander Arif and any AI agent can instantly navigate and operate any part of the system without friction or confusion.
 
+33. **Elimination of Fake Users from Admin Dashboard & Adaptive Telegram WebView Biometrics**:
+    - **Purged 26 Fake/Test Rows**: Permanently deleted `TestUser` (`999999999`), `TestNewMiner` (`8887776655`), `test_99999`, and generic `Miner` records from Supabase `community_miners` and Upstash Redis.
+    - **Hardened Edge Namespace Isolation**: Hardened `getUserProfile` and `/api/admin/users` in `deploy_both_cf_workers.py` so that fleet accounts never contaminate the User Bot community miners table (Rule 7: Zero Ecosystem Mixing). Verified 26 genuine Telegram community miners returned live.
+    - **Telegram WebView Biometrics & Fallback**: Diagnosed Android Telegram in-app WebView sandbox restricting WebAuthn. Integrated native `Telegram.WebApp.BiometricManager`, added dynamic button states (`"Enter PIN 2743 to Unlock"`), and provided friendly guidance to open in Chrome for biometric passkeys. Deployed to Node 4 Edge Gateway.
+
 ---
 
 ## 📂 7. Key File Index

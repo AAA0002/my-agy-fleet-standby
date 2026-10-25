@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 Elimination of Fake Users from Admin Dashboard & Adaptive Telegram WebView Biometrics (October 25, 2026)**:
+  - **Eliminated All Fake & Test Users from User Admin Console**:
+    * **Root Cause**: Past tests had inserted mock user records (`TestUser` with ID `999999999`, `TestNewMiner` with ID `8887776655`, and `test_99999`) into Supabase `community_miners` and Upstash Redis. Furthermore, background ad-farming loops for the 19 fleet accounts had populated generic `"Miner"` records into `ub_registered_users`, contaminating the community roster.
+    * **Purge Execution**: Deleted all 26 fake, test, and fleet worker rows from Supabase `community_miners` and purged `test_99999`, `8887776655`, and `999999999` from Upstash Redis.
+    * **Edge Worker Filtering Hardened (`deploy_both_cf_workers.py`)**: Updated `getUserProfile` and `/api/admin/users` to enforce strict isolation (`FLEET_WORKER_SET`). Fleet accounts and test accounts are permanently excluded from the User Bot community namespace, strictly enforcing Rule 1 & 7 ("Zero Ecosystem Mixing").
+    * **Verified Live Response**: `/api/admin/users?secret=2743` now returns 26 verified authentic community users with real usernames (`Thaib007`, `Hill7898`, `Dean1000`, `rajibig`, `WARMAX12`, `gmailagentnepal`, `sakoltann`, `fujurwhite`, `Hansim91`, `RapliArdn`, `Arif2743aaa`, etc.) and ZERO fake/mock accounts.
+  - **Adaptive Biometric & Telegram WebView Fallback Overhaul**:
+    * **Diagnosed Screenshot Issue**: Inside the Android Telegram in-app WebView, standard `window.PublicKeyCredential` is disabled by the Android system WebView security sandbox. Tapping `"Unlock with Fingerprint / Passkey"` produced the error `"Biometrics/Passkeys not supported in this browser."`.
+    * **Dual Biometric Engine (Telegram Native + WebAuthn)**: Integrated native `window.Telegram.WebApp.BiometricManager` so that inside modern Telegram clients, the app prompts for the device's fingerprint sensor directly through Telegram.
+    * **Smart UI Adaptation**: When opened inside a WebView where WebAuthn is unavailable, the hero button dynamically updates to `"Enter PIN 2743 to Unlock (or Open in Chrome for Passkeys)"` with icon `🔢`.
+    * **Friendly Guidance**: Tapping the button provides clear, actionable instructions: `"💡 Inside Telegram: Enter PIN 2743 below, or tap top-right (⋮) -> 'Open in Chrome' for Fingerprint Passkeys!"`, completely eliminating confusing red error screens.
+    * **Synchronized & Deployed**: Updated `public_admin/admin.html`, `public_admin/user-admin.html`, and mirrors `public/admin.html` and `public/user-admin.html`. Deployed live to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+
 - **🧭 Master System Directory, Centralized Documentation & Universal Operational Hub (October 25, 2026)**:
   - **Comprehensive Master Navigation Directory (`MASTER_SYSTEM_DIRECTORY.md`)**:
     * Created the authoritative Single Source of Truth (SSOT) navigation manual and operational cheat sheet for Commander Arif and any AI agent.

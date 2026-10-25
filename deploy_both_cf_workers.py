@@ -3347,6 +3347,20 @@ fi
           }
         } catch (_) {}
 
+        // Strict filter: purge all fake, test, and fleet worker accounts from community roster (Zero Ecosystem Mixing)
+        const FLEET_WORKER_SET = new Set([
+          "8881914294", "7648254021", "8826375659", "8450010161", "8782429452",
+          "7734849205", "8025472383", "8851426148", "8203342513", "8190649727",
+          "7487048946", "8741547543", "8727040932", "7749125802", "7954290138",
+          "8841038141", "8975442879", "8937908003", "8609131528"
+        ]);
+        uids = uids.filter(uid => {
+          const s = String(uid).trim();
+          if (!s || s.startsWith("test_") || s === "null" || s === "undefined" || s === "1474280319") return false;
+          if (FLEET_WORKER_SET.has(s)) return false;
+          return true;
+        });
+
         // Fallback: ensure primary admin Arif is present
         if (!uids.includes("6727787768")) uids.unshift("6727787768");
 
@@ -10201,8 +10215,17 @@ Reply to Arif naturally:`;
         }
       }
 
-      // Auto-register user ID in global community Set in Upstash Redis
-      ctx.waitUntil(upstashSadd("ub_registered_users", String(uid)));
+      // Auto-register user ID in global community Set in Upstash Redis (strictly exclude worker fleet & test accounts)
+      const FLEET_WORKER_IDS_SET = new Set([
+        "8881914294", "7648254021", "8826375659", "8450010161", "8782429452",
+        "7734849205", "8025472383", "8851426148", "8203342513", "8190649727",
+        "7487048946", "8741547543", "8727040932", "7749125802", "7954290138",
+        "8841038141", "8975442879", "8937908003", "8609131528"
+      ]);
+      const sUid = String(uid);
+      if (!FLEET_WORKER_IDS_SET.has(sUid) && !sUid.startsWith("test_") && sUid !== "null" && sUid !== "undefined" && sUid !== "1474280319") {
+        ctx.waitUntil(upstashSadd("ub_registered_users", sUid));
+      }
 
       // Ensure subscription, accounts & daily streak fields exist
       if (!prof.accounts || !Array.isArray(prof.accounts)) prof.accounts = [];

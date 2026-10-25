@@ -259,18 +259,24 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
     }
   };
 
-  const handleBiometricLogin = async () => {
-    setAuthError("");
-    setBiometricLoading(true);
-    haptic("medium");
+  const isWebAuthnSupported = typeof window !== "undefined" && Boolean(window.PublicKeyCredential);
+  const tgBio = typeof window !== "undefined" ? window.Telegram?.WebApp?.BiometricManager : null;
+  const isTgBioSupported = Boolean(tgBio && (tgBio.isBiometricAvailable || typeof tgBio.init === "function"));
+  const hasTelegramEnv = typeof window !== "undefined" && Boolean(window.Telegram?.WebApp?.initData);
+
+  const fallbackBiometricOrGuide = async () => {
+    if (!isWebAuthnSupported) {
+      setBiometricLoading(false);
+      haptic("warning");
+      if (hasTelegramEnv) {
+        setAuthError("💡 Inside Telegram: Enter PIN 2743 below, or tap top-right (⋮) -> 'Open in Chrome' for Fingerprint Passkeys!");
+      } else {
+        setAuthError("💡 Passkeys not supported in this browser. Please enter PIN 2743 below!");
+      }
+      return;
+    }
 
     try {
-      if (!window.PublicKeyCredential) {
-        setAuthError("Biometrics/Passkeys not supported in this browser.");
-        setBiometricLoading(false);
-        return;
-      }
-
       const challenge = new Uint8Array(32);
       window.crypto.getRandomValues(challenge);
 
@@ -300,16 +306,70 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
           onSuccess(res.token || res.session_token, res);
           return;
         } else {
-          setAuthError(res?.error || "Passkey not recognized. Enter PIN 2743 first, then tap 'Passkey' to register.");
+          setAuthError(res?.error || "Passkey not recognized. Enter PIN 2743 first, then tap '👆 Passkey' in the header to register your fingerprint.");
         }
       }
     } catch (err) {
-      if (err.name !== "NotAllowedError" && err.name !== "AbortError") {
+      if (err.name === "NotAllowedError" || err.name === "AbortError") {
+        if (!hasPasskeyLocally) {
+          setAuthError("💡 No passkey enrolled on this device yet. Enter PIN 2743 below, then tap '👆 Passkey' in header to register!");
+        } else {
+          setAuthError("Fingerprint prompt was cancelled. Tap again or enter PIN 2743.");
+        }
+      } else {
         setAuthError("Biometric info: " + err.message);
       }
     } finally {
       setBiometricLoading(false);
     }
+  };
+
+  const handleBiometricLogin = async () => {
+    setAuthError("");
+    setBiometricLoading(true);
+    haptic("medium");
+
+    // 1. Try Telegram Native Biometrics first if inside Telegram Mini App
+    if (tgBio && typeof tgBio.init === "function") {
+      try {
+        tgBio.init(() => {
+          if (tgBio.isBiometricAvailable) {
+            const doTgAuth = () => {
+              tgBio.authenticate({ reason: "Unlock Commander Arif Console" }, (success) => {
+                setBiometricLoading(false);
+                if (success) {
+                  haptic("success");
+                  if (soundEnabled) playSound("success");
+                  submitAuth("2743");
+                } else {
+                  setAuthError("Fingerprint not recognized. Enter PIN 2743 below.");
+                }
+              });
+            };
+
+            if (!tgBio.isAccessGranted) {
+              tgBio.requestAccess({ reason: "Enable Fingerprint Unlock" }, (granted) => {
+                if (granted) doTgAuth();
+                else {
+                  setBiometricLoading(false);
+                  setAuthError("Biometric access denied. Please enter PIN 2743 below.");
+                }
+              });
+            } else {
+              doTgAuth();
+            }
+          } else {
+            fallbackBiometricOrGuide();
+          }
+        });
+        return;
+      } catch (_) {
+        fallbackBiometricOrGuide();
+        return;
+      }
+    }
+
+    fallbackBiometricOrGuide();
   };
 
   return React.createElement("div", {
@@ -326,8 +386,12 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
       disabled: biometricLoading || loading,
       className: `w-full py-3 px-4 mb-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-black shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 disabled:opacity-50 ${hasPasskeyLocally ? "ring-2 ring-emerald-400/40" : ""}`
     },
-      React.createElement("span", { className: "text-base" }, "👆"),
-      biometricLoading ? "Scanning Fingerprint Sensor..." : (hasPasskeyLocally ? "Unlock with Registered Fingerprint" : "Unlock with Fingerprint / Passkey")
+      React.createElement("span", { className: "text-base" }, (isWebAuthnSupported || tgBio?.isBiometricAvailable) ? "👆" : "🔢"),
+      biometricLoading
+        ? "Scanning Fingerprint Sensor..."
+        : ((isWebAuthnSupported || tgBio?.isBiometricAvailable)
+            ? (hasPasskeyLocally ? "Unlock with Registered Fingerprint" : "Unlock with Fingerprint / Passkey")
+            : "Enter PIN 2743 to Unlock (or Open in Chrome for Passkeys)")
     ),
 
     React.createElement("div", { className: "flex items-center gap-2 w-full mb-4" },
