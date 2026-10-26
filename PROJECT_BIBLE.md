@@ -1,5 +1,5 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
-> **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
+> **Universal Onboarding, System Architecture, 8-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
 > *Last Updated: October 26, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
@@ -101,14 +101,17 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Auto-Lock & Inactivity Guards**: Instant 1-tap `🔒 Lock` button, 15-minute inactivity auto-lock, and 5-minute background tab auto-lock via Page Visibility API (`document.hidden`).
     - **Desktop Ergonomics & Sound**: Physical keyboard listeners (`0-9`, Backspace, Escape), dual auth mode switch, zero-asset Web Audio API synthesizer (`playSound()`), and Telegram haptics.
     - **Master Directory Reference**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for complete technical architecture and cheat sheet.
-15. **🎯 Zero Fake Data & Ground-Truth 5-Bot Policy ("Strict 5-Bot Integrity")**:
-    - The farming fleet exclusively operates across and monitors the **5 active legitimate bots**:
+15. **🎯 Zero Fake Data & Ground-Truth 8-Bot Policy ("Strict 8-Bot Integrity")**:
+    - The farming fleet exclusively operates across and monitors the **8 active legitimate bots**:
       1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
       2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
       3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
       4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`)
       5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.net`)
-    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct bots (`Astra Airdrop`, `LeafEarn`, `PumpkinEarn`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. (Astra Airdrop backend at `bcbwqnkfyrpjhctesvnp.supabase.co` is verified restricted with HTTP 402 exceed_egress_quota by third-party developer). Active mining pools comprise the 8 legitimate bots: **MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, and DiggoMiner**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+      6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
+      7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
+      8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
+    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct bots (`Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AiLab`, `UltrawalletTrade`, `TRX Power`, `Finvora`, `Gold Keepers`, `EarnCraft`, `Art Airdrop`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. (Astra Airdrop backend at `bcbwqnkfyrpjhctesvnp.supabase.co` is verified restricted with HTTP 402 exceed_egress_quota by third-party developer). Active mining pools comprise the 8 legitimate bots: **MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, and DiggoMiner**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
     - **Cloudflare Edge 8-Bot Matrix Unification**: `ALLOWED_FLEET_BOTS` across Cloudflare Workers encompasses all 8 active protocols (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `pepegram`, `adxearn`, `diggo`). `sanitizeFleetTokensObject` preserves `diggo_jwt` and `victors_human_pass` alongside all WebApp initData hashes, ensuring 100% of accounts are farmed across all active pools during 15-minute cron triggers (`*/15 * * * *`).
 16. **🔄 24-Hour WebApp Token Lifetime & Autonomous Cloud Refresher**:
     - **Token Lifespan**: Telegram WebApp `initData` cryptographically expires after 24 hours (`auth_date` validation). Never allow tokens to age past 18 hours.

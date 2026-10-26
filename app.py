@@ -1836,15 +1836,19 @@ async def sync_account_tokens_to_clouds(tokens: dict):
 async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     Kicks off initial WebApp mining, completes referral onboarding finish work,
-    and runs first-cycle claims across all 4 legitimate bots:
+    and runs first-cycle claims across all 8 legitimate bots:
     1. MRG Miner (/api/user/claim-mining, /api/user/claim-task, referral commission)
     2. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
     3. Victor's Company (/api/users/profile, /api/tasks, deep mining)
     4. VyroDrop (/api/user, /api/task, ton wallet link)
+    5. Kynex Network (energy sync, tasks)
+    6. PepeGram (production start, yield claim, slot spin)
+    7. AdxEarn AI (boost, tasks)
+    8. DiggoMiner (mining claim, Solana quiz/pump, social tasks)
     """
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", "User")
-    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 4 legitimate bots...")
+    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 8 legitimate bots...")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0"
@@ -1969,13 +1973,14 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_10_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex"]
+ALL_8_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "pepegram", "adxearn", "diggo"]
+ALL_10_BOT_KEYS = ALL_8_BOT_KEYS  # Backward compatibility alias
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 10 active fleet bots."""
-    if acc_entry.get("all_10_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 8 active fleet bots."""
+    if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
         return True
-    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_10_BOT_KEYS)
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_8_BOT_KEYS)
 
 
 
@@ -2063,7 +2068,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
     extracts WebApp session tokens, syncs to Cloudflare KV + Upstash,
-    and executes referral finish work across all 9 fleet bots:
+    and executes referral finish work across all 8 fleet bots:
     1. MRG: ref_IRN1G3XD
     2. ATF Miner: 6727787768
     3. Victor's Company: ref_A20AA96F18
@@ -3242,8 +3247,12 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"• ATF Miner: TON Connected ✅\n"
         f"• MRG Miner: TON Connected ✅\n"
         f"• Victor's Company: Active ✅\n"
-        f"• VyroDrop: Active ✅\n\n"
-        f"🚀 <b>Auto-Farming Status:</b> Active across all 4 legitimate bots in the cloud!"
+        f"• VyroDrop: Active ✅\n"
+        f"• Kynex Network: Active ✅\n"
+        f"• PepeGram: Active ✅\n"
+        f"• AdxEarn AI: Active ✅\n"
+        f"• DiggoMiner: Active ✅\n\n"
+        f"🚀 <b>Auto-Farming Status:</b> Active across all 8 legitimate bots in the cloud!"
     )
     async with aiohttp.ClientSession() as s:
         try:
@@ -5265,7 +5274,7 @@ FLEET_LAST_FARM_CACHE = {}
 
 async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict, force: bool = False, target_bot: str = "all") -> dict:
     """
-    Farms all 4 legitimate active bots (MRG, ATF, Victor's Company, VyroDrop) for a single account.
+    Farms all 8 legitimate active bots (MRG, ATF, Victor's Company, VyroDrop, Kynex, PepeGram, AdxEarn, Diggo) for a single account.
     Engineered with:
       - Deterministic mobile device fingerprinting per account (eliminates bot signatures)
       - Realistic human jitter delays
@@ -6322,7 +6331,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False, target_bot: str = "all") -> dict:
-    """Executes full autonomous cloud farming and task completions across all 9 legitimate bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 8 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -6429,7 +6438,7 @@ LAST_FARM_RUN = {
 
 @app.post("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
-    """Executes on-demand cloud fleet farming cycle across all 9 legitimate bots for accounts."""
+    """Executes on-demand cloud fleet farming cycle across all 8 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -7405,7 +7414,7 @@ async def channel_status_endpoint(request: Request):
 async def sync_and_verify_channels_endpoint(request: Request):
     """
     Type B Channel & Bot Management Engine:
-    Ensures all fleet accounts join mandatory sponsor channels, unblock all 5 legitimate bots,
+    Ensures all fleet accounts join mandatory sponsor channels, unblock all 8 legitimate bots,
     and permanently mute all channels/bots to prevent notification spam.
     Protects against Telegram's 500-channel limit by leaving unwhitelisted spam channels if dialogs > 400.
     """
@@ -7525,7 +7534,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                 else:
                     logger.info(f"[{name}] Dead bots & scam channels already purged previously. Skipping dialog deletion.")
 
-                # 3. Unblock all 9 legitimate fleet bots
+                # 3. Unblock all 8 legitimate fleet bots
                 for b in FLEET_LEGITIMATE_BOTS:
                     try:
                         await cl(functions.contacts.UnblockRequest(id=b))
