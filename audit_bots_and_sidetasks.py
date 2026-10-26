@@ -468,11 +468,33 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                 async with session.get("https://diggo.linkpc.net/api/state", headers=d_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status == 200:
                         sd = await r.json()
-                        bal = sd.get("balance") or sd.get("mined") or 0
-                        lvl = sd.get("level", 1)
-                        b_rep["core"]["status"] = f"Active (JWT): {bal} DIGGO (Level: {lvl})"
-                        async with session.post("https://diggo.linkpc.net/api/miner/claim", json={}, headers=d_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
-                            b_rep["side_tasks"].append(f"Claim Mining: HTTP {cr.status}")
+                        st = sd.get("state", {})
+                        bal = float(st.get("balance") or 0.0)
+                        lvl = st.get("player", {}).get("level", 1)
+                        pending = float(st.get("pending", 0) or 0.0)
+                        b_rep["core"]["status"] = f"Active (JWT): {bal:.2f} DIGGO (Level: {lvl}, Pending: {pending:.2f})"
+                        
+                        # Main mining claim
+                        claim_h = {**d_h, "Idempotency-Key": str(uuid.uuid4())}
+                        async with session.post("https://diggo.linkpc.net/api/claims/mining", json={}, headers=claim_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
+                            c_txt = f"Claimed (+{pending:.2f})" if cr.status in (200, 201) else ("Cooldown" if cr.status == 429 else f"HTTP {cr.status}")
+                            b_rep["side_tasks"].append(f"Claim Mining: {c_txt}")
+                        
+                        # Side task: checkin
+                        async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": "checkin"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as tr:
+                            t_txt = "Claimed / Success" if tr.status in (200, 201) else f"HTTP {tr.status}"
+                            b_rep["side_tasks"].append(f"Check-in Task: {t_txt}")
+
+                        # Side task: referral commission
+                        async with session.post("https://diggo.linkpc.net/api/referrals/claim", json={}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as rr:
+                            b_rep["side_tasks"].append(f"Referral Commission: HTTP {rr.status}")
+
+                        # Side task: daily streak
+                        streak = st.get("streak", 0)
+                        if streak > 0:
+                            async with session.post("https://diggo.linkpc.net/api/streak/claim", json={"day": streak}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as sr:
+                                s_txt = "Claimed" if sr.status in (200, 201) else ("Already Claimed / Not Ready" if sr.status == 409 else f"HTTP {sr.status}")
+                                b_rep["side_tasks"].append(f"Streak Day {streak}: {s_txt}")
                     else:
                         b_rep["core"]["status"] = f"JWT HTTP {r.status}"
             except Exception as e:

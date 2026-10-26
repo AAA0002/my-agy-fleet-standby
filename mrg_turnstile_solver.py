@@ -2304,13 +2304,28 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
         "Origin": DIGGO_ORIGIN,
         "Referer": f"{DIGGO_ORIGIN}/"
     }
-    cl_code, cl_data = safe_post(f"{DIGGO_API}/miner/claim", {}, extra_headers=claim_h)
+    # 1. Inspect state to determine pending mining and streak
+    st_code, st_data = safe_get(f"{DIGGO_API}/state", extra_headers=claim_h)
+    st = st_data.get("state", {}) if (st_code == 200 and isinstance(st_data, dict)) else {}
+    pending = float(st.get("pending", 0) or 0.0)
+
     claimed_amt = 0.0
-    if cl_code == 200 and isinstance(cl_data, dict):
-        claimed_amt = float(cl_data.get("claimed") or cl_data.get("amount") or 0.0)
-        logger.info(f"⛏️ [Diggo] UID {d_uid}: Successfully farmed via REST (+{claimed_amt:.2f} DIGGO).")
-        return True, claimed_amt
-    return False, 0.0
+    import uuid
+    # 2. Main mining claim
+    if pending > 0:
+        cl_code, cl_data = safe_post(f"{DIGGO_API}/claims/mining", {}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+        if cl_code == 200 and isinstance(cl_data, dict):
+            claimed_amt = float(cl_data.get("amount") or cl_data.get("claimed") or pending)
+    
+    # 3. Side Tasks: Daily Checkin, Referral Commission, and Day Streak
+    safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "checkin"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+    safe_post(f"{DIGGO_API}/referrals/claim", {}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+    streak = st.get("streak", 0)
+    if streak > 0:
+        safe_post(f"{DIGGO_API}/streak/claim", {"day": streak}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+
+    logger.info(f"⛏️ [Diggo] UID {d_uid}: Successfully farmed main & side tasks via REST (+{claimed_amt:.2f} DIGGO).")
+    return True, claimed_amt
 
 
 async def run_mrg_auto_solver():

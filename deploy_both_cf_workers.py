@@ -991,7 +991,59 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // Humanized Execution Pipeline: Active Fleet Mining Pools (7 Authentic Legitimate Bots)
+  const farmDiggo = async () => {
+    let dJwt = accData.diggo_jwt;
+    if (!dJwt) {
+      dJwt = await upstashGet(`fleet:diggo:jwt:${uid}`).catch(() => null);
+    }
+    if (!dJwt) return;
+    try {
+      const dHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${dJwt}`,
+        "Origin": "https://diggo.linkpc.net",
+        "Referer": "https://diggo.linkpc.net/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+      };
+      const stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+      if (stResp.ok) {
+        const stData = await stResp.json();
+        const st = stData.state || {};
+        let bal = parseFloat(st.balance || 0);
+        const lvl = st.player?.level || 1;
+        const pending = parseFloat(st.pending || 0);
+        const streak = st.streak || 0;
+        const randKey = () => "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
+        if (pending > 0) {
+          const clResp = await fetch("https://diggo.linkpc.net/api/claims/mining", {
+            method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
+          }).catch(() => null);
+          if (clResp && clResp.ok) {
+            const clD = await clResp.json().catch(() => ({}));
+            if (clD.amount) bal += parseFloat(clD.amount);
+          }
+        }
+        await fetch("https://diggo.linkpc.net/api/tasks/claim", {
+          method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "checkin" })
+        }).catch(() => {});
+        await fetch("https://diggo.linkpc.net/api/referrals/claim", {
+          method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
+        }).catch(() => {});
+        if (streak > 0) {
+          await fetch("https://diggo.linkpc.net/api/streak/claim", {
+            method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ day: streak })
+          }).catch(() => {});
+        }
+        result.bots.diggo = `farmed (lvl: ${lvl}, bal: ${bal.toFixed(2)})`;
+      } else {
+        result.bots.diggo = `state_failed (${stResp.status})`;
+      }
+    } catch (e) {
+      result.bots.diggo = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Active Fleet Mining Pools (8 Authentic Legitimate Bots)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1200, maxSec: 2400 },
     mrg: { minSec: 1800, maxSec: 3600 },
@@ -999,7 +1051,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     vyro: { minSec: 2400, maxSec: 4800 },
     kynex: { minSec: 2400, maxSec: 4800 },
     pepegram: { minSec: 1800, maxSec: 3600 },
-    adxearn: { minSec: 3600, maxSec: 7200 }
+    adxearn: { minSec: 3600, maxSec: 7200 },
+    diggo: { minSec: 1800, maxSec: 3600 }
   };
 
   const botRoutines = [
@@ -1009,7 +1062,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
     { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
-    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) }
+    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) },
+    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) }
   ];
 
   const BOT_KEY_ALIASES = {

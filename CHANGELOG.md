@@ -3,6 +3,15 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🛡️ Cloudflare WARP Zero-Trust Solver Proxy, AdxEarn AI Full Remediation & 8-Bot Verification (October 26, 2026)**:
+  - **DiggoMiner Main Mining Claims & Side Tasks Full Overhaul**:
+    * Diagnosed root cause of DiggoMiner mining claim failure: backend rejects requests without `Idempotency-Key` header (`HTTP 400 idempotency_key_required`), and legacy scripts called non-existent `/api/miner/claim` (`HTTP 404`).
+    * Re-engineered main mining claim to `POST https://diggo.linkpc.net/api/claims/mining` with unique `Idempotency-Key: <uuid>` and verified live execution.
+    * Integrated DiggoMiner side tasks:
+      1. Daily Check-in Task: `POST /api/tasks/claim` with `{"taskId": "checkin"}` (verified live: `HTTP 200`).
+      2. Referral Commissions Claim: `POST /api/referrals/claim` (verified live: `HTTP 200`).
+      3. Day Streak Milestone Reward: `POST /api/streak/claim` with `{"day": streak}` (verified live: claimed +15 DIGGO reward).
+    * Integrated `farmDiggo` into Cloudflare Workers [`deploy_both_cf_workers.py`](file:///data/workspace/AAA_AUTO/deploy_both_cf_workers.py) and registered in `botRoutines` and `BOT_COOLDOWNS`.
+    * Synchronized across `app.py`, `deploy_both_cf_workers.py`, `mrg_turnstile_solver.py`, and `audit_bots_and_sidetasks.py`.
   - **Operations Dashboard Bot Keys & Server Alias Normalization (`admin.html`, `app.py`, `deploy_both_cf_workers.py`)**:
     * Resolved UI dispatch discrepancy where clicking `⚡ Farm` for PepeGram or AdxEarn in `admin.html` passed keys `pepe` and `adx`, mismatching backend handler names `pepegram` and `adxearn`.
     * Synchronized UI keys in `public_admin/admin.html` and `public/admin.html` to `pepegram` and `adxearn`.

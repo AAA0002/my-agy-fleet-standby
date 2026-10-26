@@ -6079,13 +6079,34 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
         if diggo_jwt:
             try:
-                d_h = {**headers, "Authorization": f"Bearer {diggo_jwt}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
+                import uuid
+                d_h = {
+                    **headers,
+                    "Authorization": f"Bearer {diggo_jwt}",
+                    "Origin": "https://diggo.linkpc.net",
+                    "Referer": "https://diggo.linkpc.net/",
+                    "Content-Type": "application/json"
+                }
                 c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
                 if c_st == 200 and isinstance(st_d, dict):
-                    bal = st_d.get("balance") or st_d.get("mined") or 0
-                    lvl = st_d.get("level", 1)
-                    await safe_post("https://diggo.linkpc.net/api/miner/claim", json_data={}, req_headers=d_h)
-                    status["bots"]["diggo"] = f"farmed (lvl: {lvl}, bal: {bal})"
+                    st = st_d.get("state", {})
+                    bal = float(st.get("balance") or 0.0)
+                    lvl = st.get("player", {}).get("level", 1)
+                    pending = float(st.get("pending", 0) or 0.0)
+                    # 1. Main mining claim
+                    claim_h = {**d_h, "Idempotency-Key": str(uuid.uuid4())}
+                    if pending > 0:
+                        c_code, c_data = await safe_post("https://diggo.linkpc.net/api/claims/mining", json_data={}, req_headers=claim_h)
+                        if c_code == 200 and isinstance(c_data, dict):
+                            bal += float(c_data.get("amount", 0.0) or 0.0)
+                    # 2. Side Tasks: Daily Checkin & Referral Commission
+                    await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "checkin"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                    await safe_post("https://diggo.linkpc.net/api/referrals/claim", json_data={}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                    # 3. Streak Reward if available
+                    streak = st.get("streak", 0)
+                    if streak > 0:
+                        await safe_post("https://diggo.linkpc.net/api/streak/claim", json_data={"day": streak}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                    status["bots"]["diggo"] = f"farmed (lvl: {lvl}, bal: {bal:.2f})"
                 else:
                     status["bots"]["diggo"] = f"state_failed ({c_st})"
                 return
