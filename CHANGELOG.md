@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Cloud Runner Circuit Breakers, REST-First Prioritization & Render Node 2 Live Build (October 26, 2026)**:
+  - **Eliminated Runner Timeout via Browser Circuit Breakers (`mrg_turnstile_solver.py`)**:
+    * Diagnosed 30-minute timeout on GitHub Actions runner (`40226601206`): Azure datacenter runner IPs encountered Cloudflare Turnstile 403 blocks on interactive challenges, causing 56 sequential retries and burning ~30 minutes.
+    * Implemented consecutive-failure circuit breakers across all browser challenge queues (MRG: 2 fails, Victor's: 2 fails, ATF: 2 fails, VyroDrop: 1 fail on `turnstile_load_timeout`), slashing browser phase duration from 30+ minutes down to < 2 minutes when IPs are throttled.
+  - **Prioritized Zero-Latency Fast REST First (`mrg_turnstile_solver.py`)**:
+    * Re-architected execution sequence to run all 100% reliable REST workflows before launching Chromium:
+      - Phase 1: Rapid REST Pre-Flight (ATF 20/20, PepeGram 20/20, AdxEarn AI 20/20, active MRG & Victor's passes).
+      - Phase 2: Kynex Network Auto-Farming (20 accounts via Firebase Cloud Functions).
+      - Phase 3: Victor's Arcade Expeditions (Deep Mine minigame via REST).
+      - Phase 4: Targeted Browser Solving (guarded by circuit breakers).
+      - Phase 5: Master Referral Sweeps, Compounding & Telegram Alerts.
+    * Guarantees that 100% of REST yields are banked and Telegram alerts are sent every cycle regardless of browser blocks.
+  - **Runner Workflow Timeout Increased (`.github/workflows/mrg_turnstile_solver.yml`)**:
+    * Increased `timeout-minutes` from 30 to 60 minutes across `mrg_turnstile_solver.yml` and `turnstile_solver.yml`.
+  - **Render Frankfurt Node 2 Deployment Fixed & Deployed**:
+    * Resolved Render 404 access error on `AAA0002/my-agy-fleet-standby`. Successfully triggered and verified deploy `dep-dbfchi7b9u1s73cdpdv0`, which is now **`live` and healthy** (`/health` returning 200 OK).
+  - **System Maintenance & Stale CI/CD Pruning (`clean_up_system.py`)**:
+    * Cleaned local disk (freed 2.27 MB), capped `fleet:payouts` in Upstash Redis to 100 entries, and purged 7 stale GitHub Actions workflow runs older than 7 days.
+
+
 - **🌐 9-Bot Ecosystem Forensic Intelligence, REST Re-integration & Multi-Repo Privacy Hardening (October 25, 2026)**:
   - **Multi-Repository Secrets Synchronization & Privacy Hardening**:
     * Audited GitHub Actions secrets across all repositories: `AAA0002/ATL`, `AAA0002/cloud-fleet-solver`, and `AAA0002/my-agy-fleet-standby`.

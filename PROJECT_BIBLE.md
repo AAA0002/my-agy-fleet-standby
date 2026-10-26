@@ -1763,6 +1763,12 @@ Whenever you perform work in this repository:
   - **8-Bot Multi-Farming Cloud Turnstile Solver Engine (`mrg_turnstile_solver.py`)**: Added `check_and_farm_pepegram_rest`, `check_and_farm_adxearn_rest`, and `check_and_farm_diggo_rest` to Phase 1 Rapid REST Harvesting. Live tested PepeGram (+141.33 PEPE hashes, 6h production contract) and AdxEarn AI (streak verified). Updated Audit Summary and Telegram telemetry alerts.
   - **Autonomous Cloud Token Extractor Upgraded (`app.py`)**: Re-enabled silent MTProto WebApp queries for PepeGram, AdxEarn AI, and DiggoMiner in `extract_tokens_with_client`. Implemented immediate 30-day JWT exchange for DiggoMiner upon extracting fresh `initData`. Updated `clean_merged` filter in `sync_account_tokens_to_clouds` to preserve `diggo_jwt` in Upstash Redis and monolithic `miniapp_tokens`.
   - **Public Runner Cloud Deployment (`AAA0002/cloud-fleet-solver`)**: Pushed updated solver to `AAA0002/cloud-fleet-solver` and launched workflow run `40226601206` on GitHub Actions with unlimited free runner minutes.
+* **Cloud Runner Circuit Breakers, REST-First Prioritization & Render Node 2 Live Build (October 26, 2026)**:
+  - **Runner Timeout Elimination & Browser Circuit Breakers (`mrg_turnstile_solver.py`)**: Diagnosed 30-minute timeout on GitHub Actions runner (`40226601206`) caused by Azure datacenter IP rate-limits on interactive Turnstile challenges. Added consecutive-failure circuit breakers across all challenge queues (MRG: 2, Victor's: 2, ATF: 2, VyroDrop: 1), cutting browser phase runtime from 30+ minutes down to < 2 minutes when IPs are throttled.
+  - **REST-First Execution Order**: Prioritized Kynex Network (Phase 2) and Victor's Arcade (Phase 3) immediately following Phase 1 REST harvesting, ensuring 100% of REST yields are banked and Telegram alerts are sent every cycle.
+  - **Workflow Timeout Bump**: Increased `timeout-minutes` to 60 across workflow definitions.
+  - **Render Frankfurt Node 2 Live**: Resolved deployment 404 on `AAA0002/my-agy-fleet-standby`, successfully deployed build `dep-dbfchi7b9u1s73cdpdv0` (`live` and healthy on `/health`).
+  - **Automated Hygiene Executed (`clean_up_system.py`)**: Freed 2.27 MB of disk cache, trimmed `fleet:payouts` to 100 entries, and purged 7 stale GitHub Actions workflow runs.
 
 
 

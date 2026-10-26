@@ -2427,161 +2427,34 @@ async def run_mrg_auto_solver():
         f"DiggoMiner: {diggo_solved} farmed."
     )
 
-    # 2. Targeted Browser Solving (ONLY for accounts that actually require Turnstile/Captcha)
-    solved_count = 0
-    if total_browser_solves_needed == 0:
-        logger.info("🎉 [Fast Path] 100% of fleet accounts are active and verified across all bots! Browser launch bypassed.")
-    else:
-        logger.info(f"🛡️ Phase 2: Launching stealth Chromium for {total_browser_solves_needed} specific accounts requiring Turnstile...")
+    # 2. Kynex Network Multi-Account Cloud Auto-Farming (Fast REST First)
+    kynex_farmed = 0
+    total_claimed_knx = 0.0
+    if kynex_accounts:
+        logger.info(f"⚡ Phase 2: Starting Kynex Network Auto-Farming for {len(kynex_accounts)} accounts...")
         try:
-            from patchright.async_api import async_playwright
-            logger.info("🛡️ Using Patchright stealth browser engine.")
-        except ImportError:
-            from playwright.async_api import async_playwright
-            logger.info("🌐 Using Playwright browser engine.")
+            from kynex_miner import farm_kynex_account
+            async with aiohttp.ClientSession() as kyn_session:
+                for k_acc in kynex_accounts:
+                    kuid = k_acc["uid"]
+                    kinit = k_acc["init_data"]
+                    try:
+                        k_res = await farm_kynex_account(
+                            kyn_session,
+                            kinit,
+                            {"user_id": kuid, "account_id": kuid},
+                            is_master=(kuid == 6727787768)
+                        )
+                        kynex_farmed += 1
+                        c_knx = k_res.get("claimed_knx") or 0.0
+                        total_claimed_knx += float(c_knx)
+                        logger.info(f"✅ [Kynex] UID {kuid}: {k_res.get('status')}")
+                    except Exception as ke:
+                        logger.warning(f"⚠️ [Kynex] UID {kuid} farm error: {ke}")
+        except Exception as kerr:
+            logger.warning(f"⚠️ Kynex fleet farm exception: {kerr}")
 
-        # Prioritize Master Account (6727787768) first in every queue
-        accounts_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        victors_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        vyro_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        atf_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-
-        is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
-        headless_flag = False if is_xvfb else True
-        logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
-
-        launch_kwargs = {
-            "headless": headless_flag,
-            "args": [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--window-size=1280,800"
-            ]
-        }
-
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(**launch_kwargs)
-
-            # A. Solve MRG passes
-            for acc in accounts_needing_solver:
-                uid = acc["uid"]
-                m_init = acc["init_data"]
-                try:
-                    success = await asyncio.wait_for(solve_turnstile_for_account(browser, acc), timeout=55.0)
-                except asyncio.TimeoutError:
-                    logger.warning(f"MRG Turnstile timed out (55s) for UID {uid}")
-                    success = False
-                except Exception as me:
-                    logger.warning(f"MRG Turnstile exception for UID {uid}: {me}")
-                    success = False
-
-                if success:
-                    solved_count += 1
-                    claim_res = claim_mining_reward(m_init)
-                    claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
-                    total_claimed_mrg += claimed_amt
-                    logger.info(f"⛏️ UID {uid}: Successfully claimed {claimed_amt:.2f} MRG! Miner restarted.")
-                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
-                    auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
-
-                await asyncio.sleep(0.5)
-
-            # B. Solve Victor's Company passes
-            for v_acc in victors_needing_solver:
-                v_uid = v_acc["uid"]
-                v_init = v_acc["init_data"]
-                try:
-                    v_res = await asyncio.wait_for(
-                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),
-                        timeout=55.0
-                    )
-                    if v_res:
-                        victors_solved += 1
-                        victors_active.append(v_acc)
-                except asyncio.TimeoutError:
-                    logger.warning(f"Victor's solve timed out (55s) for UID {v_uid}")
-                except Exception as ve:
-                    logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
-                await asyncio.sleep(0.5)
-
-            # C. Solve VyroDrop wallet onboarding
-            for vy_acc in vyro_needing_solver:
-                vy_uid = vy_acc["uid"]
-                vy_init = vy_acc["init_data"]
-                w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
-                try:
-                    vy_res = await asyncio.wait_for(
-                        solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
-                        timeout=55.0
-                    )
-                    if vy_res:
-                        vyro_wallets_connected += 1
-                except asyncio.TimeoutError:
-                    logger.warning(f"VyroDrop solve timed out (55s) for UID {vy_uid}")
-                except Exception as vye:
-                    logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
-                await asyncio.sleep(0.5)
-
-            # D. Solve ATF Miner entry captcha
-            for atf_acc in atf_needing_solver:
-                a_uid = atf_acc["uid"]
-                a_init = atf_acc["init_data"]
-                try:
-                    atf_res = await asyncio.wait_for(
-                        solve_atf_turnstile(browser, a_uid, a_init),
-                        timeout=55.0
-                    )
-                    if atf_res:
-                        atf_solved += 1
-                        p_chk = {
-                            "initData": a_init,
-                            "tg_id": a_uid,
-                            "username": "",
-                            "request_id": f"rq-chk-{a_uid}",
-                            "device_id": f"dev-chk-{a_uid}"
-                        }
-                        atf_h = {
-                            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
-                            "X-Requested-With": "XMLHttpRequest",
-                            "Content-Type": "application/json",
-                            "Referer": f"{ATF_ORIGIN}/miner/index.html",
-                            "Origin": ATF_ORIGIN
-                        }
-                        safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
-                        safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
-                except asyncio.TimeoutError:
-                    logger.warning(f"ATF solve timed out (55s) for UID {a_uid}")
-                except Exception as ae:
-                    logger.warning(f"ATF solve exception for UID {a_uid}: {ae}")
-                await asyncio.sleep(0.5)
-
-            await browser.close()
-            logger.info("🛡️ Phase 2 Complete: Chromium closed successfully.")
-
-    # 3. Claim rewards for MRG accounts that already had an active pass
-    for acc in accounts_data:
-        if acc["has_active_pass"]:
-            uid = acc["uid"]
-            m_init = acc["init_data"]
-            if acc["stat"]["unclaimed"] > 0.05:
-                claim_res = claim_mining_reward(m_init)
-                if claim_res.get("success"):
-                    claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
-                    total_claimed_mrg += claimed_amt
-                    logger.info(f"⛏️ UID {uid}: Auto-claimed active pass reward: {claimed_amt:.2f} MRG.")
-                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
-                    auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
-
-    # 4. Master Account Referral Sweep
-    master_acc = next((a for a in accounts_data if a["uid"] == 6727787768), None)
-    if master_acc:
-        m_init = master_acc["init_data"]
-        safe_post(f"{API_BASE}/api/user/claim-commission", {"initData": m_init})
-        safe_post(f"{API_BASE}/api/user/claim-one-time-bonus", {"initData": m_init})
-        logger.info("👑 Master Account referral commission and team bonus claimed.")
-
-    # 5. Victor's Arcade Expeditions (Deep Mine Minigame)
+    # 3. Victor's Arcade Expeditions (Deep Mine Minigame via REST)
     logger.info("🎮 Phase 3: Executing Victor's Deep Mine Arcade expeditions for active accounts...")
     try:
         import victors_arcade_solver
@@ -2614,32 +2487,193 @@ async def run_mrg_auto_solver():
     except Exception as e:
         logger.debug(f"Victor's arcade batch error: {e}")
 
-    # 6. Kynex Network Multi-Account Cloud Auto-Farming
-    kynex_farmed = 0
-    total_claimed_knx = 0.0
-    if kynex_accounts:
-        logger.info(f"⚡ Phase 4: Starting Kynex Network Auto-Farming for {len(kynex_accounts)} accounts...")
+    # 4. Targeted Browser Solving with Circuit Breakers (ONLY for accounts that actually require Turnstile/Captcha)
+    solved_count = 0
+    if total_browser_solves_needed == 0:
+        logger.info("🎉 [Fast Path] 100% of fleet accounts are active and verified across all bots! Browser launch bypassed.")
+    else:
+        logger.info(f"🛡️ Phase 4: Launching stealth Chromium for {total_browser_solves_needed} specific accounts requiring Turnstile...")
         try:
-            from kynex_miner import farm_kynex_account
-            async with aiohttp.ClientSession() as kyn_session:
-                for k_acc in kynex_accounts:
-                    kuid = k_acc["uid"]
-                    kinit = k_acc["init_data"]
-                    try:
-                        k_res = await farm_kynex_account(
-                            kyn_session,
-                            kinit,
-                            {"user_id": kuid, "account_id": kuid},
-                            is_master=(kuid == 6727787768)
-                        )
-                        kynex_farmed += 1
-                        c_knx = k_res.get("claimed_knx") or 0.0
-                        total_claimed_knx += float(c_knx)
-                        logger.info(f"✅ [Kynex] UID {kuid}: {k_res.get('status')}")
-                    except Exception as ke:
-                        logger.warning(f"⚠️ [Kynex] UID {kuid} farm error: {ke}")
-        except Exception as kerr:
-            logger.warning(f"⚠️ Kynex fleet farm exception: {kerr}")
+            from patchright.async_api import async_playwright
+            logger.info("🛡️ Using Patchright stealth browser engine.")
+        except ImportError:
+            from playwright.async_api import async_playwright
+            logger.info("🌐 Using Playwright browser engine.")
+
+        # Prioritize Master Account (6727787768) first in every queue
+        accounts_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        victors_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        vyro_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        atf_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+
+        is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
+        headless_flag = False if is_xvfb else True
+        logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
+
+        launch_kwargs = {
+            "headless": headless_flag,
+            "args": [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--window-size=1280,800"
+            ]
+        }
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(**launch_kwargs)
+
+            # A. Solve MRG passes (Protected by 2-fail circuit breaker)
+            mrg_fails = 0
+            for acc in accounts_needing_solver:
+                if mrg_fails >= 2:
+                    logger.warning("⚠️ MRG Turnstile consecutive failure circuit breaker tripped (runner IP rate-limited). Skipping remaining MRG browser solves.")
+                    break
+                uid = acc["uid"]
+                m_init = acc["init_data"]
+                try:
+                    success = await asyncio.wait_for(solve_turnstile_for_account(browser, acc), timeout=50.0)
+                except asyncio.TimeoutError:
+                    logger.warning(f"MRG Turnstile timed out (50s) for UID {uid}")
+                    success = False
+                except Exception as me:
+                    logger.warning(f"MRG Turnstile exception for UID {uid}: {me}")
+                    success = False
+
+                if success:
+                    solved_count += 1
+                    mrg_fails = 0
+                    claim_res = claim_mining_reward(m_init)
+                    claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
+                    total_claimed_mrg += claimed_amt
+                    logger.info(f"⛏️ UID {uid}: Successfully claimed {claimed_amt:.2f} MRG! Miner restarted.")
+                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
+                    auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
+                else:
+                    mrg_fails += 1
+
+                await asyncio.sleep(0.5)
+
+            # B. Solve Victor's Company passes (Protected by 2-fail circuit breaker)
+            vic_fails = 0
+            for v_acc in victors_needing_solver:
+                if vic_fails >= 2:
+                    logger.warning("⚠️ Victor's Turnstile consecutive failure circuit breaker tripped. Skipping remaining Victor's browser solves.")
+                    break
+                v_uid = v_acc["uid"]
+                v_init = v_acc["init_data"]
+                try:
+                    v_res = await asyncio.wait_for(
+                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),
+                        timeout=50.0
+                    )
+                    if v_res:
+                        victors_solved += 1
+                        vic_fails = 0
+                        victors_active.append(v_acc)
+                    else:
+                        vic_fails += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"Victor's solve timed out (50s) for UID {v_uid}")
+                    vic_fails += 1
+                except Exception as ve:
+                    logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
+                    vic_fails += 1
+                await asyncio.sleep(0.5)
+
+            # C. Solve VyroDrop wallet onboarding (Protected by 1-fail circuit breaker)
+            vyro_fails = 0
+            for vy_acc in vyro_needing_solver:
+                if vyro_fails >= 1:
+                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped. Skipping remaining Vyro browser solves.")
+                    break
+                vy_uid = vy_acc["uid"]
+                vy_init = vy_acc["init_data"]
+                w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
+                try:
+                    vy_res = await asyncio.wait_for(
+                        solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
+                        timeout=35.0
+                    )
+                    if vy_res:
+                        vyro_wallets_connected += 1
+                        vyro_fails = 0
+                    else:
+                        vyro_fails += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"VyroDrop solve timed out (35s) for UID {vy_uid}")
+                    vyro_fails += 1
+                except Exception as vye:
+                    logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
+                    vyro_fails += 1
+                await asyncio.sleep(0.5)
+
+            # D. Solve ATF Miner entry captcha (Protected by 2-fail circuit breaker)
+            atf_fails = 0
+            for atf_acc in atf_needing_solver:
+                if atf_fails >= 2:
+                    logger.warning("⚠️ ATF Turnstile consecutive failure circuit breaker tripped. Skipping remaining ATF browser solves.")
+                    break
+                a_uid = atf_acc["uid"]
+                a_init = atf_acc["init_data"]
+                try:
+                    atf_res = await asyncio.wait_for(
+                        solve_atf_turnstile(browser, a_uid, a_init),
+                        timeout=45.0
+                    )
+                    if atf_res:
+                        atf_solved += 1
+                        atf_fails = 0
+                        p_chk = {
+                            "initData": a_init,
+                            "tg_id": a_uid,
+                            "username": "",
+                            "request_id": f"rq-chk-{a_uid}",
+                            "device_id": f"dev-chk-{a_uid}"
+                        }
+                        atf_h = {
+                            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Content-Type": "application/json",
+                            "Referer": f"{ATF_ORIGIN}/miner/index.html",
+                            "Origin": ATF_ORIGIN
+                        }
+                        safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                        safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                    else:
+                        atf_fails += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"ATF solve timed out (45s) for UID {a_uid}")
+                    atf_fails += 1
+                except Exception as ae:
+                    logger.warning(f"ATF solve exception for UID {a_uid}: {ae}")
+                    atf_fails += 1
+                await asyncio.sleep(0.5)
+
+            await browser.close()
+            logger.info("🛡️ Phase 4 Complete: Chromium closed successfully.")
+
+    # 5. Claim rewards for MRG accounts that already had an active pass
+    for acc in accounts_data:
+        if acc["has_active_pass"]:
+            uid = acc["uid"]
+            m_init = acc["init_data"]
+            if acc["stat"]["unclaimed"] > 0.05:
+                claim_res = claim_mining_reward(m_init)
+                if claim_res.get("success"):
+                    claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
+                    total_claimed_mrg += claimed_amt
+                    logger.info(f"⛏️ UID {uid}: Auto-claimed active pass reward: {claimed_amt:.2f} MRG.")
+                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
+                    auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
+
+    # 6. Master Account Referral Sweep
+    master_acc = next((a for a in accounts_data if a["uid"] == 6727787768), None)
+    if master_acc:
+        m_init = master_acc["init_data"]
+        safe_post(f"{API_BASE}/api/user/claim-commission", {"initData": m_init})
+        safe_post(f"{API_BASE}/api/user/claim-one-time-bonus", {"initData": m_init})
+        logger.info("👑 Master Account referral commission and team bonus claimed.")
 
     # 7. Telegram Telemetry Notification
     report_msg = (
