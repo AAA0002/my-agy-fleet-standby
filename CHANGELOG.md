@@ -3,6 +3,11 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **⚡ ATF Session Cookie Architecture, Diggo JWT Auto-Minting & Cloudflare Worker Node 4 Deployment (October 26, 2026)**:
+  - **Canonical App Parity (`app.py`)**:
+    * Added autonomous Diggo JWT exchange fallback directly in `_farm_diggo` in `app.py`, ensuring Render Standby Node 2 automatically exchanges `diggo_init_data` for a fresh 30-day JWT when missing.
+    * Added automated Telegram channel verification and task claim (`/api/tasks/verify` -> `/api/tasks/claim` with `taskId: "telegram"`) in `app.py`, unlocking the +30 DIGGO bounty across the fleet.
+    * Hardened ATF Miner payload generation with unique `uuid.uuid4()` request IDs to eliminate duplicate request replay blocks.
+    * Added `"fp": f"fp_{uid}"` parameter in `_farm_adxearn` session creation for bulletproof session validity.
   - **ATF Miner Mandatory Session Cookie Enforcement Resolved**:
     * Discovered that ATF Miner backend (`atfminers.asloni.online`) strictly enforces dual session cookies (`atf_tma_session` and `__Host-atf_fg_v1`) alongside unique per-request `request_id` values. Calling `action=claim` statelessly returned `HTTP 401 tma_session_required`, and reusing `request_id` returned `HTTP 409 request_replay_blocked`.
     * Upgraded `deploy_both_cf_workers.py` to extract `Set-Cookie` headers from `action=login` responses via `logResp.headers.getSetCookie()` and pass `Cookie: ...` to all subsequent claim, referral, and boost calls.
