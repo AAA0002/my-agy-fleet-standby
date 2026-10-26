@@ -654,7 +654,30 @@ The fleet's 10 active high-conviction legitimate bots and channels are fundament
 
 ---
 
-## 🛡️ 6.5 Free-Tier Quota Engineering & Infrastructure Safeguards (October 9, 2026)
+## ⚡ 6.6 Multi-Bot Session Cookie Architecture, Diggo JWT Auto-Minting & Cloudflare Edge Resilience (October 26, 2026)
+
+### 1. ATF Miner Session Cookie & Anti-Replay Enforcement
+- **Backend Protocol Discovery**:
+  - In-depth reverse-engineering of `https://atfminers.asloni.online/miner/index.php` revealed that the backend requires stateful session cookies (`atf_tma_session` and `__Host-atf_fg_v1`) returned during `action=login` to authorize any subsequent requests (`action=claim`, `action=claim_referrals`, `action=claim_team_wallet`, `action=activate_boost`, `action=start_mine`).
+  - Calling `action=claim` statelessly returned `401 Unauthorized: tma_session_required`. Reusing the `request_id` from login returned `409 Conflict: request_replay_blocked`.
+- **Architectural Solution**:
+  - Implemented session cookie capture via `logResp.headers.getSetCookie()` in Cloudflare Workers and `resp.headers.get_all('Set-Cookie')` in Python solvers, injecting `Cookie: atf_tma_session=...; __Host-atf_fg_v1=...` alongside unique UUID `request_id` per call.
+  - Built a 100% deterministic local math solver (`solve_atf_math`) to answer entry arithmetic challenges and restart mining cycles autonomously.
+  - Live verified: +0.0107 ATF claimed instantly with `HTTP 200 OK` (Balance: 5,631.31 ATF).
+
+### 2. DiggoMiner Autonomous JWT Minting Fallback
+- **Token Lifecycle Synchronization**:
+  - DiggoMiner enforces 30-day JWT authentication (`Authorization: Bearer <token>`) alongside mandatory `Origin: https://diggo.linkpc.net` and `Referer: https://diggo.linkpc.net/` headers.
+  - Added autonomous exchange fallback in Cloudflare Workers (`farmDiggo` in `deploy_both_cf_workers.py`): if `diggo_jwt` is missing, the edge worker exchanges `diggo_init_data` with `https://diggo.linkpc.net/api/auth/telegram`, mints a 30-day JWT, and persists it to Upstash Redis (`fleet:diggo:jwt:${uid}`).
+
+### 3. VyroDrop Circuit Breaker Expansion & Resilience
+- **Turnstile Onboarding Safeguard**:
+  - VyroDrop enforces TonConnect 2.0 wallet binding before mining can begin (`409 MINING_WALLET_REQUIRED`).
+  - In `mrg_turnstile_solver.py`, expanded the `vyro_needing_solver` circuit breaker from 1 failure to 3 consecutive failures, increasing per-account solve timeouts from 35s to 45s so transient network delays do not prematurely abort remaining fleet accounts.
+
+---
+
+## 🛡️ 6.7 Free-Tier Quota Engineering & Infrastructure Safeguards (October 9, 2026)
 
 To permanently resolve resource exhaustion across free cloud tiers without paying recurring fees or triggering rate-limit lockouts, the architecture enforces strict mathematical quotas:
 

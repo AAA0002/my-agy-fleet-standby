@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ ATF Session Cookie Architecture, Diggo JWT Auto-Minting & Cloudflare Worker Node 4 Deployment (October 26, 2026)**:
+  - **ATF Miner Mandatory Session Cookie Enforcement Resolved**:
+    * Discovered that ATF Miner backend (`atfminers.asloni.online`) strictly enforces dual session cookies (`atf_tma_session` and `__Host-atf_fg_v1`) alongside unique per-request `request_id` values. Calling `action=claim` statelessly returned `HTTP 401 tma_session_required`, and reusing `request_id` returned `HTTP 409 request_replay_blocked`.
+    * Upgraded `deploy_both_cf_workers.py` to extract `Set-Cookie` headers from `action=login` responses via `logResp.headers.getSetCookie()` and pass `Cookie: ...` to all subsequent claim, referral, and boost calls.
+    * Added deterministic local math solver (`solve_atf_math`) to `mrg_turnstile_solver.py` to autonomously answer entry math questions and restart mining cycles without external dependencies.
+    * Live verified on Commander Arif (`6727787768`): claim succeeded with `HTTP 200 OK` (+0.0107 ATF, Balance: 5,631.31 ATF).
+  - **DiggoMiner Autonomous JWT Minting Fallback**:
+    * Implemented autonomous Telegram WebApp exchange fallback in `farmDiggo` (`deploy_both_cf_workers.py`): if `diggo_jwt` is not cached in memory or Redis, the worker automatically exchanges `diggo_init_data` with `https://diggo.linkpc.net/api/auth/telegram`, mints a 30-day JWT, and persists it to Upstash Redis (`fleet:diggo:jwt:${uid}`).
+    * Ensured strict inclusion of `Origin: https://diggo.linkpc.net` and `Referer: https://diggo.linkpc.net/` with `Idempotency-Key` across all Diggo endpoints.
+  - **VyroDrop Circuit Breaker Expansion**:
+    * Expanded `vyro_needing_solver` circuit breaker in `mrg_turnstile_solver.py` from 1 failure to 3 consecutive failures, increasing per-account timeout from 35s to 45s so transient network delays do not prematurely abort remaining fleet accounts.
+  - **Production Deployment & Synchronization**:
+    * Deployed updated multi-bot engine to Primary Node 4 (`https://restore-agy.agorameet.workers.dev`) with active 15m cron (`*/15 * * * *`).
+    * Synchronized Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) webhooks, descriptions, commands, and global menu buttons.
+    * Pushed updates across `origin` (`AAA0002/ATL`), `standby_repo` (`AAA0002/my-agy-fleet-standby`), and `AAA0002/cloud-fleet-solver`.
+    * Executed `python3 backup_manager.py` and delivered encrypted disaster recovery archive to `@myagyai` vault.
+
 - **🚀 8-Bot Fleet-Wide Side-Task Unification, Multi-Account Discrepancy Resolution & Diggo Channel Onboarding (October 26, 2026)**:
   - **Fleet-Wide Side-Task Sweeper Engine (`finish_all_fleet_sidetasks.py`)**:
     * Integrated all 8 active bots into the unified multi-account harvest pipeline: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, and DiggoMiner.
