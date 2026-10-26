@@ -440,6 +440,24 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       let completedTasks = new Set();
       let taskCooldowns = {};
       if (logResp && logResp.ok) {
+        try {
+          let atfCookies = [];
+          if (typeof logResp.headers.getSetCookie === "function") {
+            const scList = logResp.headers.getSetCookie();
+            if (scList && scList.length > 0) {
+              atfCookies = scList.map(c => c.split(";")[0]);
+            }
+          } else {
+            const sc = logResp.headers.get("set-cookie");
+            if (sc) {
+              sc.split(/,(?=[^;]+=[^;]+)/).forEach(c => atfCookies.push(c.split(";")[0].trim()));
+            }
+          }
+          if (atfCookies.length > 0) {
+            atfHeaders["Cookie"] = atfCookies.join("; ");
+          }
+        } catch (_) {}
+
         const logData = await logResp.json().catch(() => ({}));
         completedTasks = new Set(logData.user?.completed_tasks || []);
         taskCooldowns = logData.task_cooldowns || {};
@@ -995,6 +1013,27 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     let dJwt = accData.diggo_jwt;
     if (!dJwt) {
       dJwt = await upstashGet(`fleet:diggo:jwt:${uid}`).catch(() => null);
+    }
+    if (!dJwt && accData.diggo_init_data) {
+      try {
+        const aResp = await fetch("https://diggo.linkpc.net/api/auth/telegram", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Origin": "https://diggo.linkpc.net",
+            "Referer": "https://diggo.linkpc.net/",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36"
+          },
+          body: JSON.stringify({ initData: accData.diggo_init_data })
+        });
+        if (aResp.ok) {
+          const aData = await aResp.json();
+          if (aData.token) {
+            dJwt = aData.token;
+            await upstashSet(`fleet:diggo:jwt:${uid}`, dJwt, 2592000).catch(() => {});
+          }
+        }
+      } catch (_) {}
     }
     if (!dJwt) return;
     try {

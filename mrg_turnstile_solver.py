@@ -31,6 +31,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("mrg_turnstile_solver")
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN") or ""
@@ -2159,21 +2165,75 @@ def check_and_farm_vyro_rest(uid: int, vyro_init: str, wallet_entry: dict, is_ma
     return False, True
 
 
+def solve_atf_math(question_text: str) -> str:
+    """100% deterministic local arithmetic & challenge solver for ATF Miner."""
+    if not question_text:
+        return "0"
+    import re
+    q_lower = question_text.lower().strip()
+
+    if "days in a week" in q_lower or "days a week" in q_lower: return "7"
+    if "hours in a day" in q_lower: return "24"
+    if "minutes in an hour" in q_lower or "seconds in a minute" in q_lower: return "60"
+    if "months in a year" in q_lower: return "12"
+    if "days in a year" in q_lower: return "365"
+    if "even or odd" in q_lower or "odd or even" in q_lower:
+        m_num = re.search(r"\b(\d+)\b", q_lower)
+        if m_num: return "even" if int(m_num.group(1)) % 2 == 0 else "odd"
+
+    word_to_num = {
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+        "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+        "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
+        "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+        "eighty": 80, "ninety": 90, "hundred": 100
+    }
+    cleaned = q_lower
+    for w, n in word_to_num.items():
+        cleaned = re.sub(rf"\b{w}\b", str(n), cleaned)
+
+    cleaned = re.sub(r"[^\d+\-*/().]", " ", cleaned).strip()
+    match = re.search(r"(\d+(?:\.\d+)?)\s*([\+\-\*\/])\s*(\d+(?:\.\d+)?)", cleaned)
+    if match:
+        a = float(match.group(1))
+        op = match.group(2)
+        b = float(match.group(3))
+        res = 0.0
+        if op == "+": res = a + b
+        elif op == "-": res = a - b
+        elif op == "*": res = a * b
+        elif op == "/" and b != 0: res = a / b
+        return str(int(res)) if res.is_integer() else f"{res:.2f}"
+
+    return "0"
+
+
 def check_and_farm_atf_rest(a_acc: dict) -> tuple[bool, bool]:
     """
     Fast REST handler for ATF Miner (@atfminers_bot).
-    Checks login status. If valid without captcha, claims mining rewards.
+    Checks login status. If valid without captcha, claims mining rewards,
+    referrals, boost, and restarts mining with session cookies.
     Returns: (is_handled_via_rest, needs_browser_solve)
     """
+    import uuid
     a_uid = a_acc["uid"]
     a_init = a_acc["init_data"]
-    p_chk = {
-        "initData": a_init,
-        "tg_id": a_uid,
-        "username": "",
-        "request_id": f"rq-chk-{a_uid}",
-        "device_id": f"dev-chk-{a_uid}"
-    }
+    dev_id = f"dev-chk-{a_uid}"
+
+    def make_atf_payload(extra=None):
+        p = {
+            "initData": a_init,
+            "tg_id": int(a_uid),
+            "username": "",
+            "request_id": f"rq-{uuid.uuid4()}",
+            "device_id": dev_id
+        }
+        if extra:
+            p.update(extra)
+        return p
+
     atf_h = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
         "X-Requested-With": "XMLHttpRequest",
@@ -2181,11 +2241,57 @@ def check_and_farm_atf_rest(a_acc: dict) -> tuple[bool, bool]:
         "Referer": f"{ATF_ORIGIN}/miner/index.html",
         "Origin": ATF_ORIGIN
     }
-    chk_code, chk_d = safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+
+    login_url = f"{ATF_API}?action=login&t={int(time.time()*1000)}"
+    req = urllib.request.Request(login_url, data=json.dumps(make_atf_payload()).encode("utf-8"), headers=atf_h)
+    chk_code = 0
+    chk_d = {}
+    cookies = []
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            chk_code = resp.status
+            cookies = resp.headers.get_all("Set-Cookie") or []
+            chk_d = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as he:
+        chk_code = he.code
+        try:
+            chk_d = json.loads(he.read().decode())
+        except Exception:
+            chk_d = {"error": str(he)}
+    except Exception as e:
+        logger.warning(f"[ATF] UID {a_uid} login error: {e}")
+        return False, True
+
     needs_atf_captcha = (chk_code == 403) or (isinstance(chk_d, dict) and chk_d.get("reason") in ("entry_captcha_required", "captcha_required"))
     if not needs_atf_captcha and chk_code == 200:
-        logger.info(f"✅ [ATF] UID {a_uid}: Login valid without captcha! Auto-claiming rewards.")
-        safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+        logger.info(f"✅ [ATF] UID {a_uid}: Login valid without captcha! Auto-claiming rewards with session cookies.")
+        cookie_str = "; ".join([c.split(";")[0] for c in cookies]) if cookies else ""
+        authed_h = dict(atf_h)
+        if cookie_str:
+            authed_h["Cookie"] = cookie_str
+
+        # 1. Claim mining rewards
+        cl_code, cl_data = safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", make_atf_payload(), extra_headers=authed_h)
+        if cl_code == 200 and isinstance(cl_data, dict):
+            claimed_amt = float(cl_data.get("claimed_amount", 0) or 0.0)
+            logger.info(f"⛏️ [ATF] UID {a_uid}: Claimed +{claimed_amt:.4f} ATF! Bal: {cl_data.get('new_pool_balance')}")
+
+        # 2. Daily claims & boosts
+        safe_post(f"{ATF_API}?action=claim_referrals&t={int(time.time()*1000)}", make_atf_payload(), extra_headers=authed_h)
+        safe_post(f"{ATF_API}?action=claim_team_wallet&t={int(time.time()*1000)}", make_atf_payload(), extra_headers=authed_h)
+        safe_post(f"{ATF_API}?action=activate_boost&t={int(time.time()*1000)}", make_atf_payload(), extra_headers=authed_h)
+        safe_post(f"{ATF_API}?action=record_daily_interaction&t={int(time.time()*1000)}", make_atf_payload(), extra_headers=authed_h)
+
+        # 3. Solve Math Challenge & Start Mining
+        try:
+            mc_code, mc_data = safe_post(f"{ATF_API}?action=get_math_challenge&t={int(time.time()*1000)}", make_atf_payload({"scope": "start_mine"}), extra_headers=authed_h)
+            if mc_code == 200 and isinstance(mc_data, dict) and mc_data.get("challenge_id"):
+                ans = solve_atf_math(mc_data.get("question", ""))
+                time.sleep(1.5)
+                safe_post(f"{ATF_API}?action=start_mine&t={int(time.time()*1000)}", make_atf_payload({"math_challenge_id": mc_data["challenge_id"], "math_answer": ans}), extra_headers=authed_h)
+        except Exception:
+            pass
+
         return True, False
     return False, True
 
@@ -2678,11 +2784,11 @@ async def run_mrg_auto_solver():
                     vic_fails += 1
                 await asyncio.sleep(0.5)
 
-            # C. Solve VyroDrop wallet onboarding (Protected by 1-fail circuit breaker)
+            # C. Solve VyroDrop wallet onboarding (Protected by 3-fail circuit breaker)
             vyro_fails = 0
             for vy_acc in vyro_needing_solver:
-                if vyro_fails >= 1:
-                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped. Skipping remaining Vyro browser solves.")
+                if vyro_fails >= 3:
+                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped (3 failures). Skipping remaining Vyro browser solves.")
                     break
                 vy_uid = vy_acc["uid"]
                 vy_init = vy_acc["init_data"]
@@ -2690,7 +2796,7 @@ async def run_mrg_auto_solver():
                 try:
                     vy_res = await asyncio.wait_for(
                         solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
-                        timeout=35.0
+                        timeout=45.0
                     )
                     if vy_res:
                         vyro_wallets_connected += 1
