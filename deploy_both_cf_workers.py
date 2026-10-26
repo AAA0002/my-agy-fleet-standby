@@ -1012,7 +1012,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) }
   ];
 
-  const activeRoutines = botRoutines.filter(b => b.hasData && (!targetBot || targetBot === "all" || b.name === targetBot.toLowerCase()));
+  const BOT_KEY_ALIASES = {
+    pepe: "pepegram", pepegram: "pepegram",
+    adx: "adxearn", adxearn: "adxearn",
+    vic: "victors", victor: "victors", victors: "victors",
+    knx: "kynex", kynex: "kynex",
+    dgo: "diggo", diggo: "diggo", diggominer: "diggo",
+    atf: "atf", mrg: "mrg", vyro: "vyro"
+  };
+  const normTarget = targetBot ? (BOT_KEY_ALIASES[targetBot.toLowerCase()] || targetBot.toLowerCase()) : "all";
+
+  const activeRoutines = botRoutines.filter(b => b.hasData && (normTarget === "all" || b.name === normTarget));
   for (let i = activeRoutines.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [activeRoutines[i], activeRoutines[j]] = [activeRoutines[j], activeRoutines[i]];

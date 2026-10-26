@@ -3,6 +3,10 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🛡️ Cloudflare WARP Zero-Trust Solver Proxy, AdxEarn AI Full Remediation & 8-Bot Verification (October 26, 2026)**:
+  - **Operations Dashboard Bot Keys & Server Alias Normalization (`admin.html`, `app.py`, `deploy_both_cf_workers.py`)**:
+    * Resolved UI dispatch discrepancy where clicking `⚡ Farm` for PepeGram or AdxEarn in `admin.html` passed keys `pepe` and `adx`, mismatching backend handler names `pepegram` and `adxearn`.
+    * Synchronized UI keys in `public_admin/admin.html` and `public/admin.html` to `pepegram` and `adxearn`.
+    * Implemented universal `BOT_KEY_ALIASES` dictionary mapping across `app.py` and `deploy_both_cf_workers.py` so requests with shorthand aliases (`pepe`, `adx`, `vic`, `knx`, `dgo`) resolve automatically.
   - **Cloudflare WARP Local SOCKS5 Proxy for GitHub Actions (`.github/workflows/mrg_turnstile_solver.yml` & `mrg_turnstile_solver.py`)**:
     * Integrated Cloudflare WARP (`cloudflare-warp`) client running in local proxy mode (`warp-cli mode proxy`, `warp-cli proxy port 40000`) on GitHub Actions Ubuntu runners.
     * Routed Patchright Chromium stealth browser through `socks5://127.0.0.1:40000`, exiting via Cloudflare's own consumer anycast network (`104.28.x.x`) to completely bypass Microsoft Azure datacenter IP 403 blocks on `challenges.cloudflare.com`.

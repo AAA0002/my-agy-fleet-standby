@@ -6124,7 +6124,17 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         if not b["has_data"]:
             status["bots"][b["name"]] = "skipped (no initData)"
 
-    active_routines = [b for b in bot_routines if b["has_data"] and (not target_bot or target_bot == "all" or b["name"] == target_bot.lower())]
+    bot_aliases = {
+        "pepe": "pepegram", "pepegram": "pepegram",
+        "adx": "adxearn", "adxearn": "adxearn",
+        "vic": "victors", "victor": "victors", "victors": "victors",
+        "knx": "kynex", "kynex": "kynex",
+        "dgo": "diggo", "diggo": "diggo", "diggominer": "diggo",
+        "atf": "atf", "mrg": "mrg", "vyro": "vyro"
+    }
+    norm_target = bot_aliases.get(target_bot.lower(), target_bot.lower()) if target_bot else "all"
+
+    active_routines = [b for b in bot_routines if b["has_data"] and (norm_target == "all" or b["name"] == norm_target)]
     random.shuffle(active_routines)
 
     now_ts = int(time.time())
