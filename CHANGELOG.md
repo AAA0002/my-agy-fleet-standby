@@ -2,6 +2,39 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Fleet 9-Bot Multi-Cloud Pipeline Unification, Token Sanitizer Fix & Turnstile Pre-Test Hardening (October 26, 2026)**:
+  - **Cloudflare Edge Token Sanitizer Major Bug Resolution (`deploy_both_cf_workers.py`)**:
+    * Diagnosed and fixed the primary root cause why Cloudflare Edge cron was failing to farm all 8 active bots: `ALLOWED_FLEET_BOTS` in line 1433 was hardcoded to only 5 bots (`["mrg", "atf", "victors", "vyro", "kynex"]`), causing `sanitizeFleetTokensObject` to systematically strip away `pepegram_init_data`, `adxearn_init_data`, `diggo_init_data`, and `diggo_jwt` from memory before `farmSingleAccountAllBots` executed.
+    * Expanded `ALLOWED_FLEET_BOTS` to all 8 active protocols: `["mrg", "atf", "victors", "vyro", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo", "astra"]`.
+    * Added explicit preservation for `acc.diggo_jwt` and `acc.victors_human_pass` inside `sanitizeFleetTokensObject`.
+    * Updated D1 SQL token retrieval query to include `pepegram`, `adxearn`, `diggo`, `diggo_jwt`, and `astra`, ensuring seamless edge fallbacks.
+  - **Edge Multi-Bot Side-Task Hardening (`deploy_both_cf_workers.py`)**:
+    * **ATF Miner**: Added automated TON wallet address synchronization via `action=sync_wallet` using `FLEET_TON_WALLETS`.
+    * **Kynex Network**: Added automated discovery and execution of Kynex social tasks (`/config/tasks/social.json` -> `claimSocialTask`) and watch ads tasks (`/config/tasksAds.json` -> `claimTasksAdReward`).
+    * **PepeGram**: Added automated ad rolls (`/tasks/ad-roll`, `/tasks/ad-roll2`), free slot spin (`/tasks/slot-spin`), and dynamic task sweeping (`/tasks` -> `/tasks/claim`).
+    * **AdxEarn AI**: Added automated farming boost (`/api/farming/boost`) and dynamic tasks sweeping (`/api/rewards/tasks` -> `task-start` -> `task-claim`).
+  - **Turnstile Solver Network Pre-Testing & Circuit Breaker Elevation (`mrg_turnstile_solver.py`)**:
+    * Identified that GitHub Actions runner was routing headless Patchright requests through Cloudflare WARP (`127.0.0.1:40000`), whose datacenter egress IP was being blocked with HTTP 403 by Cloudflare Turnstile, tripping the 2-failure circuit breaker.
+    * Added pre-flight connectivity verification on `127.0.0.1:40000` against `https://challenges.cloudflare.com/turnstile/v0/api.js`. If WARP fails or returns 403, the runner automatically bypasses WARP and utilizes direct high-trust runner connections.
+    * Elevated circuit breaker thresholds from 2 to 5 consecutive failures across MRG, Victor's, and VyroDrop to prevent early aborts on transient errors.
+  - **Ground-Truth Fleet Audit (20/20 Accounts Verified)**:
+    * Re-anchored `audit_bots_and_sidetasks.py` to always query Upstash Redis `miniapp_tokens` first instead of stale local disk files.
+    * Verified live production operation across all accounts:
+      1. **MRG Miner**: 20/20 Active (Levels 129-180/203, 33-34 tasks completed, TON wallets bound).
+      2. **ATF Miner**: 20/20 Active (Levels 116-160, anti-bot math verified, balances 1,820-5,633 ATF).
+      3. **VyroDrop**: 20/20 Active Bootstrap (Level 1, speed 0.20, tasks available).
+      4. **Kynex Network**: 20/20 Active & Authenticated (Balances 101k-137k KNX, 4 social tasks verified).
+      5. **PepeGram**: 20/20 Active (Production started, yield claimed, power up to 8,950).
+      6. **AdxEarn AI**: 20/20 Active (Streak 6 days, check-in done, farming active).
+      7. **DiggoMiner**: 20/20 Active (Levels 10-77, 120 side tasks completed, mining claimed).
+      8. **Victor's Company**: Token extraction & humanPass verification active.
+      9. **Astra Airdrop**: 20/20 accounts verified that Supabase backend is restricted by Supabase with HTTP 402 exceed_egress_quota.
+  - **Production Deployment & Vault Backup**:
+    * Deployed updated Cloudflare Worker to Primary Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Pushed updated code to `origin` (`AAA0002/ATL`), `standby_repo` (`AAA0002/my-agy-fleet-standby`), and `AAA0002/cloud-fleet-solver`.
+    * Dispatched fresh workflow run `40374374561` on `cloud-fleet-solver`.
+    * Streamed encrypted disaster recovery backup archive to Telegram vault `@myagyai` via `backup_manager.py`.
+
 - **🎯 DiggoMiner Solana Launch Campaign Automation, Dynamic Tasks Engine & Multi-Bot Hardening (October 26, 2026)**:
   - **DiggoMiner Solana Launch Campaign (`/api/launch-tasks`) Discovery & 100% Fleet Resolution**:
     * Reverse-engineered `launch-tasks.js` (`v=20261024-post2`) from `diggo.linkpc.net` frontend. Discovered that the Diggo team recently launched a Solana Campaign with active `quiz` (+5 DIGGO) and `pump` (follow pump.fun) tasks that were omitted from existing automated farming loops.
