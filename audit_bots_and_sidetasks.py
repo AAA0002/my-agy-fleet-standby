@@ -694,7 +694,7 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
 
 async def main():
     print("="*80)
-    print("🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
+    print("🚀 FLEET-WIDE 8-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
     print("="*80)
     
     fleet_reports = {}

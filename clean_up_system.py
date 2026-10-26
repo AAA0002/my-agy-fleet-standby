@@ -279,11 +279,12 @@ def sanitize_upstash_redis(dry_run: bool = False) -> dict:
     except Exception as ue:
         logger.debug(f"Upstash pass audit note: {ue}")
 
-    # 3.3 Purge legacy defunct bot keys from Upstash Redis (Strict 5-Bot Integrity)
+    # 3.3 Purge legacy defunct bot keys from Upstash Redis (Strict 8-Bot Integrity)
     dead_patterns = [
-        "fleet:diggo:*", "fleet:astra:*", "fleet:pepegram:*", "fleet:adxearn:*",
-        "fleet:last_farm:diggo:*", "fleet:last_farm:astra:*", "fleet:last_farm:pepegram:*", "fleet:last_farm:adxearn:*",
-        "fleet:farm_error:diggo:*", "fleet:farm_error:astra:*", "fleet:farm_error:pepegram:*", "fleet:farm_error:adxearn:*"
+        "fleet:astra:*", "fleet:last_farm:astra:*", "fleet:farm_error:astra:*",
+        "fleet:leafearn:*", "fleet:last_farm:leafearn:*", "fleet:farm_error:leafearn:*",
+        "fleet:pumpkin:*", "fleet:last_farm:pumpkin:*", "fleet:farm_error:pumpkin:*",
+        "fleet:stones:*", "fleet:last_farm:stones:*", "fleet:farm_error:stones:*"
     ]
     for dp in dead_patterns:
         try:
@@ -340,13 +341,14 @@ def clean_github_actions_history(max_age_days: int = 7, dry_run: bool = False) -
         for r in runs:
             created_at_str = r.get("created_at")
             run_id = r.get("id")
+            conclusion = r.get("conclusion")
             if created_at_str and run_id:
                 # ISO parsing (e.g. 2026-10-01T12:00:00Z)
                 try:
                     import datetime
                     dt = datetime.datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
                     run_epoch = dt.timestamp()
-                    if run_epoch < cutoff_sec:
+                    if run_epoch < cutoff_sec or conclusion in ("failure", "cancelled", "timed_out", "startup_failure"):
                         if not dry_run:
                             del_req = urllib.request.Request(
                                 f"https://api.github.com/repos/{GH_REPO}/actions/runs/{run_id}",
@@ -356,7 +358,7 @@ def clean_github_actions_history(max_age_days: int = 7, dry_run: bool = False) -
                             with urllib.request.urlopen(del_req, timeout=8) as del_resp:
                                 if del_resp.status in (204, 200):
                                     deleted_runs += 1
-                                    logger.info(f"  🗑️ Deleted old workflow run ID {run_id} ({r.get('name')})")
+                                    logger.info(f"  🗑️ Deleted CI run ID {run_id} ({conclusion}) ({r.get('name')})")
                         else:
                             deleted_runs += 1
                 except Exception as de:

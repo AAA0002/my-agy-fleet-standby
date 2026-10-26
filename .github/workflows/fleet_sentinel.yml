@@ -1,9 +1,8 @@
 name: "MY AGY AI — Multi-Cloud 24/7 Autonomous Sentinel & Fleet Audit"
 
 on:
-  schedule:
-    # Runs once a day (08:00 UTC) to strictly conserve GitHub Actions free-tier minutes
-    - cron: '0 8 * * *'
+  # Schedule runs autonomously on Cloudflare Edge cron & Instabox VM keepalive daemon.
+  # Kept as workflow_dispatch here on private repo to conserve private runner minutes.
   workflow_dispatch:
 
 jobs:

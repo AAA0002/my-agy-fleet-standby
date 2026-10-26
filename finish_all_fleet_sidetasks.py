@@ -6,7 +6,7 @@ COMPREHENSIVE MULTI-BOT FLEET SIDE-TASK HARVESTER & AUTOMATION ENGINE
 =============================================================================
 Sweeps and completes all available side-tasks, daily check-ins, social joins,
 cooldown missions, wallet verifications, and referral commission claims across
-all 18 accounts in the fleet for all 9 legitimate bots:
+all 20 accounts in the fleet for all 8 legitimate bots:
   1. MRG Miner (@mrg_miner_bot)
   2. ATF Miner (@atf_miner_bot)
   3. Victor's Company (@VictorsCompanybot)

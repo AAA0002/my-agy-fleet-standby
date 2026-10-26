@@ -1,9 +1,8 @@
 name: "MY AGY AI — 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming"
 
 on:
-  schedule:
-    # Runs every 6 hours on public runner with unlimited free minutes
-    - cron: '0 */6 * * *'
+  # Schedule runs autonomously on public runner AAA0002/cloud-fleet-solver (unlimited free minutes).
+  # Kept as workflow_dispatch here on private repo to conserve private runner minutes.
   workflow_dispatch:
 
 jobs:
