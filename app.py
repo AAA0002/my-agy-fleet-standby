@@ -479,8 +479,6 @@ KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
 DIGGO_BOT = "Diggominer_bot"
 DIGGO_REFERRAL_CODE = "ref_4088138f11effe8eef4b86ff"
-ASTRA_BOT = "ASTRA_AIRDROP_BOT"
-ASTRA_REFERRAL_CODE = "ref_6727787768"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 PEPEGRAM_REFERRAL_CODE = "6727787768"
 ADXEARN_BOT = "AdxEarnAibot"
@@ -2071,10 +2069,9 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     3. Victor's Company: ref_A20AA96F18
     4. VyroDrop: ref_myFjrqqE4WN_
     5. Kynex Network: 6727787768
-    6. DiggoMiner: ref_4088138f11effe8eef4b86ff
-    7. Astra Airdrop: ref_6727787768
-    8. PepeGram: 6727787768
-    9. AdxEarn AI: ref_6727787768
+    6. PepeGram: 6727787768
+    7. AdxEarn AI: ref_6727787768
+    8. DiggoMiner: ref_4088138f11effe8eef4b86ff
     """
     name = acc_entry.get("name", "User")
     uid = str(acc_entry.get("user_id"))
@@ -7066,7 +7063,6 @@ async def mute_all_chats_endpoint(request: Request):
         "VictorsCompanybot", "VictorsCompany",
         "vyrodrop_bot", "vyrodrop",
         "Diggominer_bot", "diggo_community",
-        "ASTRA_AIRDROP_BOT",
         "Pepe_gram_bot",
         "AdxEarnAibot"
     ]
@@ -7316,18 +7312,19 @@ MANDATORY_SPONSOR_CHANNELS = [
     "Web3Primeteam"
 ]
 
-# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 8 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
     "VictorsCompanybot", "vyrodrop_bot",
     "Kynex_miningbot", "Diggominer_bot",
-    "ASTRA_AIRDROP_BOT", "Pepe_gram_bot",
-    "AdxEarnAibot"
+    "Pepe_gram_bot", "AdxEarnAibot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
 FLEET_BANNED_SCAMMERS = [
     # Purged per user directive
+    "ASTRA_AIRDROP_BOT",
+    "astra_airdrop_bot",
     "PumpkinEarnBot",
     "LeafEarnBot",
     "stoneswithestand_bot",

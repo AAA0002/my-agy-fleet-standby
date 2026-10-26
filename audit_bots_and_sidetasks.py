@@ -661,12 +661,6 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["8. DiggoMiner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
-        # 9. Astra Airdrop
-        report["bots"]["9. Astra Airdrop"] = {
-            "core": {"status": "Supabase Project Suspended (HTTP 402 exceed_egress_quota) 🔴"},
-            "side_tasks": ["Project abandoned by external developers"]
-        }
-
     return report
 
 async def audit_single_account(acc, idx, total, tokens_db, sem):

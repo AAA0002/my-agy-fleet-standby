@@ -12,10 +12,9 @@ all 18 accounts in the fleet for all 9 legitimate bots:
   3. Victor's Company (@VictorsCompanybot)
   4. VyroDrop (@vyrodrop_bot)
   5. Kynex Network (@Kynex_miningbot)
-  6. DiggoMiner (@diggominer_bot)
-  7. Astra Airdrop (@AstraAirdropBot)
-  8. PepeGram (@pepe_mine_bot)
-  9. AdxEarn AI (@AdxEarnAibot)
+  6. PepeGram (@pepe_mine_bot)
+  7. AdxEarn AI (@AdxEarnAibot)
+  8. DiggoMiner (@diggominer_bot)
 
 Zero Phone Load (Rule 4): Runs once as a clean batch script in cloud/container,
 exits cleanly, and persists updated tokens to Upstash Redis and Cloudflare Edge.
@@ -1037,93 +1036,6 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
                                     res["notes"].append("launch_pump_confirmed")
         except Exception:
             pass
-
-    except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
-
-    return res
-
-
-
-
-async def sweep_astra_tasks(session: aiohttp.ClientSession, uid: str, name: str, a_init: str, acc: dict) -> Dict[str, Any]:
-    """Sweeps Astra Airdrop mining claims, math challenges, and referrals."""
-    res = {"bot": "Astra Airdrop", "tasks_claimed": 0, "notes": [], "success": False}
-    if not a_init:
-        res["notes"].append("no_init_data")
-        return res
-
-    try:
-        q = urllib.parse.parse_qs(a_init, keep_blank_values=True)
-        flat_q = {k: v[0] for k, v in q.items()}
-        hash_val = flat_q.pop("hash", "")
-        p_dcs = "\n".join(f"{k}={v}" for k, v in sorted(flat_q.items()))
-
-        astra_sb_url = "https://bcbwqnkfyrpjhctesvnp.supabase.co"
-        astra_sb_key = env.get("ASTRA_SB_KEY") or __import__("base64").b64decode("ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1KalluZHhibXRtZVhKd2FtaGpkR1Z6ZG01d0lpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT1RBeE5UVTRNVGtzSW1WNGNDSTZNakV3TlRjek1UZ3hPWDAuNi10aVQtaFdjaklPUEFwWkpLejZRdlgzRUVxbkhfRk1IR1hscllRN2xRZw==").decode()
-        astra_headers = {
-            "apikey": astra_sb_key,
-            "Authorization": f"Bearer {astra_sb_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
-        }
-
-        async def astra_rpc(fn, extra=None):
-            args = {"p_dcs": p_dcs, "p_hash": hash_val}
-            if extra: args.update(extra)
-            async with session.post(f"{astra_sb_url}/rest/v1/rpc/{fn}", json=args, headers=astra_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                return (await r.json()) if r.status == 200 else {}
-
-        # 1. Login
-        log_d = await astra_rpc("astra_login")
-        u_obj = (log_d.get("user") if isinstance(log_d, dict) else {}) or {}
-        res["success"] = True
-        res["level"] = u_obj.get("miner_level", 1)
-        res["balance"] = float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))
-
-        # 2. TON wallet sync
-        ton_addr = get_ton_wallet_address(acc, uid)
-        if ton_addr and (not u_obj.get("wallet_address") or u_obj.get("wallet_address") != ton_addr):
-            await astra_rpc("astra_sync_wallet", {"p_wallet": str(ton_addr)})
-            res["notes"].append("ton_wallet_synced")
-
-        # 3. Mining claim & boost
-        await jitter(0.4, 0.8)
-        await astra_rpc("astra_mine_claim")
-        await astra_rpc("astra_activate_boost")
-
-        # 4. Math challenge & start mine
-        await jitter(0.4, 0.8)
-        ch_d = await astra_rpc("astra_math_challenge", {"p_scope": "start_mine"})
-        if ch_d and ch_d.get("status") == "success" and ch_d.get("challenge_id"):
-            ans = solve_atf_math(ch_d.get("question", ""))
-            await jitter(1.5, 2.5)
-            sm = await astra_rpc("astra_start_mine", {"p_cid": ch_d["challenge_id"], "p_answer": str(ans)})
-            if sm and sm.get("status") == "success":
-                res["notes"].append("mining_restarted")
-
-        # 5. Side-Task Automation (Complete 3/3 tasks to unlock +100 ASTRA bonus per recruit for Master)
-        tasks_to_run = ["react_telegram_post", "twitter_retweet", "youtube_like_comment", "subscribe_youtube"]
-        started_tasks = []
-        for t in tasks_to_run:
-            st = await astra_rpc("astra_task_start", {"p_task": t})
-            if isinstance(st, dict) and st.get("status") == "success":
-                started_tasks.append(t)
-            await asyncio.sleep(0.3)
-
-        if started_tasks:
-            await asyncio.sleep(15)  # satisfy minSeconds
-            for t in started_tasks:
-                cl = await astra_rpc("astra_task_claim", {"p_task": t})
-                if isinstance(cl, dict) and cl.get("status") == "success":
-                    res["tasks_claimed"] += 1
-                    res["notes"].append(f"task_{t}")
-                await asyncio.sleep(0.3)
-
-        # 6. Referral & Team claim
-        await jitter(0.4, 0.8)
-        await astra_rpc("astra_claim")
-        await astra_rpc("astra_team_claim")
 
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")

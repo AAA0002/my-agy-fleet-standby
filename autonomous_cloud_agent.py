@@ -166,7 +166,7 @@ Past Lessons & Directives (NEVER VIOLATE THESE RULES):
 - Master account (6727787768) maintains maximum compound hash and acts as primary referrer.
 - Worker accounts auto-harvest and compound mining cycles according to optimal cooldown intervals.
 - If tokens are stale (>12h old) or GitHub Actions hit limits, action must be 'refresh_tokens_render'.
-- Defunct bots (DiggoMiner, Astra, PepeGram, AdxEarn, LeafEarn, PumpkinEarn) are permanently purged.
+- Defunct bots (Astra Airdrop, LeafEarn, PumpkinEarn) are permanently purged.
 
 Decide the best next operational step. Output JSON ONLY:
 {{

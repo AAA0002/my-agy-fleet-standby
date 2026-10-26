@@ -2,6 +2,33 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚫 Full System Decommission & Permanent Purge of Astra Airdrop, Enforcement of Ground-Truth 8 Legitimate Fleet Bots Policy (October 26, 2026)**:
+  - **Astra Airdrop Decommission & Scam Blacklist (`app.py`, `autonomous_cloud_agent.py`, `deploy_both_cf_workers.py`)**:
+    * Permanently decommissioned and purged **Astra Airdrop** (`@ASTRA_AIRDROP_BOT` / `ASTRA_AIRDROP_BOT`) across the entire repository, edge workers, and cloud instances following confirmation that upstream backend (`bcbwqnkfyrpjhctesvnp.supabase.co`) was abandoned and permanently suspended by its developers (HTTP 402 exceed_egress_quota).
+    * Removed Astra referral matrix definitions and default telegram dialogs from `app.py`. Added `ASTRA_AIRDROP_BOT` and `astra_airdrop_bot` to `FLEET_BANNED_SCAMMERS` so all 20 accounts automatically leave scam channels, block dialogs, and purge state.
+    * Added Astra Airdrop to permanently purged defunct bots in `autonomous_cloud_agent.py` and `clean_up_system.py` (`fleet:astra:*`).
+  - **Cloudflare Edge Workers Re-Architecture (`deploy_both_cf_workers.py`)**:
+    * Updated `ALLOWED_FLEET_BOTS` to strictly the 8 legitimate bots: `["mrg", "atf", "victors", "vyro", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo"]`.
+    * Removed Astra token selects and keys from Cloudflare D1 and KV filters (`ALLOWED_FLEET_KEYS`).
+    * Updated Ari AI prompt context, `/status`, `/briefing`, `/harvest`, `/stones`, and help commands across both Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) to strictly 8 legitimate active pools.
+    * Deleted `/astra` admin command handler, callback queries, and keyboard buttons.
+    * Updated User Bot `/start`, `/help`, `/pools` menus, and WebApp launcher to 8 verified mining pools.
+  - **Frontend Dashboards & WebApp Synchronization (`dashboard.html`, `public/admin.html`, `public/user-admin.html`, `public/index.html`, `tgcloud_admin_bot/public/index.html`)**:
+    * Synchronized Executive Fleet Operations Console (`dashboard.html`, `public/admin.html`, `public_admin/admin.html`) to 8 bots: removed Astra vector cards, grid items, and TON wallet associations.
+    * Synchronized User Bot Admin Console (`public/user-admin.html`, `public_admin/user-admin.html`) to 8 pools: purged Astra entry from `POOLS_LIST` and updated broadcast notification templates.
+    * Synchronized User Mini App (`public/index.html`, `public/app/index.html`, `public/miner/index.html`, `public_ads/miner/index.html`) to 8 pools: removed Astra protocol card, chip selector, account counter, and status badges.
+    * Synchronized TgCloud Admin Bot webview (`tgcloud_admin_bot/public/index.html`): removed Bot 9 Astra card, quick diagnostic prompts, and Ari AI council references.
+  - **Enforced Ground-Truth 8 Legitimate Fleet Bots**:
+    1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `@mrgminerbot`)
+    2. 🪙 **ATF Miner** (`@atfminers_bot` / `@ATF_AIRDROP_bot`)
+    3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
+    4. 💧 **VyroDrop** (`@vyrodrop_bot`)
+    5. 🌐 **Kynex Network** (`@Kynex_miningbot`)
+    6. ⛏️ **DiggoMiner** (`@Diggominer_bot`)
+    7. 🐸 **PepeGram** (`@Pepe_gram_bot`)
+    8. 🤖 **AdxEarn AI** (`@AdxEarnAibot`)
+
+
 - **🌐 Fleet 9-Bot Multi-Cloud Pipeline Unification, Token Sanitizer Fix & Turnstile Pre-Test Hardening (October 26, 2026)**:
   - **Cloudflare Edge Token Sanitizer Major Bug Resolution (`deploy_both_cf_workers.py`)**:
     * Diagnosed and fixed the primary root cause why Cloudflare Edge cron was failing to farm all 8 active bots: `ALLOWED_FLEET_BOTS` in line 1433 was hardcoded to only 5 bots (`["mrg", "atf", "victors", "vyro", "kynex"]`), causing `sanitizeFleetTokensObject` to systematically strip away `pepegram_init_data`, `adxearn_init_data`, `diggo_init_data`, and `diggo_jwt` from memory before `farmSingleAccountAllBots` executed.

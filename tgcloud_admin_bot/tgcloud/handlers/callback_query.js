@@ -584,7 +584,6 @@ Please reply directly with the full phone number including international country
 ◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
 ◈ 💎 *Kynex Network*     → Session Token Claim & Node Mining
 ◈ ⛏️ *DiggoMiner*        → 30-Day JWT Cached Session Claim
-◈ ⭐ *Astra Airdrop*     → Supabase Egress Aware Auto-Claim
 ◈ 🐸 *PepeGram*          → 6h Hash Production Harvest
 ◈ 🤖 *AdxEarn AI*        → Rewarded Ads Farming Cycle
 

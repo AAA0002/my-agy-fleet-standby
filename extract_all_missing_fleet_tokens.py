@@ -71,13 +71,6 @@ TARGET_BOTS = [
         "name": "DiggoMiner"
     },
     {
-        "key": "astra_init_data",
-        "bot": "ASTRA_AIRDROP_BOT",
-        "url": "https://amazing-alpaca-eb7e2b.netlify.app/",
-        "short_names": ["app", "airdrop", "startapp"],
-        "name": "Astra Airdrop"
-    },
-    {
         "key": "pepegram_init_data",
         "bot": "Pepe_gram_bot",
         "url": "https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en",
