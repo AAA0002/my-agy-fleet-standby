@@ -1029,10 +1029,70 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         await fetch("https://diggo.linkpc.net/api/referrals/claim", {
           method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
         }).catch(() => {});
-        if (streak > 0) {
-          await fetch("https://diggo.linkpc.net/api/streak/claim", {
-            method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ day: streak })
-          }).catch(() => {});
+        
+        // Day Rewards & Streak Milestones
+        const dayRewards = st.dayRewards || [];
+        for (const dr of dayRewards) {
+          if (dr && dr.status === "available") {
+            await fetch("https://diggo.linkpc.net/api/streak/claim", {
+              method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ day: dr.day })
+            }).catch(() => {});
+          }
+        }
+
+        // Level & Play Tasks
+        const tasks = st.tasks || {};
+        const tPlay = tasks.play || {};
+        if (tPlay.enabled && !tPlay.claimed) {
+          if (lvl >= (tPlay.targetLevel || 1) || (tPlay.progress >= tPlay.total)) {
+            await fetch("https://diggo.linkpc.net/api/tasks/claim", {
+              method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "play" })
+            }).catch(() => {});
+          }
+        }
+
+        // Social Tasks (community_react, x_follow, x_post)
+        for (const tid of ["community_react", "x_follow", "x_post"]) {
+          const tObj = tasks[tid] || {};
+          if (tObj.enabled && !tObj.claimed) {
+            let attId = tObj.confirmation?.attemptId;
+            if (!attId) {
+              const sResp = await fetch("https://diggo.linkpc.net/api/tasks/social/start", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: tid })
+              }).catch(() => null);
+              if (sResp && sResp.ok) {
+                const sData = await sResp.json().catch(() => ({}));
+                attId = sData.attempt?.attemptId;
+              }
+            }
+            if (attId) {
+              await fetch("https://diggo.linkpc.net/api/tasks/social/confirm", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: tid, attemptId: attId, confirmed: true })
+              }).catch(() => {});
+              await fetch("https://diggo.linkpc.net/api/tasks/claim", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: tid })
+              }).catch(() => {});
+            }
+          }
+        }
+
+        // Rewarded Ad Task
+        const tAd = tasks.ad || {};
+        if (tAd.enabled && !tAd.claimed && ((tAd.quotaUsed || 0) < (tAd.quotaTotal || 4))) {
+          const aResp = await fetch("https://diggo.linkpc.net/api/adsgram/start", {
+            method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
+          }).catch(() => null);
+          if (aResp && aResp.ok) {
+            const aData = await aResp.json().catch(() => ({}));
+            if (aData.attemptId) {
+              await fetch("https://diggo.linkpc.net/api/adsgram/complete", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ attemptId: aData.attemptId })
+              }).catch(() => {});
+              await fetch("https://diggo.linkpc.net/api/tasks/claim", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "ad" })
+              }).catch(() => {});
+            }
+          }
         }
         result.bots.diggo = `farmed (lvl: ${lvl}, bal: ${bal.toFixed(2)})`;
       } else {

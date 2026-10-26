@@ -2320,9 +2320,49 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
     # 3. Side Tasks: Daily Checkin, Referral Commission, and Day Streak
     safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "checkin"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
     safe_post(f"{DIGGO_API}/referrals/claim", {}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
-    streak = st.get("streak", 0)
-    if streak > 0:
-        safe_post(f"{DIGGO_API}/streak/claim", {"day": streak}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+    
+    # 4. Day Rewards & Milestones
+    for dr in st.get("dayRewards", []):
+        if isinstance(dr, dict) and dr.get("status") == "available":
+            safe_post(f"{DIGGO_API}/streak/claim", {"day": dr.get("day")}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+    
+    # 5. Play / Level Milestone
+    tasks = st.get("tasks", {})
+    p_lvl = st.get("player", {}).get("level", 1)
+    t_play = tasks.get("play", {})
+    if t_play.get("enabled") and not t_play.get("claimed"):
+        if p_lvl >= (t_play.get("targetLevel") or 1) or (t_play.get("progress", 0) >= t_play.get("total", 1)):
+            safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "play"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+
+    # 6. Telegram Verification
+    t_tg = tasks.get("telegram", {})
+    if t_tg.get("enabled") and not t_tg.get("claimed"):
+        safe_post(f"{DIGGO_API}/tasks/verify", {"taskId": "telegram"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+        safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "telegram"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+
+    # 7. Social Tasks (community_react, x_follow, x_post)
+    for tid in ["community_react", "x_follow", "x_post"]:
+        t_obj = tasks.get(tid, {})
+        if t_obj.get("enabled") and not t_obj.get("claimed"):
+            conf = t_obj.get("confirmation")
+            att_id = conf.get("attemptId") if isinstance(conf, dict) else None
+            if not att_id:
+                s_c, s_d = safe_post(f"{DIGGO_API}/tasks/social/start", {"taskId": tid}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+                if s_c == 200 and isinstance(s_d, dict):
+                    att_id = s_d.get("attempt", {}).get("attemptId")
+                    time.sleep(2.0)
+            if att_id:
+                safe_post(f"{DIGGO_API}/tasks/social/confirm", {"taskId": tid, "attemptId": att_id, "confirmed": True}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+                safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": tid}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+
+    # 8. Rewarded Ad Task
+    t_ad = tasks.get("ad", {})
+    if t_ad.get("enabled") and not t_ad.get("claimed") and (t_ad.get("quotaUsed", 0) < t_ad.get("quotaTotal", 4)):
+        a_c, a_d = safe_post(f"{DIGGO_API}/adsgram/start", {}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+        if a_c == 200 and isinstance(a_d, dict) and a_d.get("attemptId"):
+            time.sleep(2.0)
+            safe_post(f"{DIGGO_API}/adsgram/complete", {"attemptId": a_d["attemptId"]}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+            safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "ad"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
 
     logger.info(f"⛏️ [Diggo] UID {d_uid}: Successfully farmed main & side tasks via REST (+{claimed_amt:.2f} DIGGO).")
     return True, claimed_amt

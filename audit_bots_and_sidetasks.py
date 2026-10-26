@@ -485,16 +485,47 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                             t_txt = "Claimed / Success" if tr.status in (200, 201) else f"HTTP {tr.status}"
                             b_rep["side_tasks"].append(f"Check-in Task: {t_txt}")
 
+                        # Side task: play / level milestone
+                        tasks = st.get("tasks", {})
+                        t_play = tasks.get("play", {})
+                        if t_play.get("enabled") and not t_play.get("claimed"):
+                            if lvl >= (t_play.get("targetLevel") or 1) or (t_play.get("progress", 0) >= t_play.get("total", 1)):
+                                async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": "play"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as pr:
+                                    p_txt = "Claimed (+10)" if pr.status in (200, 201) else f"HTTP {pr.status}"
+                                    b_rep["side_tasks"].append(f"Play Task: {p_txt}")
+
+                        # Side task: social tasks (community_react, x_follow, x_post)
+                        for tid in ["community_react", "x_follow", "x_post"]:
+                            t_obj = tasks.get(tid, {})
+                            if t_obj.get("enabled"):
+                                if t_obj.get("claimed"):
+                                    b_rep["side_tasks"].append(f"{tid}: Claimed ✅")
+                                else:
+                                    conf = t_obj.get("confirmation")
+                                    att_id = conf.get("attemptId") if isinstance(conf, dict) else None
+                                    if not att_id:
+                                        async with session.post("https://diggo.linkpc.net/api/tasks/social/start", json={"taskId": tid}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as sr:
+                                            if sr.status == 200:
+                                                sd_att = await sr.json()
+                                                att_id = sd_att.get("attempt", {}).get("attemptId")
+                                    if att_id:
+                                        async with session.post("https://diggo.linkpc.net/api/tasks/social/confirm", json={"taskId": tid, "attemptId": att_id, "confirmed": True}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as cr:
+                                            c_ok = cr.status in (200, 201)
+                                        async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": tid}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as clr:
+                                            cl_txt = "Claimed (+5)" if clr.status in (200, 201) else f"HTTP {clr.status}"
+                                            b_rep["side_tasks"].append(f"{tid}: {cl_txt}")
+
                         # Side task: referral commission
                         async with session.post("https://diggo.linkpc.net/api/referrals/claim", json={}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as rr:
                             b_rep["side_tasks"].append(f"Referral Commission: HTTP {rr.status}")
 
-                        # Side task: daily streak
-                        streak = st.get("streak", 0)
-                        if streak > 0:
-                            async with session.post("https://diggo.linkpc.net/api/streak/claim", json={"day": streak}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as sr:
-                                s_txt = "Claimed" if sr.status in (200, 201) else ("Already Claimed / Not Ready" if sr.status == 409 else f"HTTP {sr.status}")
-                                b_rep["side_tasks"].append(f"Streak Day {streak}: {s_txt}")
+                        # Side task: daily streak / day rewards
+                        for dr in st.get("dayRewards", []):
+                            if isinstance(dr, dict) and dr.get("status") == "available":
+                                d_day = dr.get("day")
+                                async with session.post("https://diggo.linkpc.net/api/streak/claim", json={"day": d_day}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as sr:
+                                    s_txt = "Claimed (+15)" if sr.status in (200, 201) else f"HTTP {sr.status}"
+                                    b_rep["side_tasks"].append(f"Day {d_day} Reward: {s_txt}")
                     else:
                         b_rep["core"]["status"] = f"JWT HTTP {r.status}"
             except Exception as e:

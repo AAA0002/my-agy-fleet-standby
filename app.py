@@ -960,6 +960,15 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 8. DiggoMiner (@Diggominer_bot - Silent WebApp query with immediate 30-day JWT exchange)
     dig_param = None if is_master else DIGGO_REFERRAL_CODE
+    try:
+        from telethon.tl.functions.bots import AllowSendMessageRequest
+        await client(AllowSendMessageRequest(bot=DIGGO_BOT))
+    except Exception:
+        pass
+    try:
+        await client(JoinChannelRequest("diggo_community"))
+    except Exception:
+        pass
     dig_tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=dig_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["app", "miner"])
     if dig_tok:
         tokens["diggo_init_data"] = dig_tok
@@ -6102,10 +6111,43 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     # 2. Side Tasks: Daily Checkin & Referral Commission
                     await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "checkin"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                     await safe_post("https://diggo.linkpc.net/api/referrals/claim", json_data={}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
-                    # 3. Streak Reward if available
-                    streak = st.get("streak", 0)
-                    if streak > 0:
-                        await safe_post("https://diggo.linkpc.net/api/streak/claim", json_data={"day": streak}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                    
+                    # 3. Day Rewards & Streak Milestones
+                    for dr in st.get("dayRewards", []):
+                        if isinstance(dr, dict) and dr.get("status") == "available":
+                            await safe_post("https://diggo.linkpc.net/api/streak/claim", json_data={"day": dr.get("day")}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+
+                    # 4. Level & Play Tasks
+                    tasks = st.get("tasks", {})
+                    t_play = tasks.get("play", {})
+                    if t_play.get("enabled") and not t_play.get("claimed"):
+                        if lvl >= (t_play.get("targetLevel") or 1) or (t_play.get("progress", 0) >= t_play.get("total", 1)):
+                            await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "play"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+
+                    # 5. Social Tasks (community_react, x_follow, x_post)
+                    for tid in ["community_react", "x_follow", "x_post"]:
+                        t_obj = tasks.get(tid, {})
+                        if t_obj.get("enabled") and not t_obj.get("claimed"):
+                            conf = t_obj.get("confirmation")
+                            att_id = conf.get("attemptId") if isinstance(conf, dict) else None
+                            if not att_id:
+                                s_c, s_d = await safe_post("https://diggo.linkpc.net/api/tasks/social/start", json_data={"taskId": tid}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                                if s_c == 200 and isinstance(s_d, dict):
+                                    att_id = s_d.get("attempt", {}).get("attemptId")
+                                    await asyncio.sleep(2.0)
+                            if att_id:
+                                await safe_post("https://diggo.linkpc.net/api/tasks/social/confirm", json_data={"taskId": tid, "attemptId": att_id, "confirmed": True}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                                await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": tid}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+
+                    # 6. Rewarded Ad Task
+                    t_ad = tasks.get("ad", {})
+                    if t_ad.get("enabled") and not t_ad.get("claimed") and (t_ad.get("quotaUsed", 0) < t_ad.get("quotaTotal", 4)):
+                        a_c, a_d = await safe_post("https://diggo.linkpc.net/api/adsgram/start", json_data={}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                        if a_c == 200 and isinstance(a_d, dict) and a_d.get("attemptId"):
+                            await asyncio.sleep(2.0)
+                            await safe_post("https://diggo.linkpc.net/api/adsgram/complete", json_data={"attemptId": a_d["attemptId"]}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                            await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "ad"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+
                     status["bots"]["diggo"] = f"farmed (lvl: {lvl}, bal: {bal:.2f})"
                 else:
                     status["bots"]["diggo"] = f"state_failed ({c_st})"
@@ -7220,6 +7262,7 @@ MANDATORY_SPONSOR_CHANNELS = [
     "vyrodrop",
     "atfminers",
     "kynex_mining",
+    "diggo_community",
     "EarnVaulte",
     "solanamemes001",
     "Web3Primeteam"

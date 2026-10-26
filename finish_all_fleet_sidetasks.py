@@ -807,8 +807,9 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         jwt_token = None
         st = {}
 
-        # 0. Check cached JWT from Upstash Redis
-        if UPSTASH_URL and UPSTASH_TOKEN:
+        # 0. Check cached JWT from acc object or Upstash Redis
+        jwt_token = acc.get("diggo_jwt")
+        if not jwt_token and UPSTASH_URL and UPSTASH_TOKEN:
             try:
                 async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
                     if jr.status == 200:
@@ -893,32 +894,102 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             if rr.status in (200, 201):
                 res["notes"].append("ref_claimed")
 
-        # 4. Claim tasks
+        # 4. Daily Streak & Day Rewards
+        day_rewards = st.get("dayRewards") or []
+        for dr in day_rewards:
+            if isinstance(dr, dict) and dr.get("status") == "available":
+                d_num = dr.get("day")
+                try:
+                    async with session.post(f"{base_url}/api/streak/claim", json={"day": d_num}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as sr:
+                        if sr.status in (200, 201):
+                            res["tasks_claimed"] += 1
+                            res["notes"].append(f"streak_day_{d_num}")
+                except Exception:
+                    pass
+
+        # 5. Sweep All Tasks (checkin, play, social, ads)
         tasks = st.get("tasks") or {}
-        for tid in ["checkin", "telegram", "community_react"]:
+        p_lvl = st.get("player", {}).get("level", 1)
+        srv_now = st.get("serverNow") or (time.time() * 1000)
+
+        # A. Check-in
+        t_chk = tasks.get("checkin") or {}
+        if t_chk.get("enabled") and not t_chk.get("claimed"):
+            try:
+                async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": "checkin"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
+                    if tr.status in (200, 201):
+                        res["tasks_claimed"] += 1
+                        res["notes"].append("task_checkin")
+            except Exception:
+                pass
+
+        # B. Play / Level Milestone
+        t_play = tasks.get("play") or {}
+        if t_play.get("enabled") and not t_play.get("claimed"):
+            req_lvl = t_play.get("targetLevel") or 1
+            if p_lvl >= req_lvl or (t_play.get("progress", 0) >= t_play.get("total", 1)):
+                try:
+                    async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": "play"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
+                        if tr.status in (200, 201):
+                            res["tasks_claimed"] += 1
+                            res["notes"].append("task_play")
+                except Exception:
+                    pass
+
+        # C. Telegram Channel Join
+        t_tg = tasks.get("telegram") or {}
+        if t_tg.get("enabled") and not t_tg.get("claimed"):
+            try:
+                await session.post(f"{base_url}/api/tasks/verify", json={"taskId": "telegram"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": "telegram"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
+                    if tr.status in (200, 201):
+                        res["tasks_claimed"] += 1
+                        res["notes"].append("task_telegram")
+            except Exception:
+                pass
+
+        # D. Social Tasks (community_react, x_follow, x_post)
+        for tid in ["community_react", "x_follow", "x_post"]:
             t_obj = tasks.get(tid) or {}
             if t_obj.get("enabled") and not t_obj.get("claimed"):
-                await jitter(0.4, 0.8)
-                if tid == "telegram":
-                    try:
-                        await session.post(f"{base_url}/api/tasks/verify", json={"taskId": "telegram"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
-                    except Exception:
-                        pass
-                elif t_obj.get("verification") == "self_reported":
-                    try:
+                try:
+                    conf = t_obj.get("confirmation")
+                    att_id = conf.get("attemptId") if isinstance(conf, dict) else None
+                    if not att_id:
                         async with session.post(f"{base_url}/api/tasks/social/start", json={"taskId": tid}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as vs:
                             if vs.status == 200:
                                 vd = await vs.json()
-                                att_id = vd.get("attempt", {}).get("attemptId")
-                                if att_id:
-                                    await session.post(f"{base_url}/api/tasks/social/confirm", json={"taskId": tid, "attemptId": att_id, "confirmed": True}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
-                    except Exception:
-                        pass
+                                att = vd.get("attempt") or {}
+                                att_id = att.get("attemptId")
+                                confirm_at = att.get("confirmAt", 0)
+                                wait_s = max(0.5, min(16.0, (confirm_at - srv_now) / 1000.0))
+                                await asyncio.sleep(wait_s + 0.5)
+                    if att_id:
+                        await session.post(f"{base_url}/api/tasks/social/confirm", json={"taskId": tid, "attemptId": att_id, "confirmed": True}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                        async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": tid}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
+                            if tr.status in (200, 201):
+                                res["tasks_claimed"] += 1
+                                res["notes"].append(f"task_{tid}")
+                except Exception:
+                    pass
 
-                async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": tid}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
-                    if tr.status in (200, 201):
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"task_{tid}")
+        # E. Rewarded Ad Task
+        t_ad = tasks.get("ad") or {}
+        if t_ad.get("enabled") and not t_ad.get("claimed") and (t_ad.get("quotaUsed", 0) < t_ad.get("quotaTotal", 4)):
+            try:
+                async with session.post(f"{base_url}/api/adsgram/start", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as ar:
+                    if ar.status == 200:
+                        ad_d = await ar.json()
+                        ad_att_id = ad_d.get("attemptId")
+                        if ad_att_id:
+                            await asyncio.sleep(2.5)
+                            await session.post(f"{base_url}/api/adsgram/complete", json={"attemptId": ad_att_id}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                            async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": "ad"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as cr:
+                                if cr.status in (200, 201):
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append("task_ad")
+            except Exception:
+                pass
 
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")

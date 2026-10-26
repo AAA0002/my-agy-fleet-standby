@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⛏️ DiggoMiner Exhaustive Side-Tasks Automation, Social Handshakes & Channel Gate Resolution (October 26, 2026)**:
+  - **DiggoMiner Complete Task Catalog & Verification Handshake Engine**:
+    * Decompiled client JavaScript source files (`social-tasks.js`, `backend-client.js`, `screens.js`, `interstitial.js`) from `https://diggo.linkpc.net/`.
+    * Solved side-task verification mechanisms:
+      1. **Social Tasks (`community_react`, `x_follow`, `x_post`)**: Implemented two-phase verification handshake: `POST /api/tasks/social/start` -> dynamic delay until `confirmAt` -> `POST /api/tasks/social/confirm` -> `POST /api/tasks/claim`. Live claimed +5 DIGGO on Koram Shah (`7648254021`) and +5 DIGGO on Arif (`8826375659`).
+      2. **Daily Active `play` Task**: Implemented check on player level (`player.level >= targetLevel` or `progress >= total`) and claimed +10 DIGGO live on Koram Shah and Arif.
+      3. **Daily Streak Rewards (`dayRewards`)**: Added automated scan of `st.dayRewards` claiming any reward with `status === 'available'` (+15 DIGGO).
+      4. **Rewarded Ad Task (`ad`)**: Implemented Adsgram lifecycle handshake (`/api/adsgram/start` -> wait -> `/api/adsgram/complete` -> `/api/tasks/claim`).
+      5. **Main Mining Claims**: `POST /api/claims/mining` with unique `Idempotency-Key: <uuid>`.
+  - **Telegram Gate & Channel Membership Remediation**:
+    * Diagnosed root cause of `HTTP 502 telegram_unavailable` / `HTTP 409 telegram_not_member` on newer worker accounts: Diggo backend enforces `community.requiredForTasks: true`, querying Telegram Bot API for `@diggo_community` membership and message permissions.
+    * Added `"diggo_community"` to `MANDATORY_SPONSOR_CHANNELS` in `app.py`.
+    * Upgraded `extract_tokens_with_client` in `app.py` to invoke `AllowSendMessageRequest(bot=DIGGO_BOT)` and `JoinChannelRequest("diggo_community")` during `/collect-tokens` on Render Node 2, ensuring 100% cloud onboarding and channel verification.
+  - **Universal Cloud Multi-Engine Synchronization**:
+    * Fully synchronized side-task routines across [`finish_all_fleet_sidetasks.py`](file:///data/workspace/AAA_AUTO/finish_all_fleet_sidetasks.py), [`app.py`](file:///data/workspace/AAA_AUTO/app.py), [`deploy_both_cf_workers.py`](file:///data/workspace/AAA_AUTO/deploy_both_cf_workers.py), [`mrg_turnstile_solver.py`](file:///data/workspace/AAA_AUTO/mrg_turnstile_solver.py), and [`audit_bots_and_sidetasks.py`](file:///data/workspace/AAA_AUTO/audit_bots_and_sidetasks.py).
+
 - **🛡️ Cloudflare WARP Zero-Trust Solver Proxy, AdxEarn AI Full Remediation & 8-Bot Verification (October 26, 2026)**:
   - **DiggoMiner Main Mining Claims & Side Tasks Full Overhaul**:
     * Diagnosed root cause of DiggoMiner mining claim failure: backend rejects requests without `Idempotency-Key` header (`HTTP 400 idempotency_key_required`), and legacy scripts called non-existent `/api/miner/claim` (`HTTP 404`).
