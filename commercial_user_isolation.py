@@ -50,13 +50,14 @@ class AdminFleetVault:
     ADMIN_BINANCE_TON = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 
     ADMIN_REFERRAL_CODES = {
-        "stones_miners": "r6727787768",
         "mrg_miner": "ref_IRN1G3XD",
-        "ailab_robot": "296852",
-        "ultrawallet": "6727787768",
         "atf_miner": "6727787768",
-        "finvora": "ref_TRX6727787768",
-        "turbogram": "r_3520c92b"
+        "victors_company": "ref_A20AA96F18",
+        "vyrodrop": "ref_myFjrqqE4WN_",
+        "kynex_network": "6727787768",
+        "pepegram": "1449",
+        "adxearn_ai": "6727787768",
+        "diggominer": "ref_4088138f11effe8eef4b86ff"
     }
 
     # Standard platform margin on customer operations (20% default)
@@ -128,8 +129,13 @@ class CommercialUserManager:
                 "bnb": 0.0,
                 "ton": 0.0,
                 "mrg": 0.0,
-                "stones": 0.0,
-                "atf": 0.0
+                "atf": 0.0,
+                "vic": 0.0,
+                "vyro": 0.0,
+                "kynex": 0.0,
+                "pepe": 0.0,
+                "adx": 0.0,
+                "diggo": 0.0
             },
             "stats": {
                 "total_earned_usd": 0.0,

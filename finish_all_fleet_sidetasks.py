@@ -271,7 +271,7 @@ async def jitter(min_s: float = 0.5, max_s: float = 1.5):
 # =============================================================================
 
 async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str, str]]:
-    """Loads tokens for all 18 accounts from Upstash Redis fleet:tokens:*."""
+    """Loads tokens for all 20 accounts from Upstash Redis fleet:tokens:*."""
     tokens_db = {}
     up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
     
@@ -1286,7 +1286,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST (18 ACCOUNTS)")
+    logger.info("🎯 STARTING COMPLETE 8-BOT FLEET SIDE-TASK HARVEST (20 ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)

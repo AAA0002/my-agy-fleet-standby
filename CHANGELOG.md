@@ -2,7 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🚫 Full System Decommission & Permanent Purge of Astra Airdrop, Enforcement of Ground-Truth 8 Legitimate Fleet Bots Policy (October 26, 2026)**:
+- **🛡️ Comprehensive System-Wide Audit, 8-Bot Ecosystem Harmonization & Active Token Safeguard (October 26, 2026)**:
+  - **Active Token Safeguard Hardening (`purge_all_legacy_bot_tokens.py`)**:
+    * Discovered and resolved critical flaw where `ALLOWED_KEYS` whitelist only permitted 5 bots (`mrg`, `atf`, `victors`, `vyro`, `kynex`), omitting `pepegram_init_data`, `adxearn_init_data`, and `diggo_init_data`.
+    * Upgraded `ALLOWED_KEYS` and docstrings to strictly preserve all 8 legitimate bots and 20 accounts, permanently preventing token loss during legacy purge runs.
+  - **Daily Financial Ledger Multi-Bot Expansion (`daily_profit_reporter.py`)**:
+    * Expanded `get_fleet_mining_totals` to extract and report yields across all 8 legitimate bots (MRG, ATF, Victor's Company, Kynex Network, VyroDrop, DiggoMiner, PepeGram, AdxEarn AI).
+    * Updated financial report layout to display live multi-chain treasury metrics for all 8 bots alongside BNB Master Vault and on-chain TON reserves. Verified with live `--dry-run`.
+  - **Cloudflare Edge User Bot & Gateway Harmonization (`deploy_both_cf_workers.py`)**:
+    * Discovered and eradicated 15+ remaining occurrences of "All 9 Bots", "9 pools", "9/9 Active Pools", "9/9 Anti-Bot Verified", and "View 9 Mining Pools" across User Bot commands, inline keyboards, status text, and chat menu handlers.
+    * Standardized all user-facing callbacks, guides, buttons, and system messages to strictly 8 pools/bots.
+    * Successfully deployed updated script to Primary Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) and verified live endpoint health (`ROLE: PRIMARY_ACTIVE`).
+  - **Static Frontend Parity & Stale File Synchronizations (`public_admin/`, `public/`)**:
+    * Ground-truth synced `public_admin/admin/index.html` and `public_admin/index.html` with `dashboard.html`, correcting `Active Mining Bots (9/9)` and `Active Mining Pools (9/9)` to `(8/8)`.
+    * Synchronized `public/index.html` (User Bot WebApp), correcting remaining references to "9 bots automated", "all 9 pools", and "9 mining protocols".
+  - **Commercial User Isolation & Referral Alignment (`commercial_user_isolation.py`)**:
+    * Purged obsolete defunct bot referral codes (`stones_miners`, `ailab_robot`, `ultrawallet`, `finvora`, `turbogram`) and updated `ADMIN_REFERRAL_CODES` and `balances` strictly to the 8 active legitimate bots (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `pepe`, `adx`, `diggo`).
+  - **Autonomous System Sanitation & CI History Pruning (`clean_up_system.py`)**:
+    * Executed live multi-tier system cleanup: pruned 34 stale GitHub Actions workflow runs older than 7 days, capped Redis lists, freed local caches, and verified zero rogue processes on the device (100% cloud compliant).
+  - **Fleet Directory & Roster Harmonization (`generate_fleet_directory.py`, `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`)**:
+    * Updated account count from 18 to 20 accounts and anti-sybil bot descriptions to the 8 active bots. Regenerated `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`.
+  - **Internal Script & Generator Alignment (`update_dashboard_compact.py`, `push_to_standby_repo.py`, `app.py`, `finish_all_fleet_sidetasks.py`)**:
+    * Purged legacy defunct bot references (Stones, AI Lab, UltraWallet, FINVORA, TurboGram) from `update_dashboard_compact.py`.
+    * Synchronized commit messages and registry sync labels in `push_to_standby_repo.py` to 8 bots.
+    * Corrected lingering "across all 9 bots" text in `app.py` and updated account counts from 18 to 20 in `app.py` and `finish_all_fleet_sidetasks.py`.
   - **Handover Documentation & System Directory Alignment (`SESSION_BRIDGE.md`, `MASTER_SYSTEM_DIRECTORY.md`, `AGENTS.md`)**:
     * Corrected legacy note in `SESSION_BRIDGE.md` that erroneously listed DiggoMiner, PepeGram, and AdxEarn AI alongside defunct bots; synchronized to strictly the 8 active legitimate bots.
     * Updated `MASTER_SYSTEM_DIRECTORY.md` table of protocols, verified protocol cards, and bot handles, removing obsolete Astra Airdrop references and correcting handles to `@mrgminerbot`, `@ATF_AIRDROP_bot`, `@VictorsCompanybot`, `@vyrodrop_bot`, `@Kynex_miningbot`, `@Diggominer_bot`, `@Pepe_gram_bot`, and `@AdxEarnAibot`.

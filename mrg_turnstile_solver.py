@@ -4,7 +4,7 @@ MY AGY AI — 100% Cloud MRG Auto-Farming & Turnstile Solver Engine
 Runs 100% in Cloud (GitHub Actions / Cloud VMs) — Zero Phone Load.
 
 Solves Cloudflare Turnstile invisibly using Patchright Chromium stealth,
-refreshes `humanVerifiedUntil` pass across all 18 accounts,
+refreshes `humanVerifiedUntil` pass across all 20 accounts,
 claims accumulated mining rewards, and compounds miner levels.
 """
 

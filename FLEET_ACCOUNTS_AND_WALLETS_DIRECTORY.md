@@ -258,7 +258,7 @@
 
 ## 🔄 Automated Sweeper & Vault Consolidation Architecture
 
-1. **Anti-Sybil Protection**: Each worker account uses its own isolated TON and EVM address when connecting to bots (Ainovum, Stones, ART, MRG, ATF, Ultra Wallet), preventing account links, bans, or sybil flags.
+1. **Anti-Sybil Protection**: Each worker account uses its own isolated TON and EVM address when connecting to bots (MRG, ATF, Victor's Company, VyroDrop, Kynex, PepeGram, AdxEarn AI, DiggoMiner), preventing account links, bans, or sybil flags.
 2. **Automated Balance Consolidation**: When worker wallets accumulate mining rewards, `cloud_wallet_sweeper.py` automatically sweeps balances:
    - **TON Coins** -> Swept to Master Binance TON Vault: `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`
    - **EVM (BSC / Arbitrum / USDT)** -> Swept to Master EVM Vault: `0xfda4182001672b9f0f09e2118242e543e35ed5ce`

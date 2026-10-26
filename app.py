@@ -3644,7 +3644,7 @@ async def check_user_bot_session(user_id: str, sess_str: str, chat_id: str = Non
             alert_text = (
                 f"⚠️ *Telegram Session Terminated / Revoked* 🔴\n\n"
                 f"Your connected account session for *{name}* was disconnected or terminated from Telegram Settings > Devices.\n\n"
-                f"🛑 *Cloud auto-mining has paused* across all 9 bots to protect your account.\n\n"
+                f"🛑 *Cloud auto-mining has paused* across all 8 bots to protect your account.\n\n"
                 f"👉 *Tap below to reconnect via 1-Tap QR Login or Phone Login to resume your 24/7 cloud earnings!*"
             )
             try:
@@ -7615,7 +7615,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
 async def cleanup_purged_bots_once_endpoint(request: Request):
     """
     Dedicated 1-time purge endpoint for user accounts:
-    Iterates all 18 accounts, permanently blocks & erases chat history for all discontinued bots
+    Iterates all 20 accounts, permanently blocks & erases chat history for all discontinued bots
     (@stoneswithestand_bot, @AiLab_robot, @UltrawalletTrade_Bot, @FINVORAWeb3bot, etc.),
     leaves discontinued channels, and guarantees strictly 1-time execution per account.
     """

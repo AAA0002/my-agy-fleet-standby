@@ -537,13 +537,13 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Fleet state: 18 active accounts across all 5 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's 20-account automated mining fleet (MY AGY AI). Fleet state: 20 active accounts across all 8 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
-      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 18 accounts are online and actively mining, Arif." }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 20 accounts are online and actively mining, Arif." }]);
     } catch (_) {
-      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 18/18 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 20/20 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
     } finally {
       setAiLoading(false);
     }
@@ -719,29 +719,10 @@ function App() {
             )
           ),
           React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
-            // Live Countdown Timer Badge
+            // Live Status Indicator Badge
             (() => {
-              const resetMs = acc.stones_next_wd_at ? acc.stones_next_wd_at * 1000 : 0;
-              const now = Date.now();
-              if (resetMs > now) {
-                const diffMin = Math.round((resetMs - now) / 60000);
-                const h = Math.floor(diffMin / 60);
-                const m = diffMin % 60;
-                return React.createElement("span", {
-                  title: "Stones withdrawal cooldown",
-                  className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-1"
-                },
-                  React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" }),
-                  `${h}h ${m}m`
-                );
-              }
               return React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "Active ✅");
             })(),
-            // Stones 500 STONES Ready indicator
-            acc.stones_coins >= 500 ? React.createElement("span", {
-              title: "Stones coins ready for withdrawal (>= 500)",
-              className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-            }, "💎 " + acc.stones_coins) : null,
             // ATF Pool Accumulation Indicator
             acc.atf_balance > 0 ? React.createElement("span", {
               title: "ATF pool accumulating (Farming mode)",
@@ -835,20 +816,20 @@ function App() {
         [
           {
             title: "⚡ Auto-Harvest All",
-            desc: "Trigger 7-bot harvest",
+            desc: "Trigger 8-bot harvest",
             action: async () => {
               showToast("AI: Dispatched harvest across all bots!", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 7 legitimate mining platforms (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram). WebApp tokens and sessions are active." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 legitimate mining platforms (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn). WebApp tokens and sessions are active." }]);
             }
           },
           {
-            title: "💎 Stones 500 Sweep",
-            desc: "Arbitrum One (0xfda4...d5ce)",
+            title: "🏢 Victor's Company",
+            desc: "Arcade & Shift Claims",
             action: async () => {
-              showToast("AI: Sweeping Stones >= 500...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_stones" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "💎 Sweep Stones >= 500" }, { sender: "ai", text: "💎 Stones 500-Withdrawal Sweep triggered! Scanning worker accounts with >= 500 STONES coins (main account protected). Destination: Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce). Captcha solver active." }]);
+              showToast("AI: Running Victor's Company arcade solver...", "info");
+              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "victors_shift" }) });
+              setAiMessages(prev => [...prev, { sender: "user", text: "🏢 Run Victor's Arcade & Shift Claims" }, { sender: "ai", text: "🏢 Victor's Company shift solver active! Solving Cloudflare Turnstile and claiming hourly rewards across fleet accounts." }]);
             }
           },
           {
@@ -856,16 +837,16 @@ function App() {
             desc: "Farm & Accumulate (No WD)",
             action: async () => {
               showToast("AI: ATF is in 100% farming & accumulation mode", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: "🪙 ATF Miner Policy: Strictly 100% farming and accumulation mode. Auto-withdrawals are permanently disabled per your directive. All 13 accounts are compounding tokens directly in the pool without withdrawing." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: "🪙 ATF Miner Policy: Strictly 100% farming and accumulation mode. Auto-withdrawals are permanently disabled per your directive. All 20 accounts are compounding tokens directly in the pool without withdrawing." }]);
             }
           },
           {
-            title: "🧪 AI Lab Sweep",
-            desc: "Sweep >=$0.02 to BEP-20",
+            title: "💧 VyroDrop Claims",
+            desc: "Harvest & Boosts",
             action: async () => {
-              showToast("AI: Evaluating AI Lab balances for withdrawal...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_ailab" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "🧪 Sweep eligible AI Lab balances" }, { sender: "ai", text: "✅ AI Lab auto-withdrawal sweep dispatched across worker accounts >= $0.02 USD to BEP-20 vault! Main account is strictly protected to compound power." }]);
+              showToast("AI: Running VyroDrop harvest...", "info");
+              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "vyro_harvest" }) });
+              setAiMessages(prev => [...prev, { sender: "user", text: "💧 Harvest VyroDrop" }, { sender: "ai", text: "✅ VyroDrop harvest and energy booster cycle dispatched across active fleet accounts!" }]);
             }
           },
           {
@@ -875,9 +856,7 @@ function App() {
               const now = Date.now();
               const nl = String.fromCharCode(10);
               const timerLines = fleet.map(a => {
-                const resetMs = a.stones_next_wd_at ? a.stones_next_wd_at * 1000 : 0;
-                const rem = resetMs > now ? `${Math.round((resetMs - now) / 60000)}m cooldown` : "Ready ✅";
-                return `• ${a.name || "Account"}: ${rem} (Stones: ${a.stones_coins || 0}, ATF: ${Math.floor(a.atf_balance || 0)})`;
+                return `• ${a.name || "Account"}: Online ✅ (ATF: ${Math.floor(a.atf_balance || 0)}, MRG: Active)`;
               }).slice(0, 7).join(nl);
               setAiMessages(prev => [...prev, { sender: "user", text: "⏱️ Inspect task reset countdowns" }, { sender: "ai", text: "⏱️ Fleet Timer Telemetry:" + nl + timerLines + nl + nl + "• Smart pacing ensures 0 VPS/Telegram spam while accounts are on countdown cooldown." }]);
             }
@@ -888,7 +867,7 @@ function App() {
             action: async () => {
               const nl = String.fromCharCode(10);
               showToast("AI: Running security diagnostic...", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: ["🛡️ Anti-Ban Security Report:", "• Device Profiles: 100% Unique hardware-matched User-Agents active across all accounts.", "• Countdown Pacing: Multi-bot timer-aware prechecks active across all 8 mining platforms.", "• Proxy Isolation: Residential proxies mapped per worker.", "• Captcha Solvers: Template-matching & AI solver ready for Stones & ATF."].join(nl) }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: ["🛡️ Anti-Ban Security Report:", "• Device Profiles: 100% Unique hardware-matched User-Agents active across all accounts.", "• Countdown Pacing: Multi-bot timer-aware prechecks active across all 8 mining platforms.", "• Proxy Isolation: Residential proxies mapped per worker.", "• Captcha Solvers: Cloudflare Turnstile & arithmetic solver active for MRG, Victor's, and ATF."].join(nl) }]);
             }
           }
         ].map((btn, idx) => React.createElement("button", {
@@ -904,8 +883,8 @@ function App() {
       // Suggested AI Prompts Chips
       React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]" },
         [
-          "Check Stones Cooldown",
-          "Stones 500 Withdrawal Status",
+          "Check Fleet Health",
+          "Victor's Turnstile Status",
           "ATF TON Proof Status",
           "Daily Yield Projection",
           "Consolidate BEP-20 Vaults"
@@ -986,7 +965,7 @@ function App() {
           // Arbitrum One EVM Wallet Box
           React.createElement("div", { className: "bg-slate-50 dark:bg-slate-900/60 rounded-xl p-2.5 border border-slate-100 dark:border-white/5" },
             React.createElement("div", { className: "flex items-center justify-between mb-1" },
-              React.createElement("span", { className: "text-[10px] text-amber-500 font-bold" }, "Arbitrum One (Stones Payouts)"),
+              React.createElement("span", { className: "text-[10px] text-amber-500 font-bold" }, "Arbitrum One / BEP-20 (Master EVM Vault)"),
               React.createElement("button", {
                 onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Arbitrum Address Copied"),
                 className: "text-[10px] text-amber-500 font-bold"
@@ -1011,16 +990,17 @@ function App() {
             )
           ),
 
-          // 7-Bot Mining Matrix in Drawer
+          // 8-Bot Mining Matrix in Drawer
           React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
             [
-              { name: "Stones (Arbitrum)", status: selectedAccount.stones_coins >= 500 ? `💎 ${selectedAccount.stones_coins} (Ready)` : `💎 ${selectedAccount.stones_coins || 0} STONES` },
+              { name: "MRG Miner (TON)", status: "⚡ 4h Mining Active" },
               { name: "ATF Miner (TON)", status: `🪙 ${parseFloat(selectedAccount.atf_balance || 0).toFixed(1)} ATF (Accumulating)` },
-              { name: "MRG Miner (TON)", status: "Level 1 (3h Mining)" },
-              { name: "AI Lab (BEP-20)", status: "Tasks #1-#20 Active" },
-              { name: "UltraWallet", status: "Daily Streak OK" },
-              { name: "FINVORA Web3", status: "⚡ Active" },
-              { name: "TurboGram V1", status: "⚡ Active" }
+              { name: "Victor's Company", status: "🏢 Arcade & Shift Active" },
+              { name: "VyroDrop (TON)", status: "💧 6h Claim Ready" },
+              { name: "Kynex Network", status: "🌐 12h Node Live" },
+              { name: "DiggoMiner", status: "⛏️ 3h Block Mining" },
+              { name: "PepeGram (PEPE)", status: "🐸 3h Yield Active" },
+              { name: "AdxEarn AI", status: "💎 Daily Streak Live" }
             ].map((b, idx) => React.createElement("div", {
               key: idx,
               className: "bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-white/5"

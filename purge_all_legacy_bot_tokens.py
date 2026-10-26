@@ -5,19 +5,22 @@ purge_all_legacy_bot_tokens.py
 PERMANENTLY PURGES ALL OLD / REMOVED / BLACKLISTED BOT TOKENS
 =============================================================================
 Strips all legacy, scam, and discontinued bot keys from:
-  1. Upstash Redis `fleet:tokens:{uid}` (all 18 accounts)
+  1. Upstash Redis `fleet:tokens:{uid}` (all 20 accounts)
   2. Upstash Redis `miniapp_tokens`
   3. Upstash Redis `fleet_miniapp_tokens`
   4. Local `fleet_miniapp_tokens.json`
   5. Cloudflare Workers Edge KV `miniapp_tokens` & in-memory state (all 5 nodes)
   6. Cloudflare D1 SQL `fleet_tokens` table
 
-ONLY THE 5 LEGITIMATE FLEET BOTS ARE PRESERVED:
+ONLY THE 8 LEGITIMATE FLEET BOTS ARE PRESERVED:
   - mrg_init_data
   - atf_init_data
   - victors_init_data
   - vyro_init_data
   - kynex_init_data
+  - pepegram_init_data
+  - adxearn_init_data
+  - diggo_init_data
   (+ non-bot metadata: account_id, name, synced_at, updated_at, username, phone, uid)
 """
 
@@ -67,12 +70,15 @@ ALLOWED_KEYS = {
     "username",
     "phone",
     "uid",
-    # 5 Legitimate Bots:
+    # 8 Legitimate Bots:
     "mrg_init_data",
     "atf_init_data",
     "victors_init_data",
     "vyro_init_data",
-    "kynex_init_data"
+    "kynex_init_data",
+    "pepegram_init_data",
+    "adxearn_init_data",
+    "diggo_init_data"
 }
 
 PURGED_BOT_NAMES = [

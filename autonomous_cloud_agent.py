@@ -11,7 +11,7 @@ Cognitive Engine:
 Core Features:
   - Anti-Stupid Dual-Verification Layer (Plan -> Critique -> Approve)
   - Autonomous Render Token Collection Failover (Node 1 -> Node 2 if GitHub Actions limits up)
-  - Autonomous Multi-Chain Profit Sweeper (AI Lab USD + Stones + On-Chain Master Vaults)
+  - Autonomous Multi-Chain Profit Sweeper (8-Bot Multi-Chain Yields + On-Chain Master Vaults)
   - Reflexion Long-Term Memory (Learns from every mistake via Upstash Redis)
   - 24/7 Autonomous Fleet Oversight & Automated Payout Management
 =============================================================================

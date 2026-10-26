@@ -6,12 +6,12 @@ MY AGY AI — Autonomous Cloud On-Chain Vault Sweeper & Consolidation Engine
 =============================================================================
 Zero-trust, multi-cloud automated wallet sweeper:
 1. EVM Vault Sweeper (BSC & Arbitrum One):
-   - Audits all 17 isolated worker EVM wallets (fleet_evm_wallets.json).
+   - Audits all 19 isolated worker EVM wallets (fleet_evm_wallets.json).
    - Detects on-chain BNB, ETH, BEP-20 USDT, and Arbitrum STONES.
    - Automatically sweeps surplus balances above gas threshold to Binance Web3 Master:
      0xfda4182001672b9f0f09e2118242e543e35ed5ce
 2. TON Vault Sweeper (The Open Network):
-   - Audits all 17 isolated worker TON v4r2 wallets (fleet_ton_wallets.json).
+   - Audits all 19 isolated worker TON v4r2 wallets (fleet_ton_wallets.json).
    - Detects TON coins and Jettons.
    - Automatically sweeps surplus balances above gas threshold to Binance Web3 Master:
      UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT
