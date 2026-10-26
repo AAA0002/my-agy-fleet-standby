@@ -5533,7 +5533,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "initData": atf_init,
                     "tg_id": int(uid),
                     "username": acc.get("username", "") or "",
-                    "request_id": f"rq-{int(time.time()*1000)}-farm",
+                    "request_id": f"rq-{uuid.uuid4()}",
                     "device_id": f"dev-farm-{uid}"
                 }
                 if not is_owner:
@@ -6053,7 +6053,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "Referer": "https://app.adxearnai.xyz/",
                     "X-Telegram-Init-Data": a_init
                 }
-                c_sess, sess_d = await safe_post("https://api.adxearnai.xyz/api/user/session", json_data={"initData": a_init}, req_headers=adx_h)
+                c_sess, sess_d = await safe_post("https://api.adxearnai.xyz/api/user/session", json_data={"initData": a_init, "fp": f"fp_{uid}"}, req_headers=adx_h)
                 if c_sess in (200, 201) and isinstance(sess_d, dict):
                     usr = sess_d.get("user", {}) if isinstance(sess_d.get("user"), dict) else {}
                     pts = usr.get("balance_points") or usr.get("points") or usr.get("balance") or 0
@@ -6083,6 +6083,30 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         jd = await jr.json()
                         if jd.get("result"):
                             diggo_jwt = str(jd["result"]).strip("\"' ")
+            except Exception:
+                pass
+
+        if not diggo_jwt and tokens.get("diggo_init_data"):
+            try:
+                d_init = tokens["diggo_init_data"]
+                if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
+                    import urllib.parse
+                    d_init = urllib.parse.unquote(d_init)
+                auth_h = {
+                    "Origin": "https://diggo.linkpc.net",
+                    "Referer": "https://diggo.linkpc.net/",
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent
+                }
+                c_a, d_a = await safe_post("https://diggo.linkpc.net/api/auth/telegram", json_data={"initData": d_init}, req_headers=auth_h)
+                if c_a == 200 and isinstance(d_a, dict) and d_a.get("token"):
+                    diggo_jwt = d_a["token"]
+                    tokens["diggo_jwt"] = diggo_jwt
+                    if UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=diggo_jwt, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                        except Exception:
+                            pass
             except Exception:
                 pass
 
@@ -6123,6 +6147,12 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     if t_play.get("enabled") and not t_play.get("claimed"):
                         if lvl >= (t_play.get("targetLevel") or 1) or (t_play.get("progress", 0) >= t_play.get("total", 1)):
                             await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "play"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+
+                    # 4b. Telegram Channel Verification & Claim
+                    t_tg = tasks.get("telegram", {})
+                    if t_tg.get("enabled") and not t_tg.get("claimed"):
+                        await safe_post("https://diggo.linkpc.net/api/tasks/verify", json_data={"taskId": "telegram"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                        await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "telegram"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
 
                     # 5. Social Tasks (community_react, x_follow, x_post)
                     for tid in ["community_react", "x_follow", "x_post"]:
