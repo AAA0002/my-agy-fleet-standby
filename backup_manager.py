@@ -102,7 +102,10 @@ CORE_BOT_FILES = [
     "mrg_turnstile_solver.py",
     "bot_registry.py",
     "finish_all_fleet_sidetasks.py",
-    "AUTOMATION_AND_SOLVER_ARCHITECTURE.md"
+    "AUTOMATION_AND_SOLVER_ARCHITECTURE.md",
+    "FLEET_9_BOTS_COMPREHENSIVE_ANALYSIS_AND_RESOLUTION.md",
+    "NINE_BOTS_OPERATIONAL_STUDY.md",
+    "audit_bots_and_sidetasks.py"
 ]
 
 
