@@ -1,12 +1,12 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 25, 2026*
+> *Last Updated: October 26, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*
 > *Autonomous Solver Architecture: See [AUTOMATION_AND_SOLVER_ARCHITECTURE.md](./AUTOMATION_AND_SOLVER_ARCHITECTURE.md) for complete decoupled Turnstile solving, REST pre-flight, and multi-cloud topology.*
-> *9-Bot Fleet Intelligence & Diagnostics: See [NINE_BOTS_OPERATIONAL_STUDY.md](./NINE_BOTS_OPERATIONAL_STUDY.md) for endpoint telemetry, authentication flows, and real-time balance audits.*
+> *9-Bot Fleet Intelligence & Diagnostics: See [NINE_BOTS_OPERATIONAL_STUDY.md](./NINE_BOTS_OPERATIONAL_STUDY.md) and [FLEET_9_BOTS_COMPREHENSIVE_ANALYSIS_AND_RESOLUTION.md](./FLEET_9_BOTS_COMPREHENSIVE_ANALYSIS_AND_RESOLUTION.md) for endpoint telemetry, master vs. worker account execution divergence, and real-time balance audits.*
 
 ---
 
@@ -15,7 +15,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first** (and consult [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for quick lookups). It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **20 Telegram accounts** (1 Master Account + 19 Worker Accounts, including Account #19 Adil H `8937908003` and Account #20 Asaduzzaman Sarker `8609131528`) that continuously farm yield, satoshis, and tokens across **5 high-conviction legitimate fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network — legacy dead/scammer bots DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI, LeafEarn, and PumpkinEarn permanently purged from financial reporting), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **20 Telegram accounts** (1 Master Account + 19 Worker Accounts, including Account #19 Adil H `8937908003` and Account #20 Asaduzzaman Sarker `8609131528`) that continuously farm yield, satoshis, and tokens across the fleet Telegram WebApp Mini Apps, while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -30,7 +30,10 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
      * Never finish a major milestone or workspace migration without verifying that a fresh backup archive was successfully delivered to `@myagyai`.
    - Disaster recovery archives continuously flow to the Telegram vault (`@myagyai`) via `backup_manager.py`.
    - The 1-click restore mechanism (`restore.sh`) must always work out-of-the-box anywhere.
-4. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
+4. **👥 Fleet-Wide Decision Rule ("Never Judge System by Master Account Alone")**:
+   - Every verification, audit, or architectural decision MUST probe at least 3 distinct worker accounts (e.g. Account #2 Nancy `8881914294`, Account #3 Koram `7648254021`, Account #10 `8203342513`) alongside the Master Account (`6727787768`).
+   - Never assume an automated bot is functioning fleet-wide simply because the Master Account exhibits valid balances or active passes (which may originate from manual mobile phone logins).
+5. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
    - **NEVER trigger automatic withdrawals** from ANY bot under any circumstance.
    - Prevents wrong-address routing, sybil blacklisting, or draining into outdated/test wallets.
    - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. MRG upgrades miners, ATF compounds hash, Victor's compounds passes).

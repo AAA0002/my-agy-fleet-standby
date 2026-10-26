@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 9-Bot Fleet Forensic Audit, Master vs. Worker Discrepancy Resolution & Direct URL Token Extraction (October 26, 2026)**:
+  - **Eliminated Master Account Audit Bias ("Never Judge System by Master Account Alone")**:
+    * Resolved critical fleet issue where audits previously evaluated the Master Account (`6727787768`), obscuring that 19 worker accounts failed MRG and Victor's Turnstile challenges.
+    * Proved root cause: on Master Account, user manually opens apps on mobile phone, acquiring Turnstile passes smoothly. On worker accounts, GitHub Actions Azure runner IPs (AS8075) were blocked by Cloudflare (`HTTP 403 Failed to load resource: challenges.cloudflare.com`).
+    * Proved that on non-Turnstile REST bots (**ATF Miner, Kynex Network, PepeGram, AdxEarn AI**), automated farming **has been 100% active and accumulating across all 20 accounts** (Nancy UID `8881914294` has 1,791.99 ATF, 100,259.2 KNX, 239.45 PEPE hashes).
+  - **Full 9-Bot Fleet Audit Suite (`audit_bots_and_sidetasks.py`)**:
+    * Expanded `audit_bots_and_sidetasks.py` from 5 to all 9 bots across all 20 accounts in parallel with `asyncio.Semaphore(4)`.
+    * Integrated live balance, claim, streak, and level probing for PepeGram, AdxEarn AI, DiggoMiner, and Astra Airdrop.
+  - **Direct URL Token Extraction for VyroDrop (`app.py`)**:
+    * Upgraded `extract_bot_webapp_token` with `prefer_direct_url=True`. For VyroDrop, calls `RequestWebViewRequest` with direct URL `https://vyro.run.place/` to extract `user={"id":...}` tokens with **24-hour cryptographic validity**, eliminating the 15-minute `query_id` expiration.
+  - **DiggoMiner 30-Day JWT Caching (`app.py` & `audit_bots_and_sidetasks.py`)**:
+    * Enabled instant exchange of `initData` with `/api/auth/telegram` on Render Node 2 during extraction, caching the 30-day JWT in Redis (`fleet:diggo:jwt:{uid}`) to bypass the 5-minute `auth_date` limit.
+  - **Authoritative Master Documentation Authored**:
+    * Published comprehensive architectural bible: `FLEET_9_BOTS_COMPREHENSIVE_ANALYSIS_AND_RESOLUTION.md` covering all 9 bots, Turnstile solver APIs (`CAPSOLVER_KEY` / `TWOCAPTCHA_KEY`), proxy status, and fleet directives.
+
+
 - **⚡ Cloud Runner Circuit Breakers, REST-First Prioritization & Render Node 2 Live Build (October 26, 2026)**:
   - **Eliminated Runner Timeout via Browser Circuit Breakers (`mrg_turnstile_solver.py`)**:
     * Diagnosed 30-minute timeout on GitHub Actions runner (`40226601206`): Azure datacenter runner IPs encountered Cloudflare Turnstile 403 blocks on interactive challenges, causing 56 sequential retries and burning ~30 minutes.

@@ -726,14 +726,15 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
         return True
     return False
 
-async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, start_param: str = "", default_url: str = "", candidate_short_names: list = None) -> str:
+async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, start_param: str = "", default_url: str = "", candidate_short_names: list = None, prefer_direct_url: bool = False) -> str:
     """
     Universal, resilient WebApp token extractor for Telegram bots.
     Employs 4 strategic fallbacks:
-      1. RequestAppWebViewRequest with candidate short names (app, play, myapp, etc.)
-      2. Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
-      3. Inline Keyboard buttons in recent messages (web_app.url, b.click(), tgWebApp url)
-      4. Direct RequestWebViewRequest with known default WebApp URL
+      1. Direct RequestWebViewRequest with known default WebApp URL (if prefer_direct_url)
+      2. RequestAppWebViewRequest with candidate short names (app, play, myapp, etc.)
+      3. Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
+      4. Inline Keyboard buttons in recent messages (web_app.url, b.click(), tgWebApp url)
+      5. Direct RequestWebViewRequest fallback
     """
     if not bot_username:
         return None
@@ -765,6 +766,24 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
     except Exception as e:
         logger.debug(f"Entity resolution note for {bot_username}: {e}")
         return None
+
+    # Priority 0: Direct RequestWebViewRequest if prefer_direct_url is enabled
+    if prefer_direct_url and default_url and not default_url.startswith("https://t.me/"):
+        try:
+            req_p = {
+                "peer": bot_ent,
+                "bot": bot_ent,
+                "platform": "android",
+                "url": default_url
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+        except Exception:
+            pass
 
     # Strategy A: Try RequestAppWebViewRequest with candidate short names
     names_to_try = candidate_short_names or ["openapp", "app", "play", "myapp", "miniapp", "miner", "startapp", "bot", "game"]
@@ -914,7 +933,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 4. VyroDrop (@vyrodrop_bot - Silent WebApp query, zero chat messages)
     vy_param = None if is_master else VYRO_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
+    tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"], prefer_direct_url=True)
     if tok:
         tokens["vyro_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))

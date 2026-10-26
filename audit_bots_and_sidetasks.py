@@ -379,6 +379,127 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["5. Kynex Network"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
+        # 6. PepeGram
+        pepe_init = tokens.get("pepegram_init_data")
+        if pepe_init:
+            pepe_h = {
+                **headers,
+                "Content-Type": "application/json",
+                "Origin": "https://app.miniempire.app",
+                "Referer": "https://app.miniempire.app/miniapp/"
+            }
+            b_rep = {"core": {}, "side_tasks": []}
+            try:
+                async with session.post("https://app.miniempire.app/miniapp/auth?tid=1449", json={"initData": pepe_init, "tid": 1449}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        pd = await r.json()
+                        usr = pd.get("user", {}) if isinstance(pd.get("user"), dict) else {}
+                        power = usr.get("power", 0)
+                        hashes = usr.get("hashes", 0)
+                        b_rep["core"]["status"] = f"Active: {hashes:.2f} PEPE hashes (Power: {power})"
+                        # Claim reward
+                        async with session.post("https://app.miniempire.app/miniapp/claim?tid=1449", json={"initData": pepe_init, "tid": 1449}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
+                            b_rep["side_tasks"].append(f"Claim Yield: HTTP {cr.status}")
+                        # Start 6h production
+                        async with session.post("https://app.miniempire.app/miniapp/start-production?tid=1449", json={"initData": pepe_init, "tid": 1449}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=6)) as pr:
+                            b_rep["side_tasks"].append(f"Start Production: HTTP {pr.status}")
+                    else:
+                        b_rep["core"]["status"] = f"HTTP {r.status}"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["6. PepeGram"] = b_rep
+        else:
+            report["bots"]["6. PepeGram"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
+        # 7. AdxEarn AI
+        adx_init = tokens.get("adxearn_init_data")
+        if adx_init:
+            adx_h = {
+                **headers,
+                "Content-Type": "application/json",
+                "Origin": "https://app.adxearnai.xyz",
+                "Referer": "https://app.adxearnai.xyz/",
+                "X-Telegram-Init-Data": adx_init
+            }
+            b_rep = {"core": {}, "side_tasks": []}
+            try:
+                async with session.post("https://api.adxearnai.xyz/api/user/session", json={"initData": adx_init}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status in (200, 201):
+                        ad = await r.json()
+                        usr = ad.get("user", {}) if isinstance(ad.get("user"), dict) else {}
+                        pts = usr.get("points") or usr.get("balance") or 0
+                        streak = usr.get("checkInStreak") or 0
+                        b_rep["core"]["status"] = f"Active: {pts} Points (Streak: {streak}d)"
+                        # Checkin
+                        async with session.post("https://api.adxearnai.xyz/api/rewards/checkin", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
+                            b_rep["side_tasks"].append(f"Daily Check-in: HTTP {cr.status}")
+                        # Farming
+                        async with session.post("https://api.adxearnai.xyz/api/rewards/farming", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6)) as fr:
+                            b_rep["side_tasks"].append(f"Farming Claim: HTTP {fr.status}")
+                    else:
+                        b_rep["core"]["status"] = f"HTTP {r.status}"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["7. AdxEarn AI"] = b_rep
+        else:
+            report["bots"]["7. AdxEarn AI"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
+        # 8. DiggoMiner
+        diggo_jwt = tokens.get("diggo_jwt")
+        diggo_init = tokens.get("diggo_init_data")
+        if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as jr:
+                    if jr.status == 200:
+                        jd = await jr.json()
+                        if jd.get("result"):
+                            diggo_jwt = str(jd["result"]).strip("\"' ")
+            except Exception:
+                pass
+
+        b_rep = {"core": {}, "side_tasks": []}
+        if diggo_jwt:
+            d_h = {**headers, "Authorization": f"Bearer {diggo_jwt}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
+            try:
+                async with session.get("https://diggo.linkpc.net/api/state", headers=d_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        sd = await r.json()
+                        bal = sd.get("balance") or sd.get("mined") or 0
+                        lvl = sd.get("level", 1)
+                        b_rep["core"]["status"] = f"Active (JWT): {bal} DIGGO (Level: {lvl})"
+                        async with session.post("https://diggo.linkpc.net/api/miner/claim", json={}, headers=d_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
+                            b_rep["side_tasks"].append(f"Claim Mining: HTTP {cr.status}")
+                    else:
+                        b_rep["core"]["status"] = f"JWT HTTP {r.status}"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["8. DiggoMiner"] = b_rep
+        elif diggo_init:
+            d_h = {**headers, "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
+            try:
+                async with session.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": diggo_init}, headers=d_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        ad = await r.json()
+                        tok = ad.get("token")
+                        if tok and UPSTASH_URL and UPSTASH_TOKEN:
+                            await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}/{tok}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+                        b_rep["core"]["status"] = "Exchanged JWT Successfully ✅"
+                    elif r.status in (400, 401):
+                        b_rep["core"]["status"] = "Expired initData (>5m) - Re-extract on Render Node 2 🟡"
+                    else:
+                        b_rep["core"]["status"] = f"HTTP {r.status}"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["8. DiggoMiner"] = b_rep
+        else:
+            report["bots"]["8. DiggoMiner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
+        # 9. Astra Airdrop
+        report["bots"]["9. Astra Airdrop"] = {
+            "core": {"status": "Supabase Project Suspended (HTTP 402 exceed_egress_quota) 🔴"},
+            "side_tasks": ["Project abandoned by external developers"]
+        }
+
     return report
 
 async def audit_single_account(acc, idx, total, tokens_db, sem):
