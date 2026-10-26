@@ -108,7 +108,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
       4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`)
       5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.net`)
-    - **Zero Fake / Zero Dead Bot Querying**: Legacy defunct bots (`DiggoMiner`, `Astra Airdrop`, `PepeGram`, `AdxEarn AI`, `LeafEarn`, `PumpkinEarn`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct bots (`Astra Airdrop`, `LeafEarn`, `PumpkinEarn`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Active mining pools comprise the 8 legitimate bots: **MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, and DiggoMiner**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
 16. **🔄 24-Hour WebApp Token Lifetime & Autonomous Cloud Refresher**:
     - **Token Lifespan**: Telegram WebApp `initData` cryptographically expires after 24 hours (`auth_date` validation). Never allow tokens to age past 18 hours.
     - **100% Cloud Token Refresher**: Token collection runs on Render Frankfurt Node 2 (`/collect-tokens`), extracting fresh WebApp hashes via MTProto and simultaneously synchronizing both `fleet:tokens:{uid}` and `miniapp_tokens` in Upstash Redis and Cloudflare KV.

@@ -967,14 +967,22 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       if (sessResp.ok) {
         const sessData = await sessResp.json();
         const usr = sessData.user || {};
-        const pts = usr.points || usr.balance || 0;
+        let pts = usr.balance_points || usr.points || usr.balance || 0;
+        const streak = usr.checkin_streak || 0;
         await fetch("https://api.adxearnai.xyz/api/rewards/checkin", {
           method: "POST", headers: aHeaders, body: JSON.stringify({})
         }).catch(() => {});
-        await fetch("https://api.adxearnai.xyz/api/rewards/farming", {
+        const claimResp = await fetch("https://api.adxearnai.xyz/api/farming/claim", {
           method: "POST", headers: aHeaders, body: JSON.stringify({})
         }).catch(() => {});
-        result.bots.adxearn = `farmed (points: ${pts})`;
+        if (claimResp && claimResp.ok) {
+          const claimData = await claimResp.json().catch(() => ({}));
+          if (claimData.reward) pts += claimData.reward;
+        }
+        await fetch("https://api.adxearnai.xyz/api/farming/start", {
+          method: "POST", headers: aHeaders, body: JSON.stringify({})
+        }).catch(() => {});
+        result.bots.adxearn = `farmed (points: ${pts}, streak: ${streak}d)`;
       } else {
         result.bots.adxearn = `sess_failed (${sessResp.status})`;
       }

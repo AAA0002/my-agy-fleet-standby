@@ -427,15 +427,19 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                     if r.status in (200, 201):
                         ad = await r.json()
                         usr = ad.get("user", {}) if isinstance(ad.get("user"), dict) else {}
-                        pts = usr.get("points") or usr.get("balance") or 0
-                        streak = usr.get("checkInStreak") or 0
+                        pts = usr.get("balance_points") or usr.get("points") or usr.get("balance") or 0
+                        streak = usr.get("checkin_streak") or usr.get("checkInStreak") or 0
                         b_rep["core"]["status"] = f"Active: {pts} Points (Streak: {streak}d)"
                         # Checkin
                         async with session.post("https://api.adxearnai.xyz/api/rewards/checkin", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
-                            b_rep["side_tasks"].append(f"Daily Check-in: HTTP {cr.status}")
-                        # Farming
-                        async with session.post("https://api.adxearnai.xyz/api/rewards/farming", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6)) as fr:
-                            b_rep["side_tasks"].append(f"Farming Claim: HTTP {fr.status}")
+                            c_txt = "Already Done" if cr.status == 403 else f"HTTP {cr.status}"
+                            b_rep["side_tasks"].append(f"Daily Check-in: {c_txt}")
+                        # Farming claim
+                        async with session.post("https://api.adxearnai.xyz/api/farming/claim", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6)) as fr:
+                            f_txt = "Claimed (+1015)" if fr.status == 200 else ("In Progress" if fr.status == 403 else f"HTTP {fr.status}")
+                            b_rep["side_tasks"].append(f"Farming Claim: {f_txt}")
+                        # Farming start
+                        await session.post("https://api.adxearnai.xyz/api/farming/start", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6))
                     else:
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:

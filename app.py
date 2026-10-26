@@ -6047,10 +6047,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 c_sess, sess_d = await safe_post("https://api.adxearnai.xyz/api/user/session", json_data={"initData": a_init}, req_headers=adx_h)
                 if c_sess in (200, 201) and isinstance(sess_d, dict):
                     usr = sess_d.get("user", {}) if isinstance(sess_d.get("user"), dict) else {}
-                    pts = usr.get("points") or usr.get("balance") or 0
+                    pts = usr.get("balance_points") or usr.get("points") or usr.get("balance") or 0
+                    streak = usr.get("checkin_streak", 0)
                     await safe_post("https://api.adxearnai.xyz/api/rewards/checkin", json_data={}, req_headers=adx_h)
-                    await safe_post("https://api.adxearnai.xyz/api/rewards/farming", json_data={}, req_headers=adx_h)
-                    status["bots"]["adxearn"] = f"farmed (points: {pts})"
+                    claim_code, claim_d = await safe_post("https://api.adxearnai.xyz/api/farming/claim", json_data={}, req_headers=adx_h)
+                    if claim_code == 200 and isinstance(claim_d, dict):
+                        reward = claim_d.get("reward", 0)
+                        pts += reward
+                    await safe_post("https://api.adxearnai.xyz/api/farming/start", json_data={}, req_headers=adx_h)
+                    status["bots"]["adxearn"] = f"farmed (points: {pts}, streak: {streak}d)"
                 else:
                     status["bots"]["adxearn"] = f"sess_failed ({c_sess})"
                 return

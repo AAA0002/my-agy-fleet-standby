@@ -96,13 +96,20 @@ _VERIFIED_MRG_PROXIES = []
 
 def get_webshare_proxy() -> dict | None:
     """
-    Fetches an active high-speed proxy from Webshare to bypass Cloudflare WAF
-    datacenter blocks in GitHub Actions and cloud runner environments.
-    Validates tunnel connectivity against app.mrgtoken.xyz before returning.
+    Fetches an active high-speed proxy (Cloudflare WARP local SOCKS5 or Webshare)
+    to bypass Cloudflare WAF datacenter blocks in GitHub Actions and cloud runners.
     """
+    # 0. Check local Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000 (highest trust, direct CF edge)
+    try:
+        import socket
+        with socket.create_connection(("127.0.0.1", 40000), timeout=0.8):
+            logger.info("🌐 Detected active Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000")
+            return {"server": "socks5://127.0.0.1:40000"}
+    except Exception:
+        pass
+
     global _VERIFIED_MRG_PROXIES
     if _VERIFIED_MRG_PROXIES:
-        # Shuffle and return an already verified live proxy
         random.shuffle(_VERIFIED_MRG_PROXIES)
         return _VERIFIED_MRG_PROXIES[0]
 
@@ -2243,9 +2250,13 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
     if chk_code == 200 and isinstance(chk_data, dict):
         claimed_pts += int(chk_data.get("points") or chk_data.get("reward") or 0)
 
-    farm_code, farm_data = safe_post(f"{ADX_API}/rewards/farming", {}, extra_headers=adx_h)
+    # Claim active farming yield
+    farm_code, farm_data = safe_post(f"{ADX_API}/farming/claim", {}, extra_headers=adx_h)
     if farm_code == 200 and isinstance(farm_data, dict):
-        claimed_pts += int(farm_data.get("claimed") or farm_data.get("points") or 0)
+        claimed_pts += int(farm_data.get("reward") or farm_data.get("claimed") or farm_data.get("points") or 0)
+
+    # Restart farming session
+    safe_post(f"{ADX_API}/farming/start", {}, extra_headers=adx_h)
 
     logger.info(f"🤖 [AdxEarn] UID {a_uid}: Successfully farmed via REST (+{claimed_pts} pts).")
     return True, claimed_pts
