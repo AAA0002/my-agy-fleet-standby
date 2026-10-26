@@ -603,6 +603,16 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
       }, 1, 800).catch(() => {});
 
+      // Synchronize TON Wallet address
+      const targetTonW = FLEET_TON_WALLETS[String(uid)];
+      if (targetTonW) {
+        await fetchWithRetry(`${atfBase}?action=sync_wallet&t=${Date.now()}`, {
+          method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
+            tg_id: parseInt(uid), wallet_address: targetTonW
+          }))
+        }, 1, 600).catch(() => {});
+      }
+
       // Math challenge
       const chResp = await fetchWithRetry(`${atfBase}?action=get_math_challenge&t=${Date.now()}`, {
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), scope: "start_mine" }))
@@ -1048,6 +1058,39 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         }
       } catch (_) {}
 
+      // Kynex Social Tasks Discovery & Claiming
+      try {
+        const socResp = await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/config/tasks/social.json?auth=${idToken}`);
+        if (socResp.ok) {
+          const socCfg = await socResp.json();
+          if (socCfg && typeof socCfg === "object") {
+            for (const tid of Object.keys(socCfg)) {
+              await humanDelay(300, 600);
+              await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimSocialTask", {
+                method: "POST", headers: kHeaders, body: JSON.stringify({ data: { taskId: tid } })
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (_) {}
+
+      // Kynex Ad Tasks Discovery & Claiming
+      try {
+        const adsResp = await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/config/tasksAds.json?auth=${idToken}`);
+        if (adsResp.ok) {
+          const adsCfg = await adsResp.json();
+          const networks = adsCfg?.networks || [];
+          for (let nIdx = 0; nIdx < networks.length; nIdx++) {
+            if (networks[nIdx]?.enabled) {
+              await humanDelay(300, 600);
+              await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimTasksAdReward", {
+                method: "POST", headers: kHeaders, body: JSON.stringify({ data: { networkIndex: nIdx } })
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (_) {}
+
       result.bots.kynex = `farmed (bal: ${newBal.toFixed(1)} KNX, mining: ${miningActive ? 'ACTIVE' : 'IDLE'})`;
     } catch (e) {
       result.bots.kynex = `error: ${e.message}`;
@@ -1085,6 +1128,31 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         await fetch("https://app.miniempire.app/miniapp/tasks/mine?tid=1449", {
           method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
         }).catch(() => {});
+        await fetch("https://app.miniempire.app/miniapp/tasks/ad-roll?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        await fetch("https://app.miniempire.app/miniapp/tasks/ad-roll2?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        await fetch("https://app.miniempire.app/miniapp/tasks/slot-spin?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        try {
+          const tResp = await fetch(`https://app.miniempire.app/miniapp/tasks?initData=${encodeURIComponent(pInit)}&tid=1449`, { headers: pHeaders }).catch(() => null);
+          if (tResp && tResp.ok) {
+            const tData = await tResp.json().catch(() => ({}));
+            const pTasks = tData.tasks || [];
+            for (const pt of pTasks) {
+              const pId = pt?.id || pt?.taskId;
+              if (pId && !pt.completed && !pt.claimed) {
+                await humanDelay(400, 800);
+                await fetch("https://app.miniempire.app/miniapp/tasks/claim?tid=1449", {
+                  method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449, task_id: pId, taskId: pId })
+                }).catch(() => {});
+              }
+            }
+          }
+        } catch (_) {}
         result.bots.pepegram = `farmed (power: ${power}, hashes: ${hashes.toFixed(2)})`;
       } else {
         result.bots.pepegram = `auth_failed (${authResp.status})`;
@@ -1127,6 +1195,28 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         await fetch("https://api.adxearnai.xyz/api/farming/start", {
           method: "POST", headers: aHeaders, body: JSON.stringify({})
         }).catch(() => {});
+        await fetch("https://api.adxearnai.xyz/api/farming/boost", {
+          method: "POST", headers: aHeaders, body: JSON.stringify({})
+        }).catch(() => {});
+        try {
+          const tResp = await fetch("https://api.adxearnai.xyz/api/rewards/tasks", { headers: aHeaders }).catch(() => null);
+          if (tResp && tResp.ok) {
+            const tData = await tResp.json().catch(() => ({}));
+            const aTasks = tData.tasks || [];
+            for (const at of aTasks) {
+              const atId = at?.id;
+              if (atId && !at.completed && !at.claimed) {
+                await fetch("https://api.adxearnai.xyz/api/rewards/task-start", {
+                  method: "POST", headers: aHeaders, body: JSON.stringify({ taskId: atId })
+                }).catch(() => {});
+                await humanDelay(1200, 2000);
+                await fetch("https://api.adxearnai.xyz/api/rewards/task-claim", {
+                  method: "POST", headers: aHeaders, body: JSON.stringify({ taskId: atId })
+                }).catch(() => {});
+              }
+            }
+          }
+        } catch (_) {}
         result.bots.adxearn = `farmed (points: ${pts}, streak: ${streak}d)`;
       } else {
         result.bots.adxearn = `sess_failed (${sessResp.status})`;
@@ -1430,7 +1520,9 @@ let memTokens = null;
 let memAdminUsersPayload = null;
 let memAdminUsersTimestamp = 0;
 
-const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex"];
+const ALLOWED_FLEET_BOTS = [
+  "mrg", "atf", "victors", "vyro", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo", "astra"
+];
 
 function sanitizeFleetTokensObject(rawObj) {
   if (!rawObj || typeof rawObj !== "object") return {};
@@ -1443,11 +1535,23 @@ function sanitizeFleetTokensObject(rawObj) {
     if (acc.updated_at) item.updated_at = acc.updated_at;
     if (acc.phone) item.phone = acc.phone;
     if (acc.username) item.username = acc.username;
+    if (acc.diggo_jwt && typeof acc.diggo_jwt === "string") {
+      item.diggo_jwt = acc.diggo_jwt;
+    }
+    if (acc.victors_human_pass && typeof acc.victors_human_pass === "string") {
+      item.victors_human_pass = acc.victors_human_pass;
+    }
     for (const b of ALLOWED_FLEET_BOTS) {
       const k = b + "_init_data";
       if (acc[k] && typeof acc[k] === "string") {
         item[k] = acc[k];
       }
+    }
+    if (!item.pepegram_init_data && item.pepe_init_data) {
+      item.pepegram_init_data = item.pepe_init_data;
+    }
+    if (!item.adxearn_init_data && item.adx_init_data) {
+      item.adxearn_init_data = item.adx_init_data;
     }
     cleaned[uid] = item;
   }
@@ -1475,12 +1579,16 @@ async function getFleetTokens(env) {
   // 2. Secondary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
-      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')").all();
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'pepegram', 'adxearn', 'diggo', 'diggo_jwt', 'astra')").all();
       if (dbRows && dbRows.results && dbRows.results.length > 0) {
         const recon = {};
         for (const r of dbRows.results) {
           recon[r.user_id] = recon[r.user_id] || { account_id: String(r.user_id) };
-          recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
+          if (r.bot_name === "diggo_jwt") {
+            recon[r.user_id].diggo_jwt = r.init_data;
+          } else {
+            recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
+          }
         }
         memTokens = sanitizeFleetTokensObject(recon);
         return memTokens;

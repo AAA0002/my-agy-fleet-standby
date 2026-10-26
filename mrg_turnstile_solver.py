@@ -105,12 +105,21 @@ def get_webshare_proxy() -> dict | None:
     Fetches an active high-speed proxy (Cloudflare WARP local SOCKS5 or Webshare)
     to bypass Cloudflare WAF datacenter blocks in GitHub Actions and cloud runners.
     """
-    # 0. Check local Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000 (highest trust, direct CF edge)
+    # 0. Check local Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000 (pre-test against Cloudflare Turnstile)
     try:
         import socket
         with socket.create_connection(("127.0.0.1", 40000), timeout=0.8):
-            logger.info("🌐 Detected active Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000")
-            return {"server": "socks5://127.0.0.1:40000"}
+            try:
+                import urllib.request
+                ph = urllib.request.ProxyHandler({"http": "socks5h://127.0.0.1:40000", "https": "socks5h://127.0.0.1:40000"})
+                opener = urllib.request.build_opener(ph)
+                test_req = urllib.request.Request("https://challenges.cloudflare.com/turnstile/v0/api.js", headers={"User-Agent": "Mozilla/5.0"})
+                with opener.open(test_req, timeout=4) as tr:
+                    if tr.status == 200:
+                        logger.info("🌐 Detected active verified Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000")
+                        return {"server": "socks5://127.0.0.1:40000"}
+            except Exception as warp_err:
+                logger.warning(f"⚠️ Cloudflare WARP failed Turnstile check ({warp_err}); bypassing WARP for clean runner connection.")
     except Exception:
         pass
 
@@ -2775,10 +2784,10 @@ async def run_mrg_auto_solver():
         async with async_playwright() as p:
             browser = await p.chromium.launch(**launch_kwargs)
 
-            # A. Solve MRG passes (Protected by 2-fail circuit breaker)
+            # A. Solve MRG passes (Protected by 5-fail circuit breaker)
             mrg_fails = 0
             for acc in accounts_needing_solver:
-                if mrg_fails >= 2:
+                if mrg_fails >= 5:
                     logger.warning("⚠️ MRG Turnstile consecutive failure circuit breaker tripped (runner IP rate-limited). Skipping remaining MRG browser solves.")
                     break
                 uid = acc["uid"]
@@ -2806,10 +2815,10 @@ async def run_mrg_auto_solver():
 
                 await asyncio.sleep(0.5)
 
-            # B. Solve Victor's Company passes (Protected by 2-fail circuit breaker)
+            # B. Solve Victor's Company passes (Protected by 5-fail circuit breaker)
             vic_fails = 0
             for v_acc in victors_needing_solver:
-                if vic_fails >= 2:
+                if vic_fails >= 5:
                     logger.warning("⚠️ Victor's Turnstile consecutive failure circuit breaker tripped. Skipping remaining Victor's browser solves.")
                     break
                 v_uid = v_acc["uid"]
@@ -2833,11 +2842,11 @@ async def run_mrg_auto_solver():
                     vic_fails += 1
                 await asyncio.sleep(0.5)
 
-            # C. Solve VyroDrop wallet onboarding (Protected by 3-fail circuit breaker)
+            # C. Solve VyroDrop wallet onboarding (Protected by 5-fail circuit breaker)
             vyro_fails = 0
             for vy_acc in vyro_needing_solver:
-                if vyro_fails >= 3:
-                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped (3 failures). Skipping remaining Vyro browser solves.")
+                if vyro_fails >= 5:
+                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped (5 failures). Skipping remaining Vyro browser solves.")
                     break
                 vy_uid = vy_acc["uid"]
                 vy_init = vy_acc["init_data"]

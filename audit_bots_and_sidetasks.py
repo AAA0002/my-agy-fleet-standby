@@ -20,7 +20,32 @@ UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKE
 def load_tokens_db():
     tokens = {}
     local_path = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
-    if os.path.exists(local_path):
+
+    # 1. Primary: Always fetch latest fresh tokens from Upstash Redis (miniapp_tokens)
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            req = urllib.request.Request(
+                f"{UPSTASH_URL}/get/miniapp_tokens",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                raw = data.get("result")
+                if raw:
+                    parsed = json.loads(raw) if isinstance(raw, str) else raw
+                    if isinstance(parsed, dict) and len(parsed) > 0:
+                        tokens = parsed
+                        print(f"Loaded {len(tokens)} fresh accounts from Upstash Redis miniapp_tokens")
+                        try:
+                            with open(local_path, "w") as f:
+                                json.dump(tokens, f, indent=2)
+                        except Exception:
+                            pass
+        except Exception as e:
+            print(f"⚠️ Upstash miniapp_tokens fetch note: {e}")
+
+    # 2. Secondary: If Upstash failed or incomplete, load from local file
+    if not tokens and os.path.exists(local_path):
         try:
             with open(local_path, "r") as f:
                 tokens = json.load(f)
@@ -28,6 +53,7 @@ def load_tokens_db():
         except Exception as e:
             print(f"⚠️ Error reading local fleet_miniapp_tokens.json: {e}")
 
+    # 3. Tertiary: Upstash fleet:tokens:* pipeline fallback
     if len(tokens) < 20 and UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
@@ -374,6 +400,16 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                                                 b_rep["core"]["balance"] = f"{float(knx_bal):.1f} KNX (Energy: {energy}s)"
                                         async with session.post("https://us-central1-keynex-e9511.cloudfunctions.net/claimDailyCheckin", json={"data": {}}, headers=k_auth_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
                                             b_rep["side_tasks"].append(f"Daily Check-in: HTTP {cr.status}")
+                                        # Kynex social tasks
+                                        try:
+                                            async with session.get(f"https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/config/tasks/social.json?auth={id_token}", timeout=aiohttp.ClientTimeout(total=5)) as t_resp:
+                                                if t_resp.status == 200:
+                                                    social_cfg = await t_resp.json() or {}
+                                                    for tid in social_cfg.keys():
+                                                        await session.post("https://us-central1-keynex-e9511.cloudfunctions.net/claimSocialTask", json={"data": {"taskId": tid}}, headers=k_auth_h, timeout=aiohttp.ClientTimeout(total=5))
+                                                    b_rep["side_tasks"].append(f"Social Tasks: {len(social_cfg)} Verified")
+                                        except Exception:
+                                            pass
                     else:
                         b_rep["core"]["auth"] = f"HTTP {r.status}"
             except Exception as e:
@@ -406,6 +442,23 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         # Start 6h production
                         async with session.post("https://app.miniempire.app/miniapp/start-production?tid=1449", json={"initData": pepe_init, "tid": 1449}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=6)) as pr:
                             b_rep["side_tasks"].append(f"Start Production: HTTP {pr.status}")
+                        # Extra tasks: ad-roll, slot spin, task sweep
+                        await session.post("https://app.miniempire.app/miniapp/tasks/ad-roll?tid=1449", json={"initData": pepe_init, "tid": 1449}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=5))
+                        await session.post("https://app.miniempire.app/miniapp/tasks/slot-spin?tid=1449", json={"initData": pepe_init, "tid": 1449}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=5))
+                        try:
+                            async with session.get(f"https://app.miniempire.app/miniapp/tasks?initData={urllib.parse.quote(pepe_init)}&tid=1449", headers=pepe_h, timeout=aiohttp.ClientTimeout(total=5)) as tr:
+                                if tr.status == 200:
+                                    td = await tr.json()
+                                    pts_list = td.get("tasks", []) if isinstance(td, dict) else []
+                                    cl_cnt = 0
+                                    for pt in pts_list:
+                                        pid = pt.get("id") or pt.get("taskId")
+                                        if pid and not pt.get("completed") and not pt.get("claimed"):
+                                            await session.post("https://app.miniempire.app/miniapp/tasks/claim?tid=1449", json={"initData": pepe_init, "tid": 1449, "task_id": pid, "taskId": pid}, headers=pepe_h, timeout=aiohttp.ClientTimeout(total=5))
+                                            cl_cnt += 1
+                                    b_rep["side_tasks"].append(f"Tasks: {len(pts_list)} Available, {cl_cnt} Claimed")
+                        except Exception:
+                            pass
                     else:
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:
@@ -445,6 +498,24 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                             b_rep["side_tasks"].append(f"Farming Claim: {f_txt}")
                         # Farming start
                         await session.post("https://api.adxearnai.xyz/api/farming/start", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6))
+                        # Farming boost & Dynamic Tasks
+                        await session.post("https://api.adxearnai.xyz/api/farming/boost", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=5))
+                        try:
+                            async with session.get("https://api.adxearnai.xyz/api/rewards/tasks", headers=adx_h, timeout=aiohttp.ClientTimeout(total=5)) as tr:
+                                if tr.status == 200:
+                                    td = await tr.json()
+                                    atasks = td.get("tasks", []) if isinstance(td, dict) else []
+                                    cl_cnt = 0
+                                    for atk in atasks:
+                                        atid = atk.get("id")
+                                        if atid and not atk.get("completed") and not atk.get("claimed"):
+                                            await session.post("https://api.adxearnai.xyz/api/rewards/task-start", json={"taskId": atid}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=5))
+                                            await asyncio.sleep(1.0)
+                                            await session.post("https://api.adxearnai.xyz/api/rewards/task-claim", json={"taskId": atid}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=5))
+                                            cl_cnt += 1
+                                    b_rep["side_tasks"].append(f"Tasks: {len(atasks)} Discovered, {cl_cnt} Processed")
+                        except Exception:
+                            pass
                     else:
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:
