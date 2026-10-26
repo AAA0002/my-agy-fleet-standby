@@ -3,6 +3,10 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🚫 Full System Decommission & Permanent Purge of Astra Airdrop, Enforcement of Ground-Truth 8 Legitimate Fleet Bots Policy (October 26, 2026)**:
+  - **Handover Documentation & System Directory Alignment (`SESSION_BRIDGE.md`, `MASTER_SYSTEM_DIRECTORY.md`, `AGENTS.md`)**:
+    * Corrected legacy note in `SESSION_BRIDGE.md` that erroneously listed DiggoMiner, PepeGram, and AdxEarn AI alongside defunct bots; synchronized to strictly the 8 active legitimate bots.
+    * Updated `MASTER_SYSTEM_DIRECTORY.md` table of protocols, verified protocol cards, and bot handles, removing obsolete Astra Airdrop references and correcting handles to `@mrgminerbot`, `@ATF_AIRDROP_bot`, `@VictorsCompanybot`, `@vyrodrop_bot`, `@Kynex_miningbot`, `@Diggominer_bot`, `@Pepe_gram_bot`, and `@AdxEarnAibot`.
+    * Ground-truth corrected Kynex Network domain references across `AGENTS.md` and `PROJECT_BIBLE.md` to `kynex.top` (and Firebase backend), eliminating dead host lookups.
   - **Turnstile Solver & Math Engine Hardening (`mrg_turnstile_solver.py`, `AAA0002/cloud-fleet-solver`)**:
     * Upgraded `solve_atf_math` in `mrg_turnstile_solver.py` with complete deterministic unary and comparison operations (`half of`, `double of`, `square of`, `larger`, `greater`, `max`, `smaller`, `less`, `min`, `mod`, `%`).
     * Hardened Master Account detection across all queues, sorting routines, and referral sweeps to use type-safe string comparisons (`str(uid) == "6727787768"`), eliminating type-coercion bugs.

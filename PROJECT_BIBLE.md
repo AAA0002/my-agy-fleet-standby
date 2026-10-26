@@ -107,7 +107,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
       3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
       4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`)
-      5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.net`)
+      5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
       6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
       7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
       8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)

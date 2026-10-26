@@ -34,8 +34,8 @@
 | **TON Master Vault** | `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT` | Executive on-chain treasury ([Tonviewer](https://tonviewer.com/UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT)) |
 | **EVM Master Vault** | `0x7856d39352e8045610e7c53d0e9a56eefbf19b5c` | BNB Chain (BEP-20) & Arbitrum treasury |
 | **Primary Edge Gateway** | `https://restore-agy.agorameet.workers.dev` | Cloudflare Edge Mesh Node 4 (Frankfurt/Global) |
-| **Active Fleet Accounts** | **20 Accounts** (1 Master + 19 Workers) | 100% cloud-farmed across 9 verified pools |
-| **Active Mining Pools** | **5 Protocols (Strict 5-Bot Integrity)** | MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network |
+| **Active Fleet Accounts** | **20 Accounts** (1 Master + 19 Workers) | 100% cloud-farmed across 8 verified pools |
+| **Active Mining Pools** | **8 Protocols (Strict 8-Bot Integrity)** | MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI |
 | **Zero Phone Load** | **Samsung Galaxy A30** | STRICTLY pair-programming CLI. Zero local bots or daemons. |
 
 ### 📢 Telegram Channels Directory (Strictly Isolated)
@@ -157,7 +157,7 @@ Both the Executive Fleet Operations Console (`/admin`) and User Bot Admin Consol
   - **Account Slots Tracking**: Live meter displaying connected slots vs max slots (base slots + bonus ad slots).
   - **7-Day Streak Stepper**: Interactive visual milestone stepper with live cooldown timer and dynamic claim bonuses (`+100` to `+500` Pts).
   - **1-Click Multi-Pool Harvest**: Concurrently triggers cloud mining passes across all 9 pools via `/api/farm/all`.
-  - **9 Verified Protocol Cards**: Real connected accounts counters (`mrgC`, `atfC`, `victorsC`, `vyroC`, `kynexC`, `diggoC`, `adxC`, `astraC`, `pepeC`) with reward token chips (`Earn TON`, `Earn ATF`, `Earn VYRO`, etc.).
+  - **8 Verified Protocol Cards**: Real connected accounts counters (`mrgC`, `atfC`, `victorsC`, `vyroC`, `kynexC`, `diggoC`, `adxC`, `pepeC`) with reward token chips (`Earn TON`, `Earn ATF`, `Earn VYRO`, etc.).
   - **Non-Custodial Cloud Vaults**: Multi-chain wallet suite (TON, EVM/BSC, TRON, SOL) with high-resolution deposit QR modal and direct block explorer links (Tonviewer, BscScan, Tronscan, Solscan).
   - **Authentic Binance Crypto Oracle**: Fetches live ticker prices directly from `/api/rates`.
   - **Zero-Fake Guarantee**: Zero simulated satoshi counters or fabricated gigahash tickers.
@@ -310,45 +310,42 @@ All discontinued, scammer, or dead bots (LeafEarn, PumpkinEarn) have been perman
 ├────┬──────────────────┬────────────────────────┬───────────────────────────────────────┤
 │ #  │ Protocol Name    │ Bot Handle             │ Solving & Handshake Mechanism         │
 ├────┼──────────────────┼────────────────────────┼───────────────────────────────────────┤
-│ 1  │ MRG Miner        │ @mrg_miner_bot         │ Single-Click Turnstile, TonConnect 2  │
-│ 2  │ ATF Miner        │ @atf_miner_bot         │ Deterministic Math Solver, TON Sync   │
-│ 3  │ Victor's Company │ @victorscompany_bot    │ MTProto Minting, Level 1 Unlock       │
+│ 1  │ MRG Miner        │ @mrgminerbot           │ Single-Click Turnstile, TonConnect 2  │
+│ 2  │ ATF Miner        │ @ATF_AIRDROP_bot       │ Deterministic Math Solver, TON Sync   │
+│ 3  │ Victor's Company │ @VictorsCompanybot     │ MTProto Minting, Level 1 Unlock       │
 │ 4  │ VyroDrop         │ @vyrodrop_bot          │ Autonomous 0.05 VYRO/h, TonConnect 2  │
-│ 5  │ Kynex Network    │ @kynexnetwork_bot      │ 15-Min Energy Sweep, Firebase Tokens  │
-│ 6  │ DiggoMiner       │ @diggoxbot             │ 30-Day JWT Fallback, Auto-Claim       │
-│ 7  │ Astra Airdrop    │ @astradropbot          │ Challenge Solver, Supabase RPC Sync   │
-│ 8  │ PepeGram         │ @pepegrambot           │ Autonomous Reward Claim Loop          │
-│ 9  │ AdxEarn AI       │ @adxearnbot            │ Dynamic Ad-Farming Loop (20k ads/day) │
+│ 5  │ Kynex Network    │ @Kynex_miningbot       │ 15-Min Energy Sweep, Firebase Tokens  │
+│ 6  │ DiggoMiner       │ @Diggominer_bot        │ 30-Day JWT Fallback, Auto-Claim       │
+│ 7  │ PepeGram         │ @Pepe_gram_bot         │ 6-Hour Production, Slot Spin Loop     │
+│ 8  │ AdxEarn AI       │ @AdxEarnAibot          │ Daily Streaks & Dynamic Task Sweeps   │
 └────┴──────────────────┴────────────────────────┴───────────────────────────────────────┘
 ```
 
 ### ⚙️ Handshake & Auto-Binding Details
 
-1. **MRG Miner (`@mrg_miner_bot`)**:
+1. **MRG Miner (`@mrgminerbot`)**:
    - **Solving**: Solves Cloudflare Turnstile with single-click Chrome DevTools Protocol (`mrg_turnstile_solver.py`).
    - **TonConnect 2.0**: Signs cryptographic Ed25519 proofs over dynamic nonces to bind TON wallets (`app.mrgtoken.xyz`).
    - **Miner Upgrades**: Automatically auto-upgrades mining rigs to Level 95+ and auto-claims satoshis.
-2. **ATF Miner (`@atf_miner_bot`)**:
+2. **ATF Miner (`@ATF_AIRDROP_bot`)**:
    - **Solving**: Local deterministic math solver (`solve_atf_math`) solves arithmetic expressions and word operators in < 0.01ms.
    - **Auto-Sync**: Automatically syncs the account's TON address to `atfminers.asloni.online/miner/index.php?action=sync_wallet`.
-3. **Victor's Company (`@victorscompany_bot`)**:
+3. **Victor's Company (`@VictorsCompanybot`)**:
    - **0-Second Fresh Token Minting**: Telethon MTProto engine mints fresh WebApp authorization tokens on demand to prevent `401 TG_AUTH`.
    - **Level 1 Miner Unlock**: Dispatches `POST /api/levels/unlock {"level": 1}` to hire Level 1 Miner and avoid `home.noJob`.
    - **Pass Compounding**: Automatically claims daily HumanPass and reinvests in mining passes.
 4. **VyroDrop (`@vyrodrop_bot`)**:
    - **TonConnect 2.0 Handshake**: Simulates TonConnect 2.0 proof handshake via `POST /api/auth/verify-wallet`.
    - **Autonomous 0.05 VYRO/h Loop**: Automatically activates mining cycle via `POST /api/mining/start`.
-5. **Kynex Network (`@kynexnetwork_bot`)**:
+5. **Kynex Network (`@Kynex_miningbot`)**:
    - **Auth**: Exchanges `initData` with Firebase auth token via `verifyTelegramAuth`.
    - **Energy Sweep**: Automatically triggers 15-minute energy sweeps and node claim cycles.
-6. **DiggoMiner (`@diggoxbot`)**:
-   - **30-Day JWT Fallback**: Exchanges Telegram session with long-lived JWT token; auto-claims mined diamonds.
-7. **Astra Airdrop (`@astradropbot`)**:
-   - **Supabase RPC**: Syncs TON wallet via `astra_sync_wallet` RPC function. Gracefully handles 402 developer billing pauses without crashing the worker.
-8. **PepeGram (`@pepegrambot`)**:
-   - **Autonomous Loop**: Claims daily PEPE rewards and compounding tiers.
-9. **AdxEarn AI (`@adxearnbot`)**:
-   - **Ad-Farming Engine**: Autonomous loop targeting up to 20,000 ad impressions/day across the 20 accounts on Render Node 2.
+6. **DiggoMiner (`@Diggominer_bot`)**:
+   - **30-Day JWT Fallback**: Exchanges Telegram session with long-lived JWT token; auto-claims mined tokens and Solana launch tasks.
+7. **PepeGram (`@Pepe_gram_bot`)**:
+   - **Autonomous Loop**: Claims daily PEPE rewards, starts 6-hour production, spins free slot, and claims team commissions.
+8. **AdxEarn AI (`@AdxEarnAibot`)**:
+   - **Dynamic Tasks & Streaks**: Autonomous check-in streak, farming boost, and dynamic task sweeping.
 
 ---
 
@@ -471,7 +468,7 @@ git push origin main && git push standby_repo main
 /data/workspace/AAA_AUTO/
 ├── MASTER_SYSTEM_DIRECTORY.md          # 🧭 THIS DOCUMENT — Master system index & navigation hub
 ├── DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md # 🏛️ 4-Dashboard specification & zero-fake policy
-├── PROJECT_BIBLE.md                     # 📖 Universal architecture bible & 9-bot engine manual
+├── PROJECT_BIBLE.md                     # 📖 Universal architecture bible & 8-bot engine manual
 ├── SESSION_BRIDGE.md                    # 🌉 Continuity handover & past action history
 ├── FLEET_MEMORY_CORE.md                 # 🧠 20-Account memory & operational invariants
 ├── FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md # 💳 20-Account 5-chain non-custodial wallet directory
@@ -503,7 +500,7 @@ git push origin main && git push standby_repo main
 ├── mrg_turnstile_solver.py              # 🤖 Cloudflare Turnstile single-click solver
 ├── victors_sb_solver.py                 # 🤖 Victor's Company automated challenge solver
 ├── batch_atf_miner.py                   # 🤖 ATF Miner autonomous loop & math solver
-├── audit_bots_and_sidetasks.py          # 🔍 Comprehensive 9-bot fleet audit suite
+├── audit_bots_and_sidetasks.py          # 🔍 Comprehensive 8-bot fleet audit suite
 └── accounts.json                        # 🔒 20 Fleet Telethon session strings (isolated/gitignored)
 ```
 
