@@ -393,7 +393,9 @@ def check_account_status(init_data: str) -> dict:
             "isTonConnected": user.get("isTonConnected", False),
             "tonWalletAddress": user.get("tonWalletAddress", ""),
             "referrerId": user.get("referrerId"),
-            "isQualified": user.get("isQualified", False)
+            "isQualified": user.get("isQualified", False),
+            "tasks": body.get("tasks", []),
+            "completedTaskIds": body.get("completedTaskIds", [])
         }
     return {"success": False, "error": body.get("error", "Unknown error")}
 
@@ -2347,7 +2349,7 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
         "Referer": f"{ADX_ORIGIN}/",
         "X-Telegram-Init-Data": a_init
     }
-    sess_code, sess_data = safe_post(f"{ADX_API}/user/session", {"initData": a_init}, extra_headers=adx_h)
+    sess_code, sess_data = safe_post(f"{ADX_API}/user/session", {"initData": a_init, "fp": f"fp_{a_uid}"}, extra_headers=adx_h)
     if sess_code not in (200, 201) or not isinstance(sess_data, dict):
         return False, 0
 
@@ -2363,6 +2365,22 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
 
     # Restart farming session
     safe_post(f"{ADX_API}/farming/start", {}, extra_headers=adx_h)
+    safe_post(f"{ADX_API}/farming/boost", {}, extra_headers=adx_h)
+
+    # Dynamic tasks sweeping
+    try:
+        t_code, t_data = safe_get(f"{ADX_API}/rewards/tasks", extra_headers=adx_h)
+        if t_code == 200 and isinstance(t_data, dict):
+            for tk in t_data.get("tasks", []):
+                t_id = tk.get("id")
+                if t_id and not tk.get("completed") and not tk.get("claimed"):
+                    safe_post(f"{ADX_API}/rewards/task-start", {"taskId": t_id}, extra_headers=adx_h)
+                    time.sleep(1.0)
+                    cl_code, cl_d = safe_post(f"{ADX_API}/rewards/task-claim", {"taskId": t_id}, extra_headers=adx_h)
+                    if cl_code == 200 and isinstance(cl_d, dict):
+                        claimed_pts += int(cl_d.get("reward") or 0)
+    except Exception:
+        pass
 
     logger.info(f"🤖 [AdxEarn] UID {a_uid}: Successfully farmed via REST (+{claimed_pts} pts).")
     return True, claimed_pts
@@ -2413,12 +2431,14 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
     # 1. Inspect state to determine pending mining and streak
     st_code, st_data = safe_get(f"{DIGGO_API}/state", extra_headers=claim_h)
     st = st_data.get("state", {}) if (st_code == 200 and isinstance(st_data, dict)) else {}
-    pending = float(st.get("pending", 0) or 0.0)
+    mining_obj = st.get("mining") if isinstance(st.get("mining"), dict) else {}
+    pending = float(st.get("pending") or mining_obj.get("pending") or 0.0)
+    is_paused = bool(mining_obj.get("paused"))
 
     claimed_amt = 0.0
     import uuid
-    # 2. Main mining claim
-    if pending > 0:
+    # 2. Main mining claim (restarts miner when pending > 0 or paused)
+    if pending > 0 or is_paused:
         cl_code, cl_data = safe_post(f"{DIGGO_API}/claims/mining", {}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
         if cl_code == 200 and isinstance(cl_data, dict):
             claimed_amt = float(cl_data.get("amount") or cl_data.get("claimed") or pending)
@@ -2446,17 +2466,18 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
         safe_post(f"{DIGGO_API}/tasks/verify", {"taskId": "telegram"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
         safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "telegram"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
 
-    # 7. Social Tasks (community_react, x_follow, x_post)
-    for tid in ["community_react", "x_follow", "x_post"]:
-        t_obj = tasks.get(tid, {})
-        if t_obj.get("enabled") and not t_obj.get("claimed"):
+    # 7. Social & Partner Tasks (dynamic iteration)
+    for tid, t_obj in tasks.items():
+        if tid in ("checkin", "play", "telegram", "ad", "invite"):
+            continue
+        if isinstance(t_obj, dict) and t_obj.get("enabled") and not t_obj.get("claimed"):
             conf = t_obj.get("confirmation")
             att_id = conf.get("attemptId") if isinstance(conf, dict) else None
             if not att_id:
                 s_c, s_d = safe_post(f"{DIGGO_API}/tasks/social/start", {"taskId": tid}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
                 if s_c == 200 and isinstance(s_d, dict):
                     att_id = s_d.get("attempt", {}).get("attemptId")
-                    time.sleep(2.0)
+                    time.sleep(1.5)
             if att_id:
                 safe_post(f"{DIGGO_API}/tasks/social/confirm", {"taskId": tid, "attemptId": att_id, "confirmed": True}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
                 safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": tid}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
@@ -2469,6 +2490,22 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
             time.sleep(2.0)
             safe_post(f"{DIGGO_API}/adsgram/complete", {"attemptId": a_d["attemptId"]}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
             safe_post(f"{DIGGO_API}/tasks/claim", {"taskId": "ad"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+
+    # 9. Solana Launch Campaign Tasks (quiz & pump)
+    try:
+        lr_code, ld = safe_get(f"{DIGGO_API}/launch-tasks", extra_headers=claim_h)
+        if lr_code == 200 and isinstance(ld, dict) and ld.get("enabled"):
+            quiz = ld.get("quiz", {})
+            pump = ld.get("pump", {})
+            if not quiz.get("claimed"):
+                qr_code, qr_d = safe_post(f"{DIGGO_API}/launch-tasks/quiz", {"answer": "ton_continues"}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+                if qr_code == 200 and isinstance(qr_d, dict):
+                    claimed_amt += float(qr_d.get("amount", 5.0) or 5.0)
+            if not pump.get("confirmed"):
+                safe_post(f"{DIGGO_API}/launch-tasks/pump/open", {}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+                safe_post(f"{DIGGO_API}/launch-tasks/pump/confirm", {"confirmed": True}, extra_headers={**claim_h, "Idempotency-Key": str(uuid.uuid4())})
+    except Exception:
+        pass
 
     logger.info(f"⛏️ [Diggo] UID {d_uid}: Successfully farmed main & side tasks via REST (+{claimed_amt:.2f} DIGGO).")
     return True, claimed_amt
@@ -2587,6 +2624,18 @@ async def run_mrg_auto_solver():
         if not stat.get("success"):
             logger.warning(f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: Could not fetch account status ({stat.get('error')}).")
             continue
+
+        # Claim MRG side tasks via REST
+        completed_mrg_tasks = set(stat.get("completedTaskIds", []))
+        for tk in stat.get("tasks", []):
+            tk_id = tk.get("taskId")
+            if tk_id and tk_id not in completed_mrg_tasks:
+                safe_post(f"{API_BASE}/api/user/claim-task", {"initData": mrg_init, "taskId": tk_id})
+
+        # Auto unlock level if balance permits
+        cur_mrg_lvl = stat.get("manualUnlockedLevel", 1)
+        tot_mrg_bal = stat.get("inAppBalance", 0.0) + stat.get("tonWalletBalance", 0.0)
+        auto_unlock_mrg_level(mrg_init, cur_mrg_lvl, tot_mrg_bal)
 
         has_active_pass = is_human_pass_active(stat.get("humanVerifiedUntil"))
         acc_info = {
@@ -2827,22 +2876,8 @@ async def run_mrg_auto_solver():
                     if atf_res:
                         atf_solved += 1
                         atf_fails = 0
-                        p_chk = {
-                            "initData": a_init,
-                            "tg_id": a_uid,
-                            "username": "",
-                            "request_id": f"rq-chk-{a_uid}",
-                            "device_id": f"dev-chk-{a_uid}"
-                        }
-                        atf_h = {
-                            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
-                            "X-Requested-With": "XMLHttpRequest",
-                            "Content-Type": "application/json",
-                            "Referer": f"{ATF_ORIGIN}/miner/index.html",
-                            "Origin": ATF_ORIGIN
-                        }
-                        safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
-                        safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                        # Auto-claim rewards with session cookies & deterministic math challenge solver
+                        check_and_farm_atf_rest(atf_acc)
                     else:
                         atf_fails += 1
                 except asyncio.TimeoutError:

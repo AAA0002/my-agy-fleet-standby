@@ -6125,10 +6125,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     st = st_d.get("state", {})
                     bal = float(st.get("balance") or 0.0)
                     lvl = st.get("player", {}).get("level", 1)
-                    pending = float(st.get("pending", 0) or 0.0)
-                    # 1. Main mining claim
+                    mining_obj = st.get("mining") if isinstance(st.get("mining"), dict) else {}
+                    pending = float(st.get("pending") or mining_obj.get("pending") or 0.0)
+                    is_paused = bool(mining_obj.get("paused"))
+
+                    # 1. Main mining claim (restarts miner when pending > 0 or paused)
                     claim_h = {**d_h, "Idempotency-Key": str(uuid.uuid4())}
-                    if pending > 0:
+                    if pending > 0 or is_paused:
                         c_code, c_data = await safe_post("https://diggo.linkpc.net/api/claims/mining", json_data={}, req_headers=claim_h)
                         if c_code == 200 and isinstance(c_data, dict):
                             bal += float(c_data.get("amount", 0.0) or 0.0)
@@ -6154,17 +6157,18 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         await safe_post("https://diggo.linkpc.net/api/tasks/verify", json_data={"taskId": "telegram"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                         await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "telegram"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
 
-                    # 5. Social Tasks (community_react, x_follow, x_post)
-                    for tid in ["community_react", "x_follow", "x_post"]:
-                        t_obj = tasks.get(tid, {})
-                        if t_obj.get("enabled") and not t_obj.get("claimed"):
+                    # 5. Social & Partner Tasks (dynamic iteration)
+                    for tid, t_obj in tasks.items():
+                        if tid in ("checkin", "play", "telegram", "ad", "invite"):
+                            continue
+                        if isinstance(t_obj, dict) and t_obj.get("enabled") and not t_obj.get("claimed"):
                             conf = t_obj.get("confirmation")
                             att_id = conf.get("attemptId") if isinstance(conf, dict) else None
                             if not att_id:
                                 s_c, s_d = await safe_post("https://diggo.linkpc.net/api/tasks/social/start", json_data={"taskId": tid}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                                 if s_c == 200 and isinstance(s_d, dict):
                                     att_id = s_d.get("attempt", {}).get("attemptId")
-                                    await asyncio.sleep(2.0)
+                                    await asyncio.sleep(1.5)
                             if att_id:
                                 await safe_post("https://diggo.linkpc.net/api/tasks/social/confirm", json_data={"taskId": tid, "attemptId": att_id, "confirmed": True}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                                 await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": tid}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
@@ -6177,6 +6181,20 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             await asyncio.sleep(2.0)
                             await safe_post("https://diggo.linkpc.net/api/adsgram/complete", json_data={"attemptId": a_d["attemptId"]}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                             await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "ad"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+
+                    # 7. Solana Launch Campaign Tasks (quiz & pump)
+                    try:
+                        lr_c, lr_d = await safe_get("https://diggo.linkpc.net/api/launch-tasks", req_headers=d_h)
+                        if lr_c == 200 and isinstance(lr_d, dict) and lr_d.get("enabled"):
+                            quiz = lr_d.get("quiz", {})
+                            pump = lr_d.get("pump", {})
+                            if not quiz.get("claimed"):
+                                await safe_post("https://diggo.linkpc.net/api/launch-tasks/quiz", json_data={"answer": "ton_continues"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                            if not pump.get("confirmed"):
+                                await safe_post("https://diggo.linkpc.net/api/launch-tasks/pump/open", json_data={}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                                await safe_post("https://diggo.linkpc.net/api/launch-tasks/pump/confirm", json_data={"confirmed": True}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
+                    except Exception:
+                        pass
 
                     status["bots"]["diggo"] = f"farmed (lvl: {lvl}, bal: {bal:.2f})"
                 else:

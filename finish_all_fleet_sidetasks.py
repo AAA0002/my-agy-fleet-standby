@@ -1013,6 +1013,28 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             except Exception:
                 pass
 
+        # F. Solana Launch Campaign Tasks (quiz & pump)
+        try:
+            async with session.get(f"{base_url}/api/launch-tasks", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as lr:
+                if lr.status == 200:
+                    ld = await lr.json()
+                    if ld.get("enabled"):
+                        quiz = ld.get("quiz", {})
+                        pump = ld.get("pump", {})
+                        if not quiz.get("claimed"):
+                            async with session.post(f"{base_url}/api/launch-tasks/quiz", json={"answer": "ton_continues"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as qr:
+                                if qr.status == 200:
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append("launch_quiz_5_diggo")
+                        if not pump.get("confirmed"):
+                            await session.post(f"{base_url}/api/launch-tasks/pump/open", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5))
+                            async with session.post(f"{base_url}/api/launch-tasks/pump/confirm", json={"confirmed": True}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as pr:
+                                if pr.status == 200:
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append("launch_pump_confirmed")
+        except Exception:
+            pass
+
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")
 

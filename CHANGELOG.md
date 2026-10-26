@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 DiggoMiner Solana Launch Campaign Automation, Dynamic Tasks Engine & Multi-Bot Hardening (October 26, 2026)**:
+  - **DiggoMiner Solana Launch Campaign (`/api/launch-tasks`) Discovery & 100% Fleet Resolution**:
+    * Reverse-engineered `launch-tasks.js` (`v=20261024-post2`) from `diggo.linkpc.net` frontend. Discovered that the Diggo team recently launched a Solana Campaign with active `quiz` (+5 DIGGO) and `pump` (follow pump.fun) tasks that were omitted from existing automated farming loops.
+    * Implemented autonomous quiz answer engine (`POST /api/launch-tasks/quiz` with `{"answer": "ton_continues"}`) and pump verification (`/api/launch-tasks/pump/open` -> `/api/launch-tasks/pump/confirm`).
+    * Swept all 20 accounts live in production: 18 previously incomplete accounts were solved instantly (+5 DIGGO each), bringing fleet-wide campaign completion to **20/20 (100% coverage)**.
+  - **DiggoMiner Mining Accrual & Restart Logic**:
+    * Fixed bug in pending calculations where `st.pending` was checked without falling back to `st.mining.pending`.
+    * Added mining restart trigger: if `pending > 0` OR `mining.paused == True`, `POST /api/claims/mining` is executed to claim accrued tokens and autonomously restart the mining cycle.
+    * Replaced hardcoded social tasks list with dynamic iteration across `st.tasks`, ensuring any newly added partner or social tasks are automatically started, confirmed, and claimed.
+  - **MRG Miner Automatic Level Unlock & REST Task Sweeping**:
+    * Updated `check_account_status` in `mrg_turnstile_solver.py` to extract `tasks` and `completedTaskIds` from `/api/user/me`.
+    * Implemented REST task sweeper calling `/api/user/claim-task` for all uncompleted tasks.
+    * Added automatic MRG level upgrading via `auto_unlock_mrg_level` based on total combined in-app and on-chain TON wallet balance.
+  - **ATF Miner Browser Solve Fallback Cookie Hardening**:
+    * Fixed bug in `mrg_turnstile_solver.py` Phase 4 browser solve fallback where `p_chk` reused a static request ID and failed to forward session cookies (`atf_tma_session` and `__Host-atf_fg_v1`) from login to claim.
+    * Routed solved browser accounts through `check_and_farm_atf_rest`, guaranteeing unique UUIDs, cookie preservation, and deterministic arithmetic challenge resolution.
+  - **AdxEarn AI Fingerprint & Dynamic Task Sweeping**:
+    * Ensured `"fp": f"fp_{uid}"` is passed in all session payloads in `mrg_turnstile_solver.py`.
+    * Integrated `/api/rewards/tasks` dynamic fetching, task-start, and delayed task-claim.
+  - **Multi-Cloud Synchronization & Deployment**:
+    * Re-deployed updated multi-bot engine to Cloudflare Worker Node 4 (`https://restore-agy.agorameet.workers.dev`) with active 15m cron (`*/15 * * * *`).
+    * Pushed updated `mrg_turnstile_solver.py` to public runner repository `AAA0002/cloud-fleet-solver`.
+    * Executed `python3 backup_manager.py` to stream encrypted disaster recovery archive to `@myagyai` vault channel.
+
 - **⚡ ATF Session Cookie Architecture, Diggo JWT Auto-Minting & Cloudflare Worker Node 4 Deployment (October 26, 2026)**:
   - **Canonical App Parity (`app.py`)**:
     * Added autonomous Diggo JWT exchange fallback directly in `_farm_diggo` in `app.py`, ensuring Render Standby Node 2 automatically exchanges `diggo_init_data` for a fresh 30-day JWT when missing.

@@ -1050,10 +1050,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         const st = stData.state || {};
         let bal = parseFloat(st.balance || 0);
         const lvl = st.player?.level || 1;
-        const pending = parseFloat(st.pending || 0);
+        const pending = parseFloat(st.pending || st.mining?.pending || 0);
+        const isPaused = st.mining?.paused === true;
         const streak = st.streak || 0;
         const randKey = () => "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
-        if (pending > 0) {
+        if (pending > 0 || isPaused) {
           const clResp = await fetch("https://diggo.linkpc.net/api/claims/mining", {
             method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
           }).catch(() => null);
@@ -1101,10 +1102,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }).catch(() => {});
         }
 
-        // Social Tasks (community_react, x_follow, x_post)
-        for (const tid of ["community_react", "x_follow", "x_post"]) {
-          const tObj = tasks[tid] || {};
-          if (tObj.enabled && !tObj.claimed) {
+        // Social & Partner Tasks (dynamic iteration)
+        for (const [tid, tObj] of Object.entries(tasks)) {
+          if (["checkin", "play", "telegram", "ad", "invite"].includes(tid)) continue;
+          if (tObj && tObj.enabled && !tObj.claimed) {
             let attId = tObj.confirmation?.attemptId;
             if (!attId) {
               const sResp = await fetch("https://diggo.linkpc.net/api/tasks/social/start", {
@@ -1140,6 +1141,27 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
               }).catch(() => {});
               await fetch("https://diggo.linkpc.net/api/tasks/claim", {
                 method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "ad" })
+              }).catch(() => {});
+            }
+          }
+        }
+
+        // Solana Launch Campaign Tasks (quiz & pump)
+        const lResp = await fetch("https://diggo.linkpc.net/api/launch-tasks", { headers: dHeaders }).catch(() => null);
+        if (lResp && lResp.ok) {
+          const lData = await lResp.json().catch(() => ({}));
+          if (lData && lData.enabled) {
+            if (lData.quiz && !lData.quiz.claimed) {
+              await fetch("https://diggo.linkpc.net/api/launch-tasks/quiz", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ answer: "ton_continues" })
+              }).catch(() => {});
+            }
+            if (lData.pump && !lData.pump.confirmed) {
+              await fetch("https://diggo.linkpc.net/api/launch-tasks/pump/open", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
+              }).catch(() => {});
+              await fetch("https://diggo.linkpc.net/api/launch-tasks/pump/confirm", {
+                method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ confirmed: true })
               }).catch(() => {});
             }
           }
