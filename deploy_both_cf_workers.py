@@ -980,7 +980,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
       };
       const sessResp = await fetch("https://api.adxearnai.xyz/api/user/session", {
-        method: "POST", headers: aHeaders, body: JSON.stringify({ initData: aInit })
+        method: "POST", headers: aHeaders, body: JSON.stringify({ initData: aInit, fp: "fp_" + uid })
       });
       if (sessResp.ok) {
         const sessData = await sessResp.json();
@@ -1088,6 +1088,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
               method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "play" })
             }).catch(() => {});
           }
+        }
+
+        // Telegram Channel Task (+30 DIGGO)
+        const tTg = tasks.telegram || {};
+        if (tTg.enabled && !tTg.claimed) {
+          await fetch("https://diggo.linkpc.net/api/tasks/verify", {
+            method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "telegram" })
+          }).catch(() => {});
+          await fetch("https://diggo.linkpc.net/api/tasks/claim", {
+            method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ taskId: "telegram" })
+          }).catch(() => {});
         }
 
         // Social Tasks (community_react, x_follow, x_post)
