@@ -2057,7 +2057,7 @@ def check_and_farm_victors_rest(v_acc: dict, is_master: bool = False) -> tuple[b
             u_res = t_d.get("user") or t_d
             if isinstance(u_res, dict) and u_res.get("manualUnlockedLevel", 0) < 1:
                 safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, extra_headers=test_h)
-            if is_master or v_uid == 6727787768:
+            if is_master or str(v_uid) == "6727787768":
                 safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=test_h)
                 safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=test_h)
             # Fetch and claim pending tasks
@@ -2183,6 +2183,7 @@ def solve_atf_math(question_text: str) -> str:
     import re
     q_lower = question_text.lower().strip()
 
+    # 1. Factoid & Time Units
     if "days in a week" in q_lower or "days a week" in q_lower: return "7"
     if "hours in a day" in q_lower: return "24"
     if "minutes in an hour" in q_lower or "seconds in a minute" in q_lower: return "60"
@@ -2199,26 +2200,81 @@ def solve_atf_math(question_text: str) -> str:
         "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
         "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
         "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
-        "eighty": 80, "ninety": 90, "hundred": 100
+        "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
     }
-    cleaned = q_lower
-    for w, n in word_to_num.items():
-        cleaned = re.sub(rf"\b{w}\b", str(n), cleaned)
 
-    cleaned = re.sub(r"[^\d+\-*/().]", " ", cleaned).strip()
-    match = re.search(r"(\d+(?:\.\d+)?)\s*([\+\-\*\/])\s*(\d+(?:\.\d+)?)", cleaned)
-    if match:
-        a = float(match.group(1))
-        op = match.group(2)
-        b = float(match.group(3))
-        res = 0.0
-        if op == "+": res = a + b
-        elif op == "-": res = a - b
-        elif op == "*": res = a * b
-        elif op == "/" and b != 0: res = a / b
-        return str(int(res)) if res.is_integer() else f"{res:.2f}"
+    # 2. Tokenize words, digits and operators
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\%\=]+", q_lower)
+    converted_tokens = []
+    i = 0
+    while i < len(tokens):
+        w = tokens[i]
+        if w in word_to_num:
+            val = word_to_num[w]
+            while i + 1 < len(tokens) and tokens[i+1] in word_to_num:
+                next_val = word_to_num[tokens[i+1]]
+                if next_val in (100, 1000):
+                    val = val * next_val
+                    i += 1
+                elif val >= 20 and next_val < 10:
+                    val += next_val
+                    i += 1
+                else:
+                    break
+            converted_tokens.append(str(val))
+        elif w in ("plus", "add", "added", "sum", "+"):
+            converted_tokens.append("+")
+        elif w in ("minus", "subtract", "subtracted", "take", "-"):
+            converted_tokens.append("-")
+        elif w in ("times", "multiplied", "multiply", "*", "x"):
+            converted_tokens.append("*")
+        elif w in ("divided", "divide", "/"):
+            converted_tokens.append("/")
+        elif w in ("mod", "modulo", "remainder", "%"):
+            converted_tokens.append("%")
+        elif w.isdigit() or re.match(r"^\d+[\+\-\*\/\%]\d+$", w):
+            converted_tokens.append(w)
+        i += 1
 
-    return "0"
+    normalized = " ".join(converted_tokens)
+
+    # 3. Standard arithmetic "A op B"
+    m = re.search(r"(\d+)\s*([\+\-\*\/\%])\s*(\d+)", normalized)
+    if m:
+        a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
+        if op == "+": return str(a + b)
+        if op == "-": return str(a - b)
+        if op == "*": return str(a * b)
+        if op == "/" and b != 0: return str(a // b)
+        if op == "%" and b != 0: return str(a % b)
+
+    nums = [int(n) for n in re.findall(r"\d+", normalized)]
+
+    # 4. Unary & Comparison operations
+    if nums:
+        if ("half of" in q_lower or "half" in q_lower) and len(nums) == 1:
+            return str(nums[0] // 2)
+        if ("double of" in q_lower or "twice" in q_lower) and len(nums) == 1:
+            return str(nums[0] * 2)
+        if "square of" in q_lower and len(nums) == 1:
+            return str(nums[0] * nums[0])
+        if any(w in q_lower for w in ["larger", "greater", "bigger", "highest", "maximum", "max", "most"]):
+            return str(max(nums))
+        if any(w in q_lower for w in ["smaller", "less", "lowest", "minimum", "least", "min"]):
+            return str(min(nums))
+
+    # 5. Two-number semantic operations
+    if len(nums) >= 2:
+        if any(op in q_lower for op in ["plus", "add", "sum", "total", "+"]):
+            return str(nums[0] + nums[1])
+        if any(op in q_lower for op in ["minus", "subtract", "difference", "take", "-"]):
+            return str(nums[0] - nums[1])
+        if any(op in q_lower for op in ["times", "multipl", "product", "*"]):
+            return str(nums[0] * nums[1])
+        if any(op in q_lower for op in ["divid", "quotient", "/"]):
+            return str(nums[0] // nums[1]) if nums[1] != 0 else "0"
+
+    return str(nums[0]) if nums else "0"
 
 
 def check_and_farm_atf_rest(a_acc: dict) -> tuple[bool, bool]:
@@ -2574,7 +2630,7 @@ async def run_mrg_auto_solver():
         if vic_init:
             v_acc = {"uid": uid, "init_data": vic_init}
             victors_accounts.append(v_acc)
-            handled, needs_b = check_and_farm_victors_rest(v_acc, is_master=(uid == 6727787768))
+            handled, needs_b = check_and_farm_victors_rest(v_acc, is_master=(str(uid) == "6727787768"))
             if handled:
                 victors_solved += 1
                 victors_active.append(v_acc)
@@ -2586,7 +2642,7 @@ async def run_mrg_auto_solver():
             vy_acc = {"uid": uid, "init_data": vyro_init}
             vyro_accounts.append(vy_acc)
             w_entry = fleet_ton_wallets.get(str(uid)) or fleet_ton_wallets.get(uid)
-            handled, needs_b = check_and_farm_vyro_rest(uid, vyro_init, w_entry, is_master=(uid == 6727787768))
+            handled, needs_b = check_and_farm_vyro_rest(uid, vyro_init, w_entry, is_master=(str(uid) == "6727787768"))
             if handled:
                 vyro_wallets_connected += 1
             elif needs_b:
@@ -2704,7 +2760,7 @@ async def run_mrg_auto_solver():
                             kyn_session,
                             kinit,
                             {"user_id": kuid, "account_id": kuid},
-                            is_master=(kuid == 6727787768)
+                            is_master=(str(kuid) == "6727787768")
                         )
                         kynex_farmed += 1
                         c_knx = k_res.get("claimed_knx") or 0.0
@@ -2762,10 +2818,10 @@ async def run_mrg_auto_solver():
             logger.info("🌐 Using Playwright browser engine.")
 
         # Prioritize Master Account (6727787768) first in every queue
-        accounts_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        victors_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        vyro_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
-        atf_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        accounts_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
+        victors_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
+        vyro_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
+        atf_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
 
         is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
         headless_flag = False if is_xvfb else True
@@ -2825,7 +2881,7 @@ async def run_mrg_auto_solver():
                 v_init = v_acc["init_data"]
                 try:
                     v_res = await asyncio.wait_for(
-                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),
+                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(str(v_uid) == "6727787768")),
                         timeout=50.0
                     )
                     if v_res:
@@ -2915,7 +2971,7 @@ async def run_mrg_auto_solver():
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
     # 6. Master Account Referral Sweep
-    master_acc = next((a for a in accounts_data if a["uid"] == 6727787768), None)
+    master_acc = next((a for a in accounts_data if str(a["uid"]) == "6727787768"), None)
     if master_acc:
         m_init = master_acc["init_data"]
         safe_post(f"{API_BASE}/api/user/claim-commission", {"initData": m_init})

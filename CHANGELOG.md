@@ -3,6 +3,13 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🚫 Full System Decommission & Permanent Purge of Astra Airdrop, Enforcement of Ground-Truth 8 Legitimate Fleet Bots Policy (October 26, 2026)**:
+  - **Turnstile Solver & Math Engine Hardening (`mrg_turnstile_solver.py`, `AAA0002/cloud-fleet-solver`)**:
+    * Upgraded `solve_atf_math` in `mrg_turnstile_solver.py` with complete deterministic unary and comparison operations (`half of`, `double of`, `square of`, `larger`, `greater`, `max`, `smaller`, `less`, `min`, `mod`, `%`).
+    * Hardened Master Account detection across all queues, sorting routines, and referral sweeps to use type-safe string comparisons (`str(uid) == "6727787768"`), eliminating type-coercion bugs.
+    * Synchronized and pushed updated solver engine directly to public runner repository [`AAA0002/cloud-fleet-solver`](https://github.com/AAA0002/cloud-fleet-solver) (`0a40645`).
+  - **Executive Frontend Dashboard Parity (`dashboard.html`, `public/admin.html`, `public_admin/admin.html`)**:
+    * Corrected active mining bots and active mining pools headers from `(9/9)` to `(8/8)` across all dashboard variations, ensuring 100% visual and logical alignment with the 8 active legitimate bots.
+    * Re-deployed updated assets via `deploy_both_cf_workers.py` to Primary Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
   - **Function Shadowing & Math Solver Bug Resolution (`app.py`)**:
     * Identified and eliminated duplicate function definition `solve_challenge_deterministic` at line 1299 in `app.py` that had been shadowing the comprehensive implementation at line 358, which caused factoid challenges, even/odd, square/half unary evaluations, and modulo logic to be bypassed.
     * Added `"sum"` token handling to primary arithmetic tokenizer and removed redundant duplicate code block.
