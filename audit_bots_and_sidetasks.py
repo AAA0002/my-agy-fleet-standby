@@ -221,13 +221,16 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             try:
                 payload = {
                     "initData": atf_init,
-                    "request_id": f"rq-{int(time.time()*1000)}",
+                    "request_id": f"rq-{uuid.uuid4()}",
                     "device_id": f"edge-{uid}",
                     "tg_id": int(uid),
                     "username": acc_info.get("username", "")
                 }
                 async with session.post(f"https://atfminers.asloni.online/miner/index.php?action=login&t={int(time.time()*1000)}", json=payload, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status == 200:
+                        cookies = r.headers.getall("Set-Cookie", []) if hasattr(r.headers, "getall") else []
+                        if cookies:
+                            atf_h["Cookie"] = "; ".join([c.split(";")[0] for c in cookies])
                         atf_d = await r.json()
                         u_obj = atf_d.get("user") if isinstance(atf_d.get("user"), dict) else atf_d
                         raw_bal = u_obj.get("mined_balance") or u_obj.get("claimable_now") or 0
@@ -473,14 +476,17 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         st = sd.get("state", {})
                         bal = float(st.get("balance") or 0.0)
                         lvl = st.get("player", {}).get("level", 1)
-                        pending = float(st.get("pending", 0) or 0.0)
+                        mining_obj = st.get("mining") if isinstance(st.get("mining"), dict) else {}
+                        pending = float(st.get("pending") or mining_obj.get("pending") or 0.0)
+                        is_paused = bool(mining_obj.get("paused"))
                         b_rep["core"]["status"] = f"Active (JWT): {bal:.2f} DIGGO (Level: {lvl}, Pending: {pending:.2f})"
                         
-                        # Main mining claim
+                        # Main mining claim (restarts when pending > 0 or paused)
                         claim_h = {**d_h, "Idempotency-Key": str(uuid.uuid4())}
-                        async with session.post("https://diggo.linkpc.net/api/claims/mining", json={}, headers=claim_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
-                            c_txt = f"Claimed (+{pending:.2f})" if cr.status in (200, 201) else ("Cooldown" if cr.status == 429 else f"HTTP {cr.status}")
-                            b_rep["side_tasks"].append(f"Claim Mining: {c_txt}")
+                        if pending > 0 or is_paused:
+                            async with session.post("https://diggo.linkpc.net/api/claims/mining", json={}, headers=claim_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
+                                c_txt = f"Claimed (+{pending:.2f})" if cr.status in (200, 201) else ("Cooldown" if cr.status == 429 else f"HTTP {cr.status}")
+                                b_rep["side_tasks"].append(f"Claim Mining: {c_txt}")
                         
                         # Side task: checkin
                         async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": "checkin"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as tr:
@@ -495,6 +501,17 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                                 async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": "play"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as pr:
                                     p_txt = "Claimed (+10)" if pr.status in (200, 201) else f"HTTP {pr.status}"
                                     b_rep["side_tasks"].append(f"Play Task: {p_txt}")
+
+                        # Side task: telegram channel verification & claim
+                        t_tg = tasks.get("telegram", {})
+                        if t_tg.get("enabled"):
+                            if t_tg.get("claimed"):
+                                b_rep["side_tasks"].append("Telegram Channel: Claimed ✅")
+                            else:
+                                await session.post("https://diggo.linkpc.net/api/tasks/verify", json={"taskId": "telegram"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5))
+                                async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": "telegram"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as tgr:
+                                    tg_txt = "Claimed (+30)" if tgr.status in (200, 201) else f"HTTP {tgr.status}"
+                                    b_rep["side_tasks"].append(f"Telegram Channel: {tg_txt}")
 
                         # Side task: social tasks (community_react, x_follow, x_post)
                         for tid in ["community_react", "x_follow", "x_post"]:
@@ -516,6 +533,26 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                                         async with session.post("https://diggo.linkpc.net/api/tasks/claim", json={"taskId": tid}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as clr:
                                             cl_txt = "Claimed (+5)" if clr.status in (200, 201) else f"HTTP {clr.status}"
                                             b_rep["side_tasks"].append(f"{tid}: {cl_txt}")
+
+                        # Side task: Solana launch campaign (quiz & pump)
+                        try:
+                            async with session.get("https://diggo.linkpc.net/api/launch-tasks", headers=d_h, timeout=aiohttp.ClientTimeout(total=5)) as lr:
+                                if lr.status == 200:
+                                    ld = await lr.json()
+                                    if ld.get("enabled"):
+                                        if ld.get("quiz", {}).get("claimed"):
+                                            b_rep["side_tasks"].append("Launch Quiz: Claimed (+5) ✅")
+                                        else:
+                                            async with session.post("https://diggo.linkpc.net/api/launch-tasks/quiz", json={"answer": "ton_continues"}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as qr:
+                                                b_rep["side_tasks"].append(f"Launch Quiz: HTTP {qr.status}")
+                                        if ld.get("pump", {}).get("confirmed"):
+                                            b_rep["side_tasks"].append("Launch Pump: Confirmed ✅")
+                                        else:
+                                            await session.post("https://diggo.linkpc.net/api/launch-tasks/pump/open", json={}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5))
+                                            async with session.post("https://diggo.linkpc.net/api/launch-tasks/pump/confirm", json={"confirmed": True}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as pr:
+                                                b_rep["side_tasks"].append(f"Launch Pump: HTTP {pr.status}")
+                        except Exception:
+                            pass
 
                         # Side task: referral commission
                         async with session.post("https://diggo.linkpc.net/api/referrals/claim", json={}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as rr:

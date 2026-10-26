@@ -231,6 +231,133 @@ const FLEET_TRON_WALLETS = {
   "8609131528": "TVS6hMHnmwew9HZbM6j7aQ5KrsLE1V6oap"
 };
 
+// 100% Deterministic Local Math & Word Challenge Solver (0 AI Dependency, 0ms Delay)
+const solveChallengeDeterministic = (questionText) => {
+  if (!questionText || typeof questionText !== "string") return "0";
+  const qLower = questionText.toLowerCase().trim();
+
+  // 1. Direct Knowledge & Factoid Questions
+  if (qLower.includes("days in a week") || qLower.includes("days a week")) return "7";
+  if (qLower.includes("hours in a day")) return "24";
+  if (qLower.includes("minutes in an hour") || qLower.includes("seconds in a minute")) return "60";
+  if (qLower.includes("months in a year")) return "12";
+  if (qLower.includes("days in a year")) return "365";
+
+  // 2. Even or Odd classification
+  if (qLower.includes("even or odd") || qLower.includes("odd or even")) {
+    const mNum = qLower.match(/\b(\d+)\b/);
+    if (mNum) return parseInt(mNum[1], 10) % 2 === 0 ? "even" : "odd";
+  }
+
+  const wordToNum = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+    "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+    "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
+    "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+    "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
+  };
+
+  const tokens = qLower.match(/[a-z0-9\+\-\*\/\%\=]+/g) || [];
+  const converted = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const w = tokens[i];
+    if (wordToNum[w] !== undefined) {
+      let val = wordToNum[w];
+      while (i + 1 < tokens.length && wordToNum[tokens[i+1]] !== undefined) {
+        const nextVal = wordToNum[tokens[i+1]];
+        if (nextVal === 100 || nextVal === 1000) {
+          val = val * nextVal;
+          i++;
+        } else if (val >= 20 && nextVal < 10) {
+          val += nextVal;
+          i++;
+        } else {
+          break;
+        }
+      }
+      converted.push(String(val));
+    } else if (["plus", "add", "added", "+"].includes(w)) {
+      converted.push("+");
+    } else if (["minus", "subtract", "subtracted", "take", "-"].includes(w)) {
+      converted.push("-");
+    } else if (["times", "multiplied", "multiply", "*", "x"].includes(w)) {
+      converted.push("*");
+    } else if (["divided", "divide", "/"].includes(w)) {
+      converted.push("/");
+    } else if (["mod", "modulo", "remainder", "%"].includes(w)) {
+      converted.push("%");
+    } else if (/^\d+$/.test(w) || /^\d+[\+\-\*\/\%]\d+$/.test(w)) {
+      converted.push(w);
+    }
+    i++;
+  }
+
+  const normalized = converted.join(" ");
+  const m = normalized.match(/(\d+)\s*([\+\-\*\/\%])\s*(\d+)/);
+  if (m) {
+    const a = parseInt(m[1], 10), op = m[2], b = parseInt(m[3], 10);
+    if (op === "+") return String(a + b);
+    if (op === "-") return String(a - b);
+    if (op === "*") return String(a * b);
+    if (op === "/" && b !== 0) return String(Math.floor(a / b));
+    if (op === "%" && b !== 0) return String(a % b);
+  }
+
+  const nums = (normalized.match(/\d+/g) || []).map(n => parseInt(n, 10));
+  if (nums.length > 0) {
+    if ((qLower.includes("half of") || qLower.includes("half")) && nums.length === 1) return String(Math.floor(nums[0] / 2));
+    if ((qLower.includes("double of") || qLower.includes("twice")) && nums.length === 1) return String(nums[0] * 2);
+    if (qLower.includes("square of") && nums.length === 1) return String(nums[0] * nums[0]);
+    if (["larger", "greater", "bigger", "highest", "maximum", "max", "most"].some(w => qLower.includes(w))) {
+      return String(Math.max(...nums));
+    }
+    if (["smaller", "less", "lowest", "minimum", "least", "min"].some(w => qLower.includes(w))) {
+      return String(Math.min(...nums));
+    }
+  }
+
+  if (nums.length >= 2) {
+    if (["plus", "add", "sum", "total", "+"].some(op => qLower.includes(op))) return String(nums[0] + nums[1]);
+    if (["minus", "subtract", "difference", "take", "-"].some(op => qLower.includes(op))) return String(nums[0] - nums[1]);
+    if (["times", "multipl", "product", "*"].some(op => qLower.includes(op))) return String(nums[0] * nums[1]);
+    if (["divid", "quotient", "/"].some(op => qLower.includes(op))) return nums[1] !== 0 ? String(Math.floor(nums[0] / nums[1])) : "0";
+  }
+
+  return nums.length > 0 ? String(nums[0]) : "0";
+};
+
+// Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
+const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic", env = null) => {
+  if (!questionText || typeof questionText !== "string") return "0";
+  const detAns = solveChallengeDeterministic(questionText);
+  if (detAns !== "0" || !/[a-zA-Z]/.test(questionText)) {
+    return detAns;
+  }
+  if (env && env.AI) {
+    try {
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), 1200));
+      const sysPrompt = `You are an automated challenge and quiz solver for the Telegram mining bot '${botName}'. Output ONLY the concise final answer (a number, word, or short phrase) with ZERO explanation, markdown, or extra words.`;
+      const aiPromise = env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+        messages: [
+          { role: "system", content: sysPrompt },
+          { role: "user", content: `Question: ${questionText}\nAnswer:` }
+        ],
+        max_tokens: 32
+      });
+      const aiRes = await Promise.race([aiPromise, timeoutPromise]);
+      const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+      if (ansText && ansText.trim()) {
+        const clean = ansText.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/[^a-zA-Z0-9\s]/g, "").trim();
+        return clean || ansText.trim();
+      }
+    } catch (_) {}
+  }
+  return detAns;
+};
+
 async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null) {
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
@@ -484,7 +611,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         const chData = await chResp.json().catch(() => ({}));
         if (chData.status === "success" && chData.question && chData.challenge_id) {
           const q = chData.question;
-          const ans = await solveBotChallengeWithCloudflareAi(q, "ATF Miner");
+          const ans = await solveBotChallengeWithCloudflareAi(q, "ATF Miner", env);
           await humanDelay(2200, 4200);
           await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
             method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
@@ -2162,133 +2289,9 @@ export default {
       throw new Error("Empty DeepSeek response");
     };
 
-    // 100% Deterministic Local Math & Word Challenge Solver (0 AI Dependency, 0ms Delay)
-    const solveChallengeDeterministic = (questionText) => {
-      if (!questionText || typeof questionText !== "string") return "0";
-      const qLower = questionText.toLowerCase().trim();
-
-      // 1. Direct Knowledge & Factoid Questions
-      if (qLower.includes("days in a week") || qLower.includes("days a week")) return "7";
-      if (qLower.includes("hours in a day")) return "24";
-      if (qLower.includes("minutes in an hour") || qLower.includes("seconds in a minute")) return "60";
-      if (qLower.includes("months in a year")) return "12";
-      if (qLower.includes("days in a year")) return "365";
-
-      // 2. Even or Odd classification
-      if (qLower.includes("even or odd") || qLower.includes("odd or even")) {
-        const mNum = qLower.match(/\b(\d+)\b/);
-        if (mNum) return parseInt(mNum[1], 10) % 2 === 0 ? "even" : "odd";
-      }
-
-      const wordToNum = {
-        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
-        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
-        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
-        "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
-        "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
-        "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
-        "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
-      };
-
-      const tokens = qLower.match(/[a-z0-9\+\-\*\/\%\=]+/g) || [];
-      const converted = [];
-      let i = 0;
-      while (i < tokens.length) {
-        const w = tokens[i];
-        if (wordToNum[w] !== undefined) {
-          let val = wordToNum[w];
-          while (i + 1 < tokens.length && wordToNum[tokens[i+1]] !== undefined) {
-            const nextVal = wordToNum[tokens[i+1]];
-            if (nextVal === 100 || nextVal === 1000) {
-              val = val * nextVal;
-              i++;
-            } else if (val >= 20 && nextVal < 10) {
-              val += nextVal;
-              i++;
-            } else {
-              break;
-            }
-          }
-          converted.push(String(val));
-        } else if (["plus", "add", "added", "+"].includes(w)) {
-          converted.push("+");
-        } else if (["minus", "subtract", "subtracted", "take", "-"].includes(w)) {
-          converted.push("-");
-        } else if (["times", "multiplied", "multiply", "*", "x"].includes(w)) {
-          converted.push("*");
-        } else if (["divided", "divide", "/"].includes(w)) {
-          converted.push("/");
-        } else if (["mod", "modulo", "remainder", "%"].includes(w)) {
-          converted.push("%");
-        } else if (/^\d+$/.test(w) || /^\d+[\+\-\*\/\%]\d+$/.test(w)) {
-          converted.push(w);
-        }
-        i++;
-      }
-
-      const normalized = converted.join(" ");
-      const m = normalized.match(/(\d+)\s*([\+\-\*\/\%])\s*(\d+)/);
-      if (m) {
-        const a = parseInt(m[1], 10), op = m[2], b = parseInt(m[3], 10);
-        if (op === "+") return String(a + b);
-        if (op === "-") return String(a - b);
-        if (op === "*") return String(a * b);
-        if (op === "/" && b !== 0) return String(Math.floor(a / b));
-        if (op === "%" && b !== 0) return String(a % b);
-      }
-
-      const nums = (normalized.match(/\d+/g) || []).map(n => parseInt(n, 10));
-      if (nums.length > 0) {
-        if ((qLower.includes("half of") || qLower.includes("half")) && nums.length === 1) return String(Math.floor(nums[0] / 2));
-        if ((qLower.includes("double of") || qLower.includes("twice")) && nums.length === 1) return String(nums[0] * 2);
-        if (qLower.includes("square of") && nums.length === 1) return String(nums[0] * nums[0]);
-        if (["larger", "greater", "bigger", "highest", "maximum", "max", "most"].some(w => qLower.includes(w))) {
-          return String(Math.max(...nums));
-        }
-        if (["smaller", "less", "lowest", "minimum", "least", "min"].some(w => qLower.includes(w))) {
-          return String(Math.min(...nums));
-        }
-      }
-
-      if (nums.length >= 2) {
-        if (["plus", "add", "sum", "total", "+"].some(op => qLower.includes(op))) return String(nums[0] + nums[1]);
-        if (["minus", "subtract", "difference", "take", "-"].some(op => qLower.includes(op))) return String(nums[0] - nums[1]);
-        if (["times", "multipl", "product", "*"].some(op => qLower.includes(op))) return String(nums[0] * nums[1]);
-        if (["divid", "quotient", "/"].some(op => qLower.includes(op))) return nums[1] !== 0 ? String(Math.floor(nums[0] / nums[1])) : "0";
-      }
-
-      return nums.length > 0 ? String(nums[0]) : "0";
-    };
-
-    // Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
-    const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic") => {
-      if (!questionText || typeof questionText !== "string") return "0";
-
-      // 1. Instant deterministic solution in 0.001ms with 0 network latency
-      const detAns = solveChallengeDeterministic(questionText);
-      if (detAns !== "0" || !/[a-zA-Z]/.test(questionText)) {
-        return detAns;
-      }
-
-      // 2. Strict 1.2-second timeout guard for AI to guarantee farming NEVER gets stuck
-      if (env.AI) {
-        try {
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), 1200));
-          const sysPrompt = `You are an automated challenge and quiz solver for the Telegram mining bot '${botName}'. Output ONLY the concise final answer (a number, word, or short phrase) with ZERO explanation, markdown, or extra words.`;
-          const aiPromise = env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
-            messages: [
-              { role: "system", content: sysPrompt },
-              { role: "user", content: `Question: ${questionText}\nAnswer:` }
-            ],
-            max_tokens: 32
-          });
-          const aiRes = await Promise.race([aiPromise, timeoutPromise]);
-          const ans = (aiRes.response || (aiRes.choices && aiRes.choices[0]?.text) || "").trim();
-          if (ans) return ans.replace(/^Answer:\s*/i, "").trim();
-        } catch (_) {}
-      }
-
-      return detAns;
+    // Delegate to top-level solver with env context
+    const solveBotChallengeWithCloudflareAiLocal = async (questionText, botName = "generic") => {
+      return await solveBotChallengeWithCloudflareAi(questionText, botName, env);
     };
 
     // In-memory Core Fleet AI Cascade (100% Cloudflare Workers AI)
@@ -4573,7 +4576,7 @@ fi
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
       }
-      const ans = await solveBotChallengeWithCloudflareAi(q, bot);
+      const ans = await solveBotChallengeWithCloudflareAi(q, bot, env);
       return new Response(JSON.stringify({ ok: true, answer: ans, bot, provider: "Cloudflare Workers AI" }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
       });
