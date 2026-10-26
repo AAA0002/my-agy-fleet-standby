@@ -423,7 +423,9 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             }
             b_rep = {"core": {}, "side_tasks": []}
             try:
-                async with session.post("https://api.adxearnai.xyz/api/user/session", json={"initData": adx_init}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                fp = f"412x915|24|8|UTC|en-US|8|5|2.625|Mali-G78-{uid}"
+                ref_param = None if str(uid) == "6727787768" else "6727787768"
+                async with session.post("https://api.adxearnai.xyz/api/user/session", json={"ref": ref_param, "fp": fp}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status in (200, 201):
                         ad = await r.json()
                         usr = ad.get("user", {}) if isinstance(ad.get("user"), dict) else {}
@@ -539,7 +541,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         ad = await r.json()
                         tok = ad.get("token")
                         if tok and UPSTASH_URL and UPSTASH_TOKEN:
-                            await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}/{tok}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+                            await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=tok, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
                         b_rep["core"]["status"] = "Exchanged JWT Successfully ✅"
                     elif r.status in (400, 401):
                         b_rep["core"]["status"] = "Expired initData (>5m) - Re-extract on Render Node 2 🟡"

@@ -807,8 +807,20 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         jwt_token = None
         st = {}
 
-        # 0. Check cached JWT from acc object or Upstash Redis
-        jwt_token = acc.get("diggo_jwt")
+        # 0. Check cached JWT from acc object, token dict, or Upstash Redis
+        jwt_token = acc.get("diggo_jwt") or (acc.get("tokens", {}).get("diggo_jwt") if isinstance(acc.get("tokens"), dict) else None)
+        if not jwt_token and UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
+                    if jr.status == 200:
+                        jd = await jr.json()
+                        raw_res = jd.get("result")
+                        if raw_res:
+                            parsed_res = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+                            if isinstance(parsed_res, dict) and parsed_res.get("diggo_jwt"):
+                                jwt_token = parsed_res["diggo_jwt"]
+            except Exception:
+                pass
         if not jwt_token and UPSTASH_URL and UPSTASH_TOKEN:
             try:
                 async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
@@ -866,8 +878,18 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             res["success"] = True
             st = a_d.get("state", {})
             if UPSTASH_URL and UPSTASH_TOKEN and jwt_token:
+                acc["diggo_jwt"] = jwt_token
                 try:
                     await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=jwt_token, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                    async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as gr:
+                        if gr.status == 200:
+                            curr_toks = {}
+                            r_res = (await gr.json()).get("result")
+                            if r_res:
+                                curr_toks = json.loads(r_res) if isinstance(r_res, str) else r_res
+                            if isinstance(curr_toks, dict):
+                                curr_toks["diggo_jwt"] = jwt_token
+                                await session.post(f"{UPSTASH_URL}/set/fleet:tokens:{uid}", data=json.dumps(curr_toks), headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
                 except Exception:
                     pass
 
@@ -1206,6 +1228,8 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
                 if c_d.get("success"):
                     res["tasks_claimed"] += 1
                     res["notes"].append(f"checkin_reward_{c_d.get('reward', 0)}")
+            elif cr.status == 403:
+                res["notes"].append("already_checked_in_today")
 
         # 3. Farming Claim & Start
         await jitter(0.4, 0.8)
@@ -1224,22 +1248,33 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
         await jitter(0.3, 0.7)
         await session.post(f"{adx_base}/farming/boost", json={}, headers=adx_headers)
 
-        # 5. Dynamic Tasks
+        # 5. Dynamic Tasks (Wait 16.0s for delayed tasks like 8 and 9)
         await jitter(0.4, 0.8)
         async with session.get(f"{adx_base}/rewards/tasks", headers=adx_headers) as tr:
             if tr.status == 200:
                 td = await tr.json()
+                started_tasks = []
                 for tk in (td.get("tasks", []) if isinstance(td, dict) else []):
                     t_id = tk.get("id")
-                    v_type = tk.get("verify_type")
-                    if t_id and (not v_type or v_type == "other" or "offer" in str(tk.get("title", "")).lower() or "bonus" in str(tk.get("title", "")).lower()):
+                    if t_id and not tk.get("completed") and not tk.get("claimed"):
                         try:
-                            await session.post(f"{adx_base}/rewards/task-start", json={"taskId": t_id}, headers=adx_headers)
-                            await asyncio.sleep(1.0)
+                            async with session.post(f"{adx_base}/rewards/task-start", json={"taskId": t_id}, headers=adx_headers) as s_resp:
+                                if s_resp.status == 200:
+                                    started_tasks.append(t_id)
+                        except Exception:
+                            pass
+                if started_tasks:
+                    await asyncio.sleep(16.0)
+                    for t_id in started_tasks:
+                        try:
                             async with session.post(f"{adx_base}/rewards/task-claim", json={"taskId": t_id}, headers=adx_headers) as cl:
                                 if cl.status == 200:
                                     res["tasks_claimed"] += 1
                                     res["notes"].append(f"task_{t_id}")
+                                elif cl.status == 403:
+                                    c_err = await cl.json()
+                                    if "already completed" in str(c_err.get("error", "")).lower():
+                                        res["notes"].append(f"task_{t_id}_already_done")
                         except Exception:
                             pass
 
@@ -1292,6 +1327,18 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
         account_report["results"]["kynex"] = kynex_res
 
+        # 6. PepeGram
+        pepe_res = await sweep_pepegram_tasks(session, uid, name, acc_toks.get("pepegram_init_data", ""), acc)
+        account_report["results"]["pepegram"] = pepe_res
+
+        # 7. AdxEarn AI
+        adx_res = await sweep_adxearn_tasks(session, uid, name, acc_toks.get("adxearn_init_data", ""), acc)
+        account_report["results"]["adxearn"] = adx_res
+
+        # 8. DiggoMiner
+        diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), acc_toks)
+        account_report["results"]["diggo"] = diggo_res
+
         # Sync tokens to Cloudflare Workers if newly refreshed
         await sync_token_to_cf(session, uid, acc_toks)
 
@@ -1316,9 +1363,9 @@ async def main():
         reports = await asyncio.gather(*tasks)
 
         # Print Summary
-        logger.info("\n" + "=" * 70)
-        logger.info("📊 5-BOT FLEET SIDE-TASK HARVEST SUMMARY")
-        logger.info("=" * 70)
+        logger.info("\n" + "=" * 80)
+        logger.info("📊 8-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY")
+        logger.info("=" * 80)
         total_tasks = 0
         for rep in reports:
             acc_name = rep["account"]
@@ -1328,11 +1375,14 @@ async def main():
             vic_cl = res.get("victors", {}).get("tasks_claimed", 0)
             vyr_cl = res.get("vyro", {}).get("tasks_claimed", 0)
             kyn_cl = res.get("kynex", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl
+            pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
+            adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
+            dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
+            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + pep_cl + adx_cl + dig_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} | Tot: {acc_total}")
 
-        logger.info("=" * 70)
+        logger.info("=" * 80)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
         logger.info("=============================================================================")
 
