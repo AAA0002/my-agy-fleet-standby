@@ -3,6 +3,16 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🚫 Full System Decommission & Permanent Purge of Astra Airdrop, Enforcement of Ground-Truth 8 Legitimate Fleet Bots Policy (October 26, 2026)**:
+  - **Function Shadowing & Math Solver Bug Resolution (`app.py`)**:
+    * Identified and eliminated duplicate function definition `solve_challenge_deterministic` at line 1299 in `app.py` that had been shadowing the comprehensive implementation at line 358, which caused factoid challenges, even/odd, square/half unary evaluations, and modulo logic to be bypassed.
+    * Added `"sum"` token handling to primary arithmetic tokenizer and removed redundant duplicate code block.
+    * Harmonized all remaining loggers and API responses in `app.py` (`api_tasks_sweep_all`, `api_tasks_sweep_status`, `api_farm_cloud_all`) to strictly 8 bots.
+  - **Cloudflare Edge UI & Button Menu Alignment (`deploy_both_cf_workers.py`)**:
+    * Fixed inline keyboard buttons and command strings across Admin Bot (`mainInlineKeyboard`, `statusInlineKeyboard`, `accountsInlineKeyboard`, `/bots`, `/help`, and `/ad_farmer`) that still displayed `🤖 9-Bot Mining Hub` and `⚡ 9-Bot Harvest`.
+    * Synchronized all button labels and help guides to `🤖 8-Bot Mining Hub` and `⚡ 8-Bot Harvest`.
+    * Re-deployed updated script to Primary Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) and synchronized bot webhooks.
+  - **Multi-Repository CI Sanitation Engine (`clean_up_system.py`)**:
+    * Expanded GitHub Actions run pruning to iterate over both private repository `AAA0002/ATL` and public runner repository `AAA0002/cloud-fleet-solver`.
   - **GitHub Actions Runner Architecture & CI/CD Sanitization (`.github/workflows/`)**:
     * Diagnosed failing workflow runs in private repository `AAA0002/ATL` caused by exhausted private runner minute quotas.
     * Converted scheduled cron triggers in `ATL` (`mrg_turnstile_solver.yml`, `fleet_sentinel.yml`) strictly to on-demand `workflow_dispatch`, eliminating automated private CI failures.

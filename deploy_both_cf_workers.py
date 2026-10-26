@@ -329,7 +329,7 @@ const solveChallengeDeterministic = (questionText) => {
   return nums.length > 0 ? String(nums[0]) : "0";
 };
 
-// Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
+// Universal 8-Bot Challenge & Math Solver with 0 AI Dependency Protection
 const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic", env = null) => {
   if (!questionText || typeof questionText !== "string") return "0";
   const detAns = solveChallengeDeterministic(questionText);
@@ -4662,7 +4662,7 @@ fi
       });
     }
 
-    // 11.04 9-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
+    // 11.04 8-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
     if (path === "/api/ai/solve" || path === "/api/bot-solve") {
       let q = "";
       let bot = "generic";
@@ -5128,10 +5128,10 @@ fi
             ],
             [
               { text: "📊 Fleet Live Status", callback_data: "btn_status" },
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
@@ -5155,8 +5155,8 @@ fi
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "🖥️ VM Sentinel", callback_data: "btn_vm" },
@@ -5176,11 +5176,11 @@ fi
           inline_keyboard: [
             [
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -5378,7 +5378,7 @@ fi
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
@@ -5453,7 +5453,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 9-Bot Harvest" },
+              { text: "⚡ 8-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -6920,7 +6920,7 @@ fi
                       { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                     ],
                     [
-                      { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                      { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
                       { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
@@ -7927,7 +7927,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                  { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -7959,7 +7959,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                  { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -8030,7 +8030,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -8052,7 +8052,7 @@ fi
           return new Response("OK");
         }
 
-        // 1.4595 9-Bot Hub Command (/bots or /hub)
+        // 1.4595 8-Bot Hub Command (/bots or /hub)
         if (text === "/bots" || text.startsWith("/bots") || text === "/hub" || text.startsWith("/hub")) {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
@@ -10180,8 +10180,8 @@ fi
             `• \`/start\` or \`/menu\` — Operations dashboard & quick action grid\n` +
             `• \`/status\` or \`/fleet\` — Real-time fleet operations & telemetry\n` +
             `• \`/summary\` — Executive all-in-one health check\n` +
-            `• \`/harvest\` — Dispatches instant 9-bot harvest across all 20 accounts\n` +
-            `• \`/bots\` — 9-Bot Autonomous Mining Fleet Hub\n` +
+            `• \`/harvest\` — Dispatches instant 8-bot harvest across all 20 accounts\n` +
+            `• \`/bots\` — 8-Bot Autonomous Mining Fleet Hub\n` +
             `• \`/ad_farmer\` — 24/7 Autonomous Ad-Farming Loop Status (20 accounts)\n` +
             `• \`/kynex\` — Kynex Network Cloud Mining Center (33k+ KNX, 12h energy)\n` +
             `• \`/mrg\` — MRG Miner Level Upgrades & TonConnect 2.0\n` +
@@ -15202,7 +15202,7 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
-    // 3. Mini-App Automated Edge Claims (9 Legitimate Bots)
+    // 3. Mini-App Automated Edge Claims (8 Legitimate Bots)
     ctx.waitUntil((async () => {
       try {
         let tokens = await getFleetTokens(env);

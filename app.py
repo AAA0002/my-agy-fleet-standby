@@ -408,7 +408,7 @@ def solve_challenge_deterministic(question_text: str) -> str:
                 else:
                     break
             converted_tokens.append(str(val))
-        elif w in ("plus", "add", "added", "+"):
+        elif w in ("plus", "add", "added", "sum", "+"):
             converted_tokens.append("+")
         elif w in ("minus", "subtract", "subtracted", "take", "-"):
             converted_tokens.append("-")
@@ -466,7 +466,7 @@ def solve_atf_math(question_text: str) -> str:
     """Safely solves ATF Miner mathematical challenges with local deterministic solver."""
     return solve_challenge_deterministic(question_text)
 
-# Active Fleet Mini-App Bots (All 9 Bots)
+# Active Fleet Mini-App Bots (All 8 Bots)
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
@@ -1296,71 +1296,8 @@ async def fetch_accounts_from_cloud():
     FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
     return merged
 
-def solve_challenge_deterministic(question_text: str) -> str:
-    """100% local, instant, deterministic arithmetic & challenge solver (0 network latency, 0 AI dependency)."""
-    if not question_text:
-        return "0"
-    q_lower = question_text.lower().strip()
-
-    word_to_num = {
-        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
-        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
-        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
-        "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
-        "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
-        "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
-        "eighty": 80, "ninety": 90, "hundred": 100
-    }
-
-    tokens = re.findall(r"[a-z0-9\+\-\*\/\=]+", q_lower)
-    converted_tokens = []
-    i = 0
-    while i < len(tokens):
-        w = tokens[i]
-        if w in word_to_num:
-            val = word_to_num[w]
-            if i + 1 < len(tokens) and tokens[i+1] in word_to_num and val >= 20 and word_to_num[tokens[i+1]] < 10:
-                val += word_to_num[tokens[i+1]]
-                i += 1
-            converted_tokens.append(str(val))
-        elif w in ("plus", "add", "added", "sum", "+"):
-            converted_tokens.append("+")
-        elif w in ("minus", "subtract", "subtracted", "take", "-"):
-            converted_tokens.append("-")
-        elif w in ("times", "multiplied", "multiply", "*", "x"):
-            converted_tokens.append("*")
-        elif w in ("divided", "divide", "/"):
-            converted_tokens.append("/")
-        elif w.isdigit() or re.match(r"^\d+[\+\-\*\/]\d+$", w):
-            converted_tokens.append(w)
-        i += 1
-
-    normalized = " ".join(converted_tokens)
-
-    # 1. Standard "A op B"
-    m = re.search(r"(\d+)\s*([\+\-\*\/])\s*(\d+)", normalized)
-    if m:
-        a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
-        if op == "+": return str(a + b)
-        if op == "-": return str(a - b)
-        if op == "*": return str(a * b)
-        if op == "/" and b != 0: return str(a // b)
-
-    nums = [int(n) for n in re.findall(r"\d+", normalized)]
-    if len(nums) >= 2:
-        if any(op in q_lower for op in ["plus", "add", "sum", "+"]):
-            return str(nums[0] + nums[1])
-        if any(op in q_lower for op in ["minus", "subtract", "take", "-"]):
-            return str(nums[0] - nums[1])
-        if any(op in q_lower for op in ["times", "multipl", "*", "product"]):
-            return str(nums[0] * nums[1])
-        if any(op in q_lower for op in ["divid", "/"]):
-            return str(nums[0] // nums[1]) if nums[1] != 0 else "0"
-
-    return str(nums[0]) if nums else "0"
-
 async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
-    """Universal 9-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
+    """Universal 8-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
     # 1. First, solve deterministically in 0.001ms with zero network requests
     det_ans = solve_challenge_deterministic(question_text)
     if det_ans != "0" or not any(c.isalpha() for c in question_text):
@@ -2250,13 +2187,13 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 10-bot farming finished!")
+                logger.info(f"[{name}] ✅ Complete initial 8-bot farming finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
     # Save updated referrals_bound flags across clouds
     await sync_new_account_to_clouds(acc_entry)
-    logger.info(f"[{name}] 🚀 Master Fleet Onboarding Active (10/10 Bots) for account {uid}")
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding Active (8/8 Bots) for account {uid}")
 
 
 
@@ -6491,7 +6428,7 @@ async def api_farm_cloud_all(request: Request):
         "ok": True,
         "status": "dispatched",
         "shard": shard_param,
-        "message": f"Full 9-bot cloud farming cycle dispatched for Shard {shard_param}.",
+        "message": f"Full 8-bot cloud farming cycle dispatched for Shard {shard_param}.",
         "timestamp": time.time()
     }
 
@@ -6508,7 +6445,7 @@ LAST_SWEEP_RUN = {"status": "idle", "timestamp": 0, "output": ""}
 @app.get("/api/tasks/sweep-all")
 @app.post("/api/tasks/sweep-all")
 async def api_tasks_sweep_all(request: Request):
-    """Executes on-demand cloud side-tasks sweep across all 10 bots on Render Node 2."""
+    """Executes on-demand cloud side-tasks sweep across all 8 bots on Render Node 2."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -6532,12 +6469,12 @@ async def api_tasks_sweep_all(request: Request):
             LAST_SWEEP_RUN["output"] = str(e)
 
     asyncio.create_task(_run_sweep())
-    return {"ok": True, "status": "dispatched", "message": "9-Bot fleet side-task sweep dispatched on Render Node 2."}
+    return {"ok": True, "status": "dispatched", "message": "8-Bot fleet side-task sweep dispatched on Render Node 2."}
 
 
 @app.get("/api/tasks/sweep-status")
 async def api_tasks_sweep_status():
-    """Returns the latest status of the 10-bot side-task sweep."""
+    """Returns the latest status of the 8-bot side-task sweep."""
     return {"ok": True, "last_sweep_run": LAST_SWEEP_RUN}
 
 
@@ -8020,10 +7957,10 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
-                    # 4. Autonomous 9-Bot Side-Tasks Sweeper (Runs every 3 hours)
+                    # 4. Autonomous 8-Bot Side-Tasks Sweeper (Runs every 3 hours)
                     if (now_ts - LAST_SIDE_TASKS_SWEEP_TS) > 10800:
                         try:
-                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 10-bot side-task sweep in cloud...")
+                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 8-bot side-task sweep in cloud...")
                             asyncio.create_task(asyncio.create_subprocess_exec(
                                 sys.executable, "finish_all_fleet_sidetasks.py",
                                 stdout=asyncio.subprocess.DEVNULL,

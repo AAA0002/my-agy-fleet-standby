@@ -66,7 +66,7 @@ GH_PAT = (
     or os.environ.get("GH_TOKEN")
     or os.environ.get("GITHUB_TOKEN")
 )
-GH_REPO = "AAA0002/ATL"
+GH_REPOS = ["AAA0002/ATL", "AAA0002/cloud-fleet-solver"]
 
 # -----------------------------------------------------------------------------
 # 1. Local Workspace & Disk Sanitation
@@ -328,44 +328,45 @@ def clean_github_actions_history(max_age_days: int = 7, dry_run: bool = False) -
     }
     deleted_runs = 0
 
-    try:
-        req = urllib.request.Request(
-            f"https://api.github.com/repos/{GH_REPO}/actions/runs?per_page=50&status=completed",
-            headers=headers
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-            runs = data.get("workflow_runs", [])
+    for repo in GH_REPOS:
+        try:
+            req = urllib.request.Request(
+                f"https://api.github.com/repos/{repo}/actions/runs?per_page=50&status=completed",
+                headers=headers
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+                runs = data.get("workflow_runs", [])
 
-        cutoff_sec = time.time() - (max_age_days * 86400)
-        for r in runs:
-            created_at_str = r.get("created_at")
-            run_id = r.get("id")
-            conclusion = r.get("conclusion")
-            if created_at_str and run_id:
-                # ISO parsing (e.g. 2026-10-01T12:00:00Z)
-                try:
-                    import datetime
-                    dt = datetime.datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
-                    run_epoch = dt.timestamp()
-                    if run_epoch < cutoff_sec or conclusion in ("failure", "cancelled", "timed_out", "startup_failure"):
-                        if not dry_run:
-                            del_req = urllib.request.Request(
-                                f"https://api.github.com/repos/{GH_REPO}/actions/runs/{run_id}",
-                                headers=headers,
-                                method="DELETE"
-                            )
-                            with urllib.request.urlopen(del_req, timeout=8) as del_resp:
-                                if del_resp.status in (204, 200):
-                                    deleted_runs += 1
-                                    logger.info(f"  🗑️ Deleted CI run ID {run_id} ({conclusion}) ({r.get('name')})")
-                        else:
-                            deleted_runs += 1
-                except Exception as de:
-                    logger.debug(f"Error evaluating run {run_id}: {de}")
+            cutoff_sec = time.time() - (max_age_days * 86400)
+            for r in runs:
+                created_at_str = r.get("created_at")
+                run_id = r.get("id")
+                conclusion = r.get("conclusion")
+                if created_at_str and run_id:
+                    # ISO parsing (e.g. 2026-10-01T12:00:00Z)
+                    try:
+                        import datetime
+                        dt = datetime.datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                        run_epoch = dt.timestamp()
+                        if run_epoch < cutoff_sec or conclusion in ("failure", "cancelled", "timed_out", "startup_failure"):
+                            if not dry_run:
+                                del_req = urllib.request.Request(
+                                    f"https://api.github.com/repos/{repo}/actions/runs/{run_id}",
+                                    headers=headers,
+                                    method="DELETE"
+                                )
+                                with urllib.request.urlopen(del_req, timeout=8) as del_resp:
+                                    if del_resp.status in (204, 200):
+                                        deleted_runs += 1
+                                        logger.info(f"  🗑️ [{repo}] Deleted CI run ID {run_id} ({conclusion}) ({r.get('name')})")
+                            else:
+                                deleted_runs += 1
+                    except Exception as de:
+                        logger.debug(f"Error evaluating run {run_id}: {de}")
 
-    except Exception as ge:
-        logger.debug(f"GitHub Actions run pruning note: {ge}")
+        except Exception as ge:
+            logger.debug(f"GitHub Actions run pruning note for {repo}: {ge}")
 
     logger.info(f"✅ GitHub Actions Cleanup: {deleted_runs} old workflow runs purged.")
     return deleted_runs
