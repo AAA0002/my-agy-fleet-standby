@@ -6002,13 +6002,106 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["kynex"] = "skipped (no initData)"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (5 Active Legitimate Bots)
+    # 10. PepeGram (@Pepe_gram_bot)
+    async def _farm_pepegram():
+        if tokens.get("pepegram_init_data"):
+            try:
+                p_init = tokens["pepegram_init_data"]
+                pepe_h = {
+                    **headers,
+                    "Content-Type": "application/json",
+                    "Origin": "https://app.miniempire.app",
+                    "Referer": "https://app.miniempire.app/miniapp/"
+                }
+                c_auth, auth_d = await safe_post("https://app.miniempire.app/miniapp/auth?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                if c_auth == 200 and isinstance(auth_d, dict):
+                    usr = auth_d.get("user", {}) if isinstance(auth_d.get("user"), dict) else {}
+                    hashes = float(usr.get("hashes", 0))
+                    power = int(usr.get("power", 0))
+                    await safe_post("https://app.miniempire.app/miniapp/claim-welcome-bonus?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    await safe_post("https://app.miniempire.app/miniapp/claim?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    await safe_post("https://app.miniempire.app/miniapp/start-production?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    await safe_post("https://app.miniempire.app/miniapp/tasks/mine?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    await safe_post("https://app.miniempire.app/miniapp/tasks/slot-spin?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    status["bots"]["pepegram"] = f"farmed (power: {power}, hashes: {hashes:.2f})"
+                else:
+                    status["bots"]["pepegram"] = f"auth_failed ({c_auth})"
+                return
+            except Exception as e:
+                status["bots"]["pepegram"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["pepegram"] = "skipped (no initData)"
+
+    # 11. AdxEarn AI (@AdxEarnAibot)
+    async def _farm_adxearn():
+        if tokens.get("adxearn_init_data"):
+            try:
+                a_init = tokens["adxearn_init_data"]
+                adx_h = {
+                    **headers,
+                    "Content-Type": "application/json",
+                    "Origin": "https://app.adxearnai.xyz",
+                    "Referer": "https://app.adxearnai.xyz/",
+                    "X-Telegram-Init-Data": a_init
+                }
+                c_sess, sess_d = await safe_post("https://api.adxearnai.xyz/api/user/session", json_data={"initData": a_init}, req_headers=adx_h)
+                if c_sess in (200, 201) and isinstance(sess_d, dict):
+                    usr = sess_d.get("user", {}) if isinstance(sess_d.get("user"), dict) else {}
+                    pts = usr.get("points") or usr.get("balance") or 0
+                    await safe_post("https://api.adxearnai.xyz/api/rewards/checkin", json_data={}, req_headers=adx_h)
+                    await safe_post("https://api.adxearnai.xyz/api/rewards/farming", json_data={}, req_headers=adx_h)
+                    status["bots"]["adxearn"] = f"farmed (points: {pts})"
+                else:
+                    status["bots"]["adxearn"] = f"sess_failed ({c_sess})"
+                return
+            except Exception as e:
+                status["bots"]["adxearn"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["adxearn"] = "skipped (no initData)"
+
+    # 12. DiggoMiner (@Diggominer_bot)
+    async def _farm_diggo():
+        diggo_jwt = tokens.get("diggo_jwt")
+        if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
+                    if jr.status == 200:
+                        jd = await jr.json()
+                        if jd.get("result"):
+                            diggo_jwt = str(jd["result"]).strip("\"' ")
+            except Exception:
+                pass
+
+        if diggo_jwt:
+            try:
+                d_h = {**headers, "Authorization": f"Bearer {diggo_jwt}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
+                c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
+                if c_st == 200 and isinstance(st_d, dict):
+                    bal = st_d.get("balance") or st_d.get("mined") or 0
+                    lvl = st_d.get("level", 1)
+                    await safe_post("https://diggo.linkpc.net/api/miner/claim", json_data={}, req_headers=d_h)
+                    status["bots"]["diggo"] = f"farmed (lvl: {lvl}, bal: {bal})"
+                else:
+                    status["bots"]["diggo"] = f"state_failed ({c_st})"
+                return
+            except Exception as e:
+                status["bots"]["diggo"] = f"api_error: {format_error(e)}"
+                return
+        elif tokens.get("diggo_init_data"):
+            status["bots"]["diggo"] = "jwt_exchange_needed"
+            return
+        status["bots"]["diggo"] = "skipped (no initData)"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (8 Active Bots)
     BOT_COOLDOWNS = {
         "atf": (1200, 2400),      # 20m - 40m
         "mrg": (1800, 3600),      # 30m - 60m
         "victors": (3600, 7200),  # 1h - 2h
         "vyro": (2400, 4800),     # 40m - 80m
         "kynex": (2400, 4800),    # 40m - 80m
+        "pepegram": (1800, 3600), # 30m - 60m
+        "adxearn": (3600, 7200),  # 1h - 2h
+        "diggo": (1800, 3600),    # 30m - 60m
     }
 
     bot_routines = [
@@ -6017,6 +6110,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
+        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
+        {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
+        {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
     ]
 
     for b in bot_routines:

@@ -909,13 +909,89 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // Humanized Execution Pipeline: Active Fleet Mining Pools (5 Authentic Legitimate Bots)
+  // 6. PepeGram (@Pepe_gram_bot)
+  const farmPepegram = async () => {
+    if (!accData.pepegram_init_data) return;
+    try {
+      const pInit = accData.pepegram_init_data;
+      const pHeaders = {
+        "Content-Type": "application/json",
+        "Origin": "https://app.miniempire.app",
+        "Referer": "https://app.miniempire.app/miniapp/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+      };
+      const authResp = await fetch("https://app.miniempire.app/miniapp/auth?tid=1449", {
+        method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+      });
+      if (authResp.ok) {
+        const authData = await authResp.json();
+        const usr = authData.user || {};
+        const hashes = parseFloat(usr.hashes || 0);
+        const power = parseInt(usr.power || 0);
+        await fetch("https://app.miniempire.app/miniapp/claim-welcome-bonus?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        await fetch("https://app.miniempire.app/miniapp/claim?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        await fetch("https://app.miniempire.app/miniapp/start-production?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        await fetch("https://app.miniempire.app/miniapp/tasks/mine?tid=1449", {
+          method: "POST", headers: pHeaders, body: JSON.stringify({ initData: pInit, tid: 1449 })
+        }).catch(() => {});
+        result.bots.pepegram = `farmed (power: ${power}, hashes: ${hashes.toFixed(2)})`;
+      } else {
+        result.bots.pepegram = `auth_failed (${authResp.status})`;
+      }
+    } catch (e) {
+      result.bots.pepegram = `error: ${e.message}`;
+    }
+  };
+
+  // 7. AdxEarn AI (@AdxEarnAibot)
+  const farmAdxearn = async () => {
+    if (!accData.adxearn_init_data) return;
+    try {
+      const aInit = accData.adxearn_init_data;
+      const aHeaders = {
+        "Content-Type": "application/json",
+        "Origin": "https://app.adxearnai.xyz",
+        "Referer": "https://app.adxearnai.xyz/",
+        "X-Telegram-Init-Data": aInit,
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+      };
+      const sessResp = await fetch("https://api.adxearnai.xyz/api/user/session", {
+        method: "POST", headers: aHeaders, body: JSON.stringify({ initData: aInit })
+      });
+      if (sessResp.ok) {
+        const sessData = await sessResp.json();
+        const usr = sessData.user || {};
+        const pts = usr.points || usr.balance || 0;
+        await fetch("https://api.adxearnai.xyz/api/rewards/checkin", {
+          method: "POST", headers: aHeaders, body: JSON.stringify({})
+        }).catch(() => {});
+        await fetch("https://api.adxearnai.xyz/api/rewards/farming", {
+          method: "POST", headers: aHeaders, body: JSON.stringify({})
+        }).catch(() => {});
+        result.bots.adxearn = `farmed (points: ${pts})`;
+      } else {
+        result.bots.adxearn = `sess_failed (${sessResp.status})`;
+      }
+    } catch (e) {
+      result.bots.adxearn = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Active Fleet Mining Pools (7 Authentic Legitimate Bots)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1200, maxSec: 2400 },
     mrg: { minSec: 1800, maxSec: 3600 },
     victors: { minSec: 3600, maxSec: 7200 },
     vyro: { minSec: 2400, maxSec: 4800 },
-    kynex: { minSec: 2400, maxSec: 4800 }
+    kynex: { minSec: 2400, maxSec: 4800 },
+    pepegram: { minSec: 1800, maxSec: 3600 },
+    adxearn: { minSec: 3600, maxSec: 7200 }
   };
 
   const botRoutines = [
@@ -923,7 +999,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
-    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) }
+    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
+    { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
+    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) }
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData && (!targetBot || targetBot === "all" || b.name === targetBot.toLowerCase()));

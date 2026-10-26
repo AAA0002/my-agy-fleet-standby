@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Live Turnstile Fallback Proxy Pool, Cloudflare Worker Pepe/Adx Multi-Bot Farming & Auto-Deploy (October 26, 2026)**:
+  - **Dynamic Turnstile Fallback Proxy Pool (`mrg_turnstile_solver.py`)**:
+    * Implemented resilient automated proxy discovery that actively fetches elite HTTPS proxies and tests tunnel connectivity against `https://challenges.cloudflare.com/turnstile/v0/api.js`.
+    * When Webshare keys encounter `HTTP 402 Payment Required` (bandwidth quota exhaustion), the solver automatically routes Chromium through verified live proxies, bypassing the Azure runner IP 403 block on Cloudflare Turnstile.
+    * Changed `USE_BROWSER_PROXY: "1"` in `.github/workflows/mrg_turnstile_solver.yml` and pushed updates directly to `AAA0002/cloud-fleet-solver`.
+  - **PepeGram, AdxEarn AI & DiggoMiner Added to Render Node 2 Cloud Farming (`app.py`)**:
+    * Integrated `_farm_pepegram`, `_farm_adxearn`, and `_farm_diggo` routines into `farm_single_account_bots` in `app.py`.
+    * When Render Frankfurt Node 2 executes `/api/farm/cloud-all` or individual account farming, it now harvests all 8 active bots simultaneously.
+  - **Cloudflare Edge Mesh Primary Node 4 Synchronized (`deploy_both_cf_workers.py`)**:
+    * Integrated `farmPepegram` and `farmAdxearn` into Cloudflare Workers `farmSingleAccountAllBots`.
+    * Deployed live to Primary Edge Node 4 (`https://restore-agy.agorameet.workers.dev`), activating scheduled 15-minute cron triggers (`*/15 * * * *`) across all 7 legitimate REST mining pools.
+
+
 - **🤖 9-Bot Fleet Forensic Audit, Master vs. Worker Discrepancy Resolution & Direct URL Token Extraction (October 26, 2026)**:
   - **Eliminated Master Account Audit Bias ("Never Judge System by Master Account Alone")**:
     * Resolved critical fleet issue where audits previously evaluated the Master Account (`6727787768`), obscuring that 19 worker accounts failed MRG and Victor's Turnstile challenges.

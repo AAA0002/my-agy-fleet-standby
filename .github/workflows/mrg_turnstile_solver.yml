@@ -40,7 +40,7 @@ jobs:
           OWNER_ID: "6727787768"
           WEBSHARE_KEY: ${{ secrets.WEBSHARE_KEY }}
           WEBSHARE_KEY_2: ${{ secrets.WEBSHARE_KEY_2 }}
-          USE_BROWSER_PROXY: "0"
+          USE_BROWSER_PROXY: "1"
           CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
           TWOCAPTCHA_KEY: ${{ secrets.TWOCAPTCHA_KEY }}
         run: |

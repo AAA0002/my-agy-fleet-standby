@@ -176,6 +176,37 @@ def get_webshare_proxy() -> dict | None:
 
     if _VERIFIED_MRG_PROXIES:
         return _VERIFIED_MRG_PROXIES[0]
+
+    # Resilient Fallback: If Webshare bandwidth is exhausted (HTTP 402), discover live proxies verified against Cloudflare Turnstile
+    try:
+        url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=3000&country=US,GB,DE,FR,CA&ssl=yes&anonymity=elite"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        with urllib.request.urlopen(req, timeout=6) as r:
+            lines = [l.strip() for l in r.read().decode().splitlines() if l.strip()]
+        random.shuffle(lines)
+        for p in lines[:25]:
+            proxy_str = f"http://{p}"
+            ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
+            opener = urllib.request.build_opener(ph)
+            test_req = urllib.request.Request(
+                "https://challenges.cloudflare.com/turnstile/v0/api.js",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"}
+            )
+            try:
+                with opener.open(test_req, timeout=3.5) as tr:
+                    if tr.status == 200:
+                        verified = {"server": proxy_str}
+                        _VERIFIED_MRG_PROXIES.append(verified)
+                        logger.info(f"🌐 Verified live fallback proxy: {p} (Cloudflare Turnstile HTTP 200 OK)")
+                        if len(_VERIFIED_MRG_PROXIES) >= 3:
+                            break
+            except Exception:
+                continue
+    except Exception as fe:
+        logger.debug(f"Fallback proxy fetch note: {fe}")
+
+    if _VERIFIED_MRG_PROXIES:
+        return _VERIFIED_MRG_PROXIES[0]
     return None
 
 
