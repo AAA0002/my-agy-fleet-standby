@@ -252,8 +252,8 @@ async def snipe_promo_fleet(
     if successful:
         mark_code_claimed(code)
         
-        # Silent by default: Do not spam user chat with alerts (per user directive)
-        if send_alert:
+        # Per user directive: Completely silent operation - do not send promo code broadcast alerts to Telegram
+        if False and send_alert:
             alert_msg = (
                 f"⚡ <b>CHICKEN LAND PROMO CODE SNIPED!</b> 🐔\n\n"
                 f"🎟 <b>Code:</b> <code>{code}</code>\n"

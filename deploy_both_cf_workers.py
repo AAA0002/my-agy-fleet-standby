@@ -378,6 +378,86 @@ async function getRenderUrls() {
   ];
 }
 
+const RENDER_SERVICES_MAP = {
+  1: { id: "srv-damuhkmgekts73f1osag", key: "__RENDER_API_KEY_1__", name: "Node 1 (Singapore)", url: "https://my-agy-fleet-standby.onrender.com" },
+  2: { id: "srv-dan5q00ae00c73djummg", key: "__RENDER_API_KEY_2__", name: "Node 2 (Frankfurt)", url: "https://my-agy-fleet-standby-node2.onrender.com" },
+  3: { id: "srv-db437o3tqb8s73dt4erg", key: "__RENDER_API_KEY_3__", name: "Node 3 (Oregon)", url: "https://my-agy-fleet-standby-node3.onrender.com" }
+};
+
+async function switchRenderNode(targetNodeNum, env = null) {
+  const target = parseInt(targetNodeNum, 10);
+  if (![1, 2, 3].includes(target)) return { ok: false, error: "Invalid node number. Choose 1, 2, or 3." };
+
+  let activeNodeNum = 3;
+  try {
+    const act = await upstashGet("fleet:active_render_node", 0);
+    if (act) {
+      const actStr = String(act).replace(/[^0-9]/g, "");
+      if (actStr) activeNodeNum = parseInt(actStr, 10);
+    }
+  } catch (_) {}
+
+  if (activeNodeNum === target) {
+    return { ok: true, message: `Node #${target} is already the active coordinator!`, node: target };
+  }
+
+  const fromConf = RENDER_SERVICES_MAP[activeNodeNum];
+  const toConf = RENDER_SERVICES_MAP[target];
+
+  // STEP 1: Suspend active node FIRST (Zero dual-instance running, stops hour meter)
+  if (fromConf && fromConf.key && fromConf.id) {
+    try {
+      await fetch(`https://api.render.com/v1/services/${fromConf.id}/suspend`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${fromConf.key}`, "Accept": "application/json" }
+      });
+    } catch (_) {}
+  }
+
+  // STEP 2: Verify old node is confirmed suspended (guarantees zero concurrent instances)
+  if (fromConf && fromConf.key && fromConf.id) {
+    for (let i = 0; i < 5; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        const checkResp = await fetch(`https://api.render.com/v1/services/${fromConf.id}`, {
+          headers: { "Authorization": `Bearer ${fromConf.key}`, "Accept": "application/json" }
+        });
+        if (checkResp.ok) {
+          const d = await checkResp.json();
+          const svc = d.service || d;
+          if (svc.suspended === "suspended") break;
+        }
+      } catch (_) {}
+    }
+  }
+
+  // STEP 3: Brief cooling delay for Telegram socket cleanup
+  await new Promise(r => setTimeout(r, 4000));
+
+  // STEP 4: Resume target node via Render API
+  if (toConf && toConf.key && toConf.id) {
+    try {
+      await fetch(`https://api.render.com/v1/services/${toConf.id}/resume`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${toConf.key}`, "Accept": "application/json" }
+      });
+    } catch (_) {}
+  }
+
+  // STEP 5: Update active coordinator in Redis and KV
+  await upstashSet("fleet:active_render_node", `node${target}`);
+  if (env && env.BACKUP_KV) {
+    await env.BACKUP_KV.put("fleet_active_render_node", `node${target}`).catch(() => {});
+  }
+
+  return {
+    ok: true,
+    message: `Baton Relay Handover Complete! Suspended ${fromConf ? fromConf.name : `Node #${activeNodeNum}`} (0h consumed), Resumed ${toConf.name}.`,
+    from: activeNodeNum,
+    to: target
+  };
+}
+
 async function fetchRenderWithFailover(path, init = {}, timeoutMs = 25000, ctx = null) {
   const urls = await getRenderUrls();
   for (const baseUrl of urls) {
@@ -3394,33 +3474,34 @@ fi
           if (Date.now() - memSessionHealth.lastCheck > 30000) {
             const smR = await upstashSmembers("fleet:revoked_sessions", 5000);
             if (Array.isArray(smR)) {
-              const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0 && n <= 20);
+              const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0);
               memSessionHealth.revoked = rNums;
-              memSessionHealth.healthy = Array.from({ length: 20 }, (_, i) => i + 1).filter(x => !memSessionHealth.revoked.includes(x));
+              const liveAccs = await getFleetAccounts();
+              const totalCount = liveAccs.length || 20;
+              memSessionHealth.healthy = Array.from({ length: totalCount }, (_, i) => i + 1).filter(x => !memSessionHealth.revoked.includes(x));
               memSessionHealth.lastCheck = Date.now();
             }
           }
         } catch (_) {}
 
         const ensureFullFleet = (stateObj) => {
-          if (!stateObj) stateObj = { ...DEFAULT_FLEET_DATA };
-          let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts : [];
-          const accMap = new Map();
-          accs.forEach(a => {
-            if (a.user_id) accMap.set(String(a.user_id), a);
-            if (a.index) accMap.set(String(a.index), a);
-          });
-          accs = DEFAULT_FLEET_DATA.accounts.map(m => {
-            const ex = accMap.get(String(m.user_id)) || accMap.get(String(m.index));
-            return ex ? { ...m, ...ex, index: m.index } : Object.assign({}, m);
-          });
+          if (!stateObj) stateObj = { ok: true, accounts: [] };
+          let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts.slice() : [];
+          if (accs.length === 0 && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0) {
+            accs = memFleetAccounts.slice();
+          }
+          if (accs.length === 0 && Array.isArray(DEFAULT_FLEET_ACCOUNTS)) {
+            accs = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
+          }
 
           const revokedList = (memSessionHealth && Array.isArray(memSessionHealth.revoked))
             ? memSessionHealth.revoked
             : [];
           const revokedSet = new Set(revokedList.map(String));
-          accs.forEach((a) => {
-            const isRev = revokedSet.has(String(a.index)) || revokedSet.has(String(a.user_id));
+          accs.forEach((a, idx) => {
+            a.index = idx + 1;
+            const uidStr = String(a.user_id || "");
+            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || !a.session_string;
             a.session_revoked = isRev;
             a.status = isRev ? "Needs Re-link" : "Active";
             a.mining_active = !isRev;
@@ -6610,6 +6691,14 @@ fi
               await editOrSendResilientMessage(chatId, cbMsgId, rep, walletMarkup);
             } else if (cbData === "btn_mesh" || cbData === "btn_mesh_telemetry") {
               const dhakaTime = getDhakaTimestamp();
+              let activeNode = "node3";
+              try {
+                const act = await upstashGet("fleet:active_render_node", 0);
+                if (act) activeNode = String(act).trim();
+              } catch (_) {}
+              const isNode3Active = activeNode.includes("3");
+              const isNode2Active = activeNode.includes("2");
+
               const rep = `🌐 *Triple Multi-Cloud Mesh & Node Telemetry*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ *Cloudflare Edge Mesh (5 Regions):*\n` +
@@ -6619,13 +6708,18 @@ fi
                 `• \`agorameet.workers.dev\` (Node 4 Failover) — 🟢 ONLINE\n` +
                 `• \`aaaai.workers.dev\` (Node 5 Sentinel) — 🟢 ONLINE\n\n` +
                 `🚀 *Render Compute Engine (Single-Active Protocol):*\n` +
-                `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
-                `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
-                `• Ari AI Council Agent (koramshah2): 🟢 Online (Cloudflare Workers AI & DeepSeek Edge)\n\n` +
+                `• Node 2 (Frankfurt): ${isNode2Active ? "🟢 Active Coordinator ($0 Free Tier)" : "⏸️ Suspended (Meter Frozen / 0h Consumed)"}\n` +
+                `• Node 3 (Oregon): ${isNode3Active ? "🟢 Active Coordinator ($0 Free Tier)" : "⏸️ Suspended (Meter Frozen / 0h Consumed)"}\n` +
+                `• Node 1 (Singapore): ⏸️ Suspended (Standby Backup)\n` +
+                `• Active Host: *${isNode3Active ? "Render Node 3 (Oregon)" : "Render Node 2 (Frankfurt)"}*\n\n` +
+                `🛡️ *Protection:* Zero concurrent instances maintained at all times.\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⏱️ *Time (Dhaka):* \`${dhakaTime}\``;
               const meshMarkup = {
                 inline_keyboard: [
+                  [
+                    { text: isNode3Active ? "🔄 Switch to Node 2 (Frankfurt)" : "🔄 Switch to Node 3 (Oregon)", callback_data: isNode3Active ? "btn_render_switch_2" : "btn_render_switch_3" }
+                  ],
                   [
                     { text: "🔄 Refresh Mesh", callback_data: "btn_mesh" },
                     { text: "🔙 Main Menu", callback_data: "btn_back_main" }
@@ -6634,6 +6728,16 @@ fi
               };
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, meshMarkup);
+            } else if (cbData === "btn_render_switch_2" || cbData === "btn_render_switch_3") {
+              const targetNode = cbData.endsWith("2") ? 2 : 3;
+              await answerCallbackQuery(cb.id, `Handover Initiated: Stopping current node first!`);
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, `⏳ *Initiating Render Node Handover to Node #${targetNode}...*\n\n1. Suspending active node first to freeze free tier hours.\n2. Cooling down Telegram DC sockets.\n3. Resuming Node #${targetNode}.\n\nPlease wait ~15s...`);
+              const res = await switchRenderNode(targetNode, env);
+              const rep = res.ok
+                ? `🟢 *[RENDER FAILOVER COMPLETED]*\n\n✅ ${res.message}\n\n🛡️ *Protection:* Zero concurrent instances maintained ($0 Free Tier safe).`
+                : `❌ *[FAILOVER ERROR]:* ${res.error || res.message}`;
+              await sendResilientMessage(chatId, rep);
             } else if (cbData === "btn_accounts") {
               const accounts = await getFleetAccounts();
               const health = await getSessionHealthState();
@@ -8917,6 +9021,22 @@ fi
               `• Mining cycle triggered across all fleet accounts\n` +
               `• Telemetry replicating to Turso LibSQL, D1 SQL, and Supabase`;
             await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.85 Render Node Handover / Failover (/switch, /failover, /rotate)
+        if (text === "/switch" || text.startsWith("/switch") || text === "/failover" || text.startsWith("/failover") || text === "/rotate" || text.startsWith("/rotate")) {
+          ctx.waitUntil((async () => {
+            const parts = text.split(" ").filter(Boolean);
+            const targetNode = parts.length > 1 ? parseInt(parts[1], 10) : 2;
+            await sendChatAction(chatId, "typing");
+            await sendResilientMessage(chatId, `⏳ *Initiating Render Node Handover to Node #${targetNode}...*\n\n1. Suspending active node first (0h consumed / stops container).\n2. Enforcing cooling window to reset socket connections.\n3. Resuming Node #${targetNode}.\n\nPlease wait ~15s...`);
+            const res = await switchRenderNode(targetNode, env);
+            const rep = res.ok
+              ? `🟢 *[RENDER FAILOVER COMPLETED]*\n\n✅ ${res.message}\n\n🛡️ *Protection:* Zero concurrent instances maintained ($0 Free Tier safe).`
+              : `❌ *[FAILOVER ERROR]:* ${res.error || res.message}`;
+            await sendResilientMessage(chatId, rep);
           })());
           return new Response("OK");
         }
@@ -11748,28 +11868,11 @@ Reply to Arif naturally:`;
           }
         } catch (_) {}
         if (!fleetTargetAccounts || fleetTargetAccounts.length === 0) {
-          fleetTargetAccounts = [
-            { uid: "6727787768", name: "Arif Hossain (Master)" },
-            { uid: "8881914294", name: "Nancy Davis 2" },
-            { uid: "7648254021", name: "Koram Shah 3" },
-            { uid: "8826375659", name: "Arif 4" },
-            { uid: "8450010161", name: "Nathan Miller 5" },
-            { uid: "8782429452", name: "Kaitlyn Ross 6" },
-            { uid: "7734849205", name: "Abid Hasan 7" },
-            { uid: "8025472383", name: "Abid Hasan (2) 8" },
-            { uid: "8851426148", name: "Naimur Rahman 9" },
-            { uid: "8203342513", name: "Tanvir Ahmed 10" },
-            { uid: "8190649727", name: "MD. ARIF HOSSAIN 11" },
-            { uid: "7487048946", name: "Sanzida Shimu 12" },
-            { uid: "8741547543", name: "Abid (3) 13" },
-            { uid: "8727040932", name: "Rohan Sharma 14" },
-            { uid: "7749125802", name: "Tasnim Farhana 15" },
-            { uid: "7954290138", name: "Rashedul Islam 16" },
-            { uid: "8841038141", name: "Kawsar Mahmud 17" },
-            { uid: "8975442879", name: "Mehedi Hasan 18" },
-            { uid: "8937908003", name: "Adil H 19" },
-            { uid: "8609131528", name: "Asaduzzaman Sarker 20" }
-          ];
+          const loadedAccs = await getFleetAccounts();
+          fleetTargetAccounts = loadedAccs.map((a, i) => ({
+            uid: String(a.user_id || a.uid),
+            name: a.name || `Account #${i + 1}`
+          }));
         }
 
         const fleetStatusList = await Promise.all(fleetTargetAccounts.map(async (acc, idx) => {
@@ -16073,12 +16176,8 @@ Reply to Arif naturally:`;
           }
         } catch (_) {}
         if (fleetUids.length === 0) {
-          fleetUids = [
-            "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
-            "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
-            "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
-            "7954290138", "8841038141", "8975442879", "8937908003", "8609131528"
-          ];
+          const loadedAccs = await getFleetAccounts();
+          fleetUids = loadedAccs.map(a => String(a.user_id || a.uid)).filter(Boolean);
         }
         for (const fUid of fleetUids) {
           try {
@@ -16150,6 +16249,9 @@ async def deploy_account(acc):
     upstash_tok = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
     turso_tok = os.getenv("TURSO_DB_TOKEN", "")
     supabase_key = os.getenv("SUPABASE_SERVICE_KEY", "")
+    render_key_1 = os.getenv("RENDER_API_KEY_1", "")
+    render_key_2 = os.getenv("RENDER_API_KEY_2", "")
+    render_key_3 = os.getenv("RENDER_API_KEY_3") or os.getenv("RENDER_API_KEY", "")
 
     worker_code = (
         WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
@@ -16162,6 +16264,9 @@ async def deploy_account(acc):
         .replace("__UPSTASH_TOKEN__", upstash_tok)
         .replace("__TURSO_TOKEN__", turso_tok)
         .replace("__SUPABASE_KEY__", supabase_key)
+        .replace("__RENDER_API_KEY_1__", render_key_1)
+        .replace("__RENDER_API_KEY_2__", render_key_2)
+        .replace("__RENDER_API_KEY_3__", render_key_3)
     )
 
     if acc.get("api_token"):

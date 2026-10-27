@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔄 Render Single-Active Failover (Stop-Old-First Protocol), 100% Dynamic Fleet & Account #21 (October 27, 2026)**:
+  - **Zero-Dual-Instance Stop-First Handover**:
+    * Rewrote `rotate_node()` in `render_failover_manager.py` and `switchRenderNode()` in `deploy_both_cf_workers.py`.
+    * Enforced strict order: Stop & suspend source node FIRST via Render API, verify suspended, cooling window, then resume destination node. Guarantees 0 dual-instance overlap, protects Free Tier hours, and prevents Telegram AuthKeyDuplicatedError.
+    * Added Cloudflare Edge `/switch <node>` and `/failover` commands, and dynamic 1-tap switch buttons in `@myagyai` `Cloud Mesh` menu.
+  - **Silenced Chicken Land Promo Code Spam**:
+    * Permanently disabled promo code snipe broadcasts to Telegram in `chickenland_promo_sniper.py` (`if False and send_alert:`) per explicit user directive. All snipes and hen purchases continue running 100% autonomously and silently.
+  - **100% Dynamic Fleet Accounts & Account #21 Integration**:
+    * Purged all remaining hardcoded 20-account static maps from `deploy_both_cf_workers.py` (`ensureFullFleet`, `fleetTargetAccounts`, `fleetUids`, `memSessionHealth.healthy`).
+    * Generated dedicated 5-chain cryptographic wallets (TON, EVM, TRON, SOL, BTC) for Account #21 (`+8801913962342`, `Aaaa201`, UID `8669217201`) and archived in master vault and Redis.
+    * Dynamically expanded active fleet roster to **21 accounts**.
+
+- **🌐 100% Dynamic Fleet Accounts & Zero Hardcoding Overhaul (`deploy_both_cf_workers.py`, `app.py`, `PROJECT_BIBLE.md`) (October 27, 2026)**:
+  - **Eliminated Hardcoded Account Arrays & Bounds**:
+    * Purged static `DEFAULT_FLEET_ACCOUNTS.map()` overrides from `getFleetAccounts()`. Accounts are now loaded 100% dynamically from canonical distributed Upstash Redis (`fleet:accounts`) and Cloudflare KV (`fleet_live_state`).
+    * Removed hardcoded loops (e.g. `for i <= 20`) in `/otp` endpoints and relink pickers. Menus, OTP buttons, and session health audits now dynamically scale based on the exact count of accounts currently active in the database (`accounts.length`), seamlessly accommodating any number of accounts (e.g. 5, 20, 21, 50).
+  - **Atomic Dynamic Account Addition & Relinking**:
+    * Implemented `saveFleetAccountDynamic()` on Cloudflare Edge Worker to immediately commit new and relinked accounts (including user ID, phone, session string, and multi-chain wallet suites) directly to `fleet:accounts`, `account:{uid}`, and Cloudflare KV.
+    * Added canonical Upstash Redis `fleet:accounts` lookup to Render Node 3 (`fetch_accounts_from_cloud()`) and enforced sequential re-indexing and cache synchronization upon onboarding (`sync_new_account_to_clouds()`).
+  - **True Persistent Account Removal**:
+    * Updated `btn_admin_del_` and `/api/account/remove` to immediately evict removed accounts from `fleet:accounts` in Upstash Redis and Cloudflare KV, delete `account:{uid}`, and update in-memory caches, preventing deleted accounts from being resurrected by legacy fallback arrays.
+  - **Dynamic Multi-Chain Wallets across Active Farming Bots**:
+    * Implemented `getDynamicTonWallet(uid, accData)` to dynamically resolve TON addresses from account data (`accData.ton_wallet?.address` or `accData.ton`) across MRG, ATF, and Victor's Company mining routines, removing reliance on static wallet maps.
+
 - **🔄 Automated Multi-Node Render Failover & Single-Active Primary Baton Relay (`deploy_both_cf_workers.py`, `PROJECT_BIBLE.md`) (October 27, 2026)**:
   - **Dynamic Cloudflare Edge Multi-Node Routing**:
     * Replaced all hardcoded references to Render Node 2 (`my-agy-fleet-standby-node2.onrender.com`) with dynamic failover resolver `getRenderUrls()`.

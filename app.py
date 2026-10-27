@@ -1561,7 +1561,12 @@ async def token_health_and_refresh_watchdog():
 # 24/7 AUTONOMOUS CLOUD FLEET AD-FARMING ENGINE (Dynamic Scaling)
 # =====================================================================
 def get_fleet_accounts_map() -> list:
-    """Dynamically loads fleet accounts map from accounts.json or database."""
+    """Dynamically loads fleet accounts map from in-memory cache, accounts.json, or fleet_wallets_data.json."""
+    if FLEET_ACCOUNTS_CACHE:
+        return [
+            {"index": a.get("index", i + 1), "uid": str(a.get("user_id")), "name": a.get("name", f"Account_{i+1}")}
+            for i, a in enumerate(FLEET_ACCOUNTS_CACHE.values()) if a.get("user_id")
+        ]
     accs_file = os.path.join(BASE_DIR, "accounts.json")
     if os.path.exists(accs_file):
         try:
@@ -1574,6 +1579,19 @@ def get_fleet_accounts_map() -> list:
                     ]
         except Exception:
             pass
+
+    for fwd_p in [os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json"), os.path.join(BASE_DIR, "fleet_wallets_data.json")]:
+        if os.path.exists(fwd_p):
+            try:
+                with open(fwd_p, "r") as f:
+                    raw_fwd = json.load(f)
+                    if raw_fwd:
+                        return [
+                            {"index": a.get("index", i + 1), "uid": str(a.get("user_id")), "name": a.get("name", f"Account_{i+1}")}
+                            for i, a in enumerate(raw_fwd) if a.get("user_id")
+                        ]
+            except Exception:
+                pass
 
     return [
         {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master)"},

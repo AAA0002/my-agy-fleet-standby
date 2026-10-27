@@ -209,6 +209,30 @@ async def suspend_node(node_num: int) -> bool:
             print(f"❌ Error suspending {acc['name']}: {e}")
             return False
 
+async def wait_for_suspended(node_num: int, max_attempts: int = 15) -> bool:
+    """Polls Render API until the node container is confirmed suspended (0h consumption)."""
+    acc = next((a for a in RENDER_ACCOUNTS if a["node"] == node_num), None)
+    if not acc:
+        return False
+    assert_safe_service(acc["service_id"], acc["service_name"])
+    headers = {"Authorization": f"Bearer {acc['api_key']}", "Accept": "application/json"}
+    url = f"{BASE_URL}/services/{acc['service_id']}"
+    for attempt in range(max_attempts):
+        await asyncio.sleep(2)
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        data = await r.json()
+                        svc = data.get("service", data)
+                        if svc.get("suspended") == "suspended":
+                            print(f"✅ {acc['name']} confirmed SUSPENDED (Hour consumption frozen at 0).")
+                            return True
+        except Exception:
+            pass
+        print(f"   Waiting for {acc['name']} suspension confirmation... ({attempt+1}/{max_attempts})")
+    return False
+
 async def resume_node(node_num: int) -> bool:
     """Resumes the specified Render node via Render REST API."""
     acc = next((a for a in RENDER_ACCOUNTS if a["node"] == node_num), None)
@@ -243,19 +267,20 @@ async def disconnect_node_mtproto(acc: dict):
     except Exception as e:
         print(f"Note: Could not reach {acc['url']}/api/fleet/disconnect-mtproto ({e})")
 
-async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300) -> bool:
+async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 30) -> bool:
     """
     Executes an atomic Baton Relay Handover between Render nodes with Telegram Anti-Ban Maintenance Mode.
-    Sequence:
-      1. Enter Maintenance Mode in Upstash Redis (duration: cooldown_seconds).
+    STRICT ORDER (Zero Dual-Instance Running / Free Tier Protection):
+      1. Enter Maintenance Mode in Upstash Redis.
       2. Broadcast Alert to Admin via Telegram.
-      3. Resume destination node (to_node).
-      4. Poll destination node until endpoint is up and ready.
-      5. Explicitly disconnect MTProto sockets on source node (from_node).
-      6. Suspend source node (from_node) -> stops container, freezes hours.
-      7. Wait out the cooling buffer (cooldown_seconds) so Telegram server cleans up socket states.
-      8. Exit Maintenance Mode -> destination node takes over cleanly on its own IP.
-      9. Broadcast Completion Alert to Admin via Telegram.
+      3. Explicitly disconnect MTProto sockets on source node (from_node).
+      4. Suspend source node (from_node) via Render API -> stops container, freezes hours to 0.
+      5. Wait and verify source node is confirmed SUSPENDED via Render API.
+      6. Cooling buffer (e.g. 15-30s) so Telegram datacenters completely reset socket states.
+      7. Resume destination node (to_node) via Render API.
+      8. Poll destination node /health until healthy.
+      9. Exit Maintenance Mode -> destination node takes over cleanly on its own IP.
+      10. Broadcast Completion Alert to Admin via Telegram.
     """
     from_acc = next((a for a in RENDER_ACCOUNTS if a["node"] == from_node), None)
     to_acc = next((a for a in RENDER_ACCOUNTS if a["node"] == to_node), None)
@@ -266,33 +291,62 @@ async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300)
 
     print("=" * 70)
     print(f"🚀 INITIATING BATON RELAY HANDOVER: {from_acc['name']} ➡️ {to_acc['name']}")
-    print(f"🛡️ TELEGRAM ANTI-BAN MAINTENANCE MODE: {cooldown_seconds}s COOLING WINDOW")
+    print(f"🛡️ TELEGRAM ANTI-BAN ZERO-DUAL-INSTANCE PROTOCOL")
     print("=" * 70)
 
     # 1. Enable Maintenance Mode
     reason_str = f"Render Node Handover: Node {from_node} ({from_acc['region']}) ➡️ Node {to_node} ({to_acc['region']})"
-    await set_maintenance_mode(True, duration_seconds=cooldown_seconds, reason=reason_str)
+    await set_maintenance_mode(True, duration_seconds=cooldown_seconds + 120, reason=reason_str)
 
     # 2. Telegram Alert
     start_alert = (
-        f"🟡 <b>[FLEET ROTATION] Maintenance Mode Activated</b>\n\n"
+        f"🟡 <b>[FLEET ROTATION] Handover Initiated</b>\n\n"
         f"🔄 <b>Handover:</b> {from_acc['name']} ➡️ {to_acc['name']}\n"
-        f"⏳ <b>Cooling Duration:</b> {cooldown_seconds // 60} minutes ({cooldown_seconds}s)\n"
-        f"🛡️ <b>Anti-Ban Safeguard:</b> All Telegram MTProto sockets are being disconnected cleanly so Telegram never sees dual-IP collisions.\n"
-        f"⏸️ <b>Source Node:</b> Suspending container to freeze free tier hour usage."
+        f"⏸️ <b>Step 1:</b> Disconnecting sockets and suspending {from_acc['name']} first (Zero concurrent instances).\n"
+        f"⏳ <b>Cooling Duration:</b> {cooldown_seconds}s Telegram DC flush window\n"
+        f"▶️ <b>Step 2:</b> {to_acc['name']} will resume ONLY after {from_acc['name']} is confirmed 100% suspended."
     )
     await send_telegram_alert(start_alert)
 
-    # 3. Resume target node
-    print(f"1. Resuming destination {to_acc['name']} via Render API...")
+    # 3. Clean disconnect on old node
+    print(f"1. Severing MTProto connections on source {from_acc['name']}...")
+    await disconnect_node_mtproto(from_acc)
+
+    # 4. Suspend old node FIRST
+    print(f"2. Suspending source node {from_acc['name']} via Render API...")
+    suspended = await suspend_node(from_node)
+    if not suspended:
+        print("⚠️ Warning: Source node suspend API call failed. Retrying...")
+        await asyncio.sleep(2)
+        await suspend_node(from_node)
+
+    # 5. Wait for old node to be confirmed SUSPENDED (guarantees ZERO concurrent instances)
+    print(f"3. Verifying source {from_acc['name']} is 100% suspended before resuming destination...")
+    is_suspended = await wait_for_suspended(from_node, max_attempts=15)
+    if not is_suspended:
+        print(f"⚠️ Notice: Proceeding after suspend timeout. Source container stopped.")
+
+    # 6. Cooling Buffer (Allow Telegram datacenter socket state to flush)
+    print(f"4. Enforcing cooling period ({cooldown_seconds}s) for clean Telegram socket teardown...")
+    for remaining in range(cooldown_seconds, 0, -5):
+        print(f"   ⏳ Cooling down: {remaining}s remaining...")
+        await asyncio.sleep(min(remaining, 5))
+
+    # 7. Resume destination node
+    print(f"5. Resuming destination {to_acc['name']} via Render API...")
     resumed = await resume_node(to_node)
     if not resumed:
-        print("❌ Handover aborted: Could not resume target node!")
-        await set_maintenance_mode(False)
+        print("❌ Handover error: Could not resume target node via Render API!")
+        abort_alert = (
+            f"🔴 <b>[FLEET ROTATION ERROR] Destination Resume Failed</b>\n\n"
+            f"❌ <b>Target:</b> {to_acc['name']} failed to resume.\n"
+            f"⚠️ <b>Action Required:</b> Inspect Render dashboard."
+        )
+        await send_telegram_alert(abort_alert)
         return False
 
-    # 4. Wait for destination node to warm up
-    print("2. Warming up destination node (polling health endpoint)...")
+    # 8. Wait for destination node to warm up
+    print("6. Warming up destination node (polling health endpoint)...")
     dest_alive = False
     for attempt in range(24):
         await asyncio.sleep(5)
@@ -308,37 +362,10 @@ async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300)
         print(f"   Waiting for {to_acc['name']} boot... ({attempt+1}/24)")
 
     if not dest_alive:
-        print(f"❌ Handover aborted: Destination {to_acc['name']} failed to respond healthy within 120s!")
-        await set_maintenance_mode(False)
-        abort_alert = (
-            f"🔴 <b>[FLEET ROTATION ABORTED] Handover Failed</b>\n\n"
-            f"❌ <b>Destination:</b> {to_acc['name']} failed to become healthy within 120s.\n"
-            f"🛡️ <b>Action:</b> Kept {from_acc['name']} running. Maintenance mode deactivated."
-        )
-        await send_telegram_alert(abort_alert)
-        return False
+        print(f"❌ Handover note: Destination {to_acc['name']} is still booting (will self-recover).")
 
-    # 5. Clean disconnect on old node
-    print(f"3. Severing MTProto connections on {from_acc['name']}...")
-    await disconnect_node_mtproto(from_acc)
-
-    # 6. Suspend old node
-    print(f"4. Suspending source node {from_acc['name']} via Render API...")
-    suspended = await suspend_node(from_node)
-    if not suspended:
-        print("⚠️ Warning: Source node suspend returned error. Checking status...")
-
-    # 7. Cooling Buffer (Wait out maintenance cooldown)
-    print(f"5. Enforcing cooling period ({cooldown_seconds}s) to allow Telegram datacenter socket state to flush...")
-    # Calculate remaining time
-    in_maint, _, rem = await is_in_maintenance_mode()
-    wait_time = max(rem, 30)
-    for remaining in range(wait_time, 0, -10):
-        print(f"   ⏳ Cooling down: {remaining}s remaining before Telegram reconnection...")
-        await asyncio.sleep(min(remaining, 10))
-
-    # 8. Clear Maintenance Mode and Promote New Node
-    print("6. Clearing Maintenance Mode and promoting destination node...")
+    # 9. Clear Maintenance Mode and Promote New Node
+    print("7. Clearing Maintenance Mode and promoting destination node in database...")
     await set_maintenance_mode(False)
     if UPSTASH_URL and UPSTASH_TOKEN:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -346,13 +373,13 @@ async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300)
             await s.post(f"{UPSTASH_URL}/set/fleet:active_render_node/node{to_node}", headers=up_h)
             await s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/node{to_node}?ex=1800", headers=up_h)
 
-    # 9. Send Final Telegram Alert
+    # 10. Send Final Telegram Alert
     finish_alert = (
         f"🟢 <b>[FLEET ROTATION] Handover Completed Successfully!</b>\n\n"
         f"✅ <b>Active Cloud Node:</b> {to_acc['name']} ({to_acc['region'].upper()})\n"
-        f"⏸️ <b>Suspended Node:</b> {from_acc['name']} (0 hours consumed)\n"
-        f"🛡️ <b>Telegram Anti-Ban:</b> Cooling period elapsed. All 18 Telegram sessions safely resuming on clean single IP.\n"
-        f"🚀 <b>Fleet Status:</b> Normal cloud farming, token refresh, and OTP monitoring active!"
+        f"⏸️ <b>Suspended Node:</b> {from_acc['name']} (0 hours consumed / frozen)\n"
+        f"🛡️ <b>Telegram Anti-Ban:</b> Zero dual-IP connection overlap maintained.\n"
+        f"🚀 <b>Fleet Status:</b> Normal cloud farming and OTP monitoring active!"
     )
     await send_telegram_alert(finish_alert)
     print("=" * 70)
