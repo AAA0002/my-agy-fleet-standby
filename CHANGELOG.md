@@ -2,6 +2,9 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔇 Silent Autonomous Sniper Execution (`chickenland_promo_sniper.py`, `app.py`) (October 27, 2026)**:
+  - **Zero Chat Spam / 100% Silent Ingestion**: Silenced automated Telegram alert dispatches (`send_telegram_alert`) during background promo code bursts per user directive ("I don't need to see it"). Promo codes are now sniped, redeemed, and reinvested purely in the background across all fleet accounts with zero unsolicited messages sent to the user.
+
 - **🛡️ Deep Bug Sweep, Resilient Parsing & Compounding Optimization (`victors_arcade_solver.py`, `chickenland_promo_sniper.py`, `app.py`, `chickenland_miner.py`, `kynex_miner.py`) (October 27, 2026)**:
   - **Victor's Arcade Safe Null Handling (`victors_arcade_solver.py`)**: Hardened `st.get("user")` and `inAppBalance` extraction against null/missing objects from upstream server responses, preventing potential `AttributeError: 'NoneType' object has no attribute 'get'` crashes.
   - **Promo Sniper Token Freshness (`chickenland_promo_sniper.py`)**: Removed stale startup token caching in `watch_and_snipe_daemon`. Bursts now dynamically pull fresh authorization tokens directly from Upstash Redis immediately before execution.

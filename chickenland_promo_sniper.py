@@ -213,7 +213,8 @@ async def redeem_single_account(
 async def snipe_promo_fleet(
     code: str,
     fleet: Optional[Dict[str, Dict[str, Any]]] = None,
-    auto_buy_hens: bool = True
+    auto_buy_hens: bool = True,
+    send_alert: bool = False
 ) -> Dict[str, Any]:
     code = code.strip().upper()
     if not fleet:
@@ -251,18 +252,18 @@ async def snipe_promo_fleet(
     if successful:
         mark_code_claimed(code)
         
-        # Send instant Telegram Alert
-        alert_msg = (
-            f"⚡ <b>CHICKEN LAND PROMO CODE SNIPED!</b> 🐔\n\n"
-            f"🎟 <b>Code:</b> <code>{code}</code>\n"
-            f"💰 <b>Coins Claimed:</b> +{total_coins:,} Coins total\n"
-            f"👥 <b>Fleet Success:</b> {len(successful)}/{len(fleet)} accounts\n"
-            f"⏱ <b>Burst Latency:</b> {report['burst_time_sec']}s\n"
-        )
-        if hens_bought > 0:
-            alert_msg += f"🐣 <b>Autonomous Expansion:</b> {hens_bought} new hens purchased!\n"
-            
-        send_telegram_alert(alert_msg)
+        # Silent by default: Do not spam user chat with alerts (per user directive)
+        if send_alert:
+            alert_msg = (
+                f"⚡ <b>CHICKEN LAND PROMO CODE SNIPED!</b> 🐔\n\n"
+                f"🎟 <b>Code:</b> <code>{code}</code>\n"
+                f"💰 <b>Coins Claimed:</b> +{total_coins:,} Coins total\n"
+                f"👥 <b>Fleet Success:</b> {len(successful)}/{len(fleet)} accounts\n"
+                f"⏱ <b>Burst Latency:</b> {report['burst_time_sec']}s\n"
+            )
+            if hens_bought > 0:
+                alert_msg += f"🐣 <b>Autonomous Expansion:</b> {hens_bought} new hens purchased!\n"
+            send_telegram_alert(alert_msg)
         
     return report
 
