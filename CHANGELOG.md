@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Protocol 9 Full Fleet Integration, UI Parity & Multi-Bot Ground-Truth Resolution (October 27, 2026)**:
+  - **Comprehensive Multi-Pool Dashboard Upgrades**:
+    * **`public_admin/admin.html`**: Upgraded all legacy references from `Active Mining Bots (8/8)` and `Active Mining Pools (8/8)` to `Active Mining Bots (9/9)` and `Active Mining Pools (9/9)`. Synchronized across all 4 mirrors (`public/admin.html`, `public_admin/admin/index.html`, `public_admin/index.html`, `dashboard.html`).
+    * **`public_admin/user-admin.html`**: Added Protocol 9 (**Chicken Land** `@ChickenLandBot`) to `POOLS_LIST` with active auto-egg laying cadence and deep links. Synchronized across `public/user-admin.html` and `public_admin/user-admin/index.html`.
+    * **`public_ads/miner/index.html`**: Integrated Protocol 9 (**Chicken Land**) interactive card with 1-Click Harvest (`btn-harvest-chickenland`), connect modal trigger, dynamic pool chip filter (`selectMiningPool('chickenland')`), profile account counter (`pool-chickenland-count`), and updated `all: '🌐 All 9 Pools'` label. Synchronized with `public/miner/index.html`.
+  - **Cloudflare Edge Worker Alignment (`deploy_both_cf_workers.py`)**:
+    * Updated all operational broadcast and harvest status templates from `(8/8)` to `(9/9)` explicitly including `Chicken Land`.
+    * Successfully compiled and deployed live to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/admin`, `/user-admin`, `/miner`, `/app`, `/ad`, and `/api/fleet/live` returning 200 OK.
+  - **Ground-Truth Fleet Audit (21 Accounts x 9 Bots)**:
+    * Executed live cryptographic audit across all 21 accounts and all 9 bots (`audit_bots_and_sidetasks.py`). All 21 accounts confirmed 9/9 active and responsive.
+  - **Account #21 (Aaaa201) TG Connect Bot Onboarding Resolution**:
+    * Identified root cause for only 6 bots appearing in TG Connect: Account #21 had tokens generated but had not sent `/start` to PepeGram (`@Pepe_gram_bot`), AdxEarn AI (`@AdxEarnAibot`), and Chicken Land (`@ChickenLandBot`).
+    * Generated 1-tap deep links and verified cloud QR MTProto binding endpoint (`/api/account/login/qr-start`).
+
 - **💎 Dashboard Dynamic OTP Grid & Mirror Synchronization (October 27, 2026)**:
   - **Dynamic Account Selector Grid (`public_admin/admin.html`)**:
     * Identified and eliminated hardcoded `Array.from({ length: 20 })` in the Telegram Login OTP tab, upgrading it to `Array.from({ length: fleet.length || DEFAULT_FLEET.length })`.

@@ -7194,7 +7194,7 @@ fi
                 const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
                   `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
                   (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
-                  `• *Active Lineup (8/8):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI\n` +
+                  `• *Active Lineup (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land\n` +
                   `• *Edge Coordination:* 5 Parallel Cloudflare Edge Slots\n\n` +
                   `_Farming cycle and task claims active across all healthy nodes._`;
                 const frames = [
@@ -8206,9 +8206,9 @@ fi
                 const revokedCount = health.revoked.size;
                 const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
                   (revokedCount > 0 ? `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\`\n` : `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` (100% Online)\n`) +
-                  `🤖 *Active Bots (8/8):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI\n` +
+                  `🤖 *Active Bots (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land\n` +
                   `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Verified TON Wallets\n` +
-                  `🛡️ *Security:* 8/8 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
+                  `🛡️ *Security:* 9/9 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   (revokedCount > 0 ? `⚡ *${activeCount} accounts active & mining.* ⚠️ *${revokedCount} accounts require session re-link via Session Audit.*` : `⚡ *All ${accounts.length} accounts are active and autonomously mining in the cloud.*`);
                 const cbMsgId = cb.message ? cb.message.message_id : null;
                 if (cbMsgId) {
@@ -14876,7 +14876,7 @@ Reply to Arif naturally:`;
                   `• *Username:* @${res.username || "None"}\n` +
                   `• *User ID:* \`${res.user_id}\`\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                  `• *Pools Active (8/8):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI\n` +
+                  `• *Pools Active (9/9):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land\n` +
                   `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                   `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
                 await sendUserReply(succMsg, activeUserKeyboard);
@@ -14955,7 +14955,7 @@ Reply to Arif naturally:`;
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                `• *Pools Active (8/8):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI\n` +
+                `• *Pools Active (9/9):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land\n` +
                 `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                 `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
               await sendUserReply(succMsg, activeUserKeyboard);
