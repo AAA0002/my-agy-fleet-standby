@@ -483,6 +483,8 @@ PEPEGRAM_BOT = "Pepe_gram_bot"
 PEPEGRAM_REFERRAL_CODE = "6727787768"
 ADXEARN_BOT = "AdxEarnAibot"
 ADXEARN_REFERRAL_CODE = "ref_6727787768"
+CHICKENLAND_BOT = "ChickenLandBot"
+CHICKENLAND_REFERRAL_CODE = "12668"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -987,7 +989,13 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         except Exception as de:
             logger.debug(f"Diggo immediate JWT exchange note: {de}")
 
-    # Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner
+    # 9. Chicken Land (@ChickenLandBot - Silent WebApp query)
+    chk_param = None if is_master else CHICKENLAND_REFERRAL_CODE
+    chk_tok = await extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"])
+    if chk_tok:
+        tokens["chickenland_init_data"] = chk_tok
+
+    # Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land
     return tokens
 
 
@@ -1500,8 +1508,9 @@ async def token_health_and_refresh_watchdog():
                         has_victors = bool(tok.get("victors_init_data"))
                         has_vyro = bool(tok.get("vyro_init_data"))
                         has_kynex = bool(tok.get("kynex_init_data"))
-                        has_all_active_5 = (has_mrg and has_atf and has_victors and has_vyro and has_kynex)
-                        is_stale = (now - synced_ts > 14400) or ((not has_all_active_5) and (now - synced_ts > 1800))
+                        has_chicken = bool(tok.get("chickenland_init_data"))
+                        has_all_active = (has_mrg and has_atf and has_victors and has_vyro and has_kynex and has_chicken)
+                        is_stale = (now - synced_ts > 14400) or ((not has_all_active) and (now - synced_ts > 1800))
                         if not tok or not has_any_token or is_stale:
                             stale_or_missing_accs.append(acc)
 
@@ -1673,7 +1682,8 @@ async def chickenland_promo_watcher_loop():
     aiohttp parallel redemptions across all 20 fleet accounts.
     """
     # Only run continuous watcher if this node is primary coordinator
-    if not IS_PRIMARY_HOST:
+    is_active = (await is_this_node_active()) or IS_PRIMARY_HOST or (get_current_node_number() == 2)
+    if not is_active:
         logger.info("[ChickenLand Promo Sniper] Standby node detected; skipping watcher loop.")
         return
 

@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Comprehensive Fleet Bug Hunt, Exception Hardening & Multi-Cloud Parity (October 27, 2026)**:
+  - **Chicken Land Promo Code Sniper (`chickenland_promo_sniper.py`)**:
+    * Resolved critical missing `.env` loader bug: standalone executions now properly load `UPSTASH_TOKEN` and `REPORT_BOT_TOKEN`, re-enabling Redis deduplication sets (`SISMEMBER`, `SADD`) and instant Telegram alert dispatches.
+  - **Cloudflare Edge Worker & Telegram Command Center (`deploy_both_cf_workers.py`)**:
+    * Fixed environment variable mismatch in `/snipe`: updated caller from `env.CF_SECRET_KEY` to `env.SECRET_KEY || env.CF_SECRET_KEY || ""` to eliminate HTTP 401 Unauthorized errors when dispatching bursts to Render Frankfurt Node 2.
+    * Added missing top-level command handlers for `/chicken` and `/chickenland` in the message routing pipeline with dedicated interactive inline keyboards.
+    * Purged all remaining legacy "All 8 Bots" and "8-Bot Mining Hub" button labels, upgrading all controls to "🤖 9-Bot Mining Hub".
+  - **Render Frankfurt Node 2 Autonomous Backend (`app.py`)**:
+    * Defined `CHICKENLAND_BOT = "ChickenLandBot"` and `CHICKENLAND_REFERRAL_CODE = "12668"` in bot configuration constants.
+    * Integrated Chicken Land silent WebApp query into `extract_tokens_with_client` (Step 9), guaranteeing that periodic MTProto token refreshes proactively extract and sync `chickenland_init_data`.
+    * Upgraded `token_health_and_refresh_watchdog` to monitor `chickenland_init_data` freshness.
+    * Hardened `chickenland_promo_watcher_loop` primary host check to utilize dynamic coordinator detection `(await is_this_node_active()) or (get_current_node_number() == 2)`.
+  - **Public Solver Runner & GitHub Actions Headless Driver (`mrg_turnstile_solver.py`)**:
+    * Implemented `check_and_farm_chickenland_rest` fast REST harvesting function, automatically compounding hens, selling eggs, and claiming tasks.
+    * Integrated Chicken Land into Phase 1 rapid multi-bot harvesting and the final Telegram telemetry report.
+  - **Victor's Company Cloud Launcher (`victors_cloud_phone_launcher.py`)**:
+    * Fixed HTTP 401 API response misclassification in `probe_account`: correctly distinguished between `HUMAN_REQUIRED` (Turnstile required) and `TG_AUTH` (session expired) to prevent false-positive session drops.
+  - **Fleet Side-Task Engine (`finish_all_fleet_sidetasks.py`)**:
+    * Fixed task filtering bug in `sweep_chickenland_tasks`: unified `tasks` and `dayTasks` sets to permanently eliminate redundant daily task requests.
+  - **Autonomous Cloud Agent & Multi-Tenant Isolation (`autonomous_cloud_agent.py`, `commercial_user_isolation.py`)**:
+    * Synchronized Ari AI Council alert prompts and immutable Admin vault referral dictionaries with Chicken Land (`12668`).
+
+
 - **🌟 Comprehensive 9-Bot Fleet Harmonization, Cloud Engine Integration & Command Parity (October 27, 2026)**:
   - **Render Frankfurt Node 2 Autonomous Mining Engine (`app.py`)**:
     * Integrated `_farm_chickenland()` into `farm_single_account_bots` and `bot_routines`, bringing Render Node 2 into full 9-bot parity with the Cloudflare edge mesh.

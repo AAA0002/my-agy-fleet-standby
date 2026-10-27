@@ -415,7 +415,7 @@ class AutonomousAriAgent:
         # 3. Act
         if act == "harvest":
             await self.dispatch_fleet_action(session, "harvest")
-            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 8 active bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Pepe, AdxEarn).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 9 active bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Pepe, AdxEarn, Chicken Land).\n_Reason:_ {thought}")
         elif act == "sweep_all":
             await self.dispatch_fleet_action(session, "sweep")
             await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep & Referral Harvest.\n_Reason:_ {thought}")

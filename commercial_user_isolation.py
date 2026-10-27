@@ -57,7 +57,8 @@ class AdminFleetVault:
         "kynex_network": "6727787768",
         "pepegram": "1449",
         "adxearn_ai": "6727787768",
-        "diggominer": "ref_4088138f11effe8eef4b86ff"
+        "diggominer": "ref_4088138f11effe8eef4b86ff",
+        "chicken_land": "12668"
     }
 
     # Standard platform margin on customer operations (20% default)

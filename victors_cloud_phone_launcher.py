@@ -353,15 +353,17 @@ def probe_account(uid: int, v_init: str) -> tuple:
         {"startParam": VICTORS_REF},
         extra_headers={"Authorization": f"tma {v_init}"}
     )
-    if code == 403:
-        if isinstance(body, dict) and body.get("code") == "HUMAN_REQUIRED":
+    if code in (401, 403):
+        if isinstance(body, dict) and (body.get("code") == "HUMAN_REQUIRED" or "human" in str(body).lower()):
             return "HUMAN_REQUIRED", None
+        elif isinstance(body, dict) and body.get("code") == "TG_AUTH":
+            return "EXPIRED", body
+        elif code == 401:
+            return "EXPIRED", body
     elif code in (200, 201) and isinstance(body, dict):
         hp = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
         if hp:
             return "ALREADY_AUTH", hp
-    elif code == 401:
-        return "EXPIRED", body
 
     return "UNKNOWN", body
 

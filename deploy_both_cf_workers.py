@@ -6096,7 +6096,7 @@ fi
                         `• *User ID:* \`${res2fa.user_id}\`\n` +
                         `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
                         `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
-                        `✅ *100% Cloud MTProto Active!*\nAll 8 autonomous farming bots are online 24/7 in the cloud.`;
+                        `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                       await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                       return new Response("OK");
                     }
@@ -6134,7 +6134,7 @@ fi
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
                     `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
-                    `✅ *100% Cloud MTProto Active!*\nAll 8 autonomous farming bots are online 24/7 in the cloud.`;
+                    `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
                 }
@@ -6946,7 +6946,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -6973,7 +6973,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -8014,7 +8014,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -8047,7 +8047,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -8079,7 +8079,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -8097,6 +8097,39 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
             await sendReply(adxMsg, adxInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.4585 Dedicated Chicken Land Command (/chicken or /chickenland)
+        if (text === "/chicken" || text.startsWith("/chicken") || text === "/chickenland" || text.startsWith("/chickenland")) {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const chickenInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🐔 Chicken Land", callback_data: "btn_chicken" },
+                  { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
+                ],
+                [
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const chickenMsg = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* Chicken Land (@ChickenLandBot)\n` +
+              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\` • 19/19 Referrals Bound ✅\n` +
+              `• *Mechanics:* Passive Time-Based Egg Laying (8h Basket Capacity)\n` +
+              `• *Master Account (6727787768):* 8 Hens • 80 Eggs/h • 3,800 Ref Coins Claimed\n` +
+              `• *Fleet Total:* 28 Hens Active • 2,240 Eggs/8h Capacity\n` +
+              `• *Cloud Promo Sniper:* Active 24/7 on Render Node 2 (@ChickenLandCodes)\n` +
+              `• *Commands:* \`/snipe <CODE>\` to blast instant fleet redemption\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to check telemetry or trigger harvest:_`;
+            await sendReply(chickenMsg, chickenInlineKeyboard);
           })());
           return new Response("OK");
         }
@@ -8150,7 +8183,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -8643,7 +8676,7 @@ fi
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Phone:* \`${res.phone || phone}\`\n` +
-                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `• *Master Referrals:* 🚀 \`All 9 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
                 `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
@@ -9108,9 +9141,10 @@ fi
             await sendChatAction(chatId, "typing");
             await sendReply(`⚡ *Sniping Promo Code \`${promoCode}\` across 20 Fleet Accounts...*`);
             try {
-              const res = await fetch(`https://my-agy-fleet-standby-node2.onrender.com/api/chickenland/snipe?code=${promoCode}&secret=${env.CF_SECRET_KEY || ""}`, {
+              const sniperSecret = env.SECRET_KEY || env.CF_SECRET_KEY || "";
+              const res = await fetch(`https://my-agy-fleet-standby-node2.onrender.com/api/chickenland/snipe?code=${promoCode}&secret=${sniperSecret}`, {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${env.CF_SECRET_KEY || ""}` }
+                headers: { "Authorization": `Bearer ${sniperSecret}` }
               });
               if (res.ok) {
                 const data = await res.json();
@@ -10058,7 +10092,7 @@ fi
           const parts = text.split(/\s+/);
           const bMsg = parts.slice(1).join(" ").trim();
           if (!bMsg) {
-            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 8 pools are active & paying out!`", statusInlineKeyboard);
+            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 9 pools are active & paying out!`", statusInlineKeyboard);
             return new Response("OK");
           }
           ctx.waitUntil((async () => {
@@ -12870,7 +12904,7 @@ Reply to Arif naturally:`;
 
             const walletMsg = `💎 *YOUR NON-CUSTODIAL WALLET SUITE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 8 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
+              `All 9 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
               `🌐 *Bot-Managed Multi-Chain Wallets:*\n` +
               `• *TON (v4r2):*\n  \`${tonAddr}\`\n` +
               `• *EVM (BSC / ETH):*\n  \`${evmAddr}\`\n` +
@@ -13586,7 +13620,7 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 8 Pools Active");
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
                 const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
@@ -13820,7 +13854,7 @@ Reply to Arif naturally:`;
             await saveUserProfile(chatId, profile);
             ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `WebApp Connected (${label})`, "24/7 Autonomous Mining Live"));
 
-            const poolInfo = MINING_POOLS[poolKey] || { name: "All 8 Pools" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "All 9 Pools" };
             const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY!* 🚀\n\n` +
               `• *Label:* \`${label}\`\n` +
               `• *Account:* ${accName} (@${accUsername || "None"})\n` +
@@ -14611,7 +14645,7 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 8 Pools Active");
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
                 const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
@@ -14709,7 +14743,7 @@ Reply to Arif naturally:`;
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Active Slots:* ${profile.accounts.length} / ${totalSlots} Connected\n` +
               `• *Cloud Nodes:* 🟢 Frankfurt Standby Node 2 Active\n` +
-              `• *Protocols:* All 8 Pools Automated 24/7\n\n` +
+              `• *Protocols:* All 9 Pools Automated 24/7\n\n` +
               `👉 *Choose Connection Method:*\n\n` +
               `1️⃣ *⚡ 1-Tap QR Device Link (Fastest):*\n` +
               `Link your Telegram session directly with zero SMS codes and zero typing!\n\n` +
@@ -14869,7 +14903,7 @@ Reply to Arif naturally:`;
 
             const walletMsg = `💎 *YOUR NON-CUSTODIAL WALLET SUITE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 8 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
+              `All 9 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
               `🌐 *Bot-Managed Multi-Chain Wallets:*\n` +
               `• *TON (v4r2):*\n  \`${tonAddr}\`\n` +
               `• *EVM (BSC / ETH):*\n  \`${evmAddr}\`\n` +

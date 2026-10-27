@@ -30,6 +30,12 @@ import urllib.request
 import base64
 from typing import Dict, Any, List, Set, Optional
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+except ImportError:
+    pass
+
 # Constants & Configuration
 CHANNEL_URL = "https://t.me/s/ChickenLandCodes"
 RPC_URL = "https://app8968434282.tgcloud.ai/api/rpc"

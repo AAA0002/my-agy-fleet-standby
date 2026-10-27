@@ -1303,8 +1303,8 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
                     res["notes"].append(f"eggs_sold_{eggs}")
                 current_coins = float(sell_res.get("result", {}).get("user", {}).get("coins", current_coins))
 
-        # 6. Tasks
-        completed_tasks = set(u_info.get("tasks", []))
+        # 6. Tasks (guards against redundant subrequests for both permanent and daily tasks)
+        completed_tasks = set((u_info.get("tasks") or []) + (u_info.get("dayTasks") or []))
         for tid in ["channel", "payments", "dnews", "dpay", "dpromo", "c6"]:
             if tid not in completed_tasks:
                 await rpc("/api/task/open", {"id": tid})

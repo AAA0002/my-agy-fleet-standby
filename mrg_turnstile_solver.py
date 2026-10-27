@@ -2576,6 +2576,90 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
     return True, claimed_amt
 
 
+def check_and_farm_chickenland_rest(c_acc: dict) -> tuple[bool, int, int]:
+    """
+    Fast REST handler for Chicken Land (@ChickenLandBot).
+    Sells accumulated eggs, completes daily & social tasks, claims referral rewards, and auto-buys hens.
+    Returns: (is_success, eggs_sold, hens_bought)
+    """
+    c_uid = c_acc["uid"]
+    c_init = c_acc.get("init_data")
+    if not c_init:
+        return False, 0, 0
+
+    try:
+        import base64
+        if c_init.startswith("TMA "):
+            b64_token = c_init[4:].strip()
+        elif "%3D" in c_init or "query_id=" in c_init or "user=" in c_init:
+            decoded = urllib.parse.unquote(c_init) if "%3D" in c_init else c_init
+            b64_token = base64.b64encode(decoded.encode("latin1")).decode("latin1")
+        else:
+            b64_token = c_init.strip()
+
+        c_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"TMA {b64_token}",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"
+        }
+        rpc_url = "https://app8968434282.tgcloud.ai/api/rpc"
+
+        def c_rpc(path: str, body: dict = None):
+            payload = {"method": "POST" if body is not None else "GET", "path": path, "body": body if body is not None else {}}
+            return safe_post(rpc_url, payload, extra_headers=c_headers)
+
+        code, me_data = c_rpc("/api/me", {"ref": "12668", "lang": "en"})
+        if code != 200 or not isinstance(me_data, dict) or not me_data.get("ok"):
+            return False, 0, 0
+
+        u = me_data.get("result", {}).get("user", {})
+        current_coins = float(u.get("coins", 0) or 0)
+        eggs_sold = 0
+        hens_bought = 0
+
+        # 1. Welcome bonus
+        if not u.get("welcome"):
+            c_rpc("/api/welcome", {})
+
+        # 2. Daily check-in
+        c_rpc("/api/task", {"id": "daily"})
+
+        # 3. Sell eggs if accumulated
+        if int(u.get("eggs", 0) or 0) > 0:
+            s_code, s_data = c_rpc("/api/sell", {})
+            if s_code == 200 and isinstance(s_data, dict) and s_data.get("ok"):
+                res_obj = s_data.get("result", {})
+                eggs_sold = int(res_obj.get("eggs", 0) or 0)
+                current_coins = float(res_obj.get("user", {}).get("coins", current_coins))
+
+        # 4. Uncompleted tasks
+        completed = set((u.get("tasks") or []) + (u.get("dayTasks") or []))
+        for tid in ["channel", "payments", "dnews", "dpay", "dpromo"]:
+            if tid not in completed:
+                c_rpc("/api/task/open", {"id": tid})
+                time.sleep(0.5)
+                t_c, t_d = c_rpc("/api/task", {"id": tid})
+                if t_c == 200 and isinstance(t_d, dict) and t_d.get("ok"):
+                    if t_d.get("result", {}).get("user"):
+                        current_coins = float(t_d["result"]["user"].get("coins", current_coins))
+
+        # 5. Referral claim
+        c_rpc("/api/ref/claim", {})
+
+        # 6. Auto-buy basic hens with accumulated coins
+        if current_coins >= 1000:
+            n_buy = int(current_coins // 1000)
+            b_code, b_data = c_rpc("/api/buy", {"breed": "basic", "n": n_buy})
+            if b_code == 200 and isinstance(b_data, dict) and b_data.get("ok"):
+                hens_bought = n_buy
+
+        logger.info(f"🐔 [ChickenLand] UID {c_uid}: Successfully farmed via REST (eggs sold: {eggs_sold}, hens bought: {hens_bought}).")
+        return True, eggs_sold, hens_bought
+    except Exception as ce:
+        logger.debug(f"[ChickenLand] UID {c_uid} rest farm note: {ce}")
+        return False, 0, 0
+
+
 async def run_mrg_auto_solver():
     """Main workflow: audits all 20 accounts across 5 bots, solves needed challenges, connects wallets, and auto-claims."""
     logger.info("====================================================================")
@@ -2601,10 +2685,13 @@ async def run_mrg_auto_solver():
     pepe_solved = 0
     adx_solved = 0
     diggo_solved = 0
+    chicken_solved = 0
     total_claimed_mrg = 0.0
     total_claimed_pepe = 0.0
     total_claimed_adx = 0
     total_claimed_diggo = 0.0
+    total_eggs_sold = 0
+    total_hens_bought = 0
 
     # 1. Fetch tokens and execute Fast REST Audits & Instant Harvesting
     logger.info("⚡ Phase 1: Rapid REST Pre-Flight & Instant Multi-Bot Harvesting...")
@@ -2676,6 +2763,15 @@ async def run_mrg_auto_solver():
             if d_handled:
                 diggo_solved += 1
                 total_claimed_diggo += d_claimed
+
+        # Chicken Land Fast REST Check
+        chicken_init = tok_dict.get("chickenland_init_data")
+        if chicken_init:
+            c_handled, c_eggs, c_hens = check_and_farm_chickenland_rest({"uid": uid, "init_data": chicken_init})
+            if c_handled:
+                chicken_solved += 1
+                total_eggs_sold += c_eggs
+                total_hens_bought += c_hens
 
         # MRG Status Check
         if not mrg_init:
@@ -2990,6 +3086,7 @@ async def run_mrg_auto_solver():
         f"• <b>PepeGram Farmed:</b> {pepe_solved} (+{total_claimed_pepe:.2f} PEPE)\n"
         f"• <b>AdxEarn AI Farmed:</b> {adx_solved} (+{total_claimed_adx} Pts)\n"
         f"• <b>DiggoMiner Farmed:</b> {diggo_solved} (+{total_claimed_diggo:.2f} DIGGO)\n"
+        f"• <b>Chicken Land Farmed:</b> {chicken_solved} (+{total_eggs_sold} Eggs sold, {total_hens_bought} Hens bought)\n"
         f"• <b>Execution Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
         f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
     )
@@ -3000,6 +3097,7 @@ async def run_mrg_auto_solver():
         f"Vyro Connected {vyro_wallets_connected}/{len(vyro_accounts)}, "
         f"Kynex Farmed {kynex_farmed}/{len(kynex_accounts)}, "
         f"Pepe Farmed {pepe_solved}, Adx Farmed {adx_solved}, Diggo Farmed {diggo_solved}, "
+        f"Chicken Land Farmed {chicken_solved}, "
         f"Claimed {total_claimed_mrg:.2f} MRG, {total_claimed_knx:.2f} KNX, {total_claimed_pepe:.2f} PEPE."
     )
     send_tg_alert(report_msg)
