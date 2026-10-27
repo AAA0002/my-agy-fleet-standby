@@ -134,6 +134,14 @@ class ChickenLandMiner:
         """Claims pending referral commission coins."""
         return self.rpc("/api/ref/claim", {})
 
+    def check_promo(self, code: str) -> Dict[str, Any]:
+        """Checks if a promo code is valid and available."""
+        return self.rpc("/api/promo/check", {"code": code.strip()})
+
+    def redeem_promo(self, code: str) -> Dict[str, Any]:
+        """Redeems promo code for coins."""
+        return self.rpc("/api/promo", {"code": code.strip()})
+
     def buy_hens(self, breed: str = "basic", max_count: int = 10) -> int:
         """Buys hens of specified breed if coins are available."""
         prof = self.get_profile()

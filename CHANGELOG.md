@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Autonomous Chicken Land Promo Code Sniper & 19/19 Referral Completion (October 27, 2026)**:
+  - **19/19 Referral Perfection**:
+    * Diagnosed missing referral on Master Arif Hossain (`6727787768` / Ref `12668`): Account 13 (Rohan Sharma 14, `8727040932`) had encountered temporary server lockout `CAPTCHA_LOCKED`.
+    * Solved captcha automatically via `ensure_human()`, claimed 1,000 welcome bonus, and purchased basic hen (`/api/buy`).
+    * Confirmed Master referral count reached 19/19 (`counts: [19, 0, 0]`, total 3,800 ref coins earned) and claimed pending +200 commission.
+  - **Sub-Second Promo Code Sniper Engine (`chickenland_promo_sniper.py`)**:
+    * Engineered dedicated high-speed promo sniper engine with aiohttp parallel bursting across all 20 accounts simultaneously (total burst time < 550ms).
+    * Integrated channel DOM parser for `https://t.me/s/ChickenLandCodes` (`@ChickenLandCodes`): extracts `<code>` and pointer codes, filters exhausted/`ALL CLAIMED` messages, and tracks historical codes in Upstash Redis (`chickenland:seen_codes` / `chickenland:claimed_codes`).
+    * Automated flock compounding: automatically triggers `/api/buy` to deploy new basic hens whenever accumulated promo coins cross the 1,000 coin threshold.
+    * Integrated instant Telegram notifications to Admin Vault (`@myagyai` / `REPORT_CHAT_ID`) with latency and coin metrics.
+  - **Render Frankfurt Node 2 24/7 Cloud Watcher (`app.py`)**:
+    * Added `chickenland_promo_watcher_loop` background task running 24/7 on Render Frankfurt Node 2 (`IS_PRIMARY_HOST`), polling every 8 seconds for new drops. 100% cloud execution, zero phone load.
+    * Added `/api/chickenland/snipe` endpoint with secret key authentication for remote/webhook triggers.
+  - **Admin Bot (@myagyai) Commands (`deploy_both_cf_workers.py`)**:
+    * Added `/snipe <CODE>` and `/promo <CODE>` handlers to the Admin Bot to trigger instant fleet-wide bursts on demand.
+    * Updated fleet lineup count from 8/8 to 9/9 active protocols across all edge harvest responses.
+  - **Harmonization & Side-Task Polish (`finish_all_fleet_sidetasks.py`, `chickenland_miner.py`)**:
+    * Added `check_promo()` and `redeem_promo()` methods to `ChickenLandMiner`.
+    * Updated `finish_all_fleet_sidetasks.py` harvest banner to 9-Bot Fleet.
+
 - **🐔 Integration of 9th Legitimate Fleet Bot: Chicken Land (@ChickenLandBot) (October 27, 2026)**:
   - **Single Source of Truth Registration (`bot_registry.py`)**:
     * Added `chickenland` to `ACTIVE_BOTS` (`@ChickenLandBot`, App URL `https://app8968434282.tgcloud.ai/`, Master ref `12668`, token key `chickenland_init_data`, sponsor channels `@LandChickenNews`, `@ChickenLandPay`, `@ChickenLandCodes`).

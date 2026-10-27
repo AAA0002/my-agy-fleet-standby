@@ -9050,16 +9050,51 @@ fi
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
               `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
               (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
-              `• *Active Lineup (8/8):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI\n\n` +
+              `• *Active Lineup (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land\n\n` +
               `_Farming cycle and task claims active across all healthy nodes._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 8 mining pools`,
+              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 9 mining pools`,
               rep
             ];
             const harvestPromise = queueHarvestAction();
             await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 320);
             await harvestPromise;
+          })());
+          return new Response("OK");
+        }
+
+        // 3.6 Chicken Land Promo Code Sniper (/promo <code> or /snipe <code>)
+        if (text.startsWith("/promo") || text.startsWith("/snipe") || text.startsWith("/code")) {
+          const parts = text.trim().split(/\s+/);
+          const promoCode = (parts[1] || "").toUpperCase().trim();
+          if (!promoCode) {
+            await sendReply("⚠️ *Usage:* `/snipe <CODE>` or `/promo <CODE>`\n\nExample: `/snipe CL9QF6J7WF`\n_Instantly blasts concurrent promo code redemptions across all 20 accounts in sub-second bursts!_");
+            return new Response("OK");
+          }
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            await sendReply(`⚡ *Sniping Promo Code \`${promoCode}\` across 20 Fleet Accounts...*`);
+            try {
+              const res = await fetch(`https://my-agy-fleet-standby-node2.onrender.com/api/chickenland/snipe?code=${promoCode}&secret=${env.CF_SECRET_KEY || ""}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${env.CF_SECRET_KEY || ""}` }
+              });
+              if (res.ok) {
+                const data = await res.json();
+                const rep = data.report || {};
+                await sendReply(`🐔 *Chicken Land Promo Snipe Results:*\n\n` +
+                  `• *Code:* \`${promoCode}\`\n` +
+                  `• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 20} Accounts ✅\n` +
+                  `• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n` +
+                  `• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n` +
+                  `• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`);
+              } else {
+                await sendReply(`❌ *Sniper Error:* HTTP ${res.status} from Render Standby Node.`);
+              }
+            } catch (err) {
+              await sendReply(`❌ *Sniper Dispatch Error:* ${err.message}`);
+            }
           })());
           return new Response("OK");
         }

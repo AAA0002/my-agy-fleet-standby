@@ -1395,7 +1395,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("🎯 STARTING COMPLETE 8-BOT FLEET SIDE-TASK HARVEST (20 ACCOUNTS)")
+    logger.info("🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST (20 ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)

@@ -1663,12 +1663,82 @@ async def autonomous_fleet_ad_farmer_loop():
             logger.error(f"[Ad Farmer] Outer loop error: {e}")
             await asyncio.sleep(10)
 
+# =====================================================================
+# CHICKEN LAND 24/7 PROMO CODE SNIPER WATCHDOG (CLOUD-FIRST)
+# =====================================================================
+async def chickenland_promo_watcher_loop():
+    """
+    Autonomous 24/7 promo code sniffer for Chicken Land (@ChickenLandCodes).
+    Continuously monitors public channel drops and executes sub-second
+    aiohttp parallel redemptions across all 20 fleet accounts.
+    """
+    # Only run continuous watcher if this node is primary coordinator
+    if not IS_PRIMARY_HOST:
+        logger.info("[ChickenLand Promo Sniper] Standby node detected; skipping watcher loop.")
+        return
+
+    logger.info("[ChickenLand Promo Sniper] 🐔 24/7 Cloud Watcher initialized on Render Node 2...")
+    seen_in_memory = set()
+
+    # Pre-cache known historical codes on startup
+    try:
+        from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, mark_code_seen, snipe_promo_fleet
+        init_codes = await asyncio.to_thread(fetch_channel_codes)
+        for it in init_codes:
+            c = it["code"]
+            seen_in_memory.add(c)
+            mark_code_seen(c)
+        logger.info(f"[ChickenLand Promo Sniper] Cached {len(seen_in_memory)} historical codes.")
+    except Exception as e:
+        logger.warning(f"[ChickenLand Promo Sniper] Init scrape error: {e}")
+
+    while True:
+        try:
+            from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, mark_code_seen, snipe_promo_fleet
+            channel_items = await asyncio.to_thread(fetch_channel_codes)
+            for item in channel_items:
+                code = item["code"]
+                is_exhausted = item["is_exhausted"]
+
+                if code not in seen_in_memory and not is_code_seen(code):
+                    seen_in_memory.add(code)
+                    if is_exhausted:
+                        mark_code_seen(code)
+                        continue
+
+                    logger.info(f"[ChickenLand Promo Sniper] 🔥 NEW DROP DETECTED: {code}! Triggering parallel burst across fleet...")
+                    rep = await snipe_promo_fleet(code)
+                    logger.info(
+                        f"[ChickenLand Promo Sniper] ✅ Burst completed: {rep.get('claimed_count')}/{rep.get('total_accounts')} accounts claimed "
+                        f"(+{rep.get('total_coins')} coins) in {rep.get('burst_time_sec')}s"
+                    )
+        except Exception as e:
+            logger.debug(f"[ChickenLand Promo Sniper] Watcher loop tick: {e}")
+
+        await asyncio.sleep(8)
+
+@app.post("/api/chickenland/snipe")
+@app.get("/api/chickenland/snipe")
+async def api_chickenland_snipe(request: Request, code: str = "", buy_hens: bool = True):
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if SECRET_KEY and auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing promo code")
+
+    from chickenland_promo_sniper import snipe_promo_fleet
+    report = await snipe_promo_fleet(code, auto_buy_hens=buy_hens)
+    return {"ok": True, "report": report}
+
 @app.on_event("startup")
 async def on_startup():
     asyncio.create_task(load_fleet_wallets_from_cloud())
     asyncio.create_task(token_health_and_refresh_watchdog())
     asyncio.create_task(cloud_wealth_automation_watchdog())
     asyncio.create_task(autonomous_fleet_ad_farmer_loop())
+    asyncio.create_task(chickenland_promo_watcher_loop())
 
 
 

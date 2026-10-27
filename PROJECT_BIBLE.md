@@ -125,6 +125,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Phase 1: Rapid REST Pre-Flight & Instant Harvesting**: Audits all 20 accounts across Victor's Company, VyroDrop, ATF Miner, and MRG Miner via sub-second REST endpoints. Accounts with active passes (`victors:pass:{uid}`, connected Vyro wallets, active ATF sessions) have their rewards, checkins, shift claims, and tasks processed instantly via REST without touching the browser.
     - **Phase 2: Targeted Browser Solving**: Decoupled Chromium from the main loop; launches Patchright Chromium stealth strictly for the subset of accounts that genuinely require Turnstile passes or onboarding challenges. If zero accounts need solving, the browser is completely bypassed, reducing execution time from 35+ minutes to ~2 minutes.
     - **Phase 3 & 4: Deep Mine Arcade & Kynex Farm**: Automates Victor's Company Deep Mine arcade minigame (`victors_arcade_solver.py`) and Kynex Network farming (`kynex_miner.py`) over concurrent asynchronous HTTP sessions.
+19. **🐔 Chicken Land Sub-Second Promo Code Sniper & Autonomous Compounding (`chickenland_promo_sniper.py`)**:
+    - **Real-Time Channel Ingestion**: Programmatically scrapes `@ChickenLandCodes` (`https://t.me/s/ChickenLandCodes`) to detect drops of limited-user promo codes. Filters exhausted/claimed codes via DOM state and tracks history in Upstash Redis (`chickenland:seen_codes` / `chickenland:claimed_codes`).
+    - **Sub-Second Fleet Burst**: Uses `aiohttp.ClientSession` with concurrent TCP multiplexing to dispatch redemption payloads (`POST /api/promo`) to all 20 accounts simultaneously in under 550ms, guaranteeing early queue slots before public user exhaustion.
+    - **Flock Compounding Engine**: Automatically checks balance post-redemption; if coins exceed 1,000, triggers `/api/buy` to purchase additional basic hens (expanding hourly egg production capacity).
+    - **24/7 Cloud Daemon & Admin Dispatch**: Continuous 8-second polling watcher runs on Render Frankfurt Node 2 (`app.py`), backed by on-demand manual `/snipe <CODE>` and `/promo <CODE>` handlers in the Admin Bot (`@myagyai` / `deploy_both_cf_workers.py`). Zero phone load.
 
 ---
 
