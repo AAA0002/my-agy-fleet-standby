@@ -284,7 +284,7 @@ async def get_ai_market_briefing(session: aiohttp.ClientSession, rates: dict, to
         except Exception:
             continue
 
-    return "BNB and TON market momentum remains strong with active treasury growth across our 20-account cloud fleet. Multi-chain protocol yields continue compounding into primary non-custodial vaults."
+    return "BNB and TON market momentum remains strong with active treasury growth across our automated cloud fleet. Multi-chain protocol yields continue compounding into primary non-custodial vaults."
 
 async def generate_and_send_report(dry_run: bool = False):
     async with aiohttp.ClientSession() as session:
@@ -344,7 +344,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
             f"• *Victor's Company:* `{fleet_totals['vic']:,.2f} VIC` mined (Hourly Shifts & Arcade Solver)\n"
             f"• *Kynex Network:* `{fleet_totals['knx']:,.2f} KNX` mined (Firebase RTDB Node Auto-Claim)\n"
-            f"• *VyroDrop:* DEX speed miner active across all 20 accounts (TonConnect 2.0 signed proof)\n"
+            f"• *VyroDrop:* DEX speed miner active across all fleet accounts (TonConnect 2.0 signed proof)\n"
             f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Decentralized Block Mining & JWT)\n"
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"
             f"• *AdxEarn AI:* `{fleet_totals['adx']:,.0f} Points` earned (Daily Check-in Streaks & Tasks)\n"

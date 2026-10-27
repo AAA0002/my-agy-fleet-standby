@@ -2,9 +2,9 @@
 """
 finalize_chickenland_fleet.py
 =============================================================================
-FINALIZES CHICKEN LAND FLEET-WIDE FARMING ACROSS ALL 20 ACCOUNTS
+FINALIZES CHICKEN LAND FLEET-WIDE FARMING ACROSS ALL FLEET ACCOUNTS
 =============================================================================
-1. Syncs all 20 chickenland_init_data tokens to Upstash Redis with proper JSON encoding.
+1. Syncs all chickenland_init_data tokens to Upstash Redis with proper JSON encoding.
 2. Ensures human verification (auto-solves turnstile / picture pick captcha).
 3. Claims 1,000 welcome coins for any accounts that haven't claimed yet.
 4. Buys basic hens to start / expand egg laying across the entire fleet.

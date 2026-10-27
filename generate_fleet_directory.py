@@ -2,7 +2,7 @@
 """
 generate_fleet_directory.py
 Generates the comprehensive FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md document
-with all 20 accounts, names, phone numbers, Telegram IDs, and isolated wallets.
+with all dynamic fleet accounts, names, phone numbers, Telegram IDs, and isolated wallets.
 """
 
 import json

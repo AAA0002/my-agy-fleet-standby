@@ -283,7 +283,7 @@
       <div class="space-y-1">
         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick AI Diagnostics</div>
         <div class="grid grid-cols-2 gap-1.5 text-[10px]">
-          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Run a full security and sybil anti-ban audit across all 20 nodes and 8 active mining pools.">
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Run a full security and sybil anti-ban audit across all fleet nodes and 9 active mining pools.">
             <span class="font-bold text-blue-700 block">🛡️ Security & Sybil</span>
             <span class="text-slate-500 text-[9px]">Check fleet health & risks</span>
           </button>
@@ -734,7 +734,7 @@
         <h4 class="font-bold text-xs text-slate-900">📦 Export Multi-Chain Treasury</h4>
         <button id="modalExportClose" class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs">✕</button>
       </div>
-      <p class="text-[11px] text-slate-600">Export all 100 non-custodial addresses across 20 accounts in standard format:</p>
+      <p class="text-[11px] text-slate-600">Export all non-custodial addresses across fleet accounts in standard format:</p>
       <div class="flex gap-2">
         <button id="btnExportJson" class="flex-1 min-h-[40px] py-2 bg-blue-50 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy JSON</button>
         <button id="btnExportCsv" class="flex-1 min-h-[40px] py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy CSV</button>
@@ -1838,7 +1838,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            prompt: `You are Ari AI Council for AAA AUTO fleet (20 Telegram accounts, 8 mining pools: MRG, ATF, Victor's Company, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI). Answer clearly and concisely with markdown formatting:\n\n${promptText}`
+            prompt: `You are Ari AI Council for AAA AUTO fleet (${fleetAccounts.length || 'active'} Telegram accounts, 9 mining pools: MRG, ATF, Victor's Company, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land). Answer clearly and concisely with markdown formatting:\n\n${promptText}`
           })
         });
 
@@ -1849,7 +1849,7 @@
 
         document.getElementById('btnCopyAi').onclick = () => copyToClipboard(answer, 'AI Diagnostic copied!');
       } catch (err) {
-        respText.innerText = "🛡️ Ari AI Edge Summary: All 20 nodes connected. 9 mining pools active in 100% cloud compounding mode with 0 phone load. Re-link pending worker accounts to maximize satoshi accumulation.";
+        respText.innerText = "🛡️ Ari AI Edge Summary: All fleet nodes connected. 9 mining pools active in 100% cloud compounding mode with 0 phone load. Re-link pending worker accounts to maximize satoshi accumulation.";
         modelBadge.innerText = 'Edge Heuristic Mode';
       } finally {
         btn.innerHTML = origText;

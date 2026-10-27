@@ -6,7 +6,7 @@ COMPREHENSIVE MULTI-BOT FLEET SIDE-TASK HARVESTER & AUTOMATION ENGINE
 =============================================================================
 Sweeps and completes all available side-tasks, daily check-ins, social joins,
 cooldown missions, wallet verifications, and referral commission claims across
-all 20 accounts in the fleet for all 9 legitimate bots:
+all dynamic accounts in the fleet for all 9 legitimate bots:
   1. MRG Miner (@mrg_miner_bot)
   2. ATF Miner (@atf_miner_bot)
   3. Victor's Company (@VictorsCompanybot)
@@ -725,25 +725,29 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
                 async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": "connect-wallet"}, headers=v_h) as twr:
                     if twr.status == 200: res["notes"].append("wallet_task_claimed")
 
-        # 7. Discover & Claim Jobs Board Tasks (with 4.2s link verification debounce)
+        # 7. Discover & Claim Jobs Board Tasks (with unified 4.2s link verification debounce)
         async with session.get("https://server.victors.company/api/tasks", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as tr:
             if tr.status == 200:
                 t_d = await tr.json()
                 tasks = t_d.get("tasks", []) if isinstance(t_d, dict) else []
+                claimable_tasks = []
+                needs_debounce = False
                 for t in tasks:
                     if isinstance(t, dict):
                         tid = t.get("taskId") or t.get("id")
                         t_kind = t.get("kind", "")
                         if tid and (t.get("status") == "open" or not t.get("claimed")):
-                            # Link-visit / partner-api tasks enforce 4.0s debounce before claim
+                            claimable_tasks.append(tid)
                             if t_kind in ("link_visit", "telegram_channel", "partner_api") or t.get("url"):
-                                await asyncio.sleep(4.2)
-                            else:
-                                await jitter(0.3, 0.6)
-                            async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": tid}, headers=v_h) as tcr:
-                                if tcr.status in (200, 201):
-                                    res["tasks_claimed"] += 1
-                                    res["notes"].append(f"task_{tid}")
+                                needs_debounce = True
+                if needs_debounce:
+                    await asyncio.sleep(4.2)
+                for tid in claimable_tasks:
+                    await jitter(0.2, 0.4)
+                    async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": tid}, headers=v_h) as tcr:
+                        if tcr.status in (200, 201):
+                            res["tasks_claimed"] += 1
+                            res["notes"].append(f"task_{tid}")
 
         # 8. Referral claims (Hiring Bonus + Commission)
         if str(uid) == MASTER_UID or vic_pass:
@@ -1242,43 +1246,37 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
         await jitter(0.3, 0.7)
         await session.post(f"{adx_base}/farming/boost", json={}, headers=adx_headers)
 
-        # 5. Dynamic Tasks (Wait 16.0s for delayed tasks like 8 and 9)
-        await jitter(0.4, 0.8)
-        async with session.get(f"{adx_base}/rewards/tasks", headers=adx_headers) as tr:
-            if tr.status == 200:
-                td = await tr.json()
-                started_tasks = []
-                for tk in (td.get("tasks", []) if isinstance(td, dict) else []):
-                    t_id = tk.get("id")
-                    if t_id and not tk.get("completed") and not tk.get("claimed"):
-                        try:
-                            async with session.post(f"{adx_base}/rewards/task-start", json={"taskId": t_id}, headers=adx_headers) as s_resp:
-                                if s_resp.status == 200:
-                                    started_tasks.append(t_id)
-                        except Exception:
-                            pass
-                if started_tasks:
-                    await asyncio.sleep(16.0)
-                    for t_id in started_tasks:
-                        try:
-                            async with session.post(f"{adx_base}/rewards/task-claim", json={"taskId": t_id}, headers=adx_headers) as cl:
-                                if cl.status == 200:
-                                    res["tasks_claimed"] += 1
-                                    res["notes"].append(f"task_{t_id}")
-                                elif cl.status == 403:
-                                    c_err = await cl.json()
-                                    if "already completed" in str(c_err.get("error", "")).lower():
-                                        res["notes"].append(f"task_{t_id}_already_done")
-                        except Exception:
-                            pass
+        # 5. Parallelized Task, Ad Network, and CPA Offer Verification
+        # In AdxEarn AI, tasks, ad network views, and CPA offers each require a ~16s cooldown between start and claim.
+        # We start all of them concurrently, sleep once (16.2s), and claim all of them concurrently.
+        started_tasks = []
+        started_nets = []
+        started_offers = []
 
-        # 5.5. Ad Networks & Flash Bonus Auto-Watch & Claim
+        # A. Start Dynamic Tasks
+        await jitter(0.2, 0.5)
+        try:
+            async with session.get(f"{adx_base}/rewards/tasks", headers=adx_headers, timeout=aiohttp.ClientTimeout(total=6)) as tr:
+                if tr.status == 200:
+                    td = await tr.json()
+                    for tk in (td.get("tasks", []) if isinstance(td, dict) else []):
+                        t_id = tk.get("id")
+                        if t_id and not tk.get("completed") and not tk.get("claimed"):
+                            try:
+                                async with session.post(f"{adx_base}/rewards/task-start", json={"taskId": t_id}, headers=adx_headers) as s_resp:
+                                    if s_resp.status == 200:
+                                        started_tasks.append(t_id)
+                            except Exception:
+                                pass
+        except Exception:
+            pass
+
+        # B. Start Ad Networks (Adsgram, Monetag, Gigapub, Popup)
         try:
             async with session.get(f"{adx_base}/rewards/ad-networks/status", headers=adx_headers, timeout=aiohttp.ClientTimeout(total=6)) as nsr:
                 if nsr.status == 200:
                     nsd = await nsr.json()
                     st_dict = nsd.get("status", {}) if isinstance(nsd, dict) else {}
-                    started_nets = []
                     for net_slug, net_info in st_dict.items():
                         if isinstance(net_info, dict):
                             watched = net_info.get("watchedToday", 0)
@@ -1291,42 +1289,65 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
                                             started_nets.append(net_slug)
                                 except Exception:
                                     pass
-                    if started_nets:
-                        await asyncio.sleep(16.0)  # Parallel verification wait across all eligible ad networks
-                        for net_slug in started_nets:
-                            try:
-                                async with session.post(f"{adx_base}/rewards/ad-claim", json={"network": net_slug}, headers=adx_headers) as v_cl:
-                                    if v_cl.status == 200:
-                                        c_d = await v_cl.json()
-                                        res["tasks_claimed"] += 1
-                                        res["notes"].append(f"ad_{net_slug}_+{c_d.get('reward', 100)}pts")
-                            except Exception:
-                                pass
         except Exception as e:
             logger.debug(f"[{name}] AdxEarn ad watch note: {e}")
 
-        # 5.6. CPA Offers Discovery & Claim
+        # C. Start CPA Offers
         try:
             async with session.get(f"{adx_base}/cpa-offers", headers=adx_headers, timeout=aiohttp.ClientTimeout(total=6)) as cor:
                 if cor.status == 200:
                     co_d = await cor.json()
                     offers = co_d.get("offers", []) if isinstance(co_d, dict) else []
-                    started_offers = []
                     for off in offers:
                         oid = off.get("id")
                         if oid:
-                            async with session.post(f"{adx_base}/cpa-offers/start", json={"offerId": oid}, headers=adx_headers) as ost:
-                                if ost.status == 200:
-                                    started_offers.append(oid)
-                    if started_offers:
-                        await asyncio.sleep(16.0)
-                        for oid in started_offers:
-                            async with session.post(f"{adx_base}/cpa-offers/claim", json={"offerId": oid}, headers=adx_headers) as ocl:
-                                if ocl.status == 200:
-                                    res["tasks_claimed"] += 1
-                                    res["notes"].append(f"cpa_offer_{oid}_+300pts")
+                            try:
+                                async with session.post(f"{adx_base}/cpa-offers/start", json={"offerId": oid}, headers=adx_headers) as ost:
+                                    if ost.status == 200:
+                                        started_offers.append(oid)
+                            except Exception:
+                                pass
         except Exception as e:
             logger.debug(f"[{name}] AdxEarn CPA offer note: {e}")
+
+        # D. Single Unified Cooldown Sleep (if anything was started)
+        if started_tasks or started_nets or started_offers:
+            await asyncio.sleep(16.2)
+
+        # E. Claim Dynamic Tasks
+        for t_id in started_tasks:
+            try:
+                async with session.post(f"{adx_base}/rewards/task-claim", json={"taskId": t_id}, headers=adx_headers) as cl:
+                    if cl.status == 200:
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"task_{t_id}")
+                    elif cl.status == 403:
+                        c_err = await cl.json()
+                        if "already completed" in str(c_err.get("error", "")).lower():
+                            res["notes"].append(f"task_{t_id}_already_done")
+            except Exception:
+                pass
+
+        # F. Claim Ad Networks
+        for net_slug in started_nets:
+            try:
+                async with session.post(f"{adx_base}/rewards/ad-claim", json={"network": net_slug}, headers=adx_headers) as v_cl:
+                    if v_cl.status == 200:
+                        c_d = await v_cl.json()
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"ad_{net_slug}_+{c_d.get('reward', 100)}pts")
+            except Exception:
+                pass
+
+        # G. Claim CPA Offers
+        for oid in started_offers:
+            try:
+                async with session.post(f"{adx_base}/cpa-offers/claim", json={"offerId": oid}, headers=adx_headers) as ocl:
+                    if ocl.status == 200:
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"cpa_offer_{oid}_+300pts")
+            except Exception:
+                pass
 
         # 6. Referral Milestones Claim
         if str(uid) == MASTER_UID:

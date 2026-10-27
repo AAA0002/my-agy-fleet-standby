@@ -5,11 +5,11 @@ chickenland_promo_sniper.py
 CHICKEN LAND ULTRA-FAST FLEET PROMO CODE SNIPER & AUTO-REINVEST ENGINE
 =============================================================================
 Monitors https://t.me/ChickenLandCodes (@ChickenLandCodes) for drops of
-limited-user promo codes and redeems them concurrently across all 20 accounts
+limited-user promo codes and redeems them concurrently across all fleet accounts
 in sub-second bursts via aiohttp.
 
 Key Features:
-- Sub-second parallel async redemption across all 20 fleet accounts (~300-500ms)
+- Sub-second parallel async redemption across all fleet accounts (~300-500ms)
 - Programmatic channel extraction from https://t.me/s/ChickenLandCodes
 - Deduplication & persistent state via Upstash Redis (chickenland:claimed_codes)
 - Autonomous flock reinvestment: automatically buys hens when balance >= 1000

@@ -1459,7 +1459,7 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 1: FLEET ROSTER (20 ACCOUNTS)
+    // TAB 1: FLEET ROSTER
     // ==========================================================
     activeTab === "fleet" && React.createElement("div", { className: "animate-entrance" },
       // Executive Multi-Asset Treasury Grid
@@ -1823,7 +1823,7 @@ function App() {
           )
         ),
 
-        // 20 Accounts Wallet Roster
+        // Fleet Accounts Wallet Roster
         React.createElement("div", { className: "space-y-2 max-h-[500px] overflow-y-auto pr-1" },
           FLEET_WALLETS_REGISTRY.filter(w => {
             if (!walletSearchQuery) return true;

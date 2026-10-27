@@ -7861,7 +7861,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
 async def cleanup_purged_bots_once_endpoint(request: Request):
     """
     Dedicated 1-time purge endpoint for user accounts:
-    Iterates all 20 accounts, permanently blocks & erases chat history for all discontinued bots
+    Iterates all fleet accounts, permanently blocks & erases chat history for all discontinued bots
     (@stoneswithestand_bot, @AiLab_robot, @UltrawalletTrade_Bot, @FINVORAWeb3bot, etc.),
     leaves discontinued channels, and guarantees strictly 1-time execution per account.
     """

@@ -349,7 +349,7 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
         React.createElement("span", null, "•"),
         React.createElement("span", null, "SHA-256 Vault"),
         React.createElement("span", null, "•"),
-        React.createElement("span", null, "20 Accounts Online")
+        React.createElement("span", null, "All Fleet Accounts Online")
       )
     )
   );
@@ -534,7 +534,7 @@ function App() {
     {
       sender: "ai",
       model: "DeepSeek R1 (Edge)",
-      text: "Commander Arif, welcome to the upgraded Multi-Model Cloud AI Studio. All 20 accounts are online and accumulating in the cloud. How can I assist you with fleet strategy or code today?"
+      text: "Commander Arif, welcome to the upgraded Multi-Model Cloud AI Studio. All fleet accounts are online and accumulating in the cloud. How can I assist you with fleet strategy or code today?"
     }
   ]);
   const [aiInput, setAiInput] = useState("");
@@ -588,7 +588,7 @@ function App() {
 
   // Instant Harvest
   const handleInstantHarvest = async () => {
-    showToast("Harvest queued across all 20 accounts & 9 mining pools...", "info");
+    showToast(`Harvest queued across all ${fleet.length} accounts & 9 mining pools...`, "info");
     haptic("heavy");
     try {
       const res = await fetchMeshApi("/api/harvest", { method: "POST" });
@@ -700,11 +700,11 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text, model: aiSelectedModel })
       });
-      const ans = res?.answer || res?.response || "All 20 accounts are mining uninterrupted in the cloud edge mesh.";
+      const ans = res?.answer || res?.response || "All fleet accounts are mining uninterrupted in the cloud edge mesh.";
       const prov = res?.provider ? `${res.provider} (${res.model || "Edge"})` : "Ari Edge Sentinel";
       setAiMessages(prev => [...prev, { sender: "ai", text: ans, model: prov }]);
     } catch (_) {
-      setAiMessages(prev => [...prev, { sender: "ai", text: "Cloud mesh failover active. 20 accounts operational." }]);
+      setAiMessages(prev => [...prev, { sender: "ai", text: "Cloud mesh failover active. All fleet accounts operational." }]);
     }
     setAiLoading(false);
     haptic("success");
@@ -814,7 +814,7 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 1: FLEET ROSTER (20 ACCOUNTS)
+    // TAB 1: FLEET ROSTER
     // ==========================================================
     activeTab === "fleet" && React.createElement("div", { className: "animate-entrance" },
       // Executive Metrics Grid
@@ -910,7 +910,7 @@ function App() {
             type: "text",
             value: fleetSearchQuery,
             onChange: (e) => setFleetSearchQuery(e.target.value),
-            placeholder: "Search 20 accounts by name, phone, or ID...",
+            placeholder: `Search ${fleet.length} fleet accounts by name, phone, or ID...`,
             className: `w-full pl-8 pr-3 py-2 border rounded-xl text-xs font-medium outline-none transition ${isDark ? 'bg-dark-850 border-dark-700 text-white placeholder-slate-500 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500'}`
           }),
           React.createElement("div", { className: "absolute left-2.5 top-2.5 text-slate-400" },
@@ -1037,11 +1037,11 @@ function App() {
           React.createElement("div", { className: "flex items-center gap-2" },
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
-              React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, "TON Blockchain (20 Accounts Bound)"),
+              React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, `TON Blockchain (${fleet.length} Accounts Bound)`),
               React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI")
             )
           ),
-          React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "20/20 Bound")
+          React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, `${fleet.length}/${fleet.length} Bound`)
         ),
         React.createElement("p", { className: "text-xs text-slate-400 leading-relaxed mb-2" },
           "Every fleet account has a distinct non-custodial TON wallet mapped directly to its Telegram user ID for automated reward claims."
@@ -1103,7 +1103,7 @@ function App() {
       // Prompt Quick Suggestions
       React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-1.5" },
         [
-          { label: "📊 Fleet Telemetry", cmd: "Summarize the 20-account fleet status and token accumulation." },
+          { label: "📊 Fleet Telemetry", cmd: "Summarize the fleet status and token accumulation." },
           { label: "👛 Vault Balances", cmd: "Check BNB vault and multi-chain wallet settlements." },
           { label: "🌾 Optimize Mining", cmd: "What is the optimal harvest schedule for MRG and ATF?" }
         ].map((chip, cIdx) => React.createElement("button", {
@@ -1146,13 +1146,13 @@ function App() {
           React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full" }, "15m Window")
         ),
         React.createElement("p", { className: "text-xs text-slate-400 mb-3" },
-          "Instant code recovery across all 20 accounts via Render Session Collectors and Cloudflare Edge."
+          "Instant code recovery across all fleet accounts via Render Session Collectors and Cloudflare Edge."
         ),
 
         // Account Selector Buttons
-        React.createElement("label", { className: "text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5" }, "Select Target Account (#1 - #20)"),
+        React.createElement("label", { className: "text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5" }, `Select Target Account (#1 - #${fleet.length})`),
         React.createElement("div", { className: "grid grid-cols-5 sm:grid-cols-10 gap-1.5 mb-3" },
-          Array.from({ length: 20 }, (_, i) => i + 1).map(num => React.createElement("button", {
+          Array.from({ length: fleet.length || 20 }, (_, i) => i + 1).map(num => React.createElement("button", {
             key: num,
             onClick: () => {
               setOtpTargetIndex(num);
