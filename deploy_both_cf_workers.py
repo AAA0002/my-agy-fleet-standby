@@ -3310,7 +3310,7 @@ fi
           return stateObj;
         };
 
-        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length >= 20) {
+        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length > 0) {
           memFleetState = ensureFullFleet(memFleetState);
           return new Response(JSON.stringify(memFleetState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
@@ -5388,12 +5388,12 @@ fi
           }
 
           // 1.5 Upstash fleet:live_state fallback
-          if (!accounts || accounts.length < 20) {
+          if (!accounts || accounts.length === 0) {
             try {
               const upstashRaw = await upstashGet("fleet:live_state");
               if (upstashRaw) {
                 const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
-                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 20) {
+                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
                   accounts = parsed.accounts;
                 }
               }
@@ -5407,7 +5407,7 @@ fi
                 const raw = await env.BACKUP_KV.get("fleet_live_state");
                 if (raw) {
                   const s = JSON.parse(raw);
-                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length >= 20) {
+                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
                     accounts = s.accounts;
                   }
                 }
@@ -11555,30 +11555,45 @@ Reply to Arif naturally:`;
     if (path === "/api/fleet/ad-status" || path === "/api/fleet/ad-farmer-status") {
       try {
         const todayStr = new Date().toISOString().slice(0, 10);
-        const FLEET_20_IDS = [
-          { uid: "6727787768", name: "Arif Hossain (Master)" },
-          { uid: "8881914294", name: "Nancy Davis 2" },
-          { uid: "7648254021", name: "Koram Shah 3" },
-          { uid: "8826375659", name: "Arif 4" },
-          { uid: "8450010161", name: "Nathan Miller 5" },
-          { uid: "8782429452", name: "Kaitlyn Ross 6" },
-          { uid: "7734849205", name: "Abid Hasan 7" },
-          { uid: "8025472383", name: "Abid Hasan (2) 8" },
-          { uid: "8851426148", name: "Naimur Rahman 9" },
-          { uid: "8203342513", name: "Tanvir Ahmed 10" },
-          { uid: "8190649727", name: "MD. ARIF HOSSAIN 11" },
-          { uid: "7487048946", name: "Sanzida Shimu 12" },
-          { uid: "8741547543", name: "Abid (3) 13" },
-          { uid: "8727040932", name: "Rohan Sharma 14" },
-          { uid: "7749125802", name: "Tasnim Farhana 15" },
-          { uid: "7954290138", name: "Rashedul Islam 16" },
-          { uid: "8841038141", name: "Kawsar Mahmud 17" },
-          { uid: "8975442879", name: "Mehedi Hasan 18" },
-          { uid: "8937908003", name: "Adil H 19" },
-          { uid: "8609131528", name: "Asaduzzaman Sarker 20" }
-        ];
+        let fleetTargetAccounts = [];
+        try {
+          const accsRaw = await upstashGet("fleet:accounts");
+          if (accsRaw) {
+            const parsed = typeof accsRaw === "string" ? JSON.parse(accsRaw) : accsRaw;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              fleetTargetAccounts = parsed.map((a, i) => ({
+                uid: String(a.user_id || a.uid),
+                name: a.name || `Account #${i + 1}`
+              }));
+            }
+          }
+        } catch (_) {}
+        if (!fleetTargetAccounts || fleetTargetAccounts.length === 0) {
+          fleetTargetAccounts = [
+            { uid: "6727787768", name: "Arif Hossain (Master)" },
+            { uid: "8881914294", name: "Nancy Davis 2" },
+            { uid: "7648254021", name: "Koram Shah 3" },
+            { uid: "8826375659", name: "Arif 4" },
+            { uid: "8450010161", name: "Nathan Miller 5" },
+            { uid: "8782429452", name: "Kaitlyn Ross 6" },
+            { uid: "7734849205", name: "Abid Hasan 7" },
+            { uid: "8025472383", name: "Abid Hasan (2) 8" },
+            { uid: "8851426148", name: "Naimur Rahman 9" },
+            { uid: "8203342513", name: "Tanvir Ahmed 10" },
+            { uid: "8190649727", name: "MD. ARIF HOSSAIN 11" },
+            { uid: "7487048946", name: "Sanzida Shimu 12" },
+            { uid: "8741547543", name: "Abid (3) 13" },
+            { uid: "8727040932", name: "Rohan Sharma 14" },
+            { uid: "7749125802", name: "Tasnim Farhana 15" },
+            { uid: "7954290138", name: "Rashedul Islam 16" },
+            { uid: "8841038141", name: "Kawsar Mahmud 17" },
+            { uid: "8975442879", name: "Mehedi Hasan 18" },
+            { uid: "8937908003", name: "Adil H 19" },
+            { uid: "8609131528", name: "Asaduzzaman Sarker 20" }
+          ];
+        }
 
-        const fleetStatusList = await Promise.all(FLEET_20_IDS.map(async (acc, idx) => {
+        const fleetStatusList = await Promise.all(fleetTargetAccounts.map(async (acc, idx) => {
           const key = `fleet:daily_ads:${acc.uid}:${todayStr}`;
           let count = 0;
           try {
@@ -11603,7 +11618,7 @@ Reply to Arif naturally:`;
 
         const totalAdsToday = fleetStatusList.reduce((acc, a) => acc + a.ads_today, 0);
         const totalPointsToday = totalAdsToday * 20;
-        const totalTarget = 20000;
+        const totalTarget = fleetTargetAccounts.length * 1000;
         const completedCount = fleetStatusList.filter(a => a.completed).length;
 
         return new Response(JSON.stringify({
@@ -11614,7 +11629,7 @@ Reply to Arif naturally:`;
           total_points_earned_today: totalPointsToday,
           fleet_completion_pct: Math.min(100, Math.round((totalAdsToday / totalTarget) * 1000) / 10),
           completed_accounts_count: completedCount,
-          accounts_count: FLEET_20_IDS.length,
+          accounts_count: fleetTargetAccounts.length,
           accounts: fleetStatusList
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
@@ -15871,13 +15886,25 @@ Reply to Arif naturally:`;
     ctx.waitUntil((async () => {
       try {
         const todayStr = new Date().toISOString().slice(0, 10);
-        const FLEET_20_IDS = [
-          "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
-          "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
-          "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
-          "7954290138", "8841038141", "8975442879", "8937908003", "8609131528"
-        ];
-        for (const fUid of FLEET_20_IDS) {
+        let fleetUids = [];
+        try {
+          const accsRaw = await upstashGet("fleet:accounts");
+          if (accsRaw) {
+            const parsed = typeof accsRaw === "string" ? JSON.parse(accsRaw) : accsRaw;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              fleetUids = parsed.map(a => String(a.user_id || a.uid));
+            }
+          }
+        } catch (_) {}
+        if (fleetUids.length === 0) {
+          fleetUids = [
+            "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
+            "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
+            "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
+            "7954290138", "8841038141", "8975442879", "8937908003", "8609131528"
+          ];
+        }
+        for (const fUid of fleetUids) {
           try {
             const key = `fleet:daily_ads:${fUid}:${todayStr}`;
             const countRaw = await upstashGet(key, 0);

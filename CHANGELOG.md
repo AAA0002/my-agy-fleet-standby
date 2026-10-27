@@ -2,6 +2,14 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Fleet Scaling & Complete De-Hardcoding (`dashboard.html`, `deploy_both_cf_workers.py`) (October 27, 2026)**:
+  - **Dynamic Fleet Sizing Across UI & Cloud Engines**:
+    * Resolved all remaining hardcoded `20` references in `dashboard.html` and Cloudflare Edge Worker endpoints. The fleet sizing is now 100% dynamic (`fleetAccounts.length` / `fleetTargetAccounts.length`), seamlessly scaling whether accounts are added, removed, or scaled in the future.
+    * **Cloudflare Edge State Fallbacks (`deploy_both_cf_workers.py`)**: Replaced restrictive `>= 20` and `< 20` checks in `ensureFullFleet`, `fleet:live_state`, and `fleet_live_state` KV storage with `accounts.length > 0`, allowing arbitrary fleet sizes without resetting or overwriting state.
+    * **Dynamic Ad Farming Status Endpoint (`/api/fleet/ad-status`)**: Replaced static `FLEET_20_IDS` array with dynamic extraction from `fleet:accounts` and `miniapp_tokens`, ensuring telemetry always monitors the true live fleet size and dynamically calculates daily targets (`accounts.length * 1000`).
+    * **Edge Autonomous Ad Claims**: Replaced hardcoded array with dynamic account loading from Upstash Redis state.
+    * **UI Dynamic Counters (`dashboard.html`)**: Converted headers, search placeholders (`Search ${fleetAccounts.length} accounts...`), nodes badges, TON blockchain cards, instant harvest toasts, and AI copilot status messages to dynamic counters.
+
 - **🎟️ Autonomous Chicken Land Promo Code Extraction & Fleet Auto-Apply (`deploy_both_cf_workers.py`, `chickenland_miner.py`, `chickenland_promo_sniper.py`, `finish_all_fleet_sidetasks.py`, `app.py`) (October 27, 2026)**:
   - **100% Autonomous Promo Code Harvesting (Zero Manual Input)**:
     * Implemented fully automated scraping of the official promo code channel `@ChickenLandCodes` (`https://t.me/s/ChickenLandCodes`) across all farming engines so the user never has to manually find or type promo codes.

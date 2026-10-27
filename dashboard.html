@@ -349,7 +349,7 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
         React.createElement("span", null, "•"),
         React.createElement("span", null, "SHA-256 Vault"),
         React.createElement("span", null, "•"),
-        React.createElement("span", null, "20 Accounts Online")
+        React.createElement("span", null, "Fleet Mesh Online")
       )
     )
   );
@@ -534,7 +534,7 @@ function App() {
     {
       sender: "ai",
       model: "DeepSeek R1 (Edge)",
-      text: "Commander Arif, welcome to the upgraded Multi-Model Cloud AI Studio. All 20 accounts are online and accumulating in the cloud. How can I assist you with fleet strategy or code today?"
+      text: "Commander Arif, welcome to the upgraded Multi-Model Cloud AI Studio. All fleet accounts are online and accumulating in the cloud. How can I assist you with fleet strategy or code today?"
     }
   ]);
   const [aiInput, setAiInput] = useState("");
@@ -588,7 +588,7 @@ function App() {
 
   // Instant Harvest
   const handleInstantHarvest = async () => {
-    showToast("Harvest queued across all 20 accounts & 9 mining pools...", "info");
+    showToast(`Harvest queued across all ${fleetAccounts.length || 20} accounts & 9 mining pools...`, "info");
     haptic("heavy");
     try {
       const res = await fetchMeshApi("/api/harvest", { method: "POST" });
@@ -700,11 +700,11 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text, model: aiSelectedModel })
       });
-      const ans = res?.answer || res?.response || "All 20 accounts are mining uninterrupted in the cloud edge mesh.";
+      const ans = res?.answer || res?.response || `All ${fleetAccounts.length || 20} accounts are mining uninterrupted in the cloud edge mesh.`;
       const prov = res?.provider ? `${res.provider} (${res.model || "Edge"})` : "Ari Edge Sentinel";
       setAiMessages(prev => [...prev, { sender: "ai", text: ans, model: prov }]);
     } catch (_) {
-      setAiMessages(prev => [...prev, { sender: "ai", text: "Cloud mesh failover active. 20 accounts operational." }]);
+      setAiMessages(prev => [...prev, { sender: "ai", text: `Cloud mesh failover active. ${fleetAccounts.length || 20} accounts operational.` }]);
     }
     setAiLoading(false);
     haptic("success");
@@ -789,11 +789,11 @@ function App() {
         React.createElement("div", null,
           React.createElement("div", { className: "flex items-center gap-1.5" },
             React.createElement("h1", { className: `font-black text-sm tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}` }, "MY AGY AI"),
-            React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono" }, "20 NODES")
+            React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono" }, `${fleetAccounts.length || 20} NODES`)
           ),
           React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium" },
             React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
-            React.createElement("span", null, "20/20 Cloud Online • 5x Edge Mesh")
+            React.createElement("span", null, `${fleetAccounts.filter(a => a.status === 'Active' || !a.session_revoked).length}/${fleetAccounts.length || 20} Cloud Online • 5x Edge Mesh`)
           )
         )
       ),
@@ -911,7 +911,7 @@ function App() {
             type: "text",
             value: fleetSearchQuery,
             onChange: (e) => setFleetSearchQuery(e.target.value),
-            placeholder: "Search 20 accounts by name, phone, or ID...",
+            placeholder: `Search ${fleetAccounts.length || 20} accounts by name, phone, or ID...`,
             className: `w-full pl-8 pr-3 py-2 border rounded-xl text-xs font-medium outline-none transition ${isDark ? 'bg-dark-850 border-dark-700 text-white placeholder-slate-500 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500'}`
           }),
           React.createElement("div", { className: "absolute left-2.5 top-2.5 text-slate-400" },
@@ -1038,11 +1038,11 @@ function App() {
           React.createElement("div", { className: "flex items-center gap-2" },
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
-              React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, "TON Blockchain (20 Accounts Bound)"),
+              React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, `TON Blockchain (${fleetAccounts.length || 20} Accounts Bound)`),
               React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land")
             )
           ),
-          React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "20/20 Bound")
+          React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, `${fleetAccounts.filter(a => a.ton_wallet).length || fleetAccounts.length}/${fleetAccounts.length || 20} Bound`)
         ),
         React.createElement("p", { className: "text-xs text-slate-400 leading-relaxed mb-2" },
           "Every fleet account has a distinct non-custodial TON wallet mapped directly to its Telegram user ID for automated reward claims."
@@ -1147,13 +1147,13 @@ function App() {
           React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full" }, "15m Window")
         ),
         React.createElement("p", { className: "text-xs text-slate-400 mb-3" },
-          "Instant code recovery across all 20 accounts via Render Session Collectors and Cloudflare Edge."
+          `Instant code recovery across all ${fleetAccounts.length || 20} accounts via Render Session Collectors and Cloudflare Edge.`
         ),
 
         // Account Selector Buttons
-        React.createElement("label", { className: "text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5" }, "Select Target Account (#1 - #20)"),
+        React.createElement("label", { className: "text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5" }, `Select Target Account (#1 - #${fleetAccounts.length || 20})`),
         React.createElement("div", { className: "grid grid-cols-5 sm:grid-cols-10 gap-1.5 mb-3" },
-          Array.from({ length: 20 }, (_, i) => i + 1).map(num => React.createElement("button", {
+          Array.from({ length: fleetAccounts.length || 20 }, (_, i) => i + 1).map(num => React.createElement("button", {
             key: num,
             onClick: () => {
               setOtpTargetIndex(num);
@@ -1277,7 +1277,7 @@ function App() {
     // ==========================================================
     React.createElement("nav", { className: `fixed bottom-0 left-0 right-0 z-40 pro-dock py-2 px-4 flex items-center justify-around max-w-md mx-auto border-t ${isDark ? 'bg-dark-900/90 border-dark-800 text-slate-400' : 'bg-white/90 border-slate-200 text-slate-500'}` },
       [
-        { id: "fleet", label: "Fleet (20)", icon: "bot" },
+        { id: "fleet", label: `Fleet (${fleetAccounts.length || 20})`, icon: "bot" },
         { id: "wallets", label: "Treasury", icon: "wallet" },
         { id: "ai", label: "Ari AI", icon: "sparkles" },
         { id: "otp", label: "OTP", icon: "key" },
