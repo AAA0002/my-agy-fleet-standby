@@ -800,7 +800,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           method: "POST", headers: vHeaders, body: JSON.stringify({})
         }, 1, 600).catch(() => {});
 
-        // 8. Arcade Minigame Mining (Safe Rows 0 & 1 only: 0% bust chance)
+        // 8. Arcade Minigame Mining (Safe Rows 0 & 1 only: 0% bust chance, sweeps all daily runs)
         try {
           const arcResp = await fetchWithRetry("https://server.victors.company/api/arcade", {
             method: "GET", headers: vHeaders
@@ -810,8 +810,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             const games = Array.isArray(arcData.games) ? arcData.games : [];
             const mineGame = games.find(g => g && g.id === "mine");
             const playsLeft = mineGame ? (mineGame.playsLeft || 0) : (arcData.runsLeft || 0);
-            if (playsLeft > 0 || arcData.mine) {
-              let activeRun = arcData.mine;
+            const totalRuns = Math.min(playsLeft || (arcData.mine ? 1 : 0), 10);
+            for (let rIdx = 0; rIdx < totalRuns; rIdx++) {
+              let activeRun = (rIdx === 0) ? arcData.mine : null;
               if (!activeRun) {
                 const stResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/start", {
                   method: "POST", headers: vHeaders, body: JSON.stringify({ tool: "shovel", items: {} })
@@ -824,7 +825,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
               if (activeRun && activeRun.status === "active") {
                 // Dig strictly safe rows 0 and 1 (safeRows = 2: 0% bust chance)
                 for (let d = 0; d < 2; d++) {
-                  await humanDelay(400, 800);
+                  await humanDelay(300, 600);
                   const digResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/dig", {
                     method: "POST", headers: vHeaders, body: JSON.stringify({ x: 4, y: d })
                   }, 1, 500).catch(() => null);
@@ -836,6 +837,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
                 await fetchWithRetry("https://server.victors.company/api/arcade/mine/end", {
                   method: "POST", headers: vHeaders, body: JSON.stringify({})
                 }, 1, 500).catch(() => {});
+                await humanDelay(400, 800);
+              } else {
+                break;
               }
             }
           }
@@ -903,7 +907,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           // 3. Tasks
           try {
             const tHeaders = { ...vyHeaders, "x-vyro-tasks-protocol": "2" };
-            const tResp = await fetchWithRetry("https://vyro.run.place/api/tasks?limit=8", {
+            const tResp = await fetchWithRetry("https://vyro.run.place/api/tasks?limit=50", {
               method: "GET", headers: tHeaders
             }, 1, 800).catch(() => null);
             if (tResp && tResp.ok) {
@@ -1128,7 +1132,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         }
       } catch (_) {}
 
-      // Kynex Ad Tasks Discovery & Claiming
+      // Kynex Ad Tasks Discovery & Claiming (Cycles all networks to daily limits)
       try {
         const adsResp = await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/config/tasksAds.json?auth=${idToken}`);
         if (adsResp.ok) {
@@ -1136,13 +1140,31 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           const networks = adsCfg?.networks || [];
           for (let nIdx = 0; nIdx < networks.length; nIdx++) {
             if (networks[nIdx]?.enabled) {
-              await humanDelay(300, 600);
-              await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimTasksAdReward", {
-                method: "POST", headers: kHeaders, body: JSON.stringify({ data: { networkIndex: nIdx } })
-              }).catch(() => {});
+              const lim = Math.min(networks[nIdx].dailyLimit || 1, 10);
+              for (let a = 0; a < lim; a++) {
+                await humanDelay(250, 500);
+                const r = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimTasksAdReward", {
+                  method: "POST", headers: kHeaders, body: JSON.stringify({ data: { networkIndex: nIdx } })
+                }).catch(() => null);
+                if (r && r.status === 429) break;
+                if (r && r.ok) {
+                  const d = await r.json().catch(() => ({}));
+                  if (d?.result?.rewarded) break;
+                }
+              }
             }
           }
         }
+      } catch (_) {}
+
+      // Kynex Daily Invite Bonus & Super Power Boost check
+      try {
+        await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimDailyInviteBonus", {
+          method: "POST", headers: kHeaders, body: JSON.stringify({ data: {} })
+        }).catch(() => {});
+        await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimUltraBoost", {
+          method: "POST", headers: kHeaders, body: JSON.stringify({ data: {} })
+        }).catch(() => {});
       } catch (_) {}
 
       result.bots.kynex = `farmed (bal: ${newBal.toFixed(1)} KNX, mining: ${miningActive ? 'ACTIVE' : 'IDLE'})`;

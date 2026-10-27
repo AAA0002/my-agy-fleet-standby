@@ -5866,7 +5866,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 # 8. Deep Mine Arcade Minigame Solver
                 try:
                     from victors_arcade_solver import solve_deep_mine_expeditions
-                    arc_stats = await solve_deep_mine_expeditions(session, v_h, name, max_runs=2)
+                    arc_stats = await solve_deep_mine_expeditions(session, v_h, name, max_runs=10)
                     if arc_stats.get("runs_played", 0) > 0 and arc_stats.get("final_balance") is not None:
                         in_app_bal = arc_stats["final_balance"]
                 except Exception as arc_e:

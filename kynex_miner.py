@@ -326,6 +326,26 @@ async def farm_kynex_account(
     except Exception as e:
         logger.debug(f"[{name}] Kynex milestone boost note: {e}")
 
+    # D2. Super Power Boost (+100% mining for 50h via 10 ads)
+    try:
+        url_ultra = f"{DATABASE_URL}/users/{uid}/boostAdProgress/ultra.json?auth={id_token}"
+        await session.put(url_ultra, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
+        url_ultra2 = f"{DATABASE_URL}/users/{uid}/boostAdProgress/ultraBoost.json?auth={id_token}"
+        await session.put(url_ultra2, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
+        
+        # Try server markAdWatchedForSuperBoost if open
+        mark_res = await call_kynex_function(session, id_token, "markAdWatchedForSuperBoost")
+        if mark_res and not mark_res.get("_error"):
+            result["notes"].append("super_boost_ad_progress_saved")
+            
+        # Claim Super Power Boost
+        res_ultra = await call_kynex_function(session, id_token, "claimUltraBoost")
+        if res_ultra and not res_ultra.get("_error"):
+            pct = res_ultra.get("grantedPercent", 100)
+            result["notes"].append(f"super_power_boost_+{pct}%_active")
+    except Exception as e:
+        logger.debug(f"[{name}] Kynex super power boost note: {e}")
+
     # E. Baseline Safety: if energy still <= 60, refill to starter capacity
     if energy_sec <= 60:
         try:
@@ -363,7 +383,7 @@ async def farm_kynex_account(
         else:
             result["notes"].append(f"start_note: {err_msg[:60]}")
 
-    # 6. Daily Check-in
+    # 6. Daily Check-in & Daily Invite Bonus
     await jitter(0.6, 1.4)
     checkin_res = await call_kynex_function(session, id_token, "claimDailyCheckin")
     if checkin_res and not checkin_res.get("_error"):
@@ -372,6 +392,17 @@ async def farm_kynex_account(
         result["claimed_knx"] += rew
         result["balance"] = float(checkin_res.get("newBalance", result["balance"]) or result["balance"])
         result["notes"].append(f"daily_checkin_+{rew:.0f}_KNX_streak_{streak}")
+
+    try:
+        invite_res = await call_kynex_function(session, id_token, "claimDailyInviteBonus")
+        if invite_res and not invite_res.get("_error"):
+            i_rew = float(invite_res.get("rewardKnx", 0.0) or 0.0)
+            if i_rew > 0:
+                result["claimed_knx"] += i_rew
+                result["balance"] = float(invite_res.get("newBalance", result["balance"]) or result["balance"])
+                result["notes"].append(f"daily_invite_+{i_rew:.0f}_KNX")
+    except Exception:
+        pass
 
     # 7. Social Tasks (channels auto-joined by Telethon token extractor)
     try:
@@ -391,22 +422,38 @@ async def farm_kynex_account(
     except Exception as e:
         logger.debug(f"[{name}] Kynex social tasks check note: {e}")
 
-    # 8. Watch Ads Tasks (Enthusiasts Ad, Giga Ad, etc.)
+    # 8. Watch Ads Tasks (Cycles all 5 networks to their daily limit: 1, 2, 5, 5, 10 = 23 total ads)
     try:
         async with session.get(f"{DATABASE_URL}/config/tasksAds.json?auth={id_token}", timeout=aiohttp.ClientTimeout(total=8)) as ad_resp:
             if ad_resp.status == 200:
                 ads_cfg = await ad_resp.json() or {}
                 networks = ads_cfg.get("networks", [])
+                user_ads = profile.get("tasksAdsWatched", []) or []
                 for idx, net in enumerate(networks):
-                    if net.get("enabled"):
-                        await jitter(0.4, 0.9)
+                    if not net or not net.get("enabled"):
+                        continue
+                    limit = int(net.get("dailyLimit", 1) or 1)
+                    cur_count = 0
+                    if idx < len(user_ads) and isinstance(user_ads[idx], dict):
+                        if user_ads[idx].get("date") == today_utc:
+                            cur_count = int(user_ads[idx].get("count", 0) or 0)
+                    needed = max(0, limit - cur_count)
+                    for ad_i in range(needed):
+                        await jitter(0.4, 0.8)
                         ad_res = await call_kynex_function(session, id_token, "claimTasksAdReward", {"networkIndex": idx})
-                        if ad_res and not ad_res.get("_error"):
-                            ad_rew = float(ad_res.get("rewardKnx", 0.0) or 0.0)
-                            if ad_rew > 0:
-                                result["claimed_knx"] += ad_rew
-                                result["balance"] = float(ad_res.get("newBalance", result["balance"]) or result["balance"])
-                                result["notes"].append(f"ad_{idx}_+{ad_rew:.0f}_KNX")
+                        if ad_res:
+                            if ad_res.get("_error"):
+                                err_str = str(ad_res["_error"]).lower()
+                                if "daily limit" in err_str or "limit of" in err_str:
+                                    break
+                            else:
+                                ad_rew = float(ad_res.get("rewardKnx", 0.0) or 0.0)
+                                if ad_rew > 0:
+                                    result["claimed_knx"] += ad_rew
+                                    result["balance"] = float(ad_res.get("newBalance", result["balance"]) or result["balance"])
+                                    result["notes"].append(f"ad_net_{idx}_+{ad_rew:.0f}_KNX")
+                                if ad_res.get("rewarded"):
+                                    break
     except Exception as e:
         logger.debug(f"[{name}] Kynex ad tasks note: {e}")
 

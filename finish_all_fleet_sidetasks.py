@@ -759,7 +759,7 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
         # 9. Deep Mine Arcade Expeditions & Arcade Mode Discovery
         try:
             import victors_arcade_solver
-            arc_res = await victors_arcade_solver.solve_deep_mine_expeditions(session, v_h, name, max_runs=2)
+            arc_res = await victors_arcade_solver.solve_deep_mine_expeditions(session, v_h, name, max_runs=10)
             if arc_res.get("runs_played", 0) > 0:
                 net_profit = arc_res.get("net_vic", 0.0)
                 res["notes"].append(f"arcade_{arc_res['runs_played']}runs_{net_profit:+.1f}VIC")
@@ -819,7 +819,7 @@ async def sweep_vyro_tasks(session: aiohttp.ClientSession, uid: str, name: str, 
 
         # 2. Side Tasks
         t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
-        async with session.get("https://vyro.run.place/api/tasks?limit=8", headers=t_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
+        async with session.get("https://vyro.run.place/api/tasks?limit=50", headers=t_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
             if tr.status == 200:
                 t_d = await tr.json()
                 tasks = t_d.get("tasks", []) if isinstance(t_d, dict) else []
@@ -1457,9 +1457,22 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
                     res["notes"].append(f"eggs_sold_{eggs}")
                 current_coins = float(sell_res.get("result", {}).get("user", {}).get("coins", current_coins))
 
-        # 6. Tasks (guards against redundant subrequests for both permanent and daily tasks)
+        # 6. Tasks (Dynamic task discovery across main, daily, and custom partner tasks)
         completed_tasks = set((u_info.get("tasks") or []) + (u_info.get("dayTasks") or []))
-        for tid in ["channel", "payments", "dnews", "dpay", "dpromo", "c6"]:
+        tasks_to_check = ["channel", "payments", "chat", "x", "dnews", "dpay", "dpromo", "c6"]
+        try:
+            tasks_cfg_resp = await rpc("/api/tasks")
+            if tasks_cfg_resp.get("ok"):
+                custom_tasks = tasks_cfg_resp.get("result", {}).get("custom", [])
+                for ct in custom_tasks:
+                    if isinstance(ct, dict) and ct.get("id"):
+                        cid = str(ct["id"])
+                        if cid not in tasks_to_check:
+                            tasks_to_check.append(cid)
+        except Exception:
+            pass
+
+        for tid in tasks_to_check:
             if tid not in completed_tasks:
                 await rpc("/api/task/open", {"id": tid})
                 await asyncio.sleep(0.5)

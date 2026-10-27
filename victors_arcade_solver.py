@@ -27,7 +27,7 @@ VICTORS_API = "https://server.victors.company/api"
 VICTORS_ORIGIN = "https://app.victors.company"
 
 
-async def solve_deep_mine_expeditions(session: aiohttp.ClientSession, headers: dict, account_name: str, max_runs: int = 3) -> dict:
+async def solve_deep_mine_expeditions(session: aiohttp.ClientSession, headers: dict, account_name: str, max_runs: int = 10) -> dict:
     """
     Executes safe Deep Mine expeditions for an authenticated account.
     Returns summary of games played and balance changes.
