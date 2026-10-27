@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎟️ Autonomous Chicken Land Promo Code Extraction & Fleet Auto-Apply (`deploy_both_cf_workers.py`, `chickenland_miner.py`, `chickenland_promo_sniper.py`, `finish_all_fleet_sidetasks.py`, `app.py`) (October 27, 2026)**:
+  - **100% Autonomous Promo Code Harvesting (Zero Manual Input)**:
+    * Implemented fully automated scraping of the official promo code channel `@ChickenLandCodes` (`https://t.me/s/ChickenLandCodes`) across all farming engines so the user never has to manually find or type promo codes.
+    * **Cloudflare Edge Worker (`deploy_both_cf_workers.py`)**: During every scheduled cron trigger and `/chicken` / `/farm` execution, automatically scrapes `@ChickenLandCodes`, extracts active promo codes via regex (`<code>([A-Z0-9]+)</code>` and pointer patterns `👉 ([A-Z0-9]+) 👈`), filters out exhausted codes (`ALL CLAIMED` / `❌`), and instantly redeems them via `/api/promo` across all fleet accounts.
+    * **Routine Farming Cycles (`chickenland_miner.py`)**: Added `auto_redeem_channel_promos()` to `ChickenLandMiner.run_farming_cycle()`, ensuring every account checks and claims active drops during daily farming.
+    * **Side-Task Harvester (`finish_all_fleet_sidetasks.py`)**: Integrated Step 6.5 in `sweep_chickenland_tasks` to query the channel and apply unexhausted codes during fleet-wide sweeps.
+    * **Startup Bug Fix (`chickenland_promo_sniper.py`, `app.py`)**: Resolved startup caching defect where unexhausted codes were marked seen and ignored on reboot. The watcher now explicitly checks `is_code_claimed(code)`: if an unexhausted code is detected on startup, it immediately blasts a parallel fleet burst across all accounts in under 500ms.
+    * **Admin Bot Menu & Smart Commands**:
+      - Added `🎟️ Check & Auto-Snipe Promo` button (`btn_chicken_promo_auto`) to the Chicken Land command center.
+      - Upgraded `/promo` and `/snipe` commands: if executed without a code argument, they automatically scrape the channel, audit status, and snipe any active drop across the fleet.
+
 - **🎮 Fleet-Wide Task Completion, Victor's Arcade 10-Run Sweep & Kynex Ad Cycling (October 27, 2026)**:
   - **Victor's Company Arcade 10-Run Deep Mine Sweep (`victors_arcade_solver.py`, `finish_all_fleet_sidetasks.py`, `app.py`, `deploy_both_cf_workers.py`)**:
     * Identified root cause of remaining runs in user screenshot (`2/10 runs left today`): `victors_arcade_solver.py` defaulted to `max_runs=3`, while `finish_all_fleet_sidetasks.py` and `app.py` hardcoded `max_runs=2`, and `deploy_both_cf_workers.py` executed only 1 run.

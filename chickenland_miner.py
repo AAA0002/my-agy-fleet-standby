@@ -142,6 +142,23 @@ class ChickenLandMiner:
         """Redeems promo code for coins."""
         return self.rpc("/api/promo", {"code": code.strip()})
 
+    def auto_redeem_channel_promos(self) -> List[str]:
+        """Automatically scrapes https://t.me/ChickenLandCodes and redeems active codes."""
+        claimed = []
+        try:
+            from chickenland_promo_sniper import fetch_channel_codes, is_code_claimed, mark_code_claimed
+            channel_codes = fetch_channel_codes()
+            for it in channel_codes:
+                code = it.get("code")
+                if code and not it.get("is_exhausted") and not is_code_claimed(code):
+                    r = self.redeem_promo(code)
+                    if r.get("ok"):
+                        claimed.append(code)
+                        mark_code_claimed(code)
+        except Exception:
+            pass
+        return claimed
+
     def buy_hens(self, breed: str = "basic", max_count: int = 10) -> int:
         """Buys hens of specified breed if coins are available."""
         prof = self.get_profile()
@@ -287,6 +304,10 @@ class ChickenLandMiner:
         tasks_res = self.claim_tasks()
         cycle_report["tasks_claimed"] = tasks_res.get("claimed", [])
         
+        # Step 6.5: Auto-redeem active promo codes from @ChickenLandCodes
+        promos_claimed = self.auto_redeem_channel_promos()
+        cycle_report["promos_claimed"] = promos_claimed
+
         # Step 7: Claim referrals
         ref_res = self.claim_referrals()
         if ref_res.get("ok") and ref_res.get("result", {}).get("coins", 0) > 0:

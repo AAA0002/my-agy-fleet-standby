@@ -69,6 +69,12 @@ def is_code_seen(code: str) -> bool:
         return True
     return False
 
+def is_code_claimed(code: str) -> bool:
+    res = redis_command("SISMEMBER", "chickenland:claimed_codes", code)
+    if res == 1:
+        return True
+    return False
+
 def mark_code_seen(code: str):
     redis_command("SADD", "chickenland:seen_codes", code)
 
@@ -307,29 +313,38 @@ async def watch_and_snipe_daemon(poll_interval: int = 10):
     
     seen_in_memory: Set[str] = set()
     
-    # Pre-populate known codes
+    # Pre-populate known codes & immediately snipe any unexhausted ones
     initial_codes = fetch_channel_codes()
     for item in initial_codes:
         code = item["code"]
-        seen_in_memory.add(code)
-        mark_code_seen(code)
-    print(f"Initial setup: {len(seen_in_memory)} historical codes cached.")
-    
+        is_exhausted = item["is_exhausted"]
+        if is_exhausted:
+            seen_in_memory.add(code)
+            mark_code_seen(code)
+        else:
+            if not is_code_claimed(code):
+                print(f"🔥 ACTIVE PROMO CODE FOUND ON STARTUP: {code}! LAUNCHING PARALLEL FLEET BURST...")
+                report = await snipe_promo_fleet(code, fleet=fleet)
+                print(f"✅ Startup burst: {report['claimed_count']}/{report['total_accounts']} claimed, +{report['total_coins']} coins")
+            seen_in_memory.add(code)
+            mark_code_seen(code)
+    print(f"Initial setup: {len(seen_in_memory)} historical codes analyzed.")
+
     while True:
         try:
             codes_in_channel = fetch_channel_codes()
             for item in codes_in_channel:
                 code = item["code"]
                 is_exhausted = item["is_exhausted"]
-                
-                # Check if newly discovered
-                if code not in seen_in_memory and not is_code_seen(code):
+
+                # Check if newly discovered or unexhausted and unclaimed
+                if (code not in seen_in_memory and not is_code_seen(code)) or (not is_exhausted and not is_code_claimed(code)):
                     seen_in_memory.add(code)
                     if is_exhausted:
                         print(f"ℹ️ Found historic exhausted code {code}, skipping.")
                         mark_code_seen(code)
                         continue
-                        
+
                     print(f"🔥 NEW PROMO CODE DETECTED: {code}! LAUNCHING PARALLEL FLEET BURST...")
                     report = await snipe_promo_fleet(code, fleet=fleet)
                     print(f"✅ Burst complete: {report['claimed_count']}/{report['total_accounts']} claimed, +{report['total_coins']} coins in {report['burst_time_sec']}s")

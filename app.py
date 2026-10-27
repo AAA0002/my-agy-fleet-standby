@@ -1712,27 +1712,34 @@ async def chickenland_promo_watcher_loop():
     logger.info("[ChickenLand Promo Sniper] 🐔 24/7 Cloud Watcher initialized on Render Node 2...")
     seen_in_memory = set()
 
-    # Pre-cache known historical codes on startup
+    # Pre-cache known historical codes & immediately snipe any unexhausted ones
     try:
-        from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, mark_code_seen, snipe_promo_fleet
+        from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, is_code_claimed, mark_code_seen, snipe_promo_fleet
         init_codes = await asyncio.to_thread(fetch_channel_codes)
         for it in init_codes:
             c = it["code"]
-            seen_in_memory.add(c)
-            mark_code_seen(c)
-        logger.info(f"[ChickenLand Promo Sniper] Cached {len(seen_in_memory)} historical codes.")
+            is_exhausted = it["is_exhausted"]
+            if is_exhausted:
+                seen_in_memory.add(c)
+                mark_code_seen(c)
+            elif not is_code_claimed(c):
+                logger.info(f"[ChickenLand Promo Sniper] 🔥 ACTIVE CODE ON STARTUP: {c}! Launching parallel burst...")
+                await snipe_promo_fleet(c)
+                seen_in_memory.add(c)
+                mark_code_seen(c)
+        logger.info(f"[ChickenLand Promo Sniper] Processed {len(seen_in_memory)} historical/active codes.")
     except Exception as e:
         logger.warning(f"[ChickenLand Promo Sniper] Init scrape error: {e}")
 
     while True:
         try:
-            from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, mark_code_seen, snipe_promo_fleet
+            from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, is_code_claimed, mark_code_seen, snipe_promo_fleet
             channel_items = await asyncio.to_thread(fetch_channel_codes)
             for item in channel_items:
                 code = item["code"]
                 is_exhausted = item["is_exhausted"]
 
-                if code not in seen_in_memory and not is_code_seen(code):
+                if (code not in seen_in_memory and not is_code_seen(code)) or (not is_exhausted and not is_code_claimed(code)):
                     seen_in_memory.add(code)
                     if is_exhausted:
                         mark_code_seen(code)

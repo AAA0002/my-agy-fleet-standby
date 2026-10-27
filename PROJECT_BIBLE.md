@@ -135,7 +135,8 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Real-Time Channel Ingestion**: Programmatically scrapes `@ChickenLandCodes` (`https://t.me/s/ChickenLandCodes`) to detect drops of limited-user promo codes. Filters exhausted/claimed codes via DOM state and tracks history in Upstash Redis (`chickenland:seen_codes` / `chickenland:claimed_codes`).
     - **Sub-Second Fleet Burst**: Uses `aiohttp.ClientSession` with concurrent TCP multiplexing to dispatch redemption payloads (`POST /api/promo`) to all 20 accounts simultaneously in under 550ms, guaranteeing early queue slots before public user exhaustion.
     - **Flock Compounding Engine**: Automatically checks balance post-redemption; if coins exceed 1,000, triggers `/api/buy` to purchase additional basic hens (expanding hourly egg production capacity).
-    - **24/7 Cloud Daemon & Admin Dispatch**: Continuous 8-second polling watcher runs on Render Frankfurt Node 2 (`app.py`), backed by on-demand manual `/snipe <CODE>` and `/promo <CODE>` handlers in the Admin Bot (`@myagyai` / `deploy_both_cf_workers.py`). Zero phone load.
+    - **24/7 Cloud Daemon & Multi-Engine Ingestion**: Continuous 8-second polling watcher runs on Render Frankfurt Node 2 (`app.py`), reinforced by Cloudflare Edge cron triggers (`deploy_both_cf_workers.py`), side-task harvester sweeps (`finish_all_fleet_sidetasks.py`), and routine farming cycles (`chickenland_miner.py`). Scrapes `https://t.me/s/ChickenLandCodes`, extracts active codes, filters exhausted tags (`ALL CLAIMED`), and redeems them automatically across all accounts without requiring manual user input.
+    - **Interactive & Autonomous Bot Handlers**: Backed by `🎟️ Check & Auto-Snipe Promo` button in the Chicken Land menu, and smart `/promo` / `/snipe` handlers that auto-scrape and redeem if called without arguments. Zero phone load.
 
 ---
 

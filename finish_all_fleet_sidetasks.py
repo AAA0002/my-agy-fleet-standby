@@ -1483,6 +1483,26 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
                     if t_claim.get("result", {}).get("user"):
                         current_coins = float(t_claim["result"]["user"].get("coins", current_coins))
 
+        # 6.5. Autonomous Promo Code Discovery & Redemption (@ChickenLandCodes)
+        try:
+            from chickenland_promo_sniper import fetch_channel_codes, is_code_claimed, mark_code_claimed
+            c_codes = await asyncio.to_thread(fetch_channel_codes)
+            for it in c_codes:
+                p_code = it.get("code")
+                if p_code and not it.get("is_exhausted") and not is_code_claimed(p_code):
+                    p_res = await rpc("/api/promo", {"code": p_code})
+                    if p_res.get("ok"):
+                        p_coins = p_res.get("result", {}).get("coins", 0)
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"promo_{p_code}_+{p_coins}")
+                        mark_code_claimed(p_code)
+                        if p_res.get("result", {}).get("user"):
+                            current_coins = float(p_res["result"]["user"].get("coins", current_coins))
+                    elif p_res.get("parameters", {}).get("code") == "PROMO_FULL":
+                        pass
+        except Exception as pe:
+            logger.debug(f"[{name}] Promo auto-apply note: {pe}")
+
         # 7. Ref claim
         ref_claim = await rpc("/api/ref/claim", {})
         if ref_claim.get("ok") and ref_claim.get("result", {}).get("coins", 0) > 0:
