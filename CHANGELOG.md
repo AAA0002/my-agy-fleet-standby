@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Admin Console React Syntax Fix, Chicken Land Promo Snipe & Fleet Audit (October 27, 2026)**:
+  - **`public_admin/admin.html` Syntax Error Resolution**:
+    * Diagnosed and fixed fatal `SyntaxError: missing ) after argument list` at line 1911 by restoring the missing closing parenthesis `)` for Tab 2's root container `div`.
+    * Validated all embedded scripts in both `public_admin/admin.html` and `public_admin/user-admin.html` via Node.js syntax checker (`node --check`).
+    * Re-deployed updated bundle to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev/admin`) with full HTTP 200 verification.
+  - **Chicken Land Promo Code Sniper Execution**:
+    * Detected new drop `CLZ9HZS4LV` and executed automated parallel redemption across all 21 accounts in 0.66 seconds (+1,900 coins claimed across 19 eligible accounts).
+    * Noted promo code `CLPKFGDYRG` reached its 2,000-player limit (`PROMO_FULL`).
+  - **Clean Codebase Refinements**:
+    * Purged phantom account split bug in `audit_bots_and_sidetasks.py`.
+    * Removed unreachable dead code block in `deploy_both_cf_workers.py`.
+    * Upgraded Ari AI prompt and ad-status telemetry to 100% dynamic account scaling.
+  - **Comprehensive 21-Account 9-Bot Live Audit**:
+    * Ran live audit verifying 100% responsiveness (9/9 bots) across all 21 accounts.
+    * Successfully streamed fresh disaster recovery backup to Telegram vault channel (`@myagyai`) via `backup_manager.py`.
+
+
 - **🚀 Complete Dynamic Fleet De-Hardcoding, Cloud OTP Engine & Edge Deployment (October 27, 2026)**:
   - **Comprehensive Elimination of Hardcoded Fleet Limits Across Worker Commands**:
     * Purged 43 instances of `health.total || 20` across all bot commands (`/kynex`, `/victors`, `/vyro`, `/mrg`, `/atf`, `/diggo`, `/pepe`, `/adx`, `/chicken`, `/summary`, `/dashboard`), replacing them with dynamic `health.total` directly tied to runtime fleet registry length.

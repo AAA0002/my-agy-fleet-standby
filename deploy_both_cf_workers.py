@@ -7132,48 +7132,6 @@ fi
               } catch (err) {
                 await editOrSendResilientMessage(chatId, cbMsgId, `❌ *QR Connection Error:*\n${err.message}\n\nPlease retry in a moment:`, cancelKeyboard);
               }
-            } else if (cbData === "btn_mesh") {
-              const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `⚡ *Cloudflare Edge Nodes (5/5 Online):*\n` +
-                `• Node 1 (US-East Edge): 🟢 Online (42ms)\n` +
-                `• Node 2 (EU-Central Edge): 🟢 Online (38ms)\n` +
-                `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
-                `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (Fleet Accounts Active)\n` +
-                `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
-                `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
-                `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
-                `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
-                `• Ari AI Council Agent (koramshah2): 🟢 Online (Cloudflare Workers AI & DeepSeek Edge)\n` +
-                `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
-                `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
-                `🦕 *Deno Deploy Edge Sentinels (2/2 Online):*\n` +
-                `• Sentinel #1 (aaa222): 🟢 Online (Mesh Cron Active)\n` +
-                `• Sentinel #2 (aaasupporta): 🟢 Online (Multi-Node Sentinel)\n\n` +
-                `🗄️ *Unified Distributed Databases:*\n` +
-                `• Supabase Postgres: 🟢 Connected (Service Role Auth)\n` +
-                `• Upstash Redis: 🟢 Connected (Sub-ms Serverless Cache)\n` +
-                `• Turso LibSQL: 🟢 Synced (ap-south-1 Edge)\n` +
-                `• Pinata IPFS Vault: 🟢 Pinned & Immutable\n` +
-                `• Better Stack: 🟢 Uptime Sentinel Active (100.0%)\n\n` +
-                `🐙 *Dual Git Remotes:*\n` +
-                `• Primary: \`AAA0002/ATL\` (In Sync)\n` +
-                `• Mirror: \`AAA0002/ATL\` (In Sync)\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `🛡️ *Zero Single Points of Failure • 100% Ephemeral Resilience*`;
-              const frames = [
-                "🌐 *Probing Cloud Mesh Infrastructure...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Checking 5 Cloudflare Edge Shards",
-                "🌐 *Verifying Database & Relayers...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • D1 SQL, Supabase, Upstash Redis & Turso",
-                rep
-              ];
-              ctx.waitUntil((async () => {
-                const cbMsgId = cb.message ? cb.message.message_id : null;
-                if (cbMsgId) {
-                  await editAnimatedMessage(chatId, cbMsgId, frames, meshInlineKeyboard, 300);
-                } else {
-                  await sendAnimatedReply(chatId, frames, meshInlineKeyboard, 300);
-                }
-              })());
             } else if (cbData === "btn_add_account" || cbData === "btn_addaccount") {
               const rep = `📱 *Add New Telegram Account*\n\n` +
                 `Please send the phone number of the Telegram account you want to connect:\n\n` +
@@ -10356,6 +10314,13 @@ fi
         if (text === "🌐 Cloud Mesh" || text === "🌐 Mesh" || text === "/mesh" || text === "/cloud" || text.startsWith("/mesh") || text.startsWith("/cloud")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
+            let activeRender = "node3";
+            try {
+              const rActive = await upstashGet("fleet:active_render_node", 30000);
+              if (rActive === "node2" || rActive === "node3") activeRender = rActive;
+            } catch (_) {}
+            const node3Status = activeRender === "node3" ? "🟢 Active Coordinator ($0 Free Tier)" : "⏸️ Suspended / Standby";
+            const node2Status = activeRender === "node2" ? "🟢 Active Coordinator ($0 Free Tier)" : "⏸️ Suspended (Meter Frozen / 0h Consumed)";
             const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ *Cloudflare Edge Nodes (5/5 Online):*\n` +
@@ -10365,8 +10330,8 @@ fi
               `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (Fleet Accounts Active)\n` +
               `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
               `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
-              `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
-              `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
+              `• Primary Host (Node 3 Oregon - koramshah2): ${node3Status}\n` +
+              `• Standby Node (Node 2 Frankfurt - abidhasanch): ${node2Status}\n` +
               `• Ari AI Council Agent (koramshah2): 🟢 Online (Cloudflare Workers AI & DeepSeek Edge)\n` +
               `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
               `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
@@ -11205,9 +11170,11 @@ fi
               }
             } catch (_) {}
 
-            const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 20-account automated crypto and mining fleet (MY AGY AI).
+            const fleetAccounts = await getFleetAccounts();
+            const totalAccountsCount = fleetAccounts.length || DEFAULT_FLEET_ACCOUNTS.length;
+            const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's ${totalAccountsCount}-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 20 active accounts mining 24/7 across the 9 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land. All discontinued & scammer bots (Astra Airdrop, Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix, LeafEarn, PumpkinEarn) have been permanently purged and blocked.
+- ${totalAccountsCount} active accounts mining 24/7 across the 9 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land. All discontinued & scammer bots (Astra Airdrop, Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix, LeafEarn, PumpkinEarn) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).

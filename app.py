@@ -5430,8 +5430,8 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
             except Exception as ue:
                 logger.warning(f"Upstash token load note: {ue}")
 
-    # Also check Upstash miniapp_tokens fallback if any account missing
-    if UPSTASH_URL and UPSTASH_TOKEN and len(tokens_map) < 18:
+    # Also check Upstash miniapp_tokens fallback to ensure all dynamic accounts are populated
+    if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
             async with session.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as mr:

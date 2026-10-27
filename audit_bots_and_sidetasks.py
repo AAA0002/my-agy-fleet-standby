@@ -82,12 +82,15 @@ def load_tokens_db():
                 with urllib.request.urlopen(p_req, timeout=8) as presp:
                     pipeline_res = json.loads(presp.read().decode())
                     for k, item in zip(keys, pipeline_res):
-                        uid = k.split(":")[-1]
-                        raw = item.get("result")
-                        if raw:
-                            parsed = json.loads(raw) if isinstance(raw, str) else raw
-                            if uid not in tokens or len(parsed) > len(tokens.get(uid, {})):
-                                tokens[uid] = parsed
+                        parts = k.split(":")
+                        if len(parts) == 3 and parts[-1].isdigit():
+                            uid = parts[-1]
+                            raw = item.get("result")
+                            if raw:
+                                parsed = json.loads(raw) if isinstance(raw, str) else raw
+                                if isinstance(parsed, dict):
+                                    if uid not in tokens or len(parsed) > len(tokens.get(uid, {})):
+                                        tokens[uid] = parsed
         except Exception as e:
             print(f"⚠️ Upstash fleet:tokens:* pipeline fetch note: {e}")
 
@@ -107,9 +110,9 @@ if os.path.exists(acc_path):
 existing_uids = {str(a.get("user_id")) for a in ACCOUNTS}
 if TOKENS_DB:
     for uid, tinfo in TOKENS_DB.items():
-        if str(uid) not in existing_uids:
+        if str(uid).isdigit() and str(uid) not in existing_uids:
             ACCOUNTS.append({
-                "user_id": int(uid) if str(uid).isdigit() else uid,
+                "user_id": int(uid),
                 "name": tinfo.get("name", f"Node_{uid}") if isinstance(tinfo, dict) else f"Node_{uid}",
                 "index": len(ACCOUNTS) + 1
             })
