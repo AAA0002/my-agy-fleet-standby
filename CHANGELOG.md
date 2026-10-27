@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ Bug Fixes, Dynamic Indexing & Referral Ground-Truth Resolution (October 27, 2026)**:
+  - **Dynamic Account Indexing (`login_account.py`)**:
+    * Identified and fixed potential off-by-one bug in wallet provisioning (`worker_count + 2`), replacing it with dynamic `max(existing_indices, default=1) + 1` for both TON and EVM wallets.
+  - **Render Primary Node 3 Latency Probe (`public_admin/admin.html`)**:
+    * Resolved false "Offline" indicator in the Cloud Mesh Latency Matrix by upgrading the probe from suspended Node 2 (Frankfurt 503) to active primary Render Node 3 (Oregon 200 OK) with live ping metrics. Synchronized across all 4 mirrors (`public/admin.html`, `public_admin/admin/index.html`, `public_admin/index.html`, `dashboard.html`).
+  - **Admin Channel Short Alert Multi-Watcher Integration**:
+    * Integrated short notification cards into `bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`, and `chickenland_promo_sniper.py` targeting `AAA Admin notification` (`-1004358687850`).
+  - **Multi-Bot Referral Attribution Resolution (Account #21)**:
+    * Investigated and resolved ground-truth referral states for Account #21: Confirmed Master referral parameters are present for MRG, Kynex, AdxEarn, Victor's, and Chicken Land. Identified that ATF, VyroDrop, and DiggoMiner were opened directly without `start_param`, and PepeGram/Chicken Land were not yet started in Telegram. Synchronized updated referral state in `accounts.json` and Upstash Redis `fleet:accounts`.
+
 - **🔔 AAA Admin Notification Channel Integration & Concise Message Formatting (October 27, 2026)**:
   - **Admin Channel Routing (`-1004358687850`)**:
     * Integrated official private admin notification channel `AAA Admin notification` (`-1004358687850`) across Cloudflare Edge Worker (`deploy_both_cf_workers.py`), Python core service (`app.py`), and disaster recovery engine (`backup_manager.py`).

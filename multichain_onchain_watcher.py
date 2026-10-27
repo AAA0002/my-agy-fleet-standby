@@ -452,6 +452,24 @@ async def broadcast_deposit_alert(session: aiohttp.ClientSession, chain: str, sy
     except Exception as e:
         print(f"Error sending to admin: {e}")
 
+    # Send short notification to AAA Admin notification channel (-1004358687850)
+    admin_notif_channel = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
+    if admin_notif_channel:
+        short_deposit = (
+            f"💰 <b>{chain.upper()} Vault Deposit</b>\n"
+            f"• <b>Amount:</b> <code>+{amount:.6f} {chain.upper()}</code> (${usd_val:.2f})\n"
+            f"• <b>New Balance:</b> <code>{new_balance:.6f} {chain.upper()}</code>\n"
+            f"• <b>Tx:</b> <code>{tx_hash[:10]}...{tx_hash[-6:]}</code>"
+        )
+        try:
+            await session.post(send_url, json={
+                "chat_id": admin_notif_channel,
+                "text": short_deposit,
+                "parse_mode": "HTML"
+            }, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception:
+            pass
+
 
 async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
     state = load_state()

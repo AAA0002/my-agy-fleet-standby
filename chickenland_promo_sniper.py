@@ -85,18 +85,23 @@ def send_telegram_alert(text: str):
     if not REPORT_BOT_TOKEN:
         return
     url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": REPORT_CHAT_ID,
-        "text": text,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": True
-    }
-    try:
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=5)
-    except Exception as e:
-        print(f"[Telegram Alert Error]: {e}", file=sys.stderr)
+    targets = [REPORT_CHAT_ID]
+    notif_channel = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
+    if notif_channel:
+        targets.append(notif_channel)
+    for tid in targets:
+        payload = {
+            "chat_id": tid,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True
+        }
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as e:
+            print(f"[Telegram Alert Error]: {e}", file=sys.stderr)
 
 def get_b64_token(init_data: str) -> str:
     if init_data.startswith("TMA "):

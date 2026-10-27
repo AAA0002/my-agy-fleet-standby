@@ -163,9 +163,10 @@ def ensure_account_ton_wallet(acc: dict) -> str:
         addr_bounce = wallet.address.to_string(is_user_friendly=True, is_bounceable=True, is_url_safe=True)
         addr_raw = wallet.address.to_string(is_user_friendly=False)
 
-        worker_count = len([k for k in fwallets if not str(k).startswith("_")])
+        existing_indices = [v.get("account_index", 0) for k, v in fwallets.items() if isinstance(v, dict) and v.get("account_index")]
+        next_index = max(existing_indices, default=1) + 1
         entry = {
-            "account_index": worker_count + 2,
+            "account_index": next_index,
             "name": acc.get("name", "Worker"),
             "user_id": uid,
             "address": addr_non_bounce,
@@ -220,9 +221,10 @@ def ensure_account_evm_wallet(acc: dict) -> str:
     try:
         from eth_account import Account
         acct = Account.create()
-        worker_count = len([k for k in ewallets if not str(k).startswith("_")])
+        existing_indices = [v.get("account_index", 0) for k, v in ewallets.items() if isinstance(v, dict) and v.get("account_index")]
+        next_index = max(existing_indices, default=1) + 1
         entry = {
-            "account_index": worker_count + 2,
+            "account_index": next_index,
             "name": acc.get("name", "Worker"),
             "user_id": uid,
             "address": acct.address,

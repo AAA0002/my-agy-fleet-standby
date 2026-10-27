@@ -189,7 +189,7 @@ async def main():
     with open(ACCOUNTS_FILE, "w") as f:
         json.dump(accounts, f, indent=2)
 
-    print("\n✨ All 20 fleet accounts successfully onboarded into Chicken Land!")
+    print(f"\n✨ All {total} fleet accounts successfully onboarded into Chicken Land!")
 
 if __name__ == "__main__":
     asyncio.run(main())

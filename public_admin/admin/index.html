@@ -1095,6 +1095,7 @@ function App() {
     "aaa222": { status: "probing", ping: null },
     "agorameet": { status: "probing", ping: null },
     "aaaai": { status: "probing", ping: null },
+    "render_node3": { status: "probing", ping: null },
     "render_node2": { status: "probing", ping: null }
   });
   const [testingMesh, setTestingMesh] = useState(false);
@@ -1160,6 +1161,14 @@ function App() {
         results[key] = { status: "offline", ping: null };
       }
     }));
+    try {
+      const rStart3 = performance.now();
+      const rResp3 = await fetch("https://my-agy-fleet-standby-node3.onrender.com/health", { signal: AbortSignal.timeout(4000) });
+      const rLatency3 = Math.round(performance.now() - rStart3);
+      results["render_node3"] = { status: rResp3.ok ? "live" : "degraded", ping: rLatency3 };
+    } catch (_) {
+      results["render_node3"] = { status: "offline", ping: null };
+    }
     try {
       const rStart = performance.now();
       const rResp = await fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { signal: AbortSignal.timeout(4000) });
@@ -2127,13 +2136,19 @@ function App() {
         React.createElement("div", { className: "space-y-1.5 font-mono text-xs" },
           [
             {
-              name: "Render Node 2 (Frankfurt)",
-              status: meshPings["render_node2"]?.status === "live" ? "Active Coordinator" : (meshPings["render_node2"]?.status === "probing" ? "Probing..." : "Offline"),
-              ping: meshPings["render_node2"]?.ping,
-              isOffline: meshPings["render_node2"]?.status === "offline"
+              name: "Render Node 3 (Oregon Primary)",
+              status: meshPings["render_node3"]?.status === "live" ? "Active Coordinator 🟢" : (meshPings["render_node3"]?.status === "probing" ? "Probing..." : "Offline"),
+              ping: meshPings["render_node3"]?.ping,
+              isOffline: meshPings["render_node3"]?.status === "offline"
             },
-            { name: "Upstash Redis Edge (State)", status: "Active Fast State", ping: 48, isOffline: false },
-            { name: "Turso LibSQL (Encrypted DB)", status: "Active Primary", ping: 55, isOffline: false }
+            {
+              name: "Render Node 2 (Frankfurt Standby)",
+              status: meshPings["render_node2"]?.status === "live" ? "Active Standby 🟢" : "Standby Freeze ⏸️",
+              ping: meshPings["render_node2"]?.ping,
+              isOffline: false
+            },
+            { name: "Upstash Redis Edge (State)", status: "Active Fast State 🟢", ping: 48, isOffline: false },
+            { name: "Turso LibSQL (Encrypted DB)", status: "Active Primary 🟢", ping: 55, isOffline: false }
           ].map((r, rIdx) => React.createElement("div", {
             key: rIdx,
             className: `p-2.5 rounded-xl border flex items-center justify-between ${subCardBg}`
