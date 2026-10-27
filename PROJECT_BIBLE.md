@@ -229,11 +229,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **Account 2: Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
     * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
     * API Key: `RENDER_API_KEY_2: [REDACTED]` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
-    * Status: 🟢 **SOLE ACTIVE PRIMARY NODE** — Exclusively receives all Cloudflare Edge token extraction, OTP fetching, and WebApp farming calls. Strictly one node active.
+    * Status: ⏸️ **COLD STANDBY (PAUSED BY FREE TIER QUOTA / RESETS NOV 1)** — 744 hours completed in October. Hour meter frozen to 0. Automatically resets to 750 free hours on the 1st of each month.
   - **Account 3: Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
     * Service ID: `srv-db437o3tqb8s73dt4erg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
-    * API Key: `RENDER_API_KEY_3: [REDACTED]` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
-    * Status: ⏸️ **STRICT COLD STANDBY (PAUSED)** — Suspended by user via Render API (`0` hours consumed / meter frozen). Excluded from background pings so it never wakes up unintentionally. Only resumed when Node 2 rotates at 600-650 hours.
+    * API Key: `RENDER_API_KEY_3: [REDACTED]` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
+    * Status: 🟢 **SOLE ACTIVE PRIMARY NODE** — Exclusively receives all Cloudflare Edge token extraction, OTP fetching, WebApp farming, and Telegram MTProto login calls with dynamic Edge routing. Strictly one node active.
   - **🔄 600–650 Hour Baton Relay Handover Protocol**:
     * Render free tier grants 750 hours/month per account (1 calendar month = 744 hours).
     * When a service is suspended via `POST /v1/services/{id}/suspend`, its hour meter freezes to 0.

@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔄 Automated Multi-Node Render Failover & Single-Active Primary Baton Relay (`deploy_both_cf_workers.py`, `PROJECT_BIBLE.md`) (October 27, 2026)**:
+  - **Dynamic Cloudflare Edge Multi-Node Routing**:
+    * Replaced all hardcoded references to Render Node 2 (`my-agy-fleet-standby-node2.onrender.com`) with dynamic failover resolver `getRenderUrls()`.
+    * Implemented `fetchRenderWithFailover()` and `startQrLoginSession()` to dynamically route requests based on Upstash Redis state (`fleet:active_render_node`), trying the primary active node first and automatically falling over to the secondary node if HTTP 503 or network errors occur.
+    * Upgraded reverse proxy handler at line 4284 (`/api/account/login/*`, `/api/user/wallet/*`, `/api/user/session/check`) to loop over available Render nodes and transparently forward requests, eliminating 503 service unavailable errors for Mini App and Telegram bot users.
+  - **Promoted Render Node 3 to Active Primary Node**:
+    * Cleanly updated Render Node 3 service repository configuration (`PATCH /services/srv-db437o3tqb8s73dt4erg`) to track `AAA0002/my-agy-fleet-standby` branch `main`.
+    * Deployed latest codebase (`329d2eb`) to Render Node 3 (`my-agy-fleet-standby-node3.onrender.com`) via Render API with cleared cache, successfully transitioning container to `live` status.
+    * Node 2 remains safely suspended (`suspenders: ['billing']`) by Render, strictly enforcing the **Single-Active Node Protocol** (Rule 7 & Project Bible) to guarantee zero dual-IP connection collisions and zero Telegram account revocations.
+  - **Live Verification**:
+    * Verified Node 3 health endpoint: `{"ok":true,"status":"healthy","node":"my-agy-fleet-standby-node3"}`.
+    * Tested live phone code request on Cloudflare Edge Worker (`https://restore-agy.agorameet.workers.dev/api/account/login/send-code`), returning HTTP 200 and reaching the MTProto gateway without "servers unreachable" errors.
+    * Tested live 1-Tap QR Login generation on Cloudflare Edge Worker (`/api/account/login/qr-start`), successfully returning authentic `tg://login?token=...` device authorization URIs.
+
+
 - **🔇 Silent Autonomous Sniper Execution (`chickenland_promo_sniper.py`, `app.py`) (October 27, 2026)**:
   - **Zero Chat Spam / 100% Silent Ingestion**: Silenced automated Telegram alert dispatches (`send_telegram_alert`) during background promo code bursts per user directive ("I don't need to see it"). Promo codes are now sniped, redeemed, and reinvested purely in the background across all fleet accounts with zero unsolicited messages sent to the user.
 

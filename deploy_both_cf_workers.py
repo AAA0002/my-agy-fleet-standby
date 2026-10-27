@@ -2501,12 +2501,79 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    const RENDER_LOGIN_URLS = [
-      "https://my-agy-fleet-standby-node2.onrender.com"
-    ];
+    const getRenderUrls = async () => {
+      let active = "node3";
+      try {
+        const cached = await upstashGet("fleet:active_render_node", 30000);
+        if (cached === "node2" || cached === "node3") {
+          active = cached;
+        }
+      } catch (_) {}
+      if (active === "node3") {
+        return [
+          "https://my-agy-fleet-standby-node3.onrender.com",
+          "https://my-agy-fleet-standby-node2.onrender.com"
+        ];
+      }
+      return [
+        "https://my-agy-fleet-standby-node2.onrender.com",
+        "https://my-agy-fleet-standby-node3.onrender.com"
+      ];
+    };
+
+    const fetchRenderWithFailover = async (path, init = {}, timeoutMs = 25000) => {
+      const urls = await getRenderUrls();
+      for (const baseUrl of urls) {
+        try {
+          const res = await fetch(`${baseUrl}${path}`, {
+            ...init,
+            signal: AbortSignal.timeout(timeoutMs)
+          });
+          if (res.ok) {
+            const workingNode = baseUrl.includes("node3") ? "node3" : "node2";
+            ctx.waitUntil(upstashSet("fleet:active_render_node", workingNode, 86400));
+            return res;
+          }
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const startQrLoginSession = async (chatId, targetIdx = null, isUserBot = false) => {
+      const urls = await getRenderUrls();
+      for (const baseUrl of urls) {
+        try {
+          const qRes = await fetch(`${baseUrl}/api/account/login/qr-start`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SECRET_KEY}`
+            },
+            body: JSON.stringify({
+              chat_id: String(chatId),
+              index: targetIdx,
+              is_user_bot: Boolean(isUserBot),
+              secret: env.SECRET_KEY
+            }),
+            signal: AbortSignal.timeout(25000)
+          });
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            if (qData && qData.ok && qData.url) {
+              qData.node_url = baseUrl;
+              const workingNode = baseUrl.includes("node3") ? "node3" : "node2";
+              ctx.waitUntil(upstashSet("fleet:active_render_node", workingNode, 86400));
+              return qData;
+            }
+          }
+        } catch (_) {}
+      }
+      return null;
+    };
 
     const cloudLoginSendCode = async (phone, targetChatId, forceFresh = false) => {
-      for (const baseUrl of RENDER_LOGIN_URLS) {
+      const urls = await getRenderUrls();
+      for (const baseUrl of urls) {
         try {
           const res = await fetch(`${baseUrl}/api/account/login/send-code`, {
             method: "POST",
@@ -2521,6 +2588,8 @@ export default {
             const data = await res.json();
             if (data.ok) {
               data.node_url = baseUrl;
+              const workingNode = baseUrl.includes("node3") ? "node3" : "node2";
+              ctx.waitUntil(upstashSet("fleet:active_render_node", workingNode, 86400));
               return data;
             }
             if (data.error && !data.error.includes("unreachable")) {
@@ -2533,7 +2602,8 @@ export default {
     };
 
     const cloudLoginVerify = async (targetChatId, { code, password, phone, node_url, index, is_user_bot }) => {
-      const urls = node_url ? [node_url, ...RENDER_LOGIN_URLS.filter(u => u !== node_url)] : RENDER_LOGIN_URLS;
+      const defaultUrls = await getRenderUrls();
+      const urls = node_url ? [node_url, ...defaultUrls.filter(u => u !== node_url)] : defaultUrls;
       const isUser = is_user_bot !== undefined ? Boolean(is_user_bot) : String(targetChatId).startsWith("ub_");
       for (const baseUrl of urls) {
         try {
@@ -2569,7 +2639,8 @@ export default {
     };
 
     const cloudLoginCancel = async (targetChatId) => {
-      for (const baseUrl of RENDER_LOGIN_URLS) {
+      const urls = await getRenderUrls();
+      for (const baseUrl of urls) {
         try {
           await fetch(`${baseUrl}/api/account/login/cancel`, {
             method: "POST",
@@ -2604,10 +2675,7 @@ export default {
     };
 
     const fetchFleetOtp = async (targetIdx) => {
-      // Strictly query the single active Render Node 2 (Frankfurt)
-      const renderNodes = [
-        "https://my-agy-fleet-standby-node2.onrender.com"
-      ];
+      const renderNodes = await getRenderUrls();
       for (const rUrl of renderNodes) {
         try {
           const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
@@ -4279,30 +4347,53 @@ fi
       }
     }
 
-    // 7.169 Proxy User Account Login, Wallet & Session Endpoints to Render Node 2
+    // 7.169 Proxy User Account Login, Wallet & Session Endpoints with Multi-Node Failover
     if (path.startsWith("/api/account/login/") || path.startsWith("/api/user/wallet/") || path === "/api/user/session/check") {
       try {
-        const renderNode = "https://my-agy-fleet-standby-node2.onrender.com";
-        const targetUrl = `${renderNode}${path}${url.search}`;
-        const reqHeaders = new Headers(request.headers);
-        reqHeaders.delete("host");
-        reqHeaders.set("Authorization", `Bearer ${env.SECRET_KEY}`);
-        const forwardOptions = {
-          method: request.method,
-          headers: reqHeaders,
-          signal: AbortSignal.timeout(12000)
-        };
-        if (request.method !== "GET" && request.method !== "HEAD") {
-          forwardOptions.body = await request.text();
+        const renderUrls = await getRenderUrls();
+        let lastResp = null;
+        const bodyText = (request.method !== "GET" && request.method !== "HEAD") ? await request.text() : undefined;
+        for (const renderNode of renderUrls) {
+          try {
+            const targetUrl = `${renderNode}${path}${url.search}`;
+            const reqHeaders = new Headers(request.headers);
+            reqHeaders.delete("host");
+            reqHeaders.set("Authorization", `Bearer ${env.SECRET_KEY}`);
+            const forwardOptions = {
+              method: request.method,
+              headers: reqHeaders,
+              signal: AbortSignal.timeout(15000)
+            };
+            if (bodyText !== undefined) {
+              forwardOptions.body = bodyText;
+            }
+            const renderResp = await fetch(targetUrl, forwardOptions);
+            if (renderResp.status !== 503 && renderResp.status !== 502) {
+              const respText = await renderResp.text();
+              return new Response(respText, {
+                status: renderResp.status,
+                headers: {
+                  "Content-Type": renderResp.headers.get("Content-Type") || "application/json",
+                  ...corsHeaders
+                }
+              });
+            }
+            lastResp = renderResp;
+          } catch (_) {}
         }
-        const renderResp = await fetch(targetUrl, forwardOptions);
-        const respText = await renderResp.text();
-        return new Response(respText, {
-          status: renderResp.status,
-          headers: {
-            "Content-Type": renderResp.headers.get("Content-Type") || "application/json",
-            ...corsHeaders
-          }
+        if (lastResp) {
+          const respText = await lastResp.text();
+          return new Response(respText, {
+            status: lastResp.status,
+            headers: {
+              "Content-Type": lastResp.headers.get("Content-Type") || "application/json",
+              ...corsHeaders
+            }
+          });
+        }
+        return new Response(JSON.stringify({ ok: false, error: "All Render nodes unreachable" }), {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
         });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: "Render gateway error: " + err.message }), {
@@ -4834,11 +4925,11 @@ fi
     if (path === "/api/tokens/refresh" || path === "/api/miniapp/tokens/refresh") {
       try {
         ctx.waitUntil((async () => {
-          await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+          await fetchRenderWithFailover("/collect-tokens", {
             method: "POST",
             headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ source: "api_tokens_refresh_trigger" })
-          }).catch(() => {});
+          });
         })());
         return new Response(JSON.stringify({
           ok: true,
@@ -5100,9 +5191,7 @@ fi
 
     // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account)
     if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools") {
-      const renderNodes = [
-        "https://my-agy-fleet-standby-node2.onrender.com"
-      ];
+      const renderNodes = await getRenderUrls();
       for (const rNode of renderNodes) {
         try {
           const targetPath = (path === "/api/pools" || path === "/api/mining-pools") ? "/api/farm/status" : path;
@@ -5211,9 +5300,9 @@ fi
         // Trigger multi-bot or single-bot farming in background
         const isAllBots = reqBotMatch === "all" || reqBotMatch === "execute" || reqBotMatch === "harvest" || path === "/api/farm/all";
         ctx.waitUntil((async () => {
-          // Forward sweep to single active Render Node 2
+          // Forward sweep to active Render node
           try {
-            await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
+            await fetchRenderWithFailover("/api/farm/cloud-all", {
               method: "POST",
               headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
               body: JSON.stringify({ all: true, bot: reqBotMatch })
@@ -6778,16 +6867,7 @@ fi
               const slotLabel = targetIdx ? `Account #${targetIdx}` : "New Account";
               await editOrSendResilientMessage(chatId, cbMsgId, `📱 *Connecting to Render Cloud & Generating QR Session for ${slotLabel}...*\n\nPlease wait a moment...`, cancelKeyboard);
               try {
-                const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${env.SECRET_KEY}`
-                  },
-                  body: JSON.stringify({ chat_id: String(chatId), index: targetIdx, secret: env.SECRET_KEY }),
-                  signal: AbortSignal.timeout(25000)
-                });
-                const qData = await qRes.json();
+                const qData = await startQrLoginSession(chatId, targetIdx);
                 if (qData && qData.ok && qData.url) {
                   const qrRep = `📱 *1-Tap Telegram QR Login for ${slotLabel}*\n` +
                     `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7128,10 +7208,10 @@ fi
                 await editOrSendResilientMessage(chatId, cbMsgId, `🔥 *Active Code Found: \`${foundCode}\`! Launching fleet burst...*`, statusInlineKeyboard);
                 try {
                   const sniperSecret = env.SECRET_KEY || env.CF_SECRET_KEY || "";
-                  const res = await fetch(`https://my-agy-fleet-standby-node2.onrender.com/api/chickenland/snipe?code=${foundCode}&secret=${sniperSecret}`, {
+                  const res = await fetchRenderWithFailover(`/api/chickenland/snipe?code=${foundCode}&secret=${sniperSecret}`, {
                     method: "POST", headers: { "Authorization": `Bearer ${sniperSecret}` }
                   });
-                  if (res.ok) {
+                  if (res && res.ok) {
                     const data = await res.json();
                     const rep = data.report || {};
                     const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 20} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
@@ -8053,16 +8133,7 @@ fi
             const reqIdx = parts.length > 1 ? parseInt(parts[1], 10) : 1;
             await sendChatAction(chatId, "typing");
             try {
-              const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${env.SECRET_KEY}`
-                },
-                body: JSON.stringify({ chat_id: String(chatId), index: reqIdx, secret: env.SECRET_KEY }),
-                signal: AbortSignal.timeout(25000)
-              });
-              const qData = await qRes.json();
+              const qData = await startQrLoginSession(chatId, reqIdx);
               if (qData && qData.ok && qData.url) {
                 const qrRep = `📱 *1-Tap Telegram QR Login for Account #${reqIdx}*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -9458,11 +9529,11 @@ fi
             await sendReply(`⚡ *Sniping Promo Code \`${promoCode}\` across Fleet Accounts...*`);
             try {
               const sniperSecret = env.SECRET_KEY || env.CF_SECRET_KEY || "";
-              const res = await fetch(`https://my-agy-fleet-standby-node2.onrender.com/api/chickenland/snipe?code=${promoCode}&secret=${sniperSecret}`, {
+              const res = await fetchRenderWithFailover(`/api/chickenland/snipe?code=${promoCode}&secret=${sniperSecret}`, {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${sniperSecret}` }
               });
-              if (res.ok) {
+              if (res && res.ok) {
                 const data = await res.json();
                 const rep = data.report || {};
                 await sendReply(`🐔 *Chicken Land Promo Snipe Results:*\n\n` +
@@ -13180,20 +13251,7 @@ Reply to Arif naturally:`;
           if (cqData === "ub_login_qr" || cqData.startsWith("ub_login_qr_") || cqData.startsWith("ub_bind_id_")) {
             await answerCq("Generating QR Code...", false);
             try {
-              const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${env.SECRET_KEY}`
-                },
-                body: JSON.stringify({
-                  chat_id: "ub_" + cqChatId,
-                  is_user_bot: true,
-                  secret: env.SECRET_KEY
-                }),
-                signal: AbortSignal.timeout(25000)
-              });
-              const qData = await qRes.json();
+              const qData = await startQrLoginSession("ub_" + cqChatId, null, true);
               if (qData && qData.ok && qData.url) {
                 const qrRep = `📱 *Authentic 1-Tap Telegram QR Device Link*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -15319,20 +15377,7 @@ Reply to Arif naturally:`;
           if (text === "/qr" || text.startsWith("/qr")) {
             await sendUserChatAction("typing");
             try {
-              const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${env.SECRET_KEY}`
-                },
-                body: JSON.stringify({
-                  chat_id: "ub_" + chatId,
-                  is_user_bot: true,
-                  secret: env.SECRET_KEY
-                }),
-                signal: AbortSignal.timeout(25000)
-              });
-              const qData = await qRes.json();
+              const qData = await startQrLoginSession("ub_" + chatId, null, true);
               if (qData && qData.ok && qData.url) {
                 const qrRep = `📱 *Authentic 1-Tap Telegram QR Device Link*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -15764,10 +15809,16 @@ Reply to Arif naturally:`;
       ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("cron_cycle", JSON.stringify({ node: CURRENT_SUBDOMAIN, shard: NODE_SHARD_INDEX, time: new Date().toISOString() })).run().catch(() => {}));
     }
 
-    // 1. Keepalive for Primary Render Node 2 (Frankfurt) & Relayer
-    ctx.waitUntil(
-      fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null)
-    );
+    // 1. Keepalive for Active Primary Render Node (Dynamic failover)
+    ctx.waitUntil((async () => {
+      const rUrls = await getRenderUrls();
+      for (const u of rUrls) {
+        try {
+          const res = await fetch(`${u}/health`, { method: "GET", signal: AbortSignal.timeout(8000) });
+          if (res.ok) break;
+        } catch (_) {}
+      }
+    })());
 
     // 2. Intelligent Cloud-Aware Sentinel Check
     ctx.waitUntil((async () => {
@@ -15780,9 +15831,15 @@ Reply to Arif naturally:`;
         }
 
         // Only investigate if local machine has been silent for > 60 minutes
-          // Check if Render primary node (Standby Frankfurt, Ari AI, Primary Relayer) are standing guard
-          const r2 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null);
-          const cloudStandbyAlive = r2 && r2.ok;
+          // Check if active Render node is standing guard
+          const rUrls = await getRenderUrls();
+          let cloudStandbyAlive = false;
+          for (const u of rUrls) {
+            try {
+              const rTest = await fetch(`${u}/health`, { method: "GET", signal: AbortSignal.timeout(6000) });
+              if (rTest.ok) { cloudStandbyAlive = true; break; }
+            } catch (_) {}
+          }
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {
@@ -15868,15 +15925,21 @@ Reply to Arif naturally:`;
         }
 
         if (needBatchRefresh) {
-          // Query strictly the single active Render Node 2 (Frankfurt). Never wake sleeping standby nodes!
-          await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${env.SECRET_KEY}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
-          }).catch(() => {});
+          const rUrls = await getRenderUrls();
+          for (const u of rUrls) {
+            try {
+              const res = await fetch(`${u}/collect-tokens`, {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.SECRET_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ source: "cf_cron_expiry_check" }),
+                signal: AbortSignal.timeout(20000)
+              });
+              if (res.ok) break;
+            } catch (_) {}
+          }
         }
 
       } catch (_) {}
@@ -15926,10 +15989,11 @@ Reply to Arif naturally:`;
     })());
 
     // 4. Multi-Cloud External Edge pings to keep external services warm
+    const activeUrls = await getRenderUrls();
     const MULTI_CLOUD_EDGES = [
       "https://my-agy-fleet-deno.aaa222.deno.net/health",
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
-      "https://my-agy-fleet-standby-node2.onrender.com/health",
+      `${activeUrls[0]}/health`,
       "https://atf-mtproto-relayer.onrender.com/wake"
     ];
     for (const edgeUrl of MULTI_CLOUD_EDGES) {
