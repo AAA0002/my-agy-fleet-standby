@@ -14,7 +14,8 @@
 * **Git Repository**: `AAA0002/ATL` (clean HTTPS remotes: `origin` and `standby_repo`).
 * **Architecture**: 100% Cloud-First Autonomous Telegram Mini-App Mining & Multi-Chain Wallet Fleet.
 * **Master System Navigation Hub**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for the universal cheat sheet, credential index, route map, and navigation hub.
-* **Accounts**: **20 Telegram Accounts** (1 Master Account + 17 Static Worker Accounts + Account #19 Adil H + Account #20 Asaduzzaman Sarker) farming in parallel.
+* **Accounts**: **Dynamic Scaling Fleet Accounts** (1 Master Account + Static Worker Accounts + Elastic Expansion Nodes) farming concurrently without hardcoded limits. Dynamically derived from `accounts.json` and Upstash Redis `fleet:tokens:*`.
+* **Unified Auto-Farming Architecture**: All 9 active bot connectors share a unified, modular execution engine across cloud infrastructure, parameterized cleanly across bot identities and account contexts.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
 * **9 Active Legitimate Fleet Bots (Strict 9-Bot Integrity)**:
   1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.

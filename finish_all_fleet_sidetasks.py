@@ -272,7 +272,7 @@ async def jitter(min_s: float = 0.5, max_s: float = 1.5):
 # =============================================================================
 
 async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str, str]]:
-    """Loads tokens for all 20 accounts from Upstash Redis fleet:tokens:*."""
+    """Loads tokens for all dynamic fleet accounts from Upstash Redis fleet:tokens:*."""
     tokens_db = {}
     up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
     
@@ -289,9 +289,27 @@ async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str
     except Exception as e:
         logger.warning(f"Error loading miniapp_tokens: {e}")
 
+    # Discover all dynamic accounts from Upstash Redis keys fleet:tokens:*
+    discovered_uids = set(str(acc.get("user_id")) for acc in ACCOUNTS if acc.get("user_id"))
+    try:
+        async with session.get(f"{UPSTASH_URL}/keys/fleet:tokens:*", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as kr:
+            if kr.status == 200:
+                kd = await kr.json()
+                for k in kd.get("result", []):
+                    u = k.split(":")[-1]
+                    if u.isdigit():
+                        discovered_uids.add(u)
+    except Exception:
+        pass
+
+    # Ensure any newly discovered account is dynamically present in ACCOUNTS
+    existing_uids = set(str(acc.get("user_id")) for acc in ACCOUNTS if acc.get("user_id"))
+    for duid in discovered_uids:
+        if duid not in existing_uids:
+            ACCOUNTS.append({"user_id": int(duid), "name": f"Account_{duid}"})
+
     # Second, merge individual fleet:tokens:{uid}
-    for acc in ACCOUNTS:
-        uid = str(acc.get("user_id"))
+    for uid in discovered_uids:
         try:
             async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as r:
                 if r.status == 200:
@@ -1487,7 +1505,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         account_report["results"]["adxearn"] = adx_res
 
         # 8. DiggoMiner
-        diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), acc_toks)
+        diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), {**acc, **acc_toks})
         account_report["results"]["diggo"] = diggo_res
 
         # 9. Chicken Land
@@ -1504,7 +1522,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST (20 ACCOUNTS)")
+    logger.info(f"🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -1519,7 +1537,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 80)
-        logger.info("📊 8-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY")
+        logger.info(f"📊 9-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
         logger.info("=" * 80)
         total_tasks = 0
         for rep in reports:
@@ -1533,9 +1551,10 @@ async def main():
             pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
             adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
             dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + pep_cl + adx_cl + dig_cl
+            chk_cl = res.get("chickenland", {}).get("tasks_claimed", 0)
+            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} | Tot: {acc_total}")
 
         logger.info("=" * 80)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")

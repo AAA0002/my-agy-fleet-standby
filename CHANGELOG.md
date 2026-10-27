@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Dynamic Fleet Scaling Architecture, Zero-Hardcoded Accounts & Unified Multi-Bot Farming Engine (October 27, 2026)**:
+  - **Zero Hardcoded Fleet Accounts (Elastic Fleet Scaling)**:
+    * Refactored `load_all_fleet_uids()` across `victors_sb_solver.py` and `mrg_turnstile_solver.py` to dynamically load account UIDs from `accounts.json`, query Upstash Redis `fleet:tokens:*` keys, and sync via cloud storage. Removed all hardcoded `20` and `18` limits and `len(uids) >= 18` thresholds.
+    * Refactored `fetch_all_tokens` in `finish_all_fleet_sidetasks.py` to scan `keys/fleet:tokens:*` in Upstash Redis, automatically discovering newly registered accounts and dynamically appending them to `ACCOUNTS` so any scale change is instantly accommodated.
+    * Dynamically derived fleet account rosters, counts, target metrics, and progress bars in `app.py`, `autonomous_cloud_agent.py`, `audit_bots_and_sidetasks.py`, `update_dashboard_compact.py`, `deploy_both_cf_workers.py`, and `public/admin.html` based on `len(accounts)` / `fleet.length`.
+  - **Unified Auto-Farming Architecture (Modular Multi-Bot Connectors)**:
+    * Formalized that all 9 crypto auto-farming engines (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land) share a unified, modular execution pipeline across the cloud infrastructure.
+    * Ensured account records and tokens seamlessly interface with the farming routines regardless of whether the session is managed via fleet admin or user bot contexts, while strictly isolating bot tokens and channel destinations.
+  - **Kynex Network Robustness & Typing Fix (`kynex_miner.py`)**:
+    * Resolved `AttributeError: 'str' object has no attribute 'get'` in `farm_kynex_account` by adding dynamic input normalization supporting dict, string, or UID arguments (`if isinstance(acc_entry, str): acc_entry = {"name": acc_entry, "user_id": acc_entry}`).
+    * Verified live execution on Master Account (`6727787768`), successfully claiming 8.55 KNX reward, topping energy up to 84,712s (~23.5 hours), and setting `mining_active: True`.
+  - **Chicken Land Fleet Harvest Integration (`finish_all_fleet_sidetasks.py`)**:
+    * Fixed omission in grand total summary calculation and logging: included `chk_cl = res.get("chickenland", {}).get("tasks_claimed", 0)` in `acc_total` and formatted summary log lines.
+    * Updated `sweep_diggo_tasks` call to pass merged `{**acc, **acc_toks}` ensuring full account metadata availability during side-task sweeps.
+  - **Dynamic Sponsor Channel Subscription Engine (`app.py`)**:
+    * Refactored `MANDATORY_SPONSOR_CHANNELS` in `app.py` to dynamically derive from `bot_registry.get_all_sponsor_channels()`, automatically including required channels `@keepeye_app` and `@PickaxeEmpire`.
+    * Upgraded channel join tracking in Upstash Redis from a static boolean flag (`fleet:channels_joined:{uid}`) to a persistent JSON set (`fleet:channels_joined_set:{uid}`), ensuring newly added sponsor channels are joined immediately across the fleet without getting skipped.
+
+
 - **⚡ Parallel Ad Verification, Victor's 401 Probe & Chicken Land Auto-Upgrades (October 27, 2026)**:
   - **Victor's Company HTTP 401 `HUMAN_REQUIRED` Session Probe Resolution**:
     * Discovered that Victor's Company `/api/auth/login` returns HTTP 401 (not 403) with body `{"code": "HUMAN_REQUIRED"}`.

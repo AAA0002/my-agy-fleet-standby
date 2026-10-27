@@ -55,36 +55,57 @@ VICTORS_REF = "ref_A20AA96F18"
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
 def load_all_fleet_uids() -> list:
+    """Dynamically discovers all fleet UIDs from accounts.json, Upstash Redis, or cloud sync without hardcoded limits."""
+    # 1. Local accounts.json
     if os.path.exists(ACCOUNTS_FILE):
         try:
             with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
                 accs = json.load(f)
                 uids = [int(a["user_id"]) for a in accs if a.get("user_id")]
-                if len(uids) >= 18:
+                if uids:
                     return uids
         except Exception:
             pass
+
+    # 2. Dynamic discovery from Upstash Redis fleet:tokens:*
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            req = urllib.request.Request(
+                f"{UPSTASH_URL}/keys/fleet:tokens:*",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as r:
+                d = json.loads(r.read().decode())
+                keys = d.get("result", [])
+                uids = sorted(list(set(int(k.split(":")[-1]) for k in keys if k.split(":")[-1].isdigit())))
+                if uids:
+                    return uids
+        except Exception:
+            pass
+
+        # 3. Dynamic discovery from fleet:accounts
+        try:
+            req = urllib.request.Request(
+                f"{UPSTASH_URL}/get/fleet:accounts",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as r:
+                d = json.loads(r.read().decode())
+                raw = d.get("result")
+                if raw:
+                    accs = json.loads(raw) if isinstance(raw, str) else raw
+                    uids = [int(a["user_id"]) for a in accs if isinstance(a, dict) and a.get("user_id")]
+                    if uids:
+                        return uids
+        except Exception:
+            pass
+
+    # 4. Fallback roster
     return [
-        6727787768,  # Master (Arif Hossain)
-        8881914294,  # Nancy
-        7648254021,  # Koram
-        8826375659,  # Arif
-        8450010161,  # Nadim
-        8782429452,  # Kaitlyn
-        7734849205,  # Node 7
-        8025472383,  # Node 8
-        8851426148,  # Node 9
-        8203342513,  # Node 10
-        8190649727,  # MD. Arif
-        7487048946,  # Sanzida
-        8741547543,  # Abid (3)
-        8727040932,  # Node 14
-        7749125802,  # Node 15
-        7954290138,  # Node 16
-        8841038141,  # Node 17
-        8975442879,  # Node 18
-        8937908003,  # Node 19
-        8609131528   # Node 20
+        6727787768, 8881914294, 7648254021, 8826375659, 8450010161,
+        8782429452, 7734849205, 8025472383, 8851426148, 8203342513,
+        8190649727, 7487048946, 8741547543, 8727040932, 7749125802,
+        7954290138, 8841038141, 8975442879, 8937908003, 8609131528
     ]
 
 FLEET_UIDS = load_all_fleet_uids()

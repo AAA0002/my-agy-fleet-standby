@@ -1531,37 +1531,54 @@ async def token_health_and_refresh_watchdog():
         await asyncio.sleep(1800)
 
 # =====================================================================
-# 24/7 AUTONOMOUS CLOUD FLEET AD-FARMING ENGINE (20 Accounts x 1,000 Ads/Day)
+# 24/7 AUTONOMOUS CLOUD FLEET AD-FARMING ENGINE (Dynamic Scaling)
 # =====================================================================
-FLEET_20_ACCOUNTS_MAP = [
-    {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master)"},
-    {"index": 2, "uid": "8881914294", "name": "Nancy Davis 2"},
-    {"index": 3, "uid": "7648254021", "name": "Koram Shah 3"},
-    {"index": 4, "uid": "8826375659", "name": "Arif 4"},
-    {"index": 5, "uid": "8450010161", "name": "Nathan Miller 5"},
-    {"index": 6, "uid": "8782429452", "name": "Kaitlyn Ross 6"},
-    {"index": 7, "uid": "7734849205", "name": "Abid Hasan 7"},
-    {"index": 8, "uid": "8025472383", "name": "Abid Hasan (2) 8"},
-    {"index": 9, "uid": "8851426148", "name": "Naimur Rahman 9"},
-    {"index": 10, "uid": "8203342513", "name": "Tanvir Ahmed 10"},
-    {"index": 11, "uid": "8190649727", "name": "MD. ARIF HOSSAIN 11"},
-    {"index": 12, "uid": "7487048946", "name": "Sanzida Shimu 12"},
-    {"index": 13, "uid": "8741547543", "name": "Abid (3) 13"},
-    {"index": 14, "uid": "8727040932", "name": "Rohan Sharma 14"},
-    {"index": 15, "uid": "7749125802", "name": "Tasnim Farhana 15"},
-    {"index": 16, "uid": "7954290138", "name": "Rashedul Islam 16"},
-    {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud 17"},
-    {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan 18"},
-    {"index": 19, "uid": "8937908003", "name": "Adil H 19"},
-    {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker 20"}
-]
+def get_fleet_accounts_map() -> list:
+    """Dynamically loads fleet accounts map from accounts.json or database."""
+    accs_file = os.path.join(BASE_DIR, "accounts.json")
+    if os.path.exists(accs_file):
+        try:
+            with open(accs_file, "r") as f:
+                raw_accs = json.load(f)
+                if raw_accs:
+                    return [
+                        {"index": i + 1, "uid": str(a.get("user_id")), "name": a.get("name", f"Account_{i+1}")}
+                        for i, a in enumerate(raw_accs) if a.get("user_id")
+                    ]
+        except Exception:
+            pass
+
+    return [
+        {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master)"},
+        {"index": 2, "uid": "8881914294", "name": "Nancy Davis 2"},
+        {"index": 3, "uid": "7648254021", "name": "Koram Shah 3"},
+        {"index": 4, "uid": "8826375659", "name": "Arif 4"},
+        {"index": 5, "uid": "8450010161", "name": "Nathan Miller 5"},
+        {"index": 6, "uid": "8782429452", "name": "Kaitlyn Ross 6"},
+        {"index": 7, "uid": "7734849205", "name": "Abid Hasan 7"},
+        {"index": 8, "uid": "8025472383", "name": "Abid Hasan (2) 8"},
+        {"index": 9, "uid": "8851426148", "name": "Naimur Rahman 9"},
+        {"index": 10, "uid": "8203342513", "name": "Tanvir Ahmed 10"},
+        {"index": 11, "uid": "8190649727", "name": "MD. ARIF HOSSAIN 11"},
+        {"index": 12, "uid": "7487048946", "name": "Sanzida Shimu 12"},
+        {"index": 13, "uid": "8741547543", "name": "Abid (3) 13"},
+        {"index": 14, "uid": "8727040932", "name": "Rohan Sharma 14"},
+        {"index": 15, "uid": "7749125802", "name": "Tasnim Farhana 15"},
+        {"index": 16, "uid": "7954290138", "name": "Rashedul Islam 16"},
+        {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud 17"},
+        {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan 18"},
+        {"index": 19, "uid": "8937908003", "name": "Adil H 19"},
+        {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker 20"}
+    ]
+
+FLEET_20_ACCOUNTS_MAP = get_fleet_accounts_map()
 FLEET_18_ACCOUNTS_MAP = FLEET_20_ACCOUNTS_MAP
 
 FLEET_AD_FARMER_STATE = {
     "status": "starting",
     "today": "",
     "total_ads_today": 0,
-    "total_target": 20000,
+    "total_target": len(FLEET_20_ACCOUNTS_MAP) * 1000,
     "last_claim_ts": 0,
     "errors": 0,
     "accounts": {}
@@ -1570,15 +1587,20 @@ FLEET_AD_FARMER_STATE = {
 async def autonomous_fleet_ad_farmer_loop():
     """
     24/7 Autonomous Cloud Fleet Ad-Farming Loop.
-    Automatically watches and claims ads from our User Bot for each of our 20 fleet accounts,
-    targeting 1,000 ads per account per day (20,000 total ad claims/day) across the Cloudflare Edge mesh.
+    Dynamically watches and claims ads from our User Bot for each registered fleet account,
+    targeting 1,000 ads per account per day across the Cloudflare Edge mesh.
     Respects rate limits, runs 100% in the cloud on Render Node 2 with 0 phone load.
     """
-    logger.info("[Ad Farmer] 🎬 Initializing 24/7 Autonomous Fleet Ad-Farming Loop (20 accounts x 1,000 ads/day)...")
+    accounts_map = get_fleet_accounts_map()
+    logger.info(f"[Ad Farmer] 🎬 Initializing 24/7 Autonomous Fleet Ad-Farming Loop ({len(accounts_map)} accounts x 1,000 ads/day)...")
     await asyncio.sleep(20)  # Boot grace period
 
     while True:
         try:
+            accounts_map = get_fleet_accounts_map()
+            total_target = len(accounts_map) * 1000
+            FLEET_AD_FARMER_STATE["total_target"] = total_target
+
             in_maint, reason, rem = await is_in_maintenance_mode()
             if in_maint:
                 logger.info(f"[Ad Farmer] ⏸️ Fleet in maintenance mode ({reason}). Idling {min(rem + 5, 60)}s...")
@@ -1592,7 +1614,7 @@ async def autonomous_fleet_ad_farmer_loop():
             total_today = 0
             pending_accounts = []
 
-            for acc in FLEET_20_ACCOUNTS_MAP:
+            for acc in accounts_map:
                 uid = acc["uid"]
                 key = f"fleet:daily_ads:{uid}:{today_str}"
                 count = 0
@@ -1623,7 +1645,7 @@ async def autonomous_fleet_ad_farmer_loop():
             FLEET_AD_FARMER_STATE["total_ads_today"] = total_today
 
             if not pending_accounts:
-                logger.info(f"[Ad Farmer] 🏆 100% GOAL REACHED! All 20 fleet accounts completed 1,000 ads today ({total_today}/20,000). Resting until next UTC day...")
+                logger.info(f"[Ad Farmer] 🏆 100% GOAL REACHED! All {len(accounts_map)} fleet accounts completed 1,000 ads today ({total_today}/{total_target}). Resting until next UTC day...")
                 FLEET_AD_FARMER_STATE["status"] = "daily_target_completed"
                 await asyncio.sleep(300)
                 continue
@@ -7453,19 +7475,26 @@ CHANNEL_WHITELIST = {
     "Web3Primeteam"
 }
 
-# Active Legitimate Sponsor Channels (Scammers, TRX Power, ART, AI Lab, UltraWallet, FINVORA & Stones purged)
-MANDATORY_SPONSOR_CHANNELS = [
-    "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney",
-    "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
-    "vyrodrop",
-    "atfminers",
-    "kynex_mining",
-    "diggo_community",
-    "EarnVaulte",
-    "solanamemes001",
-    "Web3Primeteam",
-    "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
-]
+# Active Legitimate Sponsor Channels (derived from bot_registry + required news/payout channels)
+try:
+    import bot_registry
+    MANDATORY_SPONSOR_CHANNELS = sorted(list(set(
+        bot_registry.get_all_sponsor_channels() + [
+            "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney", "keepeye_app",
+            "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire",
+            "vyrodrop", "atfminers", "kynex_mining", "diggo_community",
+            "EarnVaulte", "solanamemes001", "Web3Primeteam",
+            "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
+        ]
+    )))
+except Exception:
+    MANDATORY_SPONSOR_CHANNELS = [
+        "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney", "keepeye_app",
+        "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire",
+        "vyrodrop", "atfminers", "kynex_mining", "diggo_community",
+        "EarnVaulte", "solanamemes001", "Web3Primeteam",
+        "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
+    ]
 
 # 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
@@ -7689,44 +7718,51 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     except Exception:
                         pass
 
-                # 4. Join mandatory legitimate sponsor channels (Idempotent: runs ONCE per account with human delays)
-                channels_already_joined = False
+                # 4. Join mandatory legitimate sponsor channels (Idempotent per channel with human delays)
+                joined_set = set()
                 if UPSTASH_URL and UPSTASH_TOKEN:
                     try:
                         async with aiohttp.ClientSession() as up_s:
-                            async with up_s.get(f"{UPSTASH_URL}/get/fleet:channels_joined:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as up_r:
+                            async with up_s.get(f"{UPSTASH_URL}/get/fleet:channels_joined_set:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as up_r:
                                 if up_r.status == 200:
                                     d_j = await up_r.json()
-                                    if d_j.get("result"):
-                                        channels_already_joined = True
+                                    raw_set = d_j.get("result")
+                                    if raw_set:
+                                        parsed = json.loads(raw_set) if isinstance(raw_set, str) else raw_set
+                                        if isinstance(parsed, list):
+                                            joined_set = set(parsed)
                     except Exception:
                         pass
 
-                if channels_already_joined:
-                    acc_res["joined"].append("all_sponsor_channels_previously_verified")
-                else:
-                    hit_flood = False
-                    for ch in MANDATORY_SPONSOR_CHANNELS:
-                        try:
-                            await cl(JoinChannelRequest(ch))
-                            acc_res["joined"].append(ch)
-                            await asyncio.sleep(random.uniform(6.0, 12.0))
-                        except FloodWaitError as fwe:
-                            logger.warning(f"[{name}] Flood wait {fwe.seconds}s encountered on @{ch}. Halting joins to protect account.")
-                            acc_res["joined"].append(f"flood_wait_{fwe.seconds}s")
-                            hit_flood = True
-                            break
-                        except Exception as ce:
-                            err_s = str(ce).lower()
-                            if "already" in err_s:
-                                acc_res["joined"].append(f"{ch} (already)")
+                hit_flood = False
+                for ch in MANDATORY_SPONSOR_CHANNELS:
+                    if ch in joined_set:
+                        acc_res["joined"].append(f"{ch} (verified)")
+                        continue
+                    try:
+                        await cl(JoinChannelRequest(ch))
+                        acc_res["joined"].append(ch)
+                        joined_set.add(ch)
+                        await asyncio.sleep(random.uniform(5.0, 10.0))
+                    except FloodWaitError as fwe:
+                        logger.warning(f"[{name}] Flood wait {fwe.seconds}s encountered on @{ch}. Halting joins to protect account.")
+                        acc_res["joined"].append(f"flood_wait_{fwe.seconds}s")
+                        hit_flood = True
+                        break
+                    except Exception as ce:
+                        err_s = str(ce).lower()
+                        if "already" in err_s or "user_already_participant" in err_s:
+                            acc_res["joined"].append(f"{ch} (already)")
+                            joined_set.add(ch)
+                        else:
+                            acc_res["joined"].append(f"{ch} ({err_s[:30]})")
 
-                    if not hit_flood and UPSTASH_URL and UPSTASH_TOKEN:
-                        try:
-                            async with aiohttp.ClientSession() as up_s:
-                                await up_s.post(f"{UPSTASH_URL}/set/fleet:channels_joined:{uid}", data="1", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
-                        except Exception:
-                            pass
+                if UPSTASH_URL and UPSTASH_TOKEN and joined_set:
+                    try:
+                        async with aiohttp.ClientSession() as up_s:
+                            await up_s.post(f"{UPSTASH_URL}/set/fleet:channels_joined_set:{uid}", data=json.dumps(list(joined_set)), headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                    except Exception:
+                        pass
 
                 # 5. Scan ALL dialogs: Erase and delete dialogs for any scammer bot, channel, or group (only if not already purged)
                 muted_cnt = 0

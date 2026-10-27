@@ -293,7 +293,7 @@ class AutonomousAriAgent:
                             return json.loads(res) if isinstance(res, str) else res
             except Exception:
                 pass
-        return {"accounts_total": 20, "status": "nominal"}
+        return {"accounts_total": "dynamic", "status": "nominal"}
 
     async def dispatch_fleet_action(self, session: aiohttp.ClientSession, action: str):
         """Pushes command to Upstash Redis queue for instantaneous daemon/edge execution."""
@@ -401,7 +401,7 @@ class AutonomousAriAgent:
                     session,
                     f"🔄 *[Ari AI Council — Cloud Failover]*\n\n"
                     f"MTProto tokens exceeded 12h threshold (GitHub Actions limit or schedule delay).\n"
-                    f"Autonomously collected fresh tokens via **{res.get('node')}** across all 20 accounts!"
+                    f"Autonomously collected fresh tokens via **{res.get('node')}** across all fleet accounts!"
                 )
                 return
 
@@ -458,7 +458,7 @@ async def main():
             "• **Council:** `Cloudflare Workers AI` (DeepSeek R1 + Llama 3.2 Dual-Verification)\n"
             "• **Failover:** Render Standby (Frankfurt + Oregon) auto-collection armed\n"
             "• **Memory:** Serverless Persistent Reflexion Vector Store\n"
-            "• **Status:** Overseeing 20 accounts 24/7 autonomously."
+            "• **Status:** Overseeing all fleet accounts 24/7 autonomously."
         )
 
         while True:

@@ -223,8 +223,12 @@ async def farm_kynex_account(
       7. Completes & claims all pending social channel tasks (claimSocialTask).
       8. Claims available watch ads tasks rewards (claimTasksAdReward).
     """
-    name = acc_entry.get("name", "User")
-    uid_raw = str(acc_entry.get("user_id"))
+    if isinstance(acc_entry, str):
+        acc_entry = {"name": acc_entry, "user_id": acc_entry}
+    elif not isinstance(acc_entry, dict):
+        acc_entry = {}
+    name = acc_entry.get("name") or "User"
+    uid_raw = str(acc_entry.get("user_id") or "")
     result = {
         "status": "idle",
         "balance": 0.0,

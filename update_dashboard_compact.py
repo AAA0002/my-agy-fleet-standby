@@ -537,13 +537,13 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 20-account automated mining fleet (MY AGY AI). Fleet state: 20 active accounts across all 9 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's automated mining fleet (MY AGY AI). Fleet state: ${fleet.length} active accounts across all 9 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
-      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 20 accounts are online and actively mining, Arif." }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || `All ${fleet.length} accounts are online and actively mining, Arif.` }]);
     } catch (_) {
-      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 20/20 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: ${fleet.length}/${fleet.length} accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
     } finally {
       setAiLoading(false);
     }
@@ -837,7 +837,7 @@ function App() {
             desc: "Farm & Accumulate (No WD)",
             action: async () => {
               showToast("AI: ATF is in 100% farming & accumulation mode", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: "🪙 ATF Miner Policy: Strictly 100% farming and accumulation mode. Auto-withdrawals are permanently disabled per your directive. All 20 accounts are compounding tokens directly in the pool without withdrawing." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: `🪙 ATF Miner Policy: Strictly 100% farming and accumulation mode. Auto-withdrawals are permanently disabled per your directive. All ${fleet.length} accounts are compounding tokens directly in the pool without withdrawing.` }]);
             }
           },
           {

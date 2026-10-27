@@ -63,8 +63,8 @@ def load_tokens_db():
         except Exception:
             pass
 
-    # 3. Tertiary: Upstash fleet:tokens:* pipeline fallback
-    if len(tokens) < 20 and UPSTASH_URL and UPSTASH_TOKEN:
+    # 3. Tertiary: Upstash fleet:tokens:* pipeline fallback to dynamically merge all cloud tokens
+    if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
                 f"{UPSTASH_URL}/keys/fleet:tokens:*",
@@ -739,7 +739,7 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
 
 async def main():
     print("="*80)
-    print("🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
+    print(f"🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL {len(ACCOUNTS)} ACCOUNTS)")
     print("="*80)
     
     fleet_reports = {}

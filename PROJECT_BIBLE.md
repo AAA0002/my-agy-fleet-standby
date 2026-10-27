@@ -39,6 +39,10 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. MRG upgrades miners, ATF compounds hash, Victor's compounds passes).
 5. **📝 Living Memory & Changelog**:
    - Whenever any file, function, bot, or architecture decision is modified, added, or removed, **always document it immediately** in `CHANGELOG.md` and update this `PROJECT_BIBLE.md`.
+7. **🌐 Elastic Fleet Scaling & Zero Hardcoding**:
+   - **Never hardcode 20 accounts or static lengths**: Accounts can increase or decrease dynamically. All scripts, queries, rosters, and UIs must derive fleet size dynamically via `len(accounts)`, `fleet.length`, `accounts.json`, and Upstash Redis `fleet:tokens:*` keys.
+8. **🤖 Unified Auto-Farming Engine Architecture**:
+   - The auto farming engine (MRG, ATF, Victor's Company, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land) is a unified, modular execution core. Both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) leverage identical reliable bot connectors, cleanly distinguished solely by bot token and chat destination.
 6. **🔗 Dual-Layer Referral Binding Architecture & Silent Farming**:
    - **Routine Silent Farming**: All 20 fleet accounts execute 24/7 autonomous farming exclusively through **Telegram Mini App REST APIs** (authenticating with cryptographically signed `tgWebAppData` extracted via `RequestAppWebViewRequest`). Routine bot chats remain 100% silent without chat clutter.
    - **Dual-Layer Initial Referral Binding**: To guarantee 100% recruit-to-master attribution across diverse bot backends, initial onboarding executes a synchronized two-layer protocol:
