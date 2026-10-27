@@ -11,7 +11,7 @@ Cognitive Engine:
 Core Features:
   - Anti-Stupid Dual-Verification Layer (Plan -> Critique -> Approve)
   - Autonomous Render Token Collection Failover (Node 1 -> Node 2 if GitHub Actions limits up)
-  - Autonomous Multi-Chain Profit Sweeper (8-Bot Multi-Chain Yields + On-Chain Master Vaults)
+  - Autonomous Multi-Chain Profit Sweeper (9-Bot Multi-Chain Yields + On-Chain Master Vaults)
   - Reflexion Long-Term Memory (Learns from every mistake via Upstash Redis)
   - 24/7 Autonomous Fleet Oversight & Automated Payout Management
 =============================================================================
@@ -161,7 +161,7 @@ Current Live State:
 
 Past Lessons & Directives (NEVER VIOLATE THESE RULES):
 {lessons_text}
-- The fleet exclusively operates 8 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, and AdxEarn AI.
+- The fleet exclusively operates 9 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land.
 - ATF Miner is strictly in 100% FARMING & ACCUMULATION MODE (NO premature withdrawals; allow hash and balance to compound).
 - Master account (6727787768) maintains maximum compound hash and acts as primary referrer.
 - Worker accounts auto-harvest and compound mining cycles according to optimal cooldown intervals.

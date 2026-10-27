@@ -279,7 +279,7 @@ def sanitize_upstash_redis(dry_run: bool = False) -> dict:
     except Exception as ue:
         logger.debug(f"Upstash pass audit note: {ue}")
 
-    # 3.3 Purge legacy defunct bot keys from Upstash Redis (Strict 8-Bot Integrity)
+    # 3.3 Purge legacy defunct bot keys from Upstash Redis (Strict 9-Bot Integrity)
     dead_patterns = [
         "fleet:astra:*", "fleet:last_farm:astra:*", "fleet:farm_error:astra:*",
         "fleet:leafearn:*", "fleet:last_farm:leafearn:*", "fleet:farm_error:leafearn:*",

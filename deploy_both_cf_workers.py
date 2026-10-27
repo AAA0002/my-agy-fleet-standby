@@ -329,7 +329,7 @@ const solveChallengeDeterministic = (questionText) => {
   return nums.length > 0 ? String(nums[0]) : "0";
 };
 
-// Universal 8-Bot Challenge & Math Solver with 0 AI Dependency Protection
+// Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
 const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic", env = null) => {
   if (!questionText || typeof questionText !== "string") return "0";
   const detAns = solveChallengeDeterministic(questionText);
@@ -4766,7 +4766,7 @@ fi
       });
     }
 
-    // 11.04 8-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
+    // 11.04 9-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
     if (path === "/api/ai/solve" || path === "/api/bot-solve") {
       let q = "";
       let bot = "generic";
@@ -5232,10 +5232,10 @@ fi
             ],
             [
               { text: "📊 Fleet Live Status", callback_data: "btn_status" },
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
-              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
@@ -5259,8 +5259,8 @@ fi
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
-              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "🖥️ VM Sentinel", callback_data: "btn_vm" },
@@ -5280,11 +5280,11 @@ fi
           inline_keyboard: [
             [
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -5402,7 +5402,7 @@ fi
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `💡 *Quick Actions:*\n` +
             `• Tap *🔍 Session Audit* to inspect connection health\n` +
-            `• Tap *🤖 8-Bot Mining Hub* to view pools\n` +
+            `• Tap *🤖 9-Bot Mining Hub* to view pools\n` +
             `• Tap *➕ Add Account* to connect a new account\n` +
             `• Send \`/acc <1-${accounts.length}>\` to inspect individual account details`;
         };
@@ -5434,7 +5434,7 @@ fi
               `📊 *Session Health Summary:*\n` +
               `• 🟢 *Active & Authorized:* \`${activeList.length}/${accounts.length} Accounts\` (100% Online)\n` +
               `• 🟢 *Blocked / Revoked:* \`0 Accounts\` ✅\n` +
-              `• 🤖 *24/7 Farming:* All 8 Active Pools (MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • PepeGram • AdxEarn)\n` +
+              `• 🤖 *24/7 Farming:* All 9 Active Pools (MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • PepeGram • AdxEarn • Chicken Land)\n` +
               `• 🛡️ *Status:* 100% Verified Cloud MTProto Sessions\n\n` +
               `🟢 *Live Active Accounts (${activeList.length}):*\n` +
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n` +
@@ -5482,7 +5482,7 @@ fi
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
@@ -5557,7 +5557,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 8-Bot Harvest" },
+              { text: "⚡ 9-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -6862,7 +6862,22 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
                 `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-                `• *Active Bots:* Focus is 100% placed on our 8 legitimate mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI).\n` +
+                `• *Active Bots:* Focus is 100% placed on our 9 legitimate mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land).\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
+            } else if (cbData === "btn_chicken" || cbData === "btn_chickenland") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const rep = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *Platform:* Chicken Land (@ChickenLandBot)\n` +
+                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\` • 19/19 Referrals Bound ✅\n` +
+                `• *Mechanics:* Passive Time-Based Egg Laying (8h Basket Capacity)\n` +
+                `• *Master Account (6727787768):* 8 Hens • 80 Eggs/h • 3,800 Ref Coins Claimed\n` +
+                `• *Fleet Total:* 28 Hens Active • 2,240 Eggs/8h Capacity\n` +
+                `• *Cloud Promo Sniper:* Active 24/7 on Render Node 2 (@ChickenLandCodes)\n` +
+                `• *Commands:* \`/snipe <CODE>\` to blast instant fleet redemption\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
@@ -6875,11 +6890,11 @@ fi
                   [ { text: "🐸 PepeGram", callback_data: "btn_pepe" }, { text: "🤖 AdxEarn AI", callback_data: "btn_adx" } ],
                   [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
                   [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "💧 VyroDrop", callback_data: "btn_vyro" } ],
-                  [ { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" }, { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" } ],
-                  [ { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
+                  [ { text: "🐔 Chicken Land", callback_data: "btn_chicken" }, { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" } ],
+                  [ { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
                 ]
               };
-              const hubMsg = `🤖 *8-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+              const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `📊 *Live Sessions:* \`${activeCount}/20 MTProto Online\` • \`20/20 REST Mining Active\`\n\n` +
                 `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
@@ -6890,6 +6905,7 @@ fi
                 `6. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
                 `7. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
                 `8. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
+                `9. 🐔 *Chicken Land* (@ChickenLandBot) — Passive Egg Laying & Sub-Second Promo Sniper\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ _Select a bot below for dedicated live telemetry & controls:_`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6902,7 +6918,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -7024,7 +7040,7 @@ fi
                       { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                     ],
                     [
-                      { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                      { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
                       { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
@@ -7381,7 +7397,7 @@ fi
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
                 const health = await getSessionHealthState();
-                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/20 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 8 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/20 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
                 const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/20 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
                 const prov = aiData.provider || "Cloudflare Workers AI";
                 const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -7789,7 +7805,7 @@ fi
               `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
               `• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n` +
-              `• *Active Fleet Focus:* 100% focused on 8 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI).\n` +
+              `• *Active Fleet Focus:* 100% focused on 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(stonesMsg, statusInlineKeyboard);
           })());
@@ -7803,7 +7819,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
               `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-              `• *Active Bots:* Focus is 100% placed on our 8 legitimate mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI).\n` +
+              `• *Active Bots:* Focus is 100% placed on our 9 legitimate mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(bnbMsg, statusInlineKeyboard);
           })());
@@ -8156,7 +8172,7 @@ fi
           return new Response("OK");
         }
 
-        // 1.4595 8-Bot Hub Command (/bots or /hub)
+        // 1.4595 9-Bot Hub Command (/bots or /hub)
         if (text === "/bots" || text.startsWith("/bots") || text === "/hub" || text.startsWith("/hub")) {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
@@ -8167,11 +8183,11 @@ fi
                 [ { text: "🐸 PepeGram", callback_data: "btn_pepe" }, { text: "🤖 AdxEarn AI", callback_data: "btn_adx" } ],
                 [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
                 [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "💧 VyroDrop", callback_data: "btn_vyro" } ],
-                [ { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" }, { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" } ],
-                [ { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
+                [ { text: "🐔 Chicken Land", callback_data: "btn_chicken" }, { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" } ],
+                [ { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
               ]
             };
-            const hubMsg = `🤖 *8-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+            const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Live Sessions:* \`${activeCount}/20 MTProto Online\` • \`20/20 REST Mining Active\`\n\n` +
               `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
@@ -8182,6 +8198,7 @@ fi
               `6. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
               `7. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
               `8. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
+              `9. 🐔 *Chicken Land* (@ChickenLandBot) — Passive Egg Laying & Sub-Second Promo Sniper\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Select a bot below for dedicated live telemetry & controls:_`;
             await sendReply(hubMsg, botsHubInlineKeyboard);
@@ -8196,7 +8213,7 @@ fi
             await sendReply("⏳ *Generating AI Executive Briefing via Cloudflare Workers AI (Llama 3.1 & DeepSeek R1)...*");
             try {
               const health = await getSessionHealthState();
-              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/20 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 8 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/20 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
               const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/20 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
               const prov = aiData.provider || "Cloudflare Workers AI";
               const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -10319,8 +10336,10 @@ fi
             `• \`/start\` or \`/menu\` — Operations dashboard & quick action grid\n` +
             `• \`/status\` or \`/fleet\` — Real-time fleet operations & telemetry\n` +
             `• \`/summary\` — Executive all-in-one health check\n` +
-            `• \`/harvest\` — Dispatches instant 8-bot harvest across all 20 accounts\n` +
-            `• \`/bots\` — 8-Bot Autonomous Mining Fleet Hub\n` +
+            `• \`/harvest\` — Dispatches instant 9-bot harvest across all 20 accounts\n` +
+            `• \`/bots\` — 9-Bot Autonomous Mining Fleet Hub\n` +
+            `• \`/chicken\` — Chicken Land Passive Farming & 8h Basket\n` +
+            `• \`/snipe <CODE>\` — Sub-Second Promo Code Sniper (All 20 Accounts)\n` +
             `• \`/ad_farmer\` — 24/7 Autonomous Ad-Farming Loop Status (20 accounts)\n` +
             `• \`/kynex\` — Kynex Network Cloud Mining Center (33k+ KNX, 12h energy)\n` +
             `• \`/mrg\` — MRG Miner Level Upgrades & TonConnect 2.0\n` +
@@ -10380,7 +10399,7 @@ fi
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
             const health = await getSessionHealthState();
-            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/20 active accounts across all 8 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
+            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/20 active accounts across all 9 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
             return;
           }
 
@@ -15807,13 +15826,13 @@ async def main():
         if ALERT_BOT_TOKEN:
             admin_desc = (
                 "👑 MY AGY AI — Operations & Executive Fleet Console ⚡\n\n"
-                "Autonomous multi-cloud command & control center for 20 accounts and 8 legitimate crypto mining bots:\n"
+                "Autonomous multi-cloud command & control center for 20 accounts and 9 legitimate crypto mining bots:\n"
                 "• MRG Miner • ATF Miner • Victor\'s Company\n"
                 "• VyroDrop • Kynex Network • DiggoMiner\n"
-                "• PepeGram • AdxEarn AI\n\n"
+                "• PepeGram • AdxEarn AI • Chicken Land\n\n"
                 "🛡️ 100% Cloud-Powered • Zero Phone Load • Multi-Edge Mesh"
             )
-            admin_short_desc = "👑 MY AGY AI Operations Console — 20 Accounts & 8 Mining Bots across Multi-Cloud Edge."
+            admin_short_desc = "👑 MY AGY AI Operations Console — 20 Accounts & 9 Mining Bots across Multi-Cloud Edge."
             try:
                 async with session.post(
                     f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyDescription",
@@ -15874,8 +15893,10 @@ async def main():
                     {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "live", "description": "📊 Real-Time Operations Telemetry Matrix"},
                     {"command": "fleet", "description": "📊 Fleet Operations & 20-Account Telemetry"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 8-Bot Multi-Cloud Harvest"},
-                    {"command": "bots", "description": "🤖 8-Bot Autonomous Mining Fleet Hub"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
+                    {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
+                    {"command": "chicken", "description": "🐔 Chicken Land Passive Egg Laying & Farm"},
+                    {"command": "snipe", "description": "⚡ Sub-Second Promo Code Sniper (20 Accounts)"},
                     {"command": "vm", "description": "🖥️ Instabox VM Sentinel & Ingress Status"},
                     {"command": "failover", "description": "🔄 CI/CD Redundancy & CircleCI Failover"},
                     {"command": "ad_farmer", "description": "📺 24/7 Autonomous Ad-Farming Loop Status"},

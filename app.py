@@ -1297,7 +1297,7 @@ async def fetch_accounts_from_cloud():
     return merged
 
 async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
-    """Universal 8-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
+    """Universal 9-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
     # 1. First, solve deterministically in 0.001ms with zero network requests
     det_ans = solve_challenge_deterministic(question_text)
     if det_ans != "0" or not any(c.isalpha() for c in question_text):
@@ -1843,7 +1843,7 @@ async def sync_account_tokens_to_clouds(tokens: dict):
 async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     Kicks off initial WebApp mining, completes referral onboarding finish work,
-    and runs first-cycle claims across all 8 legitimate bots:
+    and runs first-cycle claims across all 9 legitimate bots:
     1. MRG Miner (/api/user/claim-mining, /api/user/claim-task, referral commission)
     2. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
     3. Victor's Company (/api/users/profile, /api/tasks, deep mining)
@@ -1852,10 +1852,11 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     6. PepeGram (production start, yield claim, slot spin)
     7. AdxEarn AI (boost, tasks)
     8. DiggoMiner (mining claim, Solana quiz/pump, social tasks)
+    9. Chicken Land (/api/me, /api/welcome, basic hen /api/buy, /api/task daily, /api/sell)
     """
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", "User")
-    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 8 legitimate bots...")
+    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 9 legitimate bots...")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0"
@@ -3258,8 +3259,9 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"• Kynex Network: Active ✅\n"
         f"• PepeGram: Active ✅\n"
         f"• AdxEarn AI: Active ✅\n"
-        f"• DiggoMiner: Active ✅\n\n"
-        f"🚀 <b>Auto-Farming Status:</b> Active across all 8 legitimate bots in the cloud!"
+        f"• DiggoMiner: Active ✅\n"
+        f"• Chicken Land: Active ✅\n\n"
+        f"🚀 <b>Auto-Farming Status:</b> Active across all 9 legitimate bots in the cloud!"
     )
     async with aiohttp.ClientSession() as s:
         try:
@@ -5281,7 +5283,7 @@ FLEET_LAST_FARM_CACHE = {}
 
 async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict, force: bool = False, target_bot: str = "all") -> dict:
     """
-    Farms all 8 legitimate active bots (MRG, ATF, Victor's Company, VyroDrop, Kynex, PepeGram, AdxEarn, Diggo) for a single account.
+    Farms all 9 legitimate active bots (MRG, ATF, Victor's Company, VyroDrop, Kynex, PepeGram, AdxEarn, Diggo, Chicken Land) for a single account.
     Engineered with:
       - Deterministic mobile device fingerprinting per account (eliminates bot signatures)
       - Realistic human jitter delays
@@ -6221,16 +6223,99 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             return
         status["bots"]["diggo"] = "skipped (no initData)"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (8 Active Bots)
+    async def _farm_chickenland():
+        c_init = tokens.get("chickenland_init_data")
+        if not c_init:
+            status["bots"]["chickenland"] = "skipped (no initData)"
+            return
+        try:
+            b64_c = c_init[4:].strip() if c_init.startswith("TMA ") else base64.b64encode((urllib.parse.unquote(c_init) if "%3D" in c_init else c_init).encode("latin1")).decode("latin1")
+            c_h = {
+                **headers,
+                "Content-Type": "application/json",
+                "Authorization": f"TMA {b64_c}"
+            }
+            rpc_url = "https://app8968434282.tgcloud.ai/api/rpc"
+            async def rpc(path, body=None):
+                payload = {"method": "POST" if body is not None else "GET", "path": path, "body": body if body is not None else {}}
+                c_st, c_data = await safe_post(rpc_url, json_data=payload, req_headers=c_h, timeout_sec=8)
+                return c_st, c_data
+
+            st_code, me_data = await rpc("/api/me", {"ref": "12668", "lang": "en"})
+            if st_code == 200 and isinstance(me_data, dict) and me_data.get("ok"):
+                usr = me_data.get("result", {}).get("user", {})
+                hens = usr.get("hens", 0)
+                rate = usr.get("rate", 0)
+                eggs = usr.get("eggs", 0)
+                coins = usr.get("coins", 0)
+
+                # 1. Captcha fallback if needed
+                if not usr.get("human"):
+                    _, cap = await rpc("/api/captcha", {})
+                    if isinstance(cap, dict) and cap.get("ok"):
+                        res_c = cap.get("result", {})
+                        if res_c.get("kind") == "turnstile":
+                            await rpc("/api/human", {"fallback": True, "why": "unsupported"})
+                            await asyncio.sleep(1.0)
+                            _, cap2 = await rpc("/api/captcha", {})
+                            if isinstance(cap2, dict) and cap2.get("ok") and cap2.get("result", {}).get("kind") == "pick":
+                                items = cap2["result"].get("items", [])
+                                tgt = cap2["result"].get("target", "")
+                                if tgt in items:
+                                    await rpc("/api/human", {"pick": items.index(tgt)})
+
+                # 2. Welcome bonus
+                if not usr.get("welcome"):
+                    await rpc("/api/welcome", {})
+
+                # 3. Daily checkin
+                await rpc("/api/task", {"id": "daily"})
+
+                # 4. Sell eggs only if basket has eggs accumulated
+                if eggs > 0:
+                    _, sell_res = await rpc("/api/sell", {})
+                    if isinstance(sell_res, dict) and sell_res.get("ok"):
+                        coins = sell_res.get("result", {}).get("user", {}).get("coins", coins)
+
+                # 5. Daily tasks (skip already completed tasks)
+                completed_tasks = set(usr.get("tasks", []) + usr.get("dayTasks", []))
+                for tid in ("channel", "payments", "dnews", "dpay", "dpromo"):
+                    if tid not in completed_tasks:
+                        await rpc("/api/task/open", {"id": tid})
+                        await asyncio.sleep(0.5)
+                        _, t_res = await rpc("/api/task", {"id": tid})
+                        if isinstance(t_res, dict) and t_res.get("ok") and t_res.get("result", {}).get("user"):
+                            coins = t_res["result"]["user"].get("coins", coins)
+
+                # 6. Referral claim
+                await rpc("/api/ref/claim", {})
+
+                # 7. Buy hens if affordable
+                if coins >= 1000:
+                    buy_n = int(coins // 1000)
+                    _, buy_res = await rpc("/api/buy", {"breed": "basic", "n": buy_n})
+                    if isinstance(buy_res, dict) and buy_res.get("ok"):
+                        hens = buy_res.get("result", {}).get("user", {}).get("hens", hens + buy_n)
+                        rate = buy_res.get("result", {}).get("user", {}).get("rate", rate)
+                        coins = buy_res.get("result", {}).get("user", {}).get("coins", coins - buy_n * 1000)
+
+                status["bots"]["chickenland"] = f"farmed (hens: {hens}, rate: {rate}/h, coins: {coins})"
+            else:
+                status["bots"]["chickenland"] = f"auth_failed ({st_code})"
+        except Exception as e:
+            status["bots"]["chickenland"] = f"api_error: {format_error(e)}"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (9 Active Bots)
     BOT_COOLDOWNS = {
-        "atf": (1200, 2400),      # 20m - 40m
-        "mrg": (1800, 3600),      # 30m - 60m
-        "victors": (3600, 7200),  # 1h - 2h
-        "vyro": (2400, 4800),     # 40m - 80m
-        "kynex": (2400, 4800),    # 40m - 80m
-        "pepegram": (1800, 3600), # 30m - 60m
-        "adxearn": (3600, 7200),  # 1h - 2h
-        "diggo": (1800, 3600),    # 30m - 60m
+        "atf": (1800, 3600),
+        "mrg": (3600, 7200),
+        "victors": (14400, 28800),
+        "vyro": (21600, 28800),
+        "kynex": (43200, 86400),
+        "pepegram": (21600, 28800),
+        "adxearn": (7200, 14400),
+        "diggo": (7200, 14400),
+        "chickenland": (21600, 28800),
     }
 
     bot_routines = [
@@ -6242,6 +6327,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
+        {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data"))},
     ]
 
     for b in bot_routines:
@@ -6254,6 +6340,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "vic": "victors", "victor": "victors", "victors": "victors",
         "knx": "kynex", "kynex": "kynex",
         "dgo": "diggo", "diggo": "diggo", "diggominer": "diggo",
+        "chicken": "chickenland", "chickenland": "chickenland", "chickenlandbot": "chickenland",
         "atf": "atf", "mrg": "mrg", "vyro": "vyro"
     }
     norm_target = bot_aliases.get(target_bot.lower(), target_bot.lower()) if target_bot else "all"
@@ -6338,7 +6425,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False, target_bot: str = "all") -> dict:
-    """Executes full autonomous cloud farming and task completions across all 8 legitimate bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 9 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -6445,7 +6532,7 @@ LAST_FARM_RUN = {
 
 @app.post("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
-    """Executes on-demand cloud fleet farming cycle across all 8 legitimate bots for accounts."""
+    """Executes on-demand cloud fleet farming cycle across all 9 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -6539,12 +6626,12 @@ async def api_tasks_sweep_all(request: Request):
             LAST_SWEEP_RUN["output"] = str(e)
 
     asyncio.create_task(_run_sweep())
-    return {"ok": True, "status": "dispatched", "message": "8-Bot fleet side-task sweep dispatched on Render Node 2."}
+    return {"ok": True, "status": "dispatched", "message": "9-Bot fleet side-task sweep dispatched on Render Node 2."}
 
 
 @app.get("/api/tasks/sweep-status")
 async def api_tasks_sweep_status():
-    """Returns the latest status of the 8-bot side-task sweep."""
+    """Returns the latest status of the 9-bot side-task sweep."""
     return {"ok": True, "last_sweep_run": LAST_SWEEP_RUN}
 
 
@@ -7325,15 +7412,17 @@ MANDATORY_SPONSOR_CHANNELS = [
     "diggo_community",
     "EarnVaulte",
     "solanamemes001",
-    "Web3Primeteam"
+    "Web3Primeteam",
+    "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
 ]
 
-# 8 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
     "VictorsCompanybot", "vyrodrop_bot",
     "Kynex_miningbot", "Diggominer_bot",
-    "Pepe_gram_bot", "AdxEarnAibot"
+    "Pepe_gram_bot", "AdxEarnAibot",
+    "ChickenLandBot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
@@ -7421,7 +7510,7 @@ async def channel_status_endpoint(request: Request):
 async def sync_and_verify_channels_endpoint(request: Request):
     """
     Type B Channel & Bot Management Engine:
-    Ensures all fleet accounts join mandatory sponsor channels, unblock all 8 legitimate bots,
+    Ensures all fleet accounts join mandatory sponsor channels, unblock all 9 legitimate bots,
     and permanently mute all channels/bots to prevent notification spam.
     Protects against Telegram's 500-channel limit by leaving unwhitelisted spam channels if dialogs > 400.
     """
@@ -7541,7 +7630,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                 else:
                     logger.info(f"[{name}] Dead bots & scam channels already purged previously. Skipping dialog deletion.")
 
-                # 3. Unblock all 8 legitimate fleet bots
+                # 3. Unblock all 9 legitimate fleet bots
                 for b in FLEET_LEGITIMATE_BOTS:
                     try:
                         await cl(functions.contacts.UnblockRequest(id=b))
@@ -8027,10 +8116,10 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
-                    # 4. Autonomous 8-Bot Side-Tasks Sweeper (Runs every 3 hours)
+                    # 4. Autonomous 9-Bot Side-Tasks Sweeper (Runs every 3 hours)
                     if (now_ts - LAST_SIDE_TASKS_SWEEP_TS) > 10800:
                         try:
-                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 8-bot side-task sweep in cloud...")
+                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 9-bot side-task sweep in cloud...")
                             asyncio.create_task(asyncio.create_subprocess_exec(
                                 sys.executable, "finish_all_fleet_sidetasks.py",
                                 stdout=asyncio.subprocess.DEVNULL,

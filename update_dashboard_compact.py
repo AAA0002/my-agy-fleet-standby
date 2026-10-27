@@ -10,8 +10,8 @@ mobile-first, fintech-grade compact UI:
    - 1-click View toggle: [☰ List] vs [⊞ Cards].
 2. Adds full ATF Miner visibility:
    - ATF balance badge on each account row.
-   - 8-Bot live status ticker in the hero bar.
-   - Complete 8-bot mining matrix in the Account Inspector Drawer.
+   - 9-Bot live status ticker in the hero bar.
+   - Complete 9-bot mining matrix in the Account Inspector Drawer.
 3. 5 Focused Tabs:
    - Fleet (13 Accounts, search, compact list/cards)
    - Analytics (Interactive ProfitChart, yield projections, rates)
@@ -537,7 +537,7 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 20-account automated mining fleet (MY AGY AI). Fleet state: 20 active accounts across all 8 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's 20-account automated mining fleet (MY AGY AI). Fleet state: 20 active accounts across all 9 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
@@ -820,7 +820,7 @@ function App() {
             action: async () => {
               showToast("AI: Dispatched harvest across all bots!", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 legitimate mining platforms (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn). WebApp tokens and sessions are active." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 9 legitimate mining platforms (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land). WebApp tokens and sessions are active." }]);
             }
           },
           {
@@ -990,7 +990,7 @@ function App() {
             )
           ),
 
-          // 8-Bot Mining Matrix in Drawer
+          // 9-Bot Mining Matrix in Drawer
           React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
             [
               { name: "MRG Miner (TON)", status: "⚡ 4h Mining Active" },
@@ -1000,7 +1000,8 @@ function App() {
               { name: "Kynex Network", status: "🌐 12h Node Live" },
               { name: "DiggoMiner", status: "⛏️ 3h Block Mining" },
               { name: "PepeGram (PEPE)", status: "🐸 3h Yield Active" },
-              { name: "AdxEarn AI", status: "💎 Daily Streak Live" }
+              { name: "AdxEarn AI", status: "💎 Daily Streak Live" },
+              { name: "Chicken Land", status: "🐔 8h Eggs Active" }
             ].map((b, idx) => React.createElement("div", {
               key: idx,
               className: "bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-white/5"
