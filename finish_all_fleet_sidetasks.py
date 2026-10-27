@@ -1292,12 +1292,15 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
             res["tasks_claimed"] += 1
             res["notes"].append("daily_checkin")
 
-        # 5. Collect & Sell Eggs
-        sell_res = await rpc("/api/sell", {})
-        if sell_res.get("ok"):
-            eggs = sell_res.get("result", {}).get("eggs", 0)
-            if eggs > 0:
-                res["notes"].append(f"eggs_sold_{eggs}")
+        # 5. Collect & Sell Eggs (only if basket has accumulated eggs)
+        current_coins = float(u_info.get("coins", 0) or 0)
+        if int(u_info.get("eggs", 0) or 0) > 0:
+            sell_res = await rpc("/api/sell", {})
+            if sell_res.get("ok"):
+                eggs = sell_res.get("result", {}).get("eggs", 0)
+                if eggs > 0:
+                    res["notes"].append(f"eggs_sold_{eggs}")
+                current_coins = float(sell_res.get("result", {}).get("user", {}).get("coins", current_coins))
 
         # 6. Tasks
         completed_tasks = set(u_info.get("tasks", []))
@@ -1309,17 +1312,19 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
                 if t_claim.get("ok"):
                     res["tasks_claimed"] += 1
                     res["notes"].append(f"task_{tid}")
+                    if t_claim.get("result", {}).get("user"):
+                        current_coins = float(t_claim["result"]["user"].get("coins", current_coins))
 
         # 7. Ref claim
         ref_claim = await rpc("/api/ref/claim", {})
         if ref_claim.get("ok") and ref_claim.get("result", {}).get("coins", 0) > 0:
-            res["notes"].append(f"ref_coins_{ref_claim['result']['coins']}")
+            ref_amt = ref_claim["result"]["coins"]
+            res["notes"].append(f"ref_coins_{ref_amt}")
+            current_coins += ref_amt
 
         # 8. Buy hens if coins >= 1000
-        me_after = await rpc("/api/me", {"lang": "en"})
-        coins_after = me_after.get("result", {}).get("user", {}).get("coins", 0)
-        if coins_after >= 1000:
-            n_buy = int(coins_after // 1000)
+        if current_coins >= 1000:
+            n_buy = int(current_coins // 1000)
             buy_res = await rpc("/api/buy", {"breed": "basic", "n": n_buy})
             if buy_res.get("ok"):
                 res["notes"].append(f"hens_bought_{n_buy}")

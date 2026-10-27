@@ -219,11 +219,23 @@ async def get_fleet_mining_totals() -> dict:
 
                     # 9. Chicken Land
                     chk_core = bots.get("9. Chicken Land", {}).get("core", {})
-                    if isinstance(chk_core, dict):
+                    if isinstance(chk_core, dict) and chk_core.get("hens"):
                         totals["chicken_hens"] += int(chk_core.get("hens", 0) or 0)
                         totals["chicken_eggs"] += int(chk_core.get("eggs", 0) or 0) + int(chk_core.get("egg_bal", 0) or 0)
         except Exception:
             pass
+
+    # Fallback for Chicken Land if 0
+    if totals["chicken_hens"] == 0:
+        accs_file = os.path.join(BASE_DIR, "accounts.json")
+        if os.path.exists(accs_file):
+            try:
+                with open(accs_file, "r", encoding="utf-8") as f:
+                    accs = json.load(f)
+                    totals["chicken_hens"] = sum(int(a.get("chickenland_hens", 0) or 0) for a in accs)
+                    totals["chicken_eggs"] = sum(int(a.get("chickenland_rate", 0) or 0) * 8 for a in accs)
+            except Exception:
+                pass
             
     # Fallback for ATF if 0
     if totals["atf"] == 0.0:
@@ -327,7 +339,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Live On-Chain Balance:* `{wallet_bnb:.6f} BNB` (`~${wallet_usd:.2f} USD` / `~৳{wallet_bdt:.0f} BDT`)\n"
             f"• *Historical Distributions:* `{total_payouts_count} payouts` totaling `{total_payouts_bnb:.6f} BNB`\n"
             f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n\n"
-            f"💎 *2. Multi-Chain 8-Bot Autonomous Mining Treasury:*\n"
+            f"💎 *2. Multi-Chain 9-Bot Autonomous Mining Treasury:*\n"
             f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 180+, Cloud Turnstile Auto-Claim)\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
             f"• *Victor's Company:* `{fleet_totals['vic']:,.2f} VIC` mined (Hourly Shifts & Arcade Solver)\n"

@@ -1445,31 +1445,45 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         // Daily check-in
         await rpc("/api/task", { id: "daily" });
 
-        // Sell eggs
-        await rpc("/api/sell", {});
+        // Sell eggs only if basket has eggs accumulated
+        let currentCoins = usr.coins || 0;
+        if ((usr.eggs || 0) > 0) {
+          const sellRes = await rpc("/api/sell", {});
+          if (sellRes.ok && sellRes.result?.user) {
+            currentCoins = sellRes.result.user.coins || currentCoins;
+          }
+        }
 
-        // Tasks
+        // Claim uncompleted tasks only (prevents redundant subrequests)
+        const completedTasks = new Set([...(usr.tasks || []), ...(usr.dayTasks || [])]);
         for (const tid of ["channel", "payments", "dnews", "dpay", "dpromo"]) {
-          await rpc("/api/task/open", { id: tid });
-          await humanDelay(500, 1000);
-          await rpc("/api/task", { id: tid });
+          if (!completedTasks.has(tid)) {
+            await rpc("/api/task/open", { id: tid });
+            await humanDelay(400, 800);
+            const tClaim = await rpc("/api/task", { id: tid });
+            if (tClaim.ok && tClaim.result?.user) {
+              currentCoins = tClaim.result.user.coins || currentCoins;
+            }
+          }
         }
 
         // Ref claim
-        await rpc("/api/ref/claim", {});
+        const refRes = await rpc("/api/ref/claim", {});
+        if (refRes.ok && refRes.result?.user) {
+          currentCoins = refRes.result.user.coins || currentCoins;
+        }
 
-        // Buy hens
-        const meAfter = await rpc("/api/me", { lang: "en" });
-        const cAfter = meAfter.result?.user?.coins || 0;
-        if (cAfter >= 1000) {
-          const buyCount = Math.floor(cAfter / 1000);
+        // Buy hens if affordable
+        if (currentCoins >= 1000) {
+          const buyCount = Math.floor(currentCoins / 1000);
           const buyResp = await rpc("/api/buy", { breed: "basic", n: buyCount });
           if (buyResp.ok) {
             hens = buyResp.result?.user?.hens || hens + buyCount;
             rate = buyResp.result?.user?.rate || rate;
+            currentCoins = buyResp.result?.user?.coins || (currentCoins - buyCount * 1000);
           }
         }
-        result.bots.chickenland = `farmed (hens: ${hens}, rate: ${rate}/h, coins: ${cAfter})`;
+        result.bots.chickenland = `farmed (hens: ${hens}, rate: ${rate}/h, coins: ${currentCoins})`;
       } else {
         result.bots.chickenland = `auth_failed (${meResp.description || "unknown"})`;
       }
@@ -1479,16 +1493,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   };
 
   // Humanized Execution Pipeline: Active Fleet Mining Pools (9 Authentic Legitimate Bots)
+  // Time-aligned cooldowns respect true protocol cycle durations (e.g. 6-8h, 24h)
   const BOT_COOLDOWNS = {
-    atf: { minSec: 1200, maxSec: 2400 },
-    mrg: { minSec: 1800, maxSec: 3600 },
-    victors: { minSec: 3600, maxSec: 7200 },
-    vyro: { minSec: 2400, maxSec: 4800 },
-    kynex: { minSec: 2400, maxSec: 4800 },
-    pepegram: { minSec: 1800, maxSec: 3600 },
-    adxearn: { minSec: 3600, maxSec: 7200 },
-    diggo: { minSec: 1800, maxSec: 3600 },
-    chickenland: { minSec: 2400, maxSec: 4800 }
+    atf: { minSec: 1800, maxSec: 3600 },
+    mrg: { minSec: 3600, maxSec: 7200 },
+    victors: { minSec: 14400, maxSec: 28800 },
+    vyro: { minSec: 21600, maxSec: 28800 },
+    kynex: { minSec: 43200, maxSec: 86400 },
+    pepegram: { minSec: 21600, maxSec: 28800 },
+    adxearn: { minSec: 7200, maxSec: 14400 },
+    diggo: { minSec: 7200, maxSec: 14400 },
+    chickenland: { minSec: 21600, maxSec: 28800 }
   };
 
   const botRoutines = [

@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⏱️ Time-Based Protocol Cooldown Realignment & Multi-Bot Optimization (October 27, 2026)**:
+  - **Time-Based Protocol Harmonization (`deploy_both_cf_workers.py`, `finish_all_fleet_sidetasks.py`)**:
+    * Recognized that Chicken Land, Kynex, VyroDrop, PepeGram, and Victor's Company are passive time-based protocols that do not require aggressive 40-minute farming loops.
+    * Realigned `BOT_COOLDOWNS` to match genuine protocol mining and basket durations:
+      - `chickenland`: 6 to 8 hours (`minSec: 21600, maxSec: 28800`), perfectly matching its 8-hour basket storage.
+      - `kynex`: 12 to 24 hours (`minSec: 43200, maxSec: 86400`), matching its 24-hour mining session.
+      - `vyro`: 6 to 8 hours (`minSec: 21600, maxSec: 28800`), matching its 8-hour claim window.
+      - `pepegram`: 6 to 8 hours (`minSec: 21600, maxSec: 28800`).
+      - `victors`: 4 to 8 hours (`minSec: 14400, maxSec: 28800`), matching shift duration.
+  - **Subrequest & Anti-Spam Safeguards (`deploy_both_cf_workers.py`, `finish_all_fleet_sidetasks.py`)**:
+    * Guarded `/api/sell`: strictly skips egg selling calls when basket egg count is 0 or unaccumulated.
+    * Guarded social tasks: filters against `usr.tasks` and `usr.dayTasks` before dispatching, saving up to 10 redundant subrequests per account per cycle.
+    * Eliminated redundant secondary `/api/me` profile queries by extracting coins directly from claim payloads.
+  - **Daily Profit Reporter Bug Fix & Treasury Parity (`daily_profit_reporter.py`)**:
+    * Corrected report header to `💎 2. Multi-Chain 9-Bot Autonomous Mining Treasury:`.
+    * Added fallback to `accounts.json` for Chicken Land live flock balances (`chickenland_hens`, `chickenland_coins`, `chickenland_rate`).
+    * Refreshed `live_farming_and_sidetasks_report.json` via live audit, confirming 28 Hens and 1,231 Eggs across all 20 accounts with 100% 9/9 bot responsiveness.
+
 - **⚡ Autonomous Chicken Land Promo Code Sniper & 19/19 Referral Completion (October 27, 2026)**:
   - **19/19 Referral Perfection**:
     * Diagnosed missing referral on Master Arif Hossain (`6727787768` / Ref `12668`): Account 13 (Rohan Sharma 14, `8727040932`) had encountered temporary server lockout `CAPTCHA_LOCKED`.
