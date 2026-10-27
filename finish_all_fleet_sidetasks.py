@@ -1260,21 +1260,30 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
                 if nsr.status == 200:
                     nsd = await nsr.json()
                     st_dict = nsd.get("status", {}) if isinstance(nsd, dict) else {}
+                    started_nets = []
                     for net_slug, net_info in st_dict.items():
                         if isinstance(net_info, dict):
                             watched = net_info.get("watchedToday", 0)
                             cap = net_info.get("dailyCap", 0)
                             cd_rem = net_info.get("cooldownRemainingSec", 0)
                             if (cap == 0 or watched < cap) and cd_rem == 0:
-                                async with session.post(f"{adx_base}/rewards/ad-verify-start", json={"network": net_slug}, headers=adx_headers) as v_st:
-                                    if v_st.status == 200:
-                                        wait_s = 6 if net_slug == "adsgram" else 16
-                                        await asyncio.sleep(wait_s)
-                                        async with session.post(f"{adx_base}/rewards/ad-claim", json={"network": net_slug}, headers=adx_headers) as v_cl:
-                                            if v_cl.status == 200:
-                                                c_d = await v_cl.json()
-                                                res["tasks_claimed"] += 1
-                                                res["notes"].append(f"ad_{net_slug}_+{c_d.get('reward', 100)}pts")
+                                try:
+                                    async with session.post(f"{adx_base}/rewards/ad-verify-start", json={"network": net_slug}, headers=adx_headers) as v_st:
+                                        if v_st.status == 200:
+                                            started_nets.append(net_slug)
+                                except Exception:
+                                    pass
+                    if started_nets:
+                        await asyncio.sleep(16.0)  # Parallel verification wait across all eligible ad networks
+                        for net_slug in started_nets:
+                            try:
+                                async with session.post(f"{adx_base}/rewards/ad-claim", json={"network": net_slug}, headers=adx_headers) as v_cl:
+                                    if v_cl.status == 200:
+                                        c_d = await v_cl.json()
+                                        res["tasks_claimed"] += 1
+                                        res["notes"].append(f"ad_{net_slug}_+{c_d.get('reward', 100)}pts")
+                            except Exception:
+                                pass
         except Exception as e:
             logger.debug(f"[{name}] AdxEarn ad watch note: {e}")
 
@@ -1414,6 +1423,15 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
             buy_res = await rpc("/api/buy", {"breed": "basic", "n": n_buy})
             if buy_res.get("ok"):
                 res["notes"].append(f"hens_bought_{n_buy}")
+                current_coins -= (n_buy * 1000)
+
+        # 9. Upgrade basket if affordable
+        try:
+            upg_res = await rpc("/api/upgrade", {})
+            if upg_res.get("ok"):
+                res["notes"].append("basket_upgraded")
+        except Exception:
+            pass
 
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")

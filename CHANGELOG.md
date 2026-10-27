@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Parallel Ad Verification, Victor's 401 Probe & Chicken Land Auto-Upgrades (October 27, 2026)**:
+  - **Victor's Company HTTP 401 `HUMAN_REQUIRED` Session Probe Resolution**:
+    * Discovered that Victor's Company `/api/auth/login` returns HTTP 401 (not 403) with body `{"code": "HUMAN_REQUIRED"}`.
+    * Fixed `probe_account` in `victors_sb_solver.py` so valid unverified sessions are marked `HUMAN_REQUIRED` rather than falsely skipping them as `EXPIRED`.
+    * Dispatched Render Frankfurt Node 2 autonomous token extractor (`/collect-tokens`), refreshing MTProto `initData` with `auth_date = now` across the fleet.
+  - **AdxEarn AI Parallel Ad Verification (5x Sweeper Speedup)**:
+    * Refactored `sweep_adxearn_tasks` in `finish_all_fleet_sidetasks.py` to launch all eligible ad networks (`adsgram`, `monetag_ad`, `gigapub`, `monetag_popup`) concurrently.
+    * Batched the verification wait to a single 16.0s pause before claiming all networks, reducing sweep latency from ~80s down to 16s per account.
+  - **Chicken Land Autonomous Basket Upgrade & Flock Reinvestment**:
+    * Added `/api/upgrade` automated trigger in `finish_all_fleet_sidetasks.py` to upgrade basket holding capacity whenever affordable, preventing overnight egg overflows.
+    * Added automated hen purchasing (`/api/buy`) and coin deduction whenever balance exceeds 1,000 coins.
+
 - **🛠️ Fleet Multi-Bot Bug Fixes & Resilient Automation Upgrades (October 27, 2026)**:
   - **Kynex Network Rate-Limit Resilience (Advance Boost +7h)**:
     * Identified that calling `claimAdReward` for tier `advanced` immediately after `prime` triggered HTTP 429 ("Please wait a moment before claiming another ad").
