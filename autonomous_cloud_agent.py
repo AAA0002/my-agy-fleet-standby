@@ -55,10 +55,10 @@ MASTER_TON_VAULT = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 
 # Cloudflare Edge AI Endpoints (100% Free, Zero API Keys Required across 5 Edge Nodes)
 CF_AI_NODES = [
+    "https://restore-agy.agorameet.workers.dev/ai",
     "https://restore-agy.aaaai2.workers.dev/ai",
     "https://restore-agy.aaa-bot.workers.dev/ai",
     "https://restore-agy.aaa222.workers.dev/ai",
-    "https://restore-agy.agorameet.workers.dev/ai",
     "https://restore-agy.aaaai.workers.dev/ai"
 ]
 

@@ -95,7 +95,7 @@ async def main():
         print("==================================================")
         
         try:
-            choice = input("\nEnter account number (1-18) or phone number: ").strip()
+            choice = input(f"\nEnter account number (1-{len(accounts)}) or phone number: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nAborted.")
             return
