@@ -205,7 +205,8 @@ const FLEET_TON_WALLETS = {
   "8841038141": "UQCDqlebQ9GGXwocS-afgknJq6JAuYw3enYi0MKYRi4kdY5j",
   "8975442879": "UQBcHzN-pIk6WEy1pV_g4LkcJ4ePuzcJ-iwcw5ltOjC-49fL",
   "8937908003": "UQCrEZrIMqFq3C-a0h6WK72VWbKkXbvtEVZBRhc5SKINAw8D",
-  "8609131528": "UQCdmqN5C5b4vaxl02K4a11wM1Bs5wfLwg4vPPVjWC2Jg0DE"
+  "8609131528": "UQCdmqN5C5b4vaxl02K4a11wM1Bs5wfLwg4vPPVjWC2Jg0DE",
+  "8669217201": "UQDH-Fr7IrmThtwnK86JeAg3R2S-ezhA1Gs801vOVaRWn_jw"
 };
 
 const FLEET_TRON_WALLETS = {
@@ -228,7 +229,8 @@ const FLEET_TRON_WALLETS = {
   "8841038141": "TYt7cYigHyd88JQrSXrVdoAEV64ReayQhY",
   "8975442879": "TEmP9rmLeZAFog8eqnrvZhXFPABnyGxGMb",
   "8937908003": "Tb20c6e7f11191edabdd6ecc0036850c2c",
-  "8609131528": "TVS6hMHnmwew9HZbM6j7aQ5KrsLE1V6oap"
+  "8609131528": "TVS6hMHnmwew9HZbM6j7aQ5KrsLE1V6oap",
+  "8669217201": "TUNUQVsy3umFWPWNJzvYmNe4zRHhcYCeut"
 };
 
 // 100% Deterministic Local Math & Word Challenge Solver (0 AI Dependency, 0ms Delay)
@@ -3999,7 +4001,7 @@ fi
           "8881914294", "7648254021", "8826375659", "8450010161", "8782429452",
           "7734849205", "8025472383", "8851426148", "8203342513", "8190649727",
           "7487048946", "8741547543", "8727040932", "7749125802", "7954290138",
-          "8841038141", "8975442879", "8937908003", "8609131528"
+          "8841038141", "8975442879", "8937908003", "8609131528", "8669217201"
         ]);
         uids = uids.filter(uid => {
           const s = String(uid).trim();
@@ -11274,7 +11276,7 @@ Reply to Arif naturally:`;
         "8881914294", "7648254021", "8826375659", "8450010161", "8782429452",
         "7734849205", "8025472383", "8851426148", "8203342513", "8190649727",
         "7487048946", "8741547543", "8727040932", "7749125802", "7954290138",
-        "8841038141", "8975442879", "8937908003", "8609131528"
+        "8841038141", "8975442879", "8937908003", "8609131528", "8669217201"
       ]);
       const sUid = String(uid);
       if (!FLEET_WORKER_IDS_SET.has(sUid) && !sUid.startsWith("test_") && sUid !== "null" && sUid !== "undefined" && sUid !== "1474280319") {

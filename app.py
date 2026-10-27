@@ -1616,17 +1616,19 @@ def get_fleet_accounts_map() -> list:
         {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud 17"},
         {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan 18"},
         {"index": 19, "uid": "8937908003", "name": "Adil H 19"},
-        {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker 20"}
+        {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker 20"},
+        {"index": 21, "uid": "8669217201", "name": "Aaaa201"}
     ]
 
-FLEET_20_ACCOUNTS_MAP = get_fleet_accounts_map()
-FLEET_18_ACCOUNTS_MAP = FLEET_20_ACCOUNTS_MAP
+FLEET_21_ACCOUNTS_MAP = get_fleet_accounts_map()
+FLEET_20_ACCOUNTS_MAP = FLEET_21_ACCOUNTS_MAP
+FLEET_18_ACCOUNTS_MAP = FLEET_21_ACCOUNTS_MAP
 
 FLEET_AD_FARMER_STATE = {
     "status": "starting",
     "today": "",
     "total_ads_today": 0,
-    "total_target": len(FLEET_20_ACCOUNTS_MAP) * 1000,
+    "total_target": len(FLEET_21_ACCOUNTS_MAP) * 1000,
     "last_claim_ts": 0,
     "errors": 0,
     "accounts": {}

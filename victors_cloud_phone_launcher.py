@@ -71,7 +71,8 @@ def load_all_fleet_uids() -> list:
         8841038141,  # Node 17
         8975442879,  # Node 18
         8937908003,  # Node 19
-        8609131528   # Node 20
+        8609131528,  # Node 20
+        8669217201   # Node 21 (Aaaa201)
     ]
 
 FLEET_UIDS = load_all_fleet_uids()

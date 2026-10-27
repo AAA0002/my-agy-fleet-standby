@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Cloudflare Edge Worker Deployment & Full 21-Account Solver Harmonization (October 27, 2026)**:
+  - **Edge Worker Live Deployment (`deploy_both_cf_workers.py`)**:
+    * Compiled and deployed updated Edge Worker to Primary Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Added Account #21's dedicated TON and TRON non-custodial wallet bindings to `FLEET_TON_WALLETS` and `FLEET_TRON_WALLETS`.
+    * Added Account #21 UID (`8669217201`) to `FLEET_WORKER_SET` and `FLEET_WORKER_IDS_SET`, strictly isolating internal fleet workers from the public user community database (Zero Ecosystem Mixing).
+    * Synchronized Telegram Admin Bot and User Bot menu buttons, descriptions, and commands with Cloudflare Edge webhooks.
+  - **Headless Turnstile Solvers Account #21 Inclusion**:
+    * Updated fallback rosters in `mrg_turnstile_solver.py`, `victors_sb_solver.py`, and `victors_cloud_phone_launcher.py` to include Account #21 UID `8669217201`.
+    * Integrated `ADMIN_NOTIFICATION_CHANNEL_ID` into `mrg_turnstile_solver.py` for automated solver status alerts.
+  - **Ad Farmer Loop State Synchronization (`app.py`)**:
+    * Added Account #21 to `get_fleet_accounts_map()` and updated `FLEET_21_ACCOUNTS_MAP` in `app.py`.
+
 - **🔔 Autonomous Fleet Auto-Farming Completion Alerts & Real Ground-Truth Notifications (October 27, 2026)**:
   - **Auto-Farming & Side-Task Completion Telemetry (`finish_all_fleet_sidetasks.py`, `app.py`)**:
     * Integrated real-time short completion cards into `finish_all_fleet_sidetasks.py`, automatically dispatching concise ground-truth alert cards to `AAA Admin notification` (`-1004358687850`) upon completion of all accounts across all 9 bots (with exact task counts per pool, duration, and node status).

@@ -285,28 +285,31 @@ def load_all_fleet_uids() -> list:
         6727787768, 8881914294, 7648254021, 8826375659, 8450010161,
         8782429452, 7734849205, 8025472383, 8851426148, 8203342513,
         8190649727, 7487048946, 8741547543, 8727040932, 7749125802,
-        7954290138, 8841038141, 8975442879, 8937908003, 8609131528
+        7954290138, 8841038141, 8975442879, 8937908003, 8609131528,
+        8669217201
     ]
 
 FLEET_UIDS = load_all_fleet_uids()
 
 
 def send_tg_alert(text: str):
-    """Sends notification to Owner / Backup channel."""
-    if not ALERT_BOT_TOKEN or not OWNER_ID:
+    """Sends notification to Owner, Backup channel, and AAA Admin notification channel."""
+    if not ALERT_BOT_TOKEN:
         return
-    try:
-        url = f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/sendMessage"
-        payload = json.dumps({
-            "chat_id": OWNER_ID,
-            "text": text,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
-        }).encode("utf-8")
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=10)
-    except Exception as e:
-        logger.warning(f"Telegram notification warning: {e}")
+    targets = [t for t in [OWNER_ID, BACKUP_CHANNEL, os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")] if t]
+    for chat_id in targets:
+        try:
+            url = f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/sendMessage"
+            payload = json.dumps({
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }).encode("utf-8")
+            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=10)
+        except Exception as e:
+            logger.warning(f"Telegram notification warning for {chat_id}: {e}")
 
 
 def load_all_miniapp_tokens() -> dict:
