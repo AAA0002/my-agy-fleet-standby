@@ -363,7 +363,7 @@ def solve_challenge_deterministic(question_text: str) -> str:
     """100% local, instant, deterministic arithmetic & challenge solver (0 network latency, 0 AI dependency)."""
     if not question_text:
         return "0"
-    q_lower = question_text.lower().strip()
+    q_lower = question_text.lower().replace("=", " ").replace("?", " ").strip()
 
     # 1. Direct Knowledge & Factoid Questions
     if "days in a week" in q_lower or "days a week" in q_lower:
@@ -394,7 +394,7 @@ def solve_challenge_deterministic(question_text: str) -> str:
     }
 
     # 3. Tokenize words, digits and operators
-    tokens = re.findall(r"[a-z0-9\+\-\*\/\%\=]+", q_lower)
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\%]+", q_lower)
     converted_tokens = []
     i = 0
     while i < len(tokens):

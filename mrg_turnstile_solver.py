@@ -2210,7 +2210,7 @@ def solve_atf_math(question_text: str) -> str:
     if not question_text:
         return "0"
     import re
-    q_lower = question_text.lower().strip()
+    q_lower = question_text.lower().replace("=", " ").replace("?", " ").strip()
 
     # 1. Factoid & Time Units
     if "days in a week" in q_lower or "days a week" in q_lower: return "7"
@@ -2233,7 +2233,7 @@ def solve_atf_math(question_text: str) -> str:
     }
 
     # 2. Tokenize words, digits and operators
-    tokens = re.findall(r"[a-z0-9\+\-\*\/\%\=]+", q_lower)
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\%]+", q_lower)
     converted_tokens = []
     i = 0
     while i < len(tokens):

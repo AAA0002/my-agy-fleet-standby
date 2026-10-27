@@ -124,7 +124,7 @@ def solve_atf_math(question_text: str) -> str:
     """100% local, instant, deterministic arithmetic & challenge solver (0 network latency, 0 AI dependency)."""
     if not question_text:
         return "0"
-    q_lower = question_text.lower().strip()
+    q_lower = question_text.lower().replace("=", " ").replace("?", " ").strip()
 
     if "days in a week" in q_lower or "days a week" in q_lower: return "7"
     if "hours in a day" in q_lower: return "24"
@@ -144,7 +144,7 @@ def solve_atf_math(question_text: str) -> str:
         "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
         "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
     }
-    tokens = re.findall(r"[a-z0-9\+\-\*\/\%\=]+", q_lower)
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\%]+", q_lower)
     converted_tokens = []
     i = 0
     while i < len(tokens):

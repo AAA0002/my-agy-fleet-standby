@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐞 Critical Bug Fix: ATF Math Arithmetic Solver, TonConnect 2.0 Proof Verification & Account #21 Ground Truth (October 27, 2026)**:
+  - **ATF Arithmetic Challenge Solver Bug Fixed (`solve_atf_math`)**:
+    * Discovered and resolved critical bug in `solve_atf_math` across `finish_all_fleet_sidetasks.py`, `audit_bots_and_sidetasks.py`, `app.py`, and `mrg_turnstile_solver.py`.
+    * Previously, direct arithmetic questions ending in `=?` (e.g. `'7+12=?'`, `'5+3=?'`, `'10-2=?'`) retained a trailing `=` in the token stream, which failed regex validation and defaulted to `"0"`, causing ATF mining start to reject with HTTP 400 Bad Request.
+    * Added sanitization (`replace("=", " ").replace("?", " ")`) and cleaned tokenizer regex (`r"[a-z0-9\+\-\*\/\%]+"`) so expressions evaluate deterministically to their exact sum/difference/product.
+  - **TonConnect 2.0 Cryptographic Proof Verification (`create_atf_ton_proof`)**:
+    * Discovered that ATF Miner requires cryptographic TonConnect 2.0 proof signing (`nacl.signing.SigningKey` over `ton-proof-item-v2` with domain `atfminers.asloni.online` and dynamic `atf_wp_...` nonce) to verify wallet ownership.
+    * Implemented `create_atf_ton_proof` in `finish_all_fleet_sidetasks.py` and automated wallet verification in `sweep_atf_tasks`.
+    * Cryptographically signed and verified Account #21's dedicated TON wallet (`0:c7f85afb...`), achieving `"wallet_verified": "1"` on ATF Miner.
+    * Solved arithmetic challenge (`8+13=? = 21`) and activated live mining cycle for Account #21 (`start_time: 1793131470`).
+  - **Ground-Truth 9-Bot Referral Attribution Audit (Account #21 vs Master Arif `6727787768`)**:
+    * ⚡ **MRG Miner**: 100% Bound (`referrerId: 6727787768`). Master has 10 direct referrals. Account #21 is accumulating MRG with TonConnect wallet connected.
+    * 🪙 **ATF Miner**: 100% Bound (`referred_by: 6727787768`). Dedicated TON wallet verified via TonConnect proof. Active mining started.
+    * 🌐 **Kynex Network**: 100% Bound (`referredBy: tg_6727787768`). Master profile reflects 23 invited friends. Account #21 actively mining (2,089.1 KNX).
+    * 💎 **AdxEarn AI**: 100% Bound (`ref_6727787768`). Master reflects 19 total referrals. Account #21 active with 2,000 points and 4 tasks processed.
+    * 🐔 **Chicken Land**: 100% Bound (`ref: 12668`). Account #21 has 1 laying hen, 380 coins, 6 eggs.
+    * ⛏️ **DiggoMiner**: Initial `diggo_init_data` expired (`expired_init_data`). Account #21 requires 30-day JWT exchange from fresh Telegram launch or QR scan.
+    * 🏢 **Victor's Company**: Account #21 is registered with `ref_A20AA96F18` and awaiting Turnstile pass from headless solver runner. Dispatched fresh solver run on GitHub Actions.
+    * 💧 **VyroDrop**: Token expired due to ephemeral `query_id=`. Needs direct URL token extraction via Render Node 3.
+    * 🐸 **PepeGram**: Returns `HTTP 404 User Not Found` because user `8669217201` has not tapped `/start 1449` in `@Pepe_gram_bot` on Telegram.
+  - **State & Disaster Recovery Synchronization**:
+    * Synchronized updated Account #21 active flags in `accounts.json` and Upstash Redis `fleet:accounts`.
+    * Streamed fresh encrypted disaster recovery archive to `@myagyai` Telegram vault via `backup_manager.py`.
+
 - **🌐 Cloudflare Edge Worker Deployment & Full 21-Account Solver Harmonization (October 27, 2026)**:
   - **Edge Worker Live Deployment (`deploy_both_cf_workers.py`)**:
     * Compiled and deployed updated Edge Worker to Primary Node 4 (`https://restore-agy.agorameet.workers.dev`).

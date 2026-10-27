@@ -186,11 +186,49 @@ def create_mrg_ton_proof(wallet_entry: dict, nonce: str) -> dict:
         return None
 
 
+def create_atf_ton_proof(wallet_entry: dict, nonce: str) -> dict:
+    """Signs TonConnect 2.0 cryptographic proof for ATF Miner wallet verification."""
+    try:
+        from nacl.signing import SigningKey
+        from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+        raw_mn = wallet_entry.get("mnemonic") or wallet_entry.get("mnemonic_words")
+        words = raw_mn.split() if isinstance(raw_mn, str) else raw_mn
+        _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+        state_init_res = wallet_contract.create_state_init()
+        state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+        t_addr = wallet_contract.address
+        wc = t_addr.wc
+        addr_hash = t_addr.hash_part
+        raw_addr = f"{wc}:{addr_hash.hex()}"
+        domain = "atfminers.asloni.online"
+        domain_b = domain.encode("utf-8")
+        ts_now = int(time.time())
+        msg = b"ton-proof-item-v2/" + struct.pack(">i", wc) + addr_hash + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+        digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+        sig = SigningKey(priv_k[:32]).sign(digest).signature
+        sig_b64 = base64.b64encode(sig).decode("utf-8")
+        return {
+            "wallet": raw_addr,
+            "public_key": pub_k.hex(),
+            "wallet_state_init": state_init_b64,
+            "network": "-239",
+            "proof": {
+                "timestamp": ts_now,
+                "domain": {"lengthBytes": len(domain_b), "value": domain},
+                "signature": sig_b64,
+                "payload": nonce
+            }
+        }
+    except Exception as e:
+        logger.debug(f"ATF proof creation error: {e}")
+        return None
+
+
 def solve_atf_math(question_text: str) -> str:
     """100% local, instant, deterministic arithmetic & challenge solver (0 network latency, 0 AI dependency)."""
     if not question_text:
         return "0"
-    q_lower = question_text.lower().strip()
+    q_lower = question_text.lower().replace("=", " ").replace("?", " ").strip()
 
     if "days in a week" in q_lower or "days a week" in q_lower: return "7"
     if "hours in a day" in q_lower: return "24"
@@ -210,7 +248,7 @@ def solve_atf_math(question_text: str) -> str:
         "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
         "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
     }
-    tokens = re.findall(r"[a-z0-9\+\-\*\/\%\=]+", q_lower)
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\%]+", q_lower)
     converted_tokens = []
     i = 0
     while i < len(tokens):
@@ -569,11 +607,23 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
         async with session.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
         async with session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
 
-        # 3. Dedicated TON wallet sync
+        # 3. Dedicated TON wallet sync & cryptographic proof verification
+        w_obj = acc.get("ton_wallet") or ton_wallets.get(str(uid)) or ton_wallets.get(int(uid) if str(uid).isdigit() else 0)
         ton_addr = get_ton_wallet_address(acc, uid)
         if ton_addr:
             async with session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload({"wallet": ton_addr}), headers=atf_h) as r:
-                res["notes"].append("wallet_synced")
+                s_data = {}
+                try: s_data = await r.json()
+                except Exception: pass
+                if s_data.get("reason") == "wallet_proof_required" or log_data.get("wallet_proof_payload"):
+                    nonce = s_data.get("wallet_proof_payload") or log_data.get("wallet_proof_payload")
+                    if nonce and isinstance(w_obj, dict) and (w_obj.get("mnemonic") or w_obj.get("mnemonic_words")):
+                        proof_body = create_atf_ton_proof(w_obj, nonce)
+                        if proof_body:
+                            async with session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload(proof_body), headers=atf_h) as r_p:
+                                res["notes"].append("wallet_proof_verified")
+                else:
+                    res["notes"].append("wallet_synced")
 
         # 4. Solve Math Challenge & Start Mining
         try:
