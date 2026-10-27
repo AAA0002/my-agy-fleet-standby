@@ -4740,8 +4740,8 @@ async def get_account_otp(acc_target: str, request: Request):
     """
 
     try:
-        accounts = []
-        if os.path.exists("accounts.json"):
+        accounts = await fetch_accounts_from_cloud()
+        if not accounts and os.path.exists("accounts.json"):
             try:
                 with open("accounts.json", "r", encoding="utf-8") as f:
                     accounts = json.load(f)

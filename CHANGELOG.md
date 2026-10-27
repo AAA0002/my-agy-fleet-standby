@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Complete Dynamic Fleet De-Hardcoding, Cloud OTP Engine & Edge Deployment (October 27, 2026)**:
+  - **Comprehensive Elimination of Hardcoded Fleet Limits Across Worker Commands**:
+    * Purged 43 instances of `health.total || 20` across all bot commands (`/kynex`, `/victors`, `/vyro`, `/mrg`, `/atf`, `/diggo`, `/pepe`, `/adx`, `/chicken`, `/summary`, `/dashboard`), replacing them with dynamic `health.total` directly tied to runtime fleet registry length.
+    * Converted hardcoded `(accounts.length || 20)` in daily ad goal calculation to dynamic `accounts.length * 1000`.
+    * Upgraded worker wallet telemetry from fixed `Accounts #2–20 (Workers): 19 Isolated TON v4r2 Wallets` to dynamic `Accounts #2–${accounts.length} (Workers): ${accounts.length - 1} Isolated TON v4r2 Wallets`.
+    * Synchronized `/dashboard` system description from obsolete `5 Mining Bots` to `9 Mining Bots` (`⚡ MRG • 🪙 ATF • 🏢 Victor's • 💧 VyroDrop • 🌐 Kynex • ⛏️ Diggo • 🐸 PepeGram • 🤖 AdxEarn • 🐔 Chicken Land`).
+  - **Cloud OTP Engine Cloud-First Dynamic Account Fetching (`app.py`)**:
+    * Upgraded `get_account_otp` (`/api/fleet/otp/{acc_target}`) to fetch canonical account state via `await fetch_accounts_from_cloud()` (Upstash Redis, memory cache, Supabase) rather than relying solely on local ephemeral container `accounts.json`.
+  - **Database Persistence & Edge Deployment**:
+    * Synced all 21 accounts directly to Upstash Redis `fleet:accounts` and `fleet:live_state`.
+    * Successfully deployed updated Cloudflare Edge Worker bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`) and synchronized bot webhook, commands, and menus.
+
+
 - **🛡️ 100% Dynamic Fleet Scaling, Phone Safety Confirmation Gate & 9-Bot Verification (October 27, 2026)**:
   - **Phone Number Safety Confirmation Gate (`deploy_both_cf_workers.py`)**:
     * Identified root cause of accidental code re-dispatch shown in user screenshot (where typing phone number in chat immediately after authentication triggered a new Telegram code and invalidated the active session).

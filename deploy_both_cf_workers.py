@@ -2843,7 +2843,7 @@ export default {
         messages: [
           {
             role: "system",
-            content: "You are Ari, the personal cloud AI copilot for Arif's 20-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently. Always address the user as Arif. Keep responses concise, clear, and direct."
+            content: "You are Ari, the personal cloud AI copilot for Arif's multi-account autonomous mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently. Always address the user as Arif. Keep responses concise, clear, and direct."
           },
           { role: "user", content: pText }
         ],
@@ -3479,7 +3479,7 @@ fi
               const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0);
               memSessionHealth.revoked = rNums;
               const liveAccs = await getFleetAccounts();
-              const totalCount = liveAccs.length || 20;
+              const totalCount = liveAccs.length || (memFleetAccounts?.length || DEFAULT_FLEET_ACCOUNTS.length);
               memSessionHealth.healthy = Array.from({ length: totalCount }, (_, i) => i + 1).filter(x => !memSessionHealth.revoked.includes(x));
               memSessionHealth.lastCheck = Date.now();
             }
@@ -5496,7 +5496,7 @@ fi
           role: "Executive Operations & Fleet Command Bot",
           status: "online",
           version: "5.0-executive",
-          fleet_size: memFleetAccounts?.length || 20,
+          fleet_size: memFleetAccounts?.length || DEFAULT_FLEET_ACCOUNTS.length,
           active_bots: 9,
           supported_bots: [
             "MRG Miner (@mrgminerbot)",
@@ -7321,7 +7321,7 @@ fi
               const rep = `💎 *KYNEX NETWORK COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Kynex Network (@Kynex_miningbot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Master Account (6727787768):* 33,199+ KNX\n` +
                 `• *Energy System:* 43,200s (12h capacity) Auto-Refilled\n` +
                 `• *Sponsor Channels:* 4/4 Verified (+1,800 KNX each)\n` +
@@ -7338,7 +7338,7 @@ fi
               const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Master Account:* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
                 `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser\n` +
                 `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
@@ -7353,9 +7353,9 @@ fi
               const rep = `💧 *VYRODROP COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-                `• *TON Wallet:* \`${health.total || 20}/${health.total || 20} Configured\` (${activeCount} Active Mining)\n` +
+                `• *TON Wallet:* \`${health.total}/${health.total} Configured\` (${activeCount} Active Mining)\n` +
                 `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -7385,7 +7385,7 @@ fi
               const rep = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Chicken Land (@ChickenLandBot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\` • \`${(health.total || 20) - 1}/${(health.total || 20) - 1} Referrals Bound ✅\`\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\` • \`${health.total - 1}/${health.total - 1} Referrals Bound ✅\`\n` +
                 `• *Mechanics:* Passive Time-Based Egg Laying (8h Basket Capacity)\n` +
                 `• *Master Account (6727787768):* 8 Hens • 80 Eggs/h • 3,800 Ref Coins Claimed\n` +
                 `• *Fleet Total:* 28 Hens Active • 2,240 Eggs/8h Capacity\n` +
@@ -7451,7 +7451,7 @@ fi
                   if (res && res.ok) {
                     const data = await res.json();
                     const rep = data.report || {};
-                    const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 20} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
+                    const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || health.total} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
                     await editOrSendResilientMessage(chatId, cbMsgId, msg, statusInlineKeyboard);
                     return;
                   }
@@ -7525,7 +7525,7 @@ fi
               };
               const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `📊 *Live Sessions:* \`${activeCount}/${health.total || 20} MTProto Online\` • \`${health.total || 20}/${health.total || 20} REST Mining Active\`\n\n` +
+                `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
                 `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
                 `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
                 `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
@@ -7559,7 +7559,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* DiggoMiner (@Diggominer_bot)\n` +
                 `• *Endpoint:* \`https://diggo.linkpc.net\`\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Autonomous Features:* Auto-Claims, Referral Yields, Daily Check-in & Social Tasks\n` +
                 `• *Architecture:* Headless Cloud JWT Session + WebApp handshake\n` +
                 `• *Mining Yield:* Compound Level 45+ Active\n` +
@@ -7586,7 +7586,7 @@ fi
               const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
                 `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
                 `• *Yield:* Continuous Hash Production & Power Boosts\n` +
@@ -7613,7 +7613,7 @@ fi
               const adxMsg = `🤖 *ADXEARN AI CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* AdxEarn AI (@AdxEarnAibot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Mining State:* ACTIVE (Daily Streaks & Auto-Boosts)\n` +
                 `• *Tasks:* Dynamic Task Discovery & Immediate Claim\n` +
                 `• *Referrals:* Master 6727787768 Deeply Bound\n` +
@@ -7625,7 +7625,7 @@ fi
               ctx.waitUntil((async () => {
                 const todayStr = new Date().toISOString().slice(0, 10);
                 const accounts = await getFleetAccounts();
-                const totalAdsGoal = (accounts.length || 20) * 1000;
+                const totalAdsGoal = accounts.length * 1000;
                 let totalAdsToday = 0;
                 const topList = [];
                 for (const a of accounts) {
@@ -7701,8 +7701,8 @@ fi
               const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-                `👥 *Active Mining Accounts:* \`${activeAccs}/${health.total || 20} Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
-                `💎 *TON Wallets:* \`${health.total || 20}/${health.total || 20} Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+                `👥 *Active Mining Accounts:* \`${activeAccs}/${health.total} Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
+                `💎 *TON Wallets:* \`${health.total}/${health.total} Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
                 `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
                 `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7717,7 +7717,7 @@ fi
                 const revokedCount = health.revoked.size;
                 const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
                   `• *Status:* Success ✅\n` +
-                  `• *Accounts Processed:* \`${activeCount}/${health.total || 20} Active\`\n` +
+                  `• *Accounts Processed:* \`${activeCount}/${health.total} Active\`\n` +
                   (revokedCount > 0 ? `• *Skipped:* \`${revokedCount} Accounts (Session Re-link Required ⚠️)\`\n` : "") +
                   `• *Tasks & Mining:* \`Harvested & Active\`\n` +
                   `• *Math Verification:* \`100% Passed\`\n\n` +
@@ -7739,7 +7739,7 @@ fi
             } else if (cbData === "btn_atf_wallets") {
               const rep = `💎 *ATF Miner Dedicated TON Wallets*\n\n` +
                 `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
-                `• *Accounts #2–20 (Workers):* 19 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
+                `• *Accounts #2–${accounts.length} (Workers):* ${accounts.length - 1} Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
                 `_All wallets isolated to prevent multi-account Sybil flags._`;
               await sendResilientMessage(chatId, rep, null, "Markdown");
             } else if (cbData === "btn_status") {
@@ -8452,7 +8452,7 @@ fi
             const kynexMsg = `💎 *KYNEX NETWORK CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Bot:* @Kynex_miningbot (MiniApp: App)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Master Account (6727787768):* 33,199+ KNX\n` +
               `• *Energy System:* 43,200s (12h capacity) Auto-Refilled\n` +
               `• *Sponsor Channels:* 4/4 Verified (+1,800 KNX each)\n` +
@@ -8487,7 +8487,7 @@ fi
             const vicMsg = `🏢 *VICTOR'S COMPANY CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Master Account (6727787768):* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
               `• *Session Status:* 24h Cloud Mining Active\n` +
               `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser (humanPass active)\n` +
@@ -8521,9 +8521,9 @@ fi
             const vyroMsg = `💧 *VYRODROP CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-              `• *TON Wallets:* \`${health.total || 20}/${health.total || 20} Configured\` (${activeCount} Active Mining)\n` +
+              `• *TON Wallets:* \`${health.total}/${health.total} Configured\` (${activeCount} Active Mining)\n` +
               `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -8553,9 +8553,9 @@ fi
             const mrgMsg = `⛏️ *MRG MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Level Upgrader:* Level 95+ Auto-Unlocked\n` +
-              `• *Cryptographic TON Connect 2.0 Proof:* \`${health.total || 20}/${health.total || 20} Connected\`\n` +
+              `• *Cryptographic TON Connect 2.0 Proof:* \`${health.total}/${health.total} Connected\`\n` +
               `• *Anti-Bot Defense:* User-Agent & Signature Isolation ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -8597,8 +8597,8 @@ fi
             const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-              `👥 *Active Mining Accounts:* \`${activeAccs}/${health.total || 20} Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
-              `💎 *TON Wallets:* \`${health.total || 20}/${health.total || 20} Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+              `👥 *Active Mining Accounts:* \`${activeAccs}/${health.total} Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
+              `💎 *TON Wallets:* \`${health.total}/${health.total} Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
               `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
               `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -8631,7 +8631,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* DiggoMiner (@Diggominer_bot)\n` +
               `• *Endpoint:* \`https://diggo.linkpc.net\`\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Features:* Auto-Claims, Referral Yields, Daily Check-in & Social Tasks\n` +
               `• *Architecture:* Headless Cloud JWT Session + WebApp handshake\n` +
               `• *Mining Yield:* Compound Level 45+ Active\n` +
@@ -8663,7 +8663,7 @@ fi
             const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
               `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
               `• *Yield:* Continuous Hash Production & Power Boosts\n` +
@@ -8695,7 +8695,7 @@ fi
             const adxMsg = `🤖 *ADXEARN AI CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* AdxEarn AI (@AdxEarnAibot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Mining State:* ACTIVE (Daily Streaks & Auto-Boosts)\n` +
               `• *Tasks:* Dynamic Task Discovery & Immediate Claim\n` +
               `• *Referrals:* Master 6727787768 Deeply Bound\n` +
@@ -8726,7 +8726,7 @@ fi
             const chickenMsg = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Chicken Land (@ChickenLandBot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\` • \`${(health.total || 20) - 1}/${(health.total || 20) - 1} Referrals Bound ✅\`\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\` • \`${health.total - 1}/${health.total - 1} Referrals Bound ✅\`\n` +
               `• *Mechanics:* Passive Time-Based Egg Laying (8h Basket Capacity)\n` +
               `• *Master Account (6727787768):* 8 Hens • 80 Eggs/h • 3,800 Ref Coins Claimed\n` +
               `• *Fleet Total:* 28 Hens Active • 2,240 Eggs/8h Capacity\n` +
@@ -8744,7 +8744,7 @@ fi
           ctx.waitUntil((async () => {
             const todayStr = new Date().toISOString().slice(0, 10);
             const accounts = await getFleetAccounts();
-            const totalAdsGoal = (accounts.length || 20) * 1000;
+            const totalAdsGoal = accounts.length * 1000;
             let totalAdsToday = 0;
             const topList = [];
             for (const a of accounts) {
@@ -8809,7 +8809,7 @@ fi
             };
             const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `📊 *Live Sessions:* \`${activeCount}/${health.total || 20} MTProto Online\` • \`${health.total || 20}/${health.total || 20} REST Mining Active\`\n\n` +
+              `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
               `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
               `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
               `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
@@ -9635,7 +9635,7 @@ fi
             const rep = `👑 *MY AGY AI — EXECUTIVE FLEET CONSOLE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Fleet Status:* ${healthBadge}\n` +
-              `🤖 *5 Mining Bots:* MRG • ATF • Victor's • VyroDrop • Kynex Network\n` +
+              `🤖 *9 Mining Bots:* ⚡ MRG • 🪙 ATF • 🏢 Victor's • 💧 VyroDrop • 🌐 Kynex • ⛏️ Diggo • 🐸 PepeGram • 🤖 AdxEarn • 🐔 Chicken Land\n` +
               `☁️ *Infrastructure:* 5-Node Cloudflare Edge + Render Baton Mesh\n` +
               `🛡️ *Security:* 100% Anti-Ban • Zero Phone Load\n` +
               `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n\n` +
@@ -9979,7 +9979,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Auto Math Challenge Solver, Hashrate Boost, Cooldown Tasks\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -9995,7 +9995,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Cloud Turnstile Solvers, Arcade Mining, Daily Check-in, Level Upgrades\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -10011,7 +10011,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Mining Start/Claim, Task Verification, TonConnect 2.0 Wallets\n` +
               `• *Payout Network:* TON / VYRO DEX\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -10027,7 +10027,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Firebase RTDB Auth, Energy Management, Daily Checkin, Ads Rewards\n` +
               `• *Payout Network:* Firebase Cloud / KNX\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -10608,7 +10608,7 @@ fi
             }
             const health = await getSessionHealthState();
             const rep = `⚡ *MY AGY AI — EXECUTIVE ECOSYSTEM SUMMARY* 📊\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🤖 *Fleet Automation:* \`${health.healthy.size}/${health.total || 20} Accounts Online\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `🤖 *Fleet Automation:* \`${health.healthy.size}/${health.total} Accounts Online\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `⛏️ *Active Mining Pools (9/9):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land\n` +
               `👥 *Community Users:* \`${totalUsers || userList.length}\` Registered Miners\n` +
               `📱 *Community Accounts:* \`${activeAccountsCount}\` Connected Phones\n` +
