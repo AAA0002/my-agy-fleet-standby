@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Zero Ecosystem Mixing Hardening, 9-Bot Fleet Synchronization & On-Chain Treasury Integration (October 27, 2026)**:
+  - **Zero Ecosystem Mixing Compliance**:
+    * Strictly decoupled Admin Bot (`@myagyai`, ID `8858823950`) and User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`) command trees, keyboards, and webhooks in `deploy_both_cf_workers.py`.
+    * Configured independent Telegram Chat Menu buttons: `🎬 Watch Ads` for User Bot pointing to user portal, and `🚀 Fleet Dashboard` for Admin Bot pointing to `https://restore-agy.agorameet.workers.dev/admin`.
+  - **User Bot Points Economy & Progressive Streak Realignment**:
+    * Updated User Bot daily check-in streak reward progression to `+100, +150, +200, +250, +300, +400, +500 Pts` for streak days 1 through 7 (purging deprecated +25-50 Pts legacy references).
+    * Upgraded reply keyboard button and message router to recognize `🎁 Daily Bonus (+100-500 Pts)` and `ub_daily_claim` callbacks seamlessly.
+  - **Strict 9-Bot Multi-Pool Integration**:
+    * Fully integrated pool #9 `chickenland` (`🐔 Chicken Land (@ChickenLandBot)`) into the User Bot `MINING_POOLS` dictionary, `/pools`, `/start`, and `/help` flows.
+    * Replaced all remaining legacy "8 Mining Pools" button labels across `renderMiningDashboard`, `ub_wallets`, `ub_accounts`, `ub_stats`, and `ub_custom_wallet` with dynamic `9 Mining Pools`.
+    * Realigned Ari AI cascade prompt and fallback heuristics to accurately represent all 9 verified mining protocols.
+  - **On-Chain Treasury & Live Payouts Integration**:
+    * Added `/treasury` and `/payouts` top-level commands and `btn_treasury` / `btn_payouts` interactive callbacks to the Admin Bot.
+    * Integrated real-time on-chain accounting for Binance BEP-20 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`) with ~0.003474 BNB balance and 48 historical payouts totaling 0.003170 BNB, alongside TON Master Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`, memo `103525143`, 2.4555 TON).
+    * Added `💰 Treasury & Payouts` button into Admin Bot `mainInlineKeyboard` and `statusInlineKeyboard`.
+  - **Cloudflare Edge Deployment & Telemetry Verification**:
+    * Compiled and deployed unified Cloudflare Worker bundle to Primary Node 4 (`https://restore-agy.agorameet.workers.dev`) with active `*/15 * * * *` cron trigger.
+    * Synchronized Telegram bot commands and menu buttons via Telegram Bot API (`setMyCommands`, `setChatMenuButton`).
+    * Verified `/health` (`PRIMARY_ACTIVE`) and live `/api/pools` 20-account telemetry.
+    * Streamed verified disaster recovery archive to `@myagyai` vault via `backup_manager.py`.
+
 - **🐛 Comprehensive Fleet Bug Hunt, Exception Hardening & Multi-Cloud Parity (October 27, 2026)**:
   - **Chicken Land Promo Code Sniper (`chickenland_promo_sniper.py`)**:
     * Resolved critical missing `.env` loader bug: standalone executions now properly load `UPSTASH_TOKEN` and `REPORT_BOT_TOKEN`, re-enabling Redis deduplication sets (`SISMEMBER`, `SADD`) and instant Telegram alert dispatches.
