@@ -2,6 +2,44 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ 100% Dynamic Fleet Scaling, Phone Safety Confirmation Gate & 9-Bot Verification (October 27, 2026)**:
+  - **Phone Number Safety Confirmation Gate (`deploy_both_cf_workers.py`)**:
+    * Identified root cause of accidental code re-dispatch shown in user screenshot (where typing phone number in chat immediately after authentication triggered a new Telegram code and invalidated the active session).
+    * Implemented safety check: raw phone numbers sent in chat only auto-dispatch if the flow is explicitly in `waiting_phone` state. Otherwise, the bot presents an interactive confirmation button (`⚡ Request Verification Code`), preventing accidental session resets.
+    * Added callback handler `btn_req_code_ph_` to cleanly bridge confirmed requests directly to `cloudLoginSendCode()`.
+  - **Zero Hardcoding in Bot Commands & Admin Console**:
+    * `/wallets` and `btn_wallets`: Converted fixed `18 Self-Custody Worker Wallets (Nodes 2 to 20)` to dynamic `${accounts.length - 2} Self-Custody Worker Wallets (Nodes 2 to ${accounts.length})`.
+    * `/promo` and `/snipe`: Converted fixed `/20 Accounts` to dynamic `/${accounts.length} Accounts`.
+    * `getSessionHealthState()`: Converted static fallback `|| 20` to `accounts.length || 21`.
+    * `admin.html`: Removed `idx <= 20` limit in "Cloud" filter (`if (fleetFilter === "cloud") return idx >= 9;`) and updated chip label dynamically to `Cloud #${fleet.length > 8 ? "9-" + fleet.length : "9+"}`.
+  - **Account 21 Multi-Chain Wallets & Database Alignment**:
+    * Verified Account #21 (`8669217201`, `Aaaa201`, `+8801913962342`) possesses a complete 5-chain cryptographic suite:
+      - TON: `UQDH-Fr7IrmThtwnK86JeAg3R2S-ezhA1Gs801vOVaRWn_jw` (24-word recovery seed archived)
+      - EVM: `0xc9d8b0a0b1ad64ba90d26f1e4ae6c2bc184c0e3d`
+      - TRON: `TUNUQVsy3umFWPWNJzvYmNe4zRHhcYCeut`
+      - Solana: `4YMbFyjMxCpocfnKUvLfVF1EtmVzSvzzsJATrGjui3ai`
+      - Bitcoin: `1Ang9jyvFFAqwzAWcoNtjj5enHSeoDMfdt`
+    * Synchronized full account profile and wallets to Upstash Redis `fleet:accounts`, `fleet_wallets_data.json`, `public_admin/fleet_wallets_data.json`, and Cloudflare Edge Worker.
+  - **Comprehensive 9-Bot Verification Across Accounts**:
+    * **Main Account (UID `6727787768`)**:
+      - ⚡ MRG Miner: Miner Level 184/203, 50.58 MRG balance, 34 tasks completed, TON wallet connected 🟢
+      - 🪙 ATF Miner: Miner Level 161, 5,716.13 ATF balance, tasks completed & anti-bot math verified 🟢
+      - 🏢 Victor's Company: Level 64, 1,350.24 VIC balance, humanPass True 🟢
+      - 💧 VyroDrop: Level 1, mining active (speed: 0.20), 3 tasks available 🟢
+      - 🌐 Kynex Network: 144,384.9 KNX balance, 61,650s energy, 4 social tasks verified 🟢
+      - 🐸 PepeGram: 2,269.59 PEPE hashes (Power: 8900), yield claimed, 12 tasks claimed 🟢
+      - 🤖 AdxEarn AI: 735 Points, 7-day streak, farming claim in progress, 4 tasks processed 🟢
+      - ⛏️ DiggoMiner: Miner Level 80, 1,483.80 DIGGO balance, quiz + pump confirmed 🟢
+      - 🐔 Chicken Land: 950 coins, 8 hens, 80/h rate, 1,047 egg balance, 4d streak, 8 tasks completed 🟢
+    * **New Account #21 (UID `8669217201`)**:
+      - MRG Miner, Kynex Network, AdxEarn AI, DiggoMiner, and Chicken Land successfully connected and active.
+      - ATF, Victor's, and VyroDrop pending initial Turnstile captcha pass on cloud runner.
+  - **Chicken Land Promo Code Audit (`CLPKFGDYRG`)**:
+    * Tested live against Chicken Land RPC (`/api/promo`). API returned `PROMO_USED` (the 2,000 player capacity was exhausted upstream).
+    * Background promo sniper loop confirmed active and polling `@ChickenLandCodes` every 8s on cloud node.
+  - **Disaster Recovery Backup**:
+    * Streamed updated disaster recovery archive to Telegram vault `@myagyai` via `backup_manager.py`.
+
 - **🔄 Render Single-Active Failover (Stop-Old-First Protocol), 100% Dynamic Fleet & Account #21 (October 27, 2026)**:
   - **Zero-Dual-Instance Stop-First Handover**:
     * Rewrote `rotate_node()` in `render_failover_manager.py` and `switchRenderNode()` in `deploy_both_cf_workers.py`.

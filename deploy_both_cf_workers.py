@@ -2043,8 +2043,8 @@ async function getFleetTokens(env) {
 
 const DEFAULT_FLEET_DATA = {
   ok: true,
-  count: 20,
-  active: 20,
+  count: 21,
+  active: 21,
   bnb_balance: 0.000812,
   kynex_balance: 4050,
   ton_balance: 1.42,
@@ -2068,7 +2068,8 @@ const DEFAULT_FLEET_DATA = {
     { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
     { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
     { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801917631528", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+    { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -2561,7 +2562,7 @@ let memDeletedAccounts = null;
 let memDeletedAccountsTs = 0;
 let lastMiniappTokensKvWrite = 0;
 let memSessionHealth = {
-  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
   revoked: [],
   lastCheck: 0
 };
@@ -2809,7 +2810,8 @@ export default {
       17: "+8801879273559",
       18: "+8801839716506",
       19: "+8801804723069",
-      20: "+8801312863569"
+      20: "+8801312863569",
+      21: "+8801913962342"
     };
 
     const fetchFleetOtp = async (targetIdx) => {
@@ -3501,7 +3503,8 @@ fi
           accs.forEach((a, idx) => {
             a.index = idx + 1;
             const uidStr = String(a.user_id || "");
-            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || !a.session_string;
+            const hasTokens = Boolean((memTokens && uidStr && memTokens[uidStr]) || a.miniapp_tokens_synced || (a.mining_active && !revokedSet.has(String(a.index))));
+            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || (!a.session_string && !hasTokens);
             a.session_revoked = isRev;
             a.status = isRev ? "Needs Re-link" : "Active";
             a.mining_active = !isRev;
@@ -5540,7 +5543,8 @@ fi
           "8841038141": "+8801879273559",
           "8975442879": "+8801839716506",
           "8937908003": "+8801804723069",
-          "8609131528": "+8801312863569"
+          "8609131528": "+8801312863569",
+          "8669217201": "+8801913962342"
         };
 
         const KNOWN_PHONES_BY_INDEX = {
@@ -5563,7 +5567,8 @@ fi
           17: "+8801879273559",
           18: "+8801839716506",
           19: "+8801804723069",
-          20: "+8801312863569"
+          20: "+8801312863569",
+          21: "+8801913962342"
         };
 
         const DEFAULT_FLEET_ACCOUNTS = [
@@ -5586,7 +5591,8 @@ fi
           { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
           { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
           { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
-          { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" }
+          { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
+          { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
@@ -5603,6 +5609,16 @@ fi
           if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
           if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
           return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
+        };
+
+        const resolveAccountPhone = (targetIdx, targetUid, accList) => {
+          if (accList && Array.isArray(accList)) {
+            const found = accList.find(a => (targetIdx && Number(a.index) === Number(targetIdx)) || (targetUid && String(a.user_id) === String(targetUid)));
+            if (found && found.phone && found.phone !== "N/A" && found.phone !== "Hidden") return found.phone;
+          }
+          if (targetIdx && KNOWN_PHONES_BY_INDEX[targetIdx]) return KNOWN_PHONES_BY_INDEX[targetIdx];
+          if (targetUid && KNOWN_PHONES[String(targetUid)]) return KNOWN_PHONES[String(targetUid)];
+          return "";
         };
 
         const getFleetAccounts = async (forceFresh = false) => {
@@ -5777,7 +5793,8 @@ fi
             memFleetAccountsTs = Date.now();
             await upstashSet("fleet:accounts", curList);
             if (uidStr) {
-              await upstashSet(`account:${uidStr}`, accData);
+              const fullEntry = curList.find(a => String(a.user_id) === uidStr) || accData;
+              await upstashSet(`account:${uidStr}`, fullEntry);
             }
             if (env.BACKUP_KV) {
               await env.BACKUP_KV.put("fleet_accounts", JSON.stringify(curList)).catch(() => {});
@@ -5859,11 +5876,12 @@ fi
 
         const getSessionHealthState = async () => {
           if (memSessionHealth && (Date.now() - memSessionHealth.lastCheck < 15000)) {
+            const memTotal = memSessionHealth.total || (memSessionHealth.healthy?.length || 0) + (memSessionHealth.revoked?.length || 0) || (memFleetAccounts?.length || 21);
             return {
               healthy: new Set(memSessionHealth.healthy),
               revoked: new Set(memSessionHealth.revoked),
               revokedDetails: memSessionHealth.revokedDetails || [],
-              total: memSessionHealth.total || (memSessionHealth.healthy?.length || 0) + (memSessionHealth.revoked?.length || 0) || 20
+              total: memTotal
             };
           }
           let revokedRaw = [];
@@ -6675,11 +6693,11 @@ fi
                 `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
                 `• BEP-20 (BSC): \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
                 `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
-                `🔐 *18 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
-                `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20\n` +
+                `🔐 *Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
+                `• Nodes 2 to ${accounts.length || 21}\n` +
                 `• 100% Isolated 24-word recovery seeds for anti-sybil pool protection.\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `💡 _Tip: Send \`/wallet <1-20>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
+                `💡 _Tip: Send \`/wallet <1-${accounts.length || 21}>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
               const walletMarkup = {
                 inline_keyboard: [
                   [
@@ -7017,13 +7035,23 @@ fi
 
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
-            } else if (cbData.startsWith("btn_relink_") || cbData.startsWith("btn_request_code_")) {
-              const relinkIdx = parseInt(cbData.replace("btn_relink_", "").replace("btn_request_code_", ""), 10) || 1;
+            } else if (cbData.startsWith("btn_relink_") || cbData.startsWith("btn_request_code_") || cbData.startsWith("btn_req_code_ph_")) {
               const accounts = await getFleetAccounts();
-              const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
-              let phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
-                ? targetAcc.phone
-                : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");
+              let relinkIdx = 1;
+              let phoneToRelink = "";
+
+              if (cbData.startsWith("btn_req_code_ph_")) {
+                const rawP = cbData.replace("btn_req_code_ph_", "");
+                phoneToRelink = rawP.startsWith("+") ? rawP : "+" + rawP;
+                const foundAcc = accounts.find(a => (a.phone && a.phone.replace(/\D/g, '') === phoneToRelink.replace(/\D/g, '')));
+                relinkIdx = foundAcc ? foundAcc.index : (accounts.length + 1);
+              } else {
+                relinkIdx = parseInt(cbData.replace("btn_relink_", "").replace("btn_request_code_", ""), 10) || 1;
+                const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
+                phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
+                  ? targetAcc.phone
+                  : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");
+              }
 
               if (!phoneToRelink) {
                 const curFlow = memLoginFlow.get(String(chatId)) || (await upstashGet("login_flow:" + chatId));
@@ -8283,10 +8311,13 @@ fi
         // 1.15 Dedicated Relink Command (/relink)
         if (text === "/relink" || text.startsWith("/relink")) {
           ctx.waitUntil((async () => {
+            const curAccs = await getFleetAccounts();
+            const totalCount = curAccs.length || 21;
             const parts = text.split(" ").filter(Boolean);
             const reqIdx = parts.length > 1 ? parseInt(parts[1], 10) : null;
-            if (reqIdx && reqIdx >= 1 && reqIdx <= 18) {
-              const targetPhone = KNOWN_PHONES_BY_INDEX[reqIdx] || "";
+            if (reqIdx && reqIdx >= 1 && reqIdx <= totalCount) {
+              const targetAcc = curAccs[reqIdx - 1];
+              const targetPhone = (targetAcc && targetAcc.phone) || KNOWN_PHONES_BY_INDEX[reqIdx] || "";
               if (!targetPhone) {
                 await sendReply(`❌ Phone for Account #${reqIdx} not registered.`);
                 return;
@@ -8316,8 +8347,6 @@ fi
             }
 
             // Otherwise show all fleet accounts relink picker dynamically
-            const curAccs = await getFleetAccounts();
-            const totalCount = curAccs.length || 20;
             const relinkBtns = [];
             let row = [];
             for (let i = 1; i <= totalCount; i++) {
@@ -9363,7 +9392,7 @@ fi
           return new Response("OK");
         }
 
-        // PRIORITY 3: Phone number input (either explicitly typed or while in waiting_phone step)
+        // PRIORITY 3: Phone number input
         const isWaitingPhone = loginFlowState && loginFlowState.step === "waiting_phone";
         if ((isPhonePattern || (isWaitingPhone && !isCommandOrMenu && !isOtpCode))) {
           let extractedPhone = "";
@@ -9386,6 +9415,23 @@ fi
               normalized = "+880" + normalized;
             } else if (!normalized.startsWith("+")) {
               normalized = "+" + normalized;
+            }
+
+            // Safety Gate: If not explicitly in waiting_phone, confirm before sending code to prevent accidental session reset
+            if (!isWaitingPhone) {
+              ctx.waitUntil((async () => {
+                const rep = `📱 *Telegram Phone Number Detected*\n\n` +
+                  `• *Number:* \`${normalized}\`\n\n` +
+                  `Do you want to request a Telegram verification code to connect or re-link this account?`;
+                const markup = {
+                  inline_keyboard: [
+                    [{ text: "⚡ Request Verification Code", callback_data: `btn_req_code_ph_${normalized.replace(/\+/g, '')}` }],
+                    [{ text: "❌ Cancel", callback_data: "btn_back_main" }]
+                  ]
+                };
+                await sendReply(rep, markup);
+              })());
+              return new Response("OK");
             }
 
             ctx.waitUntil((async () => {
@@ -9764,9 +9810,11 @@ fi
               if (res && res.ok) {
                 const data = await res.json();
                 const rep = data.report || {};
+                const curAccs = await getFleetAccounts();
+                const totalFleetAccs = rep.total_accounts || curAccs.length || 21;
                 await sendReply(`🐔 *Chicken Land Promo Snipe Results:*\n\n` +
                   `• *Code:* \`${promoCode}\`\n` +
-                  `• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 20} Accounts ✅\n` +
+                  `• *Claimed:* ${rep.claimed_count || 0}/${totalFleetAccs} Accounts ✅\n` +
                   `• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n` +
                   `• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n` +
                   `• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`);
@@ -10218,6 +10266,9 @@ fi
                 if (mc.bsc_bnb_balance !== undefined) liveBnb = mc.bsc_bnb_balance;
               }
             } catch (_) {}
+            const accounts = await getFleetAccounts();
+            const totalAccCount = accounts.length || 21;
+            const workerCount = Math.max(0, totalAccCount - 2);
             const rep = `💼 *Multi-Chain Verified Destination Wallets*\n\n` +
               `👑 *Binance Main Vault (Account #1 - Arif Hossain):*\n` +
               `• BEP-20: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
@@ -10226,10 +10277,10 @@ fi
               `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
               `• BEP-20: \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
               `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
-              `🔐 *18 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
-              `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20\n` +
+              `🔐 *${workerCount} Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
+              `• Nodes 2 to ${totalAccCount}\n` +
               `• 100% Isolated 24-word seeds for anti-sybil pool verification.\n\n` +
-              `💡 *Command Tip:* Send \`/wallet <index>\` (e.g. \`/wallet 1\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
+              `💡 *Command Tip:* Send \`/wallet <1-${totalAccCount}>\` (e.g. \`/wallet 1\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
               `🛡️ _All verified fleet wallets are continuously monitored and secured in the cloud._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
