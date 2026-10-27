@@ -48,7 +48,7 @@
    - **Admin Bot (`@myagyai`) vs User Bot (`@AAAPREMIUMAPPSbot`)**: Strictly separate tokens, webhooks, command sets, and workflows. Never mix admin commands into user flows.
    - **Admin Channels vs User Channels**: Admin channels (Vault `@myagyai`, Payouts `-1004402765950`, Supergroup `-1003973231307`) NEVER receive user announcements or tasks. User community channels (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) NEVER receive admin logs, error traces, or backups.
    - **Dual Admin Dashboards**:
-     - **Admin Bot Dashboard** (`public_admin/admin.html` at `/admin`): Dedicated strictly to Fleet Ops (20 accounts, 8 pools, cloud node status, Redis key management).
+     - **Admin Bot Dashboard** (`public_admin/admin.html` at `/admin`): Dedicated strictly to Fleet Ops (21 accounts, 9 pools, cloud node status, Redis key management).
      - **User Bot Admin Dashboard** (`public_admin/user-admin.html` at `/user-admin`): Dedicated strictly to Community Miners, points economy, ad metrics, session revoke monitoring, broadcast engine, and user VIP passes.
      - **Authoritative Manual**: See [DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md](./DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md) for complete comparison matrix, separation boundaries, and operational guide.
      - NEVER mix or merge these two dashboards.

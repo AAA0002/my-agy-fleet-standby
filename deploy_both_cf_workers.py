@@ -236,7 +236,7 @@ const FLEET_TRON_WALLETS = {
 // 100% Deterministic Local Math & Word Challenge Solver (0 AI Dependency, 0ms Delay)
 const solveChallengeDeterministic = (questionText) => {
   if (!questionText || typeof questionText !== "string") return "0";
-  const qLower = questionText.toLowerCase().trim();
+  const qLower = questionText.toLowerCase().replace(/=/g, " ").replace(/\?/g, " ").trim();
 
   // 1. Direct Knowledge & Factoid Questions
   if (qLower.includes("days in a week") || qLower.includes("days a week")) return "7";
@@ -261,7 +261,7 @@ const solveChallengeDeterministic = (questionText) => {
     "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
   };
 
-  const tokens = qLower.match(/[a-z0-9\+\-\*\/\%\=]+/g) || [];
+  const tokens = qLower.match(/[a-z0-9\+\-\*\/\%]+/g) || [];
   const converted = [];
   let i = 0;
   while (i < tokens.length) {

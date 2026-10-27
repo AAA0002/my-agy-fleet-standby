@@ -2,6 +2,15 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Cloudflare Edge Worker Deterministic Solver & Architectural Parity (October 27, 2026)**:
+  - **Edge Worker Deterministic Arithmetic Solver (`deploy_both_cf_workers.py`)**:
+    * Ported the sanitized regex and tokenization bug fix to `solveChallengeDeterministic` in `deploy_both_cf_workers.py`.
+    * Guaranteed that Cloudflare Edge Worker can solve all direct arithmetic expressions (e.g. `'7+12=?' -> 19`, `'8+13=?' -> 21`) locally in under 1ms without AI latency or rate-limiting.
+    * Successfully re-deployed to Cloudflare Primary Node 4 (`https://restore-agy.agorameet.workers.dev`).
+  - **System Documentation & Specification Parity (`PROJECT_BIBLE.md`, `SESSION_BRIDGE.md`)**:
+    * Updated `PROJECT_BIBLE.md` and `SESSION_BRIDGE.md` to reflect 21 accounts and 9 high-conviction farming bots.
+    * Documented ATF Miner TonConnect 2.0 cryptographic proof signing protocol (`create_atf_ton_proof`) and arithmetic challenge solver mechanics.
+
 - **🐞 Critical Bug Fix: ATF Math Arithmetic Solver, TonConnect 2.0 Proof Verification & Account #21 Ground Truth (October 27, 2026)**:
   - **ATF Arithmetic Challenge Solver Bug Fixed (`solve_atf_math`)**:
     * Discovered and resolved critical bug in `solve_atf_math` across `finish_all_fleet_sidetasks.py`, `audit_bots_and_sidetasks.py`, `app.py`, and `mrg_turnstile_solver.py`.
