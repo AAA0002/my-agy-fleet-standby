@@ -1615,16 +1615,27 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }).catch(() => null);
           if (promoResp && promoResp.ok) {
             const html = await promoResp.text().catch(() => "");
-            const msgs = html.match(/<div class="tgme_widget_message_text[^>]*>[\s\S]*?<\/div>/g) || [];
-            for (let mIdx = msgs.length - 1; mIdx >= Math.max(0, msgs.length - 3); mIdx--) {
-              const msg = msgs[mIdx];
-              if (!msg.includes("ALL CLAIMED") && !msg.includes("❌")) {
-                const codeMatch = msg.match(/<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
-                if (codeMatch) {
-                  const pCode = (codeMatch[1] || codeMatch[2]).trim().toUpperCase();
-                  const pClaim = await rpc("/api/promo", { code: pCode });
-                  if (pClaim.ok && pClaim.result?.user) {
-                    currentCoins = pClaim.result.user.coins || currentCoins;
+            const postIds = Array.from(html.matchAll(/(?:ChickenLandCodes\/|data-post="ChickenLandCodes\/)(\d+)/g), m => parseInt(m[1])).filter((v, i, a) => a.indexOf(v) === i).sort((a,b) => a - b);
+            for (let pIdx = postIds.length - 1; pIdx >= Math.max(0, postIds.length - 5); pIdx--) {
+              const pid = postIds[pIdx];
+              const pResp = await fetch("https://t.me/ChickenLandCodes/" + pid, {
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+              }).catch(() => null);
+              if (pResp && pResp.ok) {
+                const pHtml = await pResp.text().catch(() => "");
+                const ogMatch = pHtml.match(/<meta property="og:description" content="([^"]+)"/);
+                if (ogMatch) {
+                  const desc = ogMatch[1];
+                  if (!desc.includes("ALL CLAIMED") && !desc.includes("❌")) {
+                    const codeMatch = desc.match(/CL[A-Z0-9]{8}|<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
+                    if (codeMatch) {
+                      const pCode = (codeMatch[1] || codeMatch[2] || codeMatch[0]).trim().toUpperCase();
+                      const pClaim = await rpc("/api/promo", { code: pCode });
+                      if (pClaim.ok && pClaim.result?.user) {
+                        currentCoins = pClaim.result.user.coins || currentCoins;
+                      }
+                      break;
+                    }
                   }
                 }
               }
@@ -7087,21 +7098,29 @@ fi
                 }).catch(() => null);
                 if (promoChanResp && promoChanResp.ok) {
                   const html = await promoChanResp.text().catch(() => "");
-                  const msgs = html.match(/<div class="tgme_widget_message_text[^>]*>[\s\S]*?<\/div>/g) || [];
-                  for (let mIdx = msgs.length - 1; mIdx >= Math.max(0, msgs.length - 5); mIdx--) {
-                    const msg = msgs[mIdx];
-                    if (!msg.includes("ALL CLAIMED") && !msg.includes("❌")) {
-                      const codeMatch = msg.match(/<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
-                      if (codeMatch) {
-                        foundCode = (codeMatch[1] || codeMatch[2]).trim().toUpperCase();
-                        break;
+                  const postIds = Array.from(html.matchAll(/(?:ChickenLandCodes\/|data-post="ChickenLandCodes\/)(\d+)/g), m => parseInt(m[1])).filter((v, i, a) => a.indexOf(v) === i).sort((a,b) => a - b);
+                  for (let pIdx = postIds.length - 1; pIdx >= Math.max(0, postIds.length - 5); pIdx--) {
+                    const pid = postIds[pIdx];
+                    const pResp = await fetch("https://t.me/ChickenLandCodes/" + pid, {
+                      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+                    }).catch(() => null);
+                    if (pResp && pResp.ok) {
+                      const pHtml = await pResp.text().catch(() => "");
+                      const ogMatch = pHtml.match(/<meta property="og:description" content="([^"]+)"/);
+                      if (ogMatch) {
+                        const desc = ogMatch[1];
+                        const codeMatch = desc.match(/CL[A-Z0-9]{8}|<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
+                        if (codeMatch) {
+                          const cand = (codeMatch[1] || codeMatch[2] || codeMatch[0]).trim().toUpperCase();
+                          if (!desc.includes("ALL CLAIMED") && !desc.includes("❌")) {
+                            foundCode = cand;
+                            break;
+                          } else if (lastCode === "None") {
+                            lastCode = cand;
+                          }
+                        }
                       }
                     }
-                  }
-                  if (!foundCode && msgs.length > 0) {
-                    const lastMsg = msgs[msgs.length - 1];
-                    const lastMatch = lastMsg.match(/<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
-                    if (lastMatch) lastCode = (lastMatch[1] || lastMatch[2]);
                   }
                 }
               } catch (_) {}
@@ -9400,21 +9419,32 @@ fi
                 }).catch(() => null);
                 if (promoChanResp && promoChanResp.ok) {
                   const html = await promoChanResp.text().catch(() => "");
-                  const msgs = html.match(/<div class="tgme_widget_message_text[^>]*>[\s\S]*?<\/div>/g) || [];
-                  for (let mIdx = msgs.length - 1; mIdx >= Math.max(0, msgs.length - 5); mIdx--) {
-                    const msg = msgs[mIdx];
-                    if (!msg.includes("ALL CLAIMED") && !msg.includes("❌")) {
-                      const codeMatch = msg.match(/<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
-                      if (codeMatch) {
-                        promoCode = (codeMatch[1] || codeMatch[2]).trim().toUpperCase();
-                        break;
+                  const postIds = Array.from(html.matchAll(/(?:ChickenLandCodes\/|data-post="ChickenLandCodes\/)(\d+)/g), m => parseInt(m[1])).filter((v, i, a) => a.indexOf(v) === i).sort((a,b) => a - b);
+                  let lastCode = "None";
+                  for (let pIdx = postIds.length - 1; pIdx >= Math.max(0, postIds.length - 5); pIdx--) {
+                    const pid = postIds[pIdx];
+                    const pResp = await fetch("https://t.me/ChickenLandCodes/" + pid, {
+                      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+                    }).catch(() => null);
+                    if (pResp && pResp.ok) {
+                      const pHtml = await pResp.text().catch(() => "");
+                      const ogMatch = pHtml.match(/<meta property="og:description" content="([^"]+)"/);
+                      if (ogMatch) {
+                        const desc = ogMatch[1];
+                        const codeMatch = desc.match(/CL[A-Z0-9]{8}|<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
+                        if (codeMatch) {
+                          const cand = (codeMatch[1] || codeMatch[2] || codeMatch[0]).trim().toUpperCase();
+                          if (!desc.includes("ALL CLAIMED") && !desc.includes("❌")) {
+                            promoCode = cand;
+                            break;
+                          } else if (lastCode === "None") {
+                            lastCode = cand;
+                          }
+                        }
                       }
                     }
                   }
-                  if (!promoCode && msgs.length > 0) {
-                    const lastMsg = msgs[msgs.length - 1];
-                    const lastMatch = lastMsg.match(/<code>([A-Z0-9]{6,16})<\/code>|👉\s*([A-Z0-9]{6,16})\s*👈/);
-                    const lastCode = lastMatch ? (lastMatch[1] || lastMatch[2]) : "None";
+                  if (!promoCode && lastCode !== "None") {
                     await sendReply(`ℹ️ *CHICKEN LAND PROMO CODE AUDIT*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Channel:* @ChickenLandCodes\n• *Latest Drop:* \`${lastCode}\` (❌ ALL CLAIMED)\n• *Status:* 100% of historical codes have reached player capacity.\n• *Autonomous Mode:* 🟢 The 24/7 background sniper daemon is running on Render Node 2 & Cloudflare Edge — the moment a new code drops, it will auto-snipe across all accounts in < 500ms!\n\n_To manually force-test a code: \`/snipe <CODE>\`_`);
                     return;
                   }

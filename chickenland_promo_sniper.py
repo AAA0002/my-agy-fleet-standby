@@ -269,7 +269,13 @@ async def snipe_promo_fleet(
 def fetch_channel_codes() -> List[Dict[str, Any]]:
     """
     Scrapes https://t.me/s/ChickenLandCodes to extract promo codes and claim status.
-    Returns list of {'code': str, 'claimed': bool, 'text': str}.
+    Multi-stage extraction:
+    1. Extracts post IDs from channel page.
+    2. Deeply inspects og:description on latest individual message endpoints
+       (e.g. /24, /25) to bypass Telegram's 'message_media_not_supported' preview gate
+       caused by inline keyboard buttons.
+    3. Scrapes visible tgme_widget_message_text for older standard posts.
+    Returns list of {'code': str, 'is_exhausted': bool, 'post_id': Optional[int], 'raw_snippet': str}.
     """
     req = urllib.request.Request(
         CHANNEL_URL,
@@ -282,24 +288,52 @@ def fetch_channel_codes() -> List[Dict[str, Any]]:
         print(f"[Channel Scrape Error]: {e}", file=sys.stderr)
         return []
 
+    post_ids = set(int(m) for m in re.findall(r'ChickenLandCodes/(\d+)', html))
+    sorted_pids = sorted(list(post_ids))
+    found_codes = {}
+
+    # 1. Deep inspect recent individual post endpoints (bypasses inline button media-not-supported gate)
+    for pid in reversed(sorted_pids[-8:]):
+        p_url = f"https://t.me/ChickenLandCodes/{pid}"
+        try:
+            p_req = urllib.request.Request(p_url, headers={"User-Agent": SCRAPER_UA})
+            with urllib.request.urlopen(p_req, timeout=4) as p_resp:
+                p_html = p_resp.read().decode("utf-8")
+                m = re.search(r'<meta property=[\"\']og:description[\"\'] content=[\"\']([^\"\']+)[\"\']', p_html)
+                if m:
+                    desc = m.group(1)
+                    c_match = re.search(r'<code>([A-Z0-9]{6,16})</code>|👉\s*([A-Z0-9]{6,16})\s*👈|CL[A-Z0-9]{8}', desc)
+                    if c_match:
+                        code = (c_match.group(1) or c_match.group(2) or c_match.group(0)).strip().upper()
+                        is_claimed = ("ALL CLAIMED" in desc or "❌" in desc)
+                        if code not in found_codes:
+                            found_codes[code] = {
+                                "code": code,
+                                "is_exhausted": is_claimed,
+                                "post_id": pid,
+                                "raw_snippet": desc[:80].replace("\n", " ")
+                            }
+        except Exception:
+            pass
+
+    # 2. Scrape visible message text in channel HTML for older standard posts
     pattern = r'<div class=\"tgme_widget_message_text[^>]*>(.*?)</div>'
     messages = re.findall(pattern, html, re.DOTALL)
-    
-    found_codes = []
     for msg in messages:
-        # Match promo code in <code> tag or pointer arrows
-        code_match = re.search(r'<code>([A-Z0-9]{6,16})</code>|👉\s*([A-Z0-9]{6,16})\s*👈', msg)
+        code_match = re.search(r'<code>([A-Z0-9]{6,16})</code>|👉\s*([A-Z0-9]{6,16})\s*👈|CL[A-Z0-9]{8}', msg)
         if code_match:
-            code = (code_match.group(1) or code_match.group(2)).strip().upper()
+            code = (code_match.group(1) or code_match.group(2) or code_match.group(0)).strip().upper()
             is_claimed = ("ALL CLAIMED" in msg or "❌" in msg)
             clean_text = re.sub(r'<[^>]+>', ' ', msg).strip()
-            found_codes.append({
-                "code": code,
-                "is_exhausted": is_claimed,
-                "raw_snippet": clean_text[:80]
-            })
-            
-    return found_codes
+            if code not in found_codes:
+                found_codes[code] = {
+                    "code": code,
+                    "is_exhausted": is_claimed,
+                    "post_id": None,
+                    "raw_snippet": clean_text[:80].replace("\n", " ")
+                }
+
+    return list(found_codes.values())
 
 async def watch_and_snipe_daemon(poll_interval: int = 10):
     """
