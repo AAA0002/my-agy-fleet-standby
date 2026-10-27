@@ -348,7 +348,7 @@
           </span>
         </div>
         <p class="text-[11px] text-slate-300 leading-relaxed">
-          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 8 official bots automatically.
+          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 9 official bots automatically.
         </p>
       </div>
 
@@ -610,6 +610,35 @@
             </a>
           </div>
         </div>
+
+        <!-- Protocol 9: Chicken Land -->
+        <div class="card-glass-interactive p-3 rounded-2xl flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 font-black">
+              🐔
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">Chicken Land</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-semibold">1h cycle</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-yellow-500/20 text-yellow-300 rounded font-bold">Earn EGGS</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">Hen Hatching • Egg Laying & Promo Sniping</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-chickenland-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-chickenland" onclick="harvestSingleBot('chickenland')" class="px-2 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest Chicken Land">
+              ⚡
+            </button>
+            <button onclick="openConnectTab('chickenland')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              Connect
+            </button>
+            <a href="https://t.me/ChickenLandBot?start=12668" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -690,6 +719,9 @@
             </button>
             <button onclick="selectMiningPool('pepegram')" data-pool="pepegram" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               🐸 PepeGram
+            </button>
+            <button onclick="selectMiningPool('chickenland')" data-pool="chickenland" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              🐔 Chicken Land
             </button>
           </div>
         </div>
@@ -795,7 +827,7 @@
               <span class="text-emerald-400">✓</span> <span>Non-Custodial Keys</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="text-emerald-400">✓</span> <span>8 Bots Automated</span>
+              <span class="text-emerald-400">✓</span> <span>9 Bots Automated</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="text-emerald-400">✓</span> <span>Disconnect Anytime</span>
@@ -1837,7 +1869,7 @@
       // Render 7-Day Stepper Nodes
       renderStreakStepper(streakDays, p.can_claim_daily !== false);
 
-      // 8 Pools Badges
+      // 9 Pools Badges
       const accs = p.accounts || [];
       const matchPool = (a, pKey) => a.pool === pKey || a.pool === 'all' || !a.pool;
       const mrgC = accs.filter(a => matchPool(a, 'mrg')).length;
@@ -1848,6 +1880,7 @@
       const diggoC = accs.filter(a => matchPool(a, 'diggo')).length;
       const adxearnC = accs.filter(a => matchPool(a, 'adxearn')).length;
       const pepegramC = accs.filter(a => matchPool(a, 'pepegram')).length;
+      const chickenlandC = accs.filter(a => matchPool(a, 'chickenland')).length;
 
       const mrgEl = document.getElementById('pool-mrg-count');
       const atfEl = document.getElementById('pool-atf-count');
@@ -1857,6 +1890,7 @@
       const diggoEl = document.getElementById('pool-diggo-count');
       const adxearnEl = document.getElementById('pool-adxearn-count');
       const pepegramEl = document.getElementById('pool-pepegram-count');
+      const chickenlandEl = document.getElementById('pool-chickenland-count');
 
       if (mrgEl) mrgEl.textContent = `${mrgC} Connected Account${mrgC === 1 ? '' : 's'}`;
       if (atfEl) atfEl.textContent = `${atfC} Connected Account${atfC === 1 ? '' : 's'}`;
@@ -1866,6 +1900,7 @@
       if (diggoEl) diggoEl.textContent = `${diggoC} Connected Account${diggoC === 1 ? '' : 's'}`;
       if (adxearnEl) adxearnEl.textContent = `${adxearnC} Connected Account${adxearnC === 1 ? '' : 's'}`;
       if (pepegramEl) pepegramEl.textContent = `${pepegramC} Connected Account${pepegramC === 1 ? '' : 's'}`;
+      if (chickenlandEl) chickenlandEl.textContent = `${chickenlandC} Connected Account${chickenlandC === 1 ? '' : 's'}`;
 
       // Ads Milestone Progress
       const adsCount = p.ads_watched || 0;
@@ -2051,7 +2086,7 @@
       selectedPool = pKey;
       const labelEl = document.getElementById('selected-pool-label');
       const poolLabels = {
-        all: 'All 8 Pools Selected (Recommended)',
+        all: 'All 9 Pools Selected (Recommended)',
         mrg: 'MRG Miner Selected',
         atf: 'ATF Miner Selected',
         victors: "Victor's Company Selected",
@@ -2059,7 +2094,8 @@
         kynex: 'Kynex Network Selected',
         diggo: 'DiggoMiner Selected',
         adxearn: 'AdxEarn AI Selected',
-        pepegram: 'PepeGram Selected'
+        pepegram: 'PepeGram Selected',
+        chickenland: 'Chicken Land Selected'
       };
       if (labelEl) labelEl.textContent = poolLabels[pKey] || `${pKey.toUpperCase()} Selected`;
 
@@ -2157,7 +2193,7 @@
             </div>
             <div>
               <div class="font-bold text-xs sm:text-sm text-white font-display">No Mining Accounts Connected</div>
-              <p class="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Link your Telegram account to start autonomous 24/7 cloud harvesting across all 8 mining protocols.</p>
+              <p class="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Link your Telegram account to start autonomous 24/7 cloud harvesting across all 9 mining protocols.</p>
             </div>
             <button onclick="openConnectTab('all')" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs active:scale-95 transition shadow-md">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
@@ -2176,7 +2212,8 @@
         diggo: '⛏️ DiggoMiner',
         adxearn: '💎 AdxEarn AI',
         pepegram: '🐸 PepeGram',
-        all: '🌐 All 8 Pools'
+        chickenland: '🐔 Chicken Land',
+        all: '🌐 All 9 Pools'
       };
 
       container.innerHTML = accs.map((a, idx) => {
@@ -2500,7 +2537,7 @@
         btn.disabled = true;
         btn.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Harvesting...`;
       }
-      showToast("⚡ Dispatching 1-Click Cloud Harvest across all 8 pools...");
+      showToast("⚡ Dispatching 1-Click Cloud Harvest across all 9 pools...");
       try {
         await apiRequest('/api/farm/all', {
           method: "POST",

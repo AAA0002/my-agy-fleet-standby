@@ -5805,6 +5805,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             if isinstance(log_data, dict) and log_data.get("reason") in ("entry_captcha_required", "captcha_required"):
                 status["bots"]["atf"] = "entry_captcha_required (Turnstile needed)"
                 return
+            if isinstance(log_data, dict) and log_data.get("reason") == "entry_risk_captcha_required":
+                status["bots"]["atf"] = "entry_risk_captcha_required (Image challenge needed)"
+                return
 
             completed_tasks = set()
             task_cooldowns = {}

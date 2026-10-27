@@ -538,7 +538,16 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
         # 1. Login & extract stateful session cookies (atf_tma_session, __Host-atf_fg_v1)
         async with session.post(f"{atf_base}?action=login&t={int(time.time()*1000)}", json=payload(), headers=atf_h, timeout=aiohttp.ClientTimeout(total=10)) as r:
             if r.status != 200:
-                res["notes"].append(f"login_{r.status}")
+                err_body = {}
+                try:
+                    err_body = await r.json()
+                except Exception:
+                    pass
+                reason = err_body.get("reason", "")
+                if reason == "entry_risk_captcha_required":
+                    res["notes"].append("entry_risk_captcha_required")
+                else:
+                    res["notes"].append(f"login_{r.status}")
                 return res
             cookies = r.headers.getall("Set-Cookie", []) if hasattr(r.headers, "getall") else []
             if cookies:

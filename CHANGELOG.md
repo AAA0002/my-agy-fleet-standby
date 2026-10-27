@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ ATF Entry Risk Captcha Resolution, Dashboard Mirror Parity & Account #21 Ground Truth (October 27, 2026)**:
+  - **ATF Entry Risk Captcha Solved for Account #21**:
+    * Identified root cause of `login_403` on ATF Miner for Account #21: ATF returned `entry_risk_captcha_required` with a PNG image challenge for newly registered accounts.
+    * Extracted the challenge image, solved the OCR text (`9WMAY`), and verified via `index.php?action=verify_entry_risk_captcha`.
+    * Logged into ATF with `ref: 6727787768`. ATF confirmed `"status": "success"` and `"referred_by": "6727787768"`, officially binding Account #21 under Master Account Arif (`6727787768`).
+    * Immediately swept 8 initial ATF tasks, claimed rewards, and bound TON wallet. Updated `atf_referral_bound = True` in `accounts.json` and Upstash Redis `fleet:accounts`.
+  - **Error Handling Hardening (`finish_all_fleet_sidetasks.py` & `app.py`)**:
+    * Added explicit JSON response parsing for `entry_risk_captcha_required` in ATF login, distinguishing soft-flag image challenges from generic HTTP 403 errors.
+  - **Public Mirror Parity**:
+    * Synchronized `public/index.html` with `public_ads/miner/index.html` (including Protocol 9 Chicken Land interactive cards, chips, and 9-bot text).
+    * Synchronized `public/fleet_wallets_data.json` with `public_admin/fleet_wallets_data.json` (all 21 accounts).
+  - **Cloud Node & Webhook Health Verification**:
+    * Verified all 5 Cloudflare Edge nodes responding 200 OK (<160ms latency).
+    * Verified Render Primary Node 3 (Oregon) responding 200 OK (248ms).
+    * Confirmed both User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`) and Admin Bot (`@myagyai`, ID `8858823950`) webhooks healthy on Cloudflare Edge Node 4 (`agorameet`) with 0 pending updates.
+
 - **🛠️ Bug Fixes, Dynamic Indexing & Referral Ground-Truth Resolution (October 27, 2026)**:
   - **Dynamic Account Indexing (`login_account.py`)**:
     * Identified and fixed potential off-by-one bug in wallet provisioning (`worker_count + 2`), replacing it with dynamic `max(existing_indices, default=1) + 1` for both TON and EVM wallets.
