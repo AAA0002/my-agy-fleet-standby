@@ -16200,6 +16200,44 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
+    // 3.7 Autonomous Chicken Land Promo Code Snipe on Cloudflare Edge (Redundant Sentinel)
+    ctx.waitUntil((async () => {
+      try {
+        const promoResp = await fetch("https://t.me/s/ChickenLandCodes", {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+          signal: AbortSignal.timeout(6000)
+        }).catch(() => null);
+        if (!promoResp || !promoResp.ok) return;
+        const html = await promoResp.text().catch(() => "");
+        const postIds = Array.from(html.matchAll(/(?:ChickenLandCodes\/|data-post="ChickenLandCodes\/)(\d+)/g), m => parseInt(m[1])).filter((v, i, a) => a.indexOf(v) === i).sort((a,b) => a - b);
+        if (postIds.length === 0) return;
+        const latestPid = postIds[postIds.length - 1];
+        const pResp = await fetch(`https://t.me/ChickenLandCodes/${latestPid}`, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+          signal: AbortSignal.timeout(5000)
+        }).catch(() => null);
+        if (!pResp || !pResp.ok) return;
+        const pHtml = await pResp.text().catch(() => "");
+        const ogMatch = pHtml.match(/<meta property="og:description" content="([^"]+)"/);
+        if (!ogMatch) return;
+        const desc = ogMatch[1];
+        if (desc.includes("ALL CLAIMED") || desc.includes("❌")) return;
+        const codeMatch = desc.match(/CL[A-Z0-9]{8}|👉\s*([A-Z0-9]{6,16})\s*👈/);
+        if (!codeMatch) return;
+        const pCode = (codeMatch[1] || codeMatch[0]).trim().toUpperCase();
+
+        const isClaimed = await upstashGet(`chickenland:claimed_codes_set:${pCode}`, 0);
+        if (isClaimed) return;
+
+        await fetchRenderWithFailover("/api/chickenland/snipe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: pCode, buy_hens: true })
+        }, 15000);
+        await upstashSet(`chickenland:claimed_codes_set:${pCode}`, "1", 86400 * 7);
+      } catch (_) {}
+    })());
+
     // 4. Multi-Cloud External Edge pings to keep external services warm
     const activeUrls = await getRenderUrls();
     const MULTI_CLOUD_EDGES = [
