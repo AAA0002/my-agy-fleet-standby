@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ AdxEarn AI Rewarded Ads & CPA Offers Automation, Victor's Company Cloud Solver Dispatch (October 27, 2026)**:
+  - **AdxEarn AI Rewarded Video Ads & Flash Bonus Integration**:
+    * Integrated `/rewards/ad-networks/status`, `/rewards/ad-verify-start`, and `/rewards/ad-claim` into `finish_all_fleet_sidetasks.py`, `deploy_both_cf_workers.py`, `mrg_turnstile_solver.py`, and `app.py`.
+    * Tested live on Master Account (`6727787768`), successfully claiming Flash Bonus `monetag_popup` (+200 points) and Rewarded Ad `adsgram` (+100 points).
+    * Configured automatic daily rotation across `monetag_ad`, `gigapub`, `adsgram`, and `monetag_popup` with 6s/16s debounce timers respecting daily caps.
+  - **AdxEarn AI CPA Offers Discovery & Auto-Claim Engine**:
+    * Implemented automated discovery and redemption via `/cpa-offers`, `/cpa-offers/start`, and `/cpa-offers/claim` across all 4 live offers (`Amazon Gifts`, `Exclusive Access`, `Discover Rewards`, `Google Pixel Gift` at +300 points each).
+  - **Victor's Company Cloud Turnstile Solver Dispatch**:
+    * Dispatched dedicated SeleniumBase UC Cloudflare solver workflow on `AAA0002/my-agy-fleet-standby` (Run #3) to refresh `victors:pass:{uid}` tokens in Upstash Redis, unlock Shift Mining claims, Day 7 Daily Check-in (+11 VIC), and Jobs Board tasks.
+  - **Cloudflare Edge Synchronizer Deployment**:
+    * Re-deployed multi-tenant edge bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified health and cron trigger.
+
 - **🎯 Critical Farm Engine Bug Fixes: MRG Daily Checkin, Recurring Task Resets & Active Pass Auto-Claims (October 27, 2026)**:
   - **MRG Miner Daily Check-In Integration (`/api/user/daily-checkin`)**:
     * Identified that the MRG Daily Check-in endpoint (`https://mrg.up.railway.app/api/user/daily-checkin`) was completely missing across all routines (`deploy_both_cf_workers.py`, `finish_all_fleet_sidetasks.py`, `mrg_turnstile_solver.py`, `app.py`).

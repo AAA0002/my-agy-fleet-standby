@@ -6093,6 +6093,43 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         reward = claim_d.get("reward", 0)
                         pts += reward
                     await safe_post("https://api.adxearnai.xyz/api/farming/start", json_data={}, req_headers=adx_h)
+
+                    # Ad Networks & Flash Bonus
+                    try:
+                        c_ns, ns_d = await safe_get("https://api.adxearnai.xyz/api/rewards/ad-networks/status", req_headers=adx_h)
+                        if c_ns == 200 and isinstance(ns_d, dict):
+                            st_dict = ns_d.get("status", {})
+                            for net_slug, net_info in st_dict.items():
+                                if isinstance(net_info, dict):
+                                    watched = net_info.get("watchedToday", 0)
+                                    cap = net_info.get("dailyCap", 0)
+                                    cd_rem = net_info.get("cooldownRemainingSec", 0)
+                                    if (cap == 0 or watched < cap) and cd_rem == 0:
+                                        await safe_post("https://api.adxearnai.xyz/api/rewards/ad-verify-start", {"network": net_slug}, req_headers=adx_h)
+                                        wait_s = 6 if net_slug == "adsgram" else 16
+                                        await asyncio.sleep(wait_s)
+                                        c_ac, ac_d = await safe_post("https://api.adxearnai.xyz/api/rewards/ad-claim", {"network": net_slug}, req_headers=adx_h)
+                                        if c_ac == 200 and isinstance(ac_d, dict):
+                                            pts += int(ac_d.get("reward") or 100)
+                                        break
+                    except Exception:
+                        pass
+
+                    # CPA Offers
+                    try:
+                        c_co, co_d = await safe_get("https://api.adxearnai.xyz/api/cpa-offers", req_headers=adx_h)
+                        if c_co == 200 and isinstance(co_d, dict):
+                            for off in co_d.get("offers", []):
+                                oid = off.get("id")
+                                if oid:
+                                    await safe_post("https://api.adxearnai.xyz/api/cpa-offers/start", {"offerId": oid}, req_headers=adx_h)
+                                    await asyncio.sleep(16)
+                                    c_cl, cl_d = await safe_post("https://api.adxearnai.xyz/api/cpa-offers/claim", {"offerId": oid}, req_headers=adx_h)
+                                    if c_cl == 200 and isinstance(cl_d, dict):
+                                        pts += int(cl_d.get("reward") or 300)
+                    except Exception:
+                        pass
+
                     status["bots"]["adxearn"] = f"farmed (points: {pts}, streak: {streak}d)"
                 else:
                     status["bots"]["adxearn"] = f"sess_failed ({c_sess})"

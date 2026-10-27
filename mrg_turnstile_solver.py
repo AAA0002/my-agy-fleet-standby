@@ -2451,6 +2451,41 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
     except Exception:
         pass
 
+    # Ad Networks & Flash Bonus Auto-Watch
+    try:
+        ns_code, ns_data = safe_get(f"{ADX_API}/rewards/ad-networks/status", extra_headers=adx_h)
+        if ns_code == 200 and isinstance(ns_data, dict):
+            st_dict = ns_data.get("status", {})
+            for net_slug, net_info in st_dict.items():
+                if isinstance(net_info, dict):
+                    watched = net_info.get("watchedToday", 0)
+                    cap = net_info.get("dailyCap", 0)
+                    cd_rem = net_info.get("cooldownRemainingSec", 0)
+                    if (cap == 0 or watched < cap) and cd_rem == 0:
+                        safe_post(f"{ADX_API}/rewards/ad-verify-start", {"network": net_slug}, extra_headers=adx_h)
+                        wait_s = 6 if net_slug == "adsgram" else 16
+                        time.sleep(wait_s)
+                        ac_code, ac_d = safe_post(f"{ADX_API}/rewards/ad-claim", {"network": net_slug}, extra_headers=adx_h)
+                        if ac_code == 200 and isinstance(ac_d, dict):
+                            claimed_pts += int(ac_d.get("reward") or 100)
+    except Exception:
+        pass
+
+    # CPA Offers Auto-Claim
+    try:
+        co_code, co_data = safe_get(f"{ADX_API}/cpa-offers", extra_headers=adx_h)
+        if co_code == 200 and isinstance(co_data, dict):
+            for off in co_data.get("offers", []):
+                oid = off.get("id")
+                if oid:
+                    safe_post(f"{ADX_API}/cpa-offers/start", {"offerId": oid}, extra_headers=adx_h)
+                    time.sleep(16)
+                    co_cl_code, co_cl_d = safe_post(f"{ADX_API}/cpa-offers/claim", {"offerId": oid}, extra_headers=adx_h)
+                    if co_cl_code == 200 and isinstance(co_cl_d, dict):
+                        claimed_pts += int(co_cl_d.get("reward") or 300)
+    except Exception:
+        pass
+
     logger.info(f"🤖 [AdxEarn] UID {a_uid}: Successfully farmed via REST (+{claimed_pts} pts).")
     return True, claimed_pts
 

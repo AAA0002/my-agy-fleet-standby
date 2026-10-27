@@ -1223,6 +1223,69 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             }
           }
         } catch (_) {}
+
+        // Ad Networks & Flash Bonus Auto-Watch
+        try {
+          const adStatResp = await fetch("https://api.adxearnai.xyz/api/rewards/ad-networks/status", { headers: aHeaders }).catch(() => null);
+          if (adStatResp && adStatResp.ok) {
+            const adStatData = await adStatResp.json().catch(() => ({}));
+            const stDict = adStatData.status || {};
+            for (const [netSlug, netInfo] of Object.entries(stDict)) {
+              if (netInfo && (netInfo.dailyCap === 0 || netInfo.watchedToday < netInfo.dailyCap) && netInfo.cooldownRemainingSec === 0) {
+                if (ctx && ctx.waitUntil) {
+                  ctx.waitUntil(new Promise(async (resolve) => {
+                    try {
+                      await fetch("https://api.adxearnai.xyz/api/rewards/ad-verify-start", {
+                        method: "POST", headers: aHeaders, body: JSON.stringify({ network: netSlug })
+                      });
+                      const waitS = netSlug === "adsgram" ? 6000 : 16000;
+                      await humanDelay(waitS, waitS + 1000);
+                      const clR = await fetch("https://api.adxearnai.xyz/api/rewards/ad-claim", {
+                        method: "POST", headers: aHeaders, body: JSON.stringify({ network: netSlug })
+                      });
+                      if (clR && clR.ok) {
+                        const clData = await clR.json().catch(() => ({}));
+                        if (clData.reward) pts += clData.reward;
+                      }
+                    } catch (_) {}
+                    resolve();
+                  }));
+                }
+                break;
+              }
+            }
+          }
+        } catch (_) {}
+
+        // CPA Offers Auto-Claim
+        try {
+          const cpaResp = await fetch("https://api.adxearnai.xyz/api/cpa-offers", { headers: aHeaders }).catch(() => null);
+          if (cpaResp && cpaResp.ok) {
+            const cpaData = await cpaResp.json().catch(() => ({}));
+            const cOffers = cpaData.offers || [];
+            for (const off of cOffers) {
+              const offId = off?.id;
+              if (offId && ctx && ctx.waitUntil) {
+                ctx.waitUntil(new Promise(async (resolve) => {
+                  try {
+                    await fetch("https://api.adxearnai.xyz/api/cpa-offers/start", {
+                      method: "POST", headers: aHeaders, body: JSON.stringify({ offerId: offId })
+                    });
+                    await humanDelay(16000, 18000);
+                    const cClaim = await fetch("https://api.adxearnai.xyz/api/cpa-offers/claim", {
+                      method: "POST", headers: aHeaders, body: JSON.stringify({ offerId: offId })
+                    });
+                    if (cClaim && cClaim.ok) {
+                      const cClaimData = await cClaim.json().catch(() => ({}));
+                      if (cClaimData.reward) pts += cClaimData.reward;
+                    }
+                  } catch (_) {}
+                  resolve();
+                }));
+              }
+            }
+          }
+        } catch (_) {}
         result.bots.adxearn = `farmed (points: ${pts}, streak: ${streak}d)`;
       } else {
         result.bots.adxearn = `sess_failed (${sessResp.status})`;

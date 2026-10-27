@@ -1253,6 +1253,53 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
                         except Exception:
                             pass
 
+        # 5.5. Ad Networks & Flash Bonus Auto-Watch & Claim
+        try:
+            async with session.get(f"{adx_base}/rewards/ad-networks/status", headers=adx_headers, timeout=aiohttp.ClientTimeout(total=6)) as nsr:
+                if nsr.status == 200:
+                    nsd = await nsr.json()
+                    st_dict = nsd.get("status", {}) if isinstance(nsd, dict) else {}
+                    for net_slug, net_info in st_dict.items():
+                        if isinstance(net_info, dict):
+                            watched = net_info.get("watchedToday", 0)
+                            cap = net_info.get("dailyCap", 0)
+                            cd_rem = net_info.get("cooldownRemainingSec", 0)
+                            if (cap == 0 or watched < cap) and cd_rem == 0:
+                                async with session.post(f"{adx_base}/rewards/ad-verify-start", json={"network": net_slug}, headers=adx_headers) as v_st:
+                                    if v_st.status == 200:
+                                        wait_s = 6 if net_slug == "adsgram" else 16
+                                        await asyncio.sleep(wait_s)
+                                        async with session.post(f"{adx_base}/rewards/ad-claim", json={"network": net_slug}, headers=adx_headers) as v_cl:
+                                            if v_cl.status == 200:
+                                                c_d = await v_cl.json()
+                                                res["tasks_claimed"] += 1
+                                                res["notes"].append(f"ad_{net_slug}_+{c_d.get('reward', 100)}pts")
+        except Exception as e:
+            logger.debug(f"[{name}] AdxEarn ad watch note: {e}")
+
+        # 5.6. CPA Offers Discovery & Claim
+        try:
+            async with session.get(f"{adx_base}/cpa-offers", headers=adx_headers, timeout=aiohttp.ClientTimeout(total=6)) as cor:
+                if cor.status == 200:
+                    co_d = await cor.json()
+                    offers = co_d.get("offers", []) if isinstance(co_d, dict) else []
+                    started_offers = []
+                    for off in offers:
+                        oid = off.get("id")
+                        if oid:
+                            async with session.post(f"{adx_base}/cpa-offers/start", json={"offerId": oid}, headers=adx_headers) as ost:
+                                if ost.status == 200:
+                                    started_offers.append(oid)
+                    if started_offers:
+                        await asyncio.sleep(16.0)
+                        for oid in started_offers:
+                            async with session.post(f"{adx_base}/cpa-offers/claim", json={"offerId": oid}, headers=adx_headers) as ocl:
+                                if ocl.status == 200:
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append(f"cpa_offer_{oid}_+300pts")
+        except Exception as e:
+            logger.debug(f"[{name}] AdxEarn CPA offer note: {e}")
+
         # 6. Referral Milestones Claim
         if str(uid) == MASTER_UID:
             await session.post(f"{adx_base}/referrals/milestones/claim", json={}, headers=adx_headers)
