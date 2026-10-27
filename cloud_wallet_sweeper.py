@@ -63,6 +63,7 @@ BSC_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
+ADMIN_NOTIFICATION_CHANNEL_ID = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
 
 TONAPI_KEY = os.getenv("TONAPI_KEY", "")
 TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "")
@@ -87,8 +88,8 @@ FLEET_TON_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 
 
 async def send_telegram_receipt(session: aiohttp.ClientSession, message: str):
-    """Broadcasts verified receipt to Payout Channel and Admin DM."""
-    targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
+    """Broadcasts verified receipt to Payout Channel, Admin DM, and AAA Admin notification channel."""
+    targets = [t for t in [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID, ADMIN_NOTIFICATION_CHANNEL_ID] if t]
     for target in targets:
         try:
             url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"

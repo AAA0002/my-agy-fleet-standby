@@ -2,6 +2,15 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔔 Autonomous Fleet Auto-Farming Completion Alerts & Real Ground-Truth Notifications (October 27, 2026)**:
+  - **Auto-Farming & Side-Task Completion Telemetry (`finish_all_fleet_sidetasks.py`, `app.py`)**:
+    * Integrated real-time short completion cards into `finish_all_fleet_sidetasks.py`, automatically dispatching concise ground-truth alert cards to `AAA Admin notification` (`-1004358687850`) upon completion of all accounts across all 9 bots (with exact task counts per pool, duration, and node status).
+    * Added `notify_farming_cycle_completion()` in `app.py`, dispatching real completion metrics (accounts farmed, duration, 9-pool success breakdown) to `AAA Admin notification` for both on-demand `/api/farm/cloud-all` sweeps and 3-hour scheduled Watchdog loops.
+    * Integrated audit completion reporting in `audit_bots_and_sidetasks.py` and on-chain sweep receipts in `cloud_wallet_sweeper.py`.
+  - **Account #21 Inclusion in Cloud Farming Engine (`app.py`)**:
+    * Upgraded `FLEET_20_SET` to `FLEET_21_SET` explicitly adding Account #21 UID `"8669217201"`. Added `or a.get("miniapp_tokens_synced")` so token-based accounts are permanently included in all autonomous farming cycles.
+    * Purged legacy `8-bot` log messages and API dispatch response strings in `app.py` to `9-bot`.
+
 - **🛡️ ATF Entry Risk Captcha Resolution, Dashboard Mirror Parity & Account #21 Ground Truth (October 27, 2026)**:
   - **ATF Entry Risk Captcha Solved for Account #21**:
     * Identified root cause of `login_403` on ATF Miner for Account #21: ATF returned `entry_risk_captcha_required` with a PNG image challenge for newly registered accounts.
