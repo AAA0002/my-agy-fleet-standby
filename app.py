@@ -1701,7 +1701,7 @@ async def chickenland_promo_watcher_loop():
     """
     Autonomous 24/7 promo code sniffer for Chicken Land (@ChickenLandCodes).
     Continuously monitors public channel drops and executes sub-second
-    aiohttp parallel redemptions across all 20 fleet accounts.
+    aiohttp parallel redemptions across all fleet accounts.
     """
     # Only run continuous watcher if this node is primary coordinator
     is_active = (await is_this_node_active()) or IS_PRIMARY_HOST or (get_current_node_number() == 2)

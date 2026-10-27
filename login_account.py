@@ -41,7 +41,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
-# All 4 Verified Legitimate Fleet Bots & Referral Codes
+# All 9 Verified Legitimate Fleet Bots & Referral Codes
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 
@@ -56,6 +56,18 @@ VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
+
+DIGGO_BOT = "Diggominer_bot"
+DIGGO_REFERRAL_CODE = "ref_4088138f11effe8eef4b86ff"
+
+PEPE_BOT = "Pepe_gram_bot"
+PEPE_REFERRAL_CODE = "1449"
+
+ADX_BOT = "AdxEarnAibot"
+ADX_REFERRAL_CODE = "6727787768"
+
+CHICKEN_BOT = "ChickenLandBot"
+CHICKEN_REFERRAL_CODE = "12668"
 
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -493,27 +505,168 @@ async def bind_referrals(client, me, acc_entry):
         except Exception as ke:
             pass
         acc_entry["kynex_referral_bound"] = True
-        print(f"  ✅ [5/5] Successfully bound to Kynex Network ({KYNEX_REFERRAL_CODE})!")
+        print(f"  ✅ [5/9] Successfully bound to Kynex Network ({KYNEX_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Kynex Network referral: {e}")
 
+    # 6. DiggoMiner (@Diggominer_bot) - Referral: ref_4088138f11effe8eef4b86ff
+    print(f"  • [6/9] Connecting to @{DIGGO_BOT} with referral: {DIGGO_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=DIGGO_BOT))
+        except Exception:
+            pass
+        b_diggo = await client.get_entity(DIGGO_BOT)
+        await mute_peer(client, b_diggo, "Diggominer_bot")
+        try:
+            await client.send_message(b_diggo, f"/start {DIGGO_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_diggo = await client(RequestWebViewRequest(
+                peer=b_diggo,
+                bot=b_diggo,
+                url="https://diggo.linkpc.net/",
+                platform="android",
+                start_param=DIGGO_REFERRAL_CODE
+            ))
+            p_diggo = urllib.parse.urlparse(getattr(r_diggo, 'url', None) or "")
+            diggo_init = urllib.parse.parse_qs(p_diggo.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_diggo.query).get("tgWebAppData", [None])[0]
+            if diggo_init:
+                acc_entry["diggo_init_data"] = diggo_init
+        except Exception:
+            pass
+        acc_entry["diggo_referral_bound"] = True
+        print(f"  ✅ [6/9] Successfully bound to DiggoMiner ({DIGGO_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding DiggoMiner referral: {e}")
+
+    # 7. PepeGram (@Pepe_gram_bot) - Referral: 1449
+    print(f"  • [7/9] Connecting to @{PEPE_BOT} with referral: {PEPE_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=PEPE_BOT))
+        except Exception:
+            pass
+        b_pepe = await client.get_entity(PEPE_BOT)
+        await mute_peer(client, b_pepe, "Pepe_gram_bot")
+        try:
+            await client.send_message(b_pepe, f"/start {PEPE_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_pepe = await client(RequestWebViewRequest(
+                peer=b_pepe,
+                bot=b_pepe,
+                url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en",
+                platform="android",
+                start_param=PEPE_REFERRAL_CODE
+            ))
+            p_pepe = urllib.parse.urlparse(getattr(r_pepe, 'url', None) or "")
+            pepe_init = urllib.parse.parse_qs(p_pepe.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_pepe.query).get("tgWebAppData", [None])[0]
+            if pepe_init:
+                acc_entry["pepegram_init_data"] = pepe_init
+        except Exception:
+            pass
+        acc_entry["pepegram_referral_bound"] = True
+        print(f"  ✅ [7/9] Successfully bound to PepeGram ({PEPE_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding PepeGram referral: {e}")
+
+    # 8. AdxEarn AI (@AdxEarnAibot) - Referral: 6727787768
+    print(f"  • [8/9] Connecting to @{ADX_BOT} with referral: {ADX_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=ADX_BOT))
+        except Exception:
+            pass
+        b_adx = await client.get_entity(ADX_BOT)
+        await mute_peer(client, b_adx, "AdxEarnAibot")
+        try:
+            await client.send_message(b_adx, f"/start {ADX_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_adx = await client(RequestWebViewRequest(
+                peer=b_adx,
+                bot=b_adx,
+                url="https://app.adxearnai.xyz/index.html",
+                platform="android",
+                start_param=ADX_REFERRAL_CODE
+            ))
+            p_adx = urllib.parse.urlparse(getattr(r_adx, 'url', None) or "")
+            adx_init = urllib.parse.parse_qs(p_adx.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_adx.query).get("tgWebAppData", [None])[0]
+            if adx_init:
+                acc_entry["adxearn_init_data"] = adx_init
+        except Exception:
+            pass
+        acc_entry["adxearn_referral_bound"] = True
+        print(f"  ✅ [8/9] Successfully bound to AdxEarn AI ({ADX_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding AdxEarn AI referral: {e}")
+
+    # 9. Chicken Land (@ChickenLandBot) - Referral: 12668
+    print(f"  • [9/9] Connecting to @{CHICKEN_BOT} with referral: {CHICKEN_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=CHICKEN_BOT))
+        except Exception:
+            pass
+        b_chk = await client.get_entity(CHICKEN_BOT)
+        await mute_peer(client, b_chk, "ChickenLandBot")
+        try:
+            await client.send_message(b_chk, f"/start {CHICKEN_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_chk = await client(RequestWebViewRequest(
+                peer=b_chk,
+                bot=b_chk,
+                url="https://app8968434282.tgcloud.ai/",
+                platform="android",
+                start_param=CHICKEN_REFERRAL_CODE
+            ))
+            p_chk = urllib.parse.urlparse(getattr(r_chk, 'url', None) or "")
+            chk_init = urllib.parse.parse_qs(p_chk.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_chk.query).get("tgWebAppData", [None])[0]
+            if chk_init:
+                acc_entry["chickenland_init_data"] = chk_init
+        except Exception:
+            pass
+        acc_entry["chickenland_referral_bound"] = True
+        print(f"  ✅ [9/9] Successfully bound to Chicken Land ({CHICKEN_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Chicken Land referral: {e}")
+
     # Audit final referral status
-    all_5_keys = [
+    all_9_keys = [
         "mrg_referral_bound",
         "atf_referral_bound",
         "victors_referral_bound",
         "vyro_referral_bound",
-        "kynex_referral_bound"
+        "kynex_referral_bound",
+        "diggo_referral_bound",
+        "pepegram_referral_bound",
+        "adxearn_referral_bound",
+        "chickenland_referral_bound"
     ]
-    bound_count = sum(1 for k in all_5_keys if acc_entry.get(k))
-    if bound_count == len(all_5_keys):
+    bound_count = sum(1 for k in all_9_keys if acc_entry.get(k))
+    if bound_count == len(all_9_keys):
+        acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_5_referrals_bound"] = True
         acc_entry["all_4_referrals_bound"] = True
         acc_entry["all_17_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 5/5 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 9/9 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/5 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/9 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

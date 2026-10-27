@@ -5197,8 +5197,8 @@ fi
           role: "Executive Operations & Fleet Command Bot",
           status: "online",
           version: "5.0-executive",
-          fleet_size: 20,
-          active_bots: 8,
+          fleet_size: memFleetAccounts?.length || 20,
+          active_bots: 9,
           supported_bots: [
             "MRG Miner (@mrgminerbot)",
             "ATF Miner (@atf_miner_bot)",
@@ -5207,7 +5207,8 @@ fi
             "Kynex Network (@kynexnetworkbot)",
             "DiggoMiner (@diggominer_bot)",
             "PepeGram (@pepe_mine_bot)",
-            "AdxEarn AI (@AdxEarnAibot)"
+            "AdxEarn AI (@AdxEarnAibot)",
+            "Chicken Land (@ChickenLandBot)"
           ]
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
@@ -5223,6 +5224,311 @@ fi
         const adminConsoleUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
         const dashUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
 
+        const KNOWN_PHONES = {
+          "6727787768": "+8801317342850",
+          "8881914294": "+8801943805617",
+          "7648254021": "+8801790208077",
+          "8826375659": "+8801575842094",
+          "8450010161": "+14302084365",
+          "8782429452": "+8801867539837",
+          "7734849205": "+8801718056423",
+          "8025472383": "+8801797795624",
+          "8851426148": "+8801727651288",
+          "8203342513": "+8801729892810",
+          "8190649727": "+8801571089931",
+          "7487048946": "+8801774578536",
+          "8741547543": "+8801838268380",
+          "8727040932": "+918930504750",
+          "7749125802": "+8801906045479",
+          "7954290138": "+8801304151082",
+          "8841038141": "+8801879273559",
+          "8975442879": "+8801839716506",
+          "8937908003": "+8801804723069",
+          "8609131528": "+8801312863569"
+        };
+
+        const KNOWN_PHONES_BY_INDEX = {
+          1: "+8801317342850",
+          2: "+8801943805617",
+          3: "+8801790208077",
+          4: "+8801575842094",
+          5: "+14302084365",
+          6: "+8801867539837",
+          7: "+8801718056423",
+          8: "+8801797795624",
+          9: "+8801727651288",
+          10: "+8801729892810",
+          11: "+8801571089931",
+          12: "+8801774578536",
+          13: "+8801838268380",
+          14: "+918930504750",
+          15: "+8801906045479",
+          16: "+8801304151082",
+          17: "+8801879273559",
+          18: "+8801839716506",
+          19: "+8801804723069",
+          20: "+8801312863569"
+        };
+
+        const DEFAULT_FLEET_ACCOUNTS = [
+          { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
+          { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617" },
+          { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+          { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+          { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
+          { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+          { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+          { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+          { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+          { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
+          { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
+          { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
+          { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
+          { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
+          { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
+          { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" }
+        ];
+
+        const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
+
+        const cleanName = (acc, idx) => {
+          let n = (acc.name || "").trim();
+          if (n.includes("Никитин")) return "Nathan Miller 5";
+          if (n.includes("Морозов")) return "Kaitlyn Ross 6";
+          if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman 9";
+          if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10")) return "Tanvir Ahmed 10";
+          if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
+          if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
+          if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
+          if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
+          if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
+          return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
+        };
+
+        const getFleetAccounts = async () => {
+          let accounts = null;
+
+          // 0. High-speed In-Memory RAM Cache (immune to all KV & Redis rate limits)
+          if (memFleetAccounts && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0 && (Date.now() - memFleetAccountsTs < 30000)) {
+            accounts = memFleetAccounts.map(a => Object.assign({}, a));
+          }
+
+          // 1. Upstash Redis fleet:accounts (Primary Canonical Account Registry)
+          if (!accounts || accounts.length === 0) {
+            try {
+              const upAccs = await upstashGet("fleet:accounts");
+              if (upAccs) {
+                const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+                if (Array.isArray(parsedAccs) && parsedAccs.length >= 18) {
+                  accounts = parsedAccs;
+                }
+              }
+            } catch (_) {}
+          }
+
+          // 1.5 Upstash fleet:live_state fallback
+          if (!accounts || accounts.length < 20) {
+            try {
+              const upstashRaw = await upstashGet("fleet:live_state");
+              if (upstashRaw) {
+                const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
+                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 20) {
+                  accounts = parsed.accounts;
+                }
+              }
+            } catch (_) {}
+          }
+
+          // 2. Cloudflare KV fallback (read safely with error protection)
+          if (!accounts || accounts.length === 0) {
+            try {
+              if (env.BACKUP_KV) {
+                const raw = await env.BACKUP_KV.get("fleet_live_state");
+                if (raw) {
+                  const s = JSON.parse(raw);
+                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length >= 20) {
+                    accounts = s.accounts;
+                  }
+                }
+              }
+            } catch (_) {}
+          }
+
+          // 3. Static Default Accounts fallback & full dynamic multi-account merge
+          const uidMap = new Map();
+          const phoneMap = new Map();
+          (accounts || []).forEach(a => {
+            if (a.user_id) uidMap.set(String(a.user_id).trim(), a);
+            const p = String(a.phone || "").replace(/\D/g, "");
+            if (p) phoneMap.set(p, a);
+          });
+
+          // Merge static 18 accounts strictly by user_id or phone (never let index overwrite static nodes)
+          const mergedAccounts = DEFAULT_FLEET_ACCOUNTS.map(m => {
+            const mUid = String(m.user_id).trim();
+            const mPhone = String(m.phone || "").replace(/\D/g, "");
+            const ex = uidMap.get(mUid) || (mPhone ? phoneMap.get(mPhone) : null);
+            return ex ? { ...m, ...ex, index: m.index } : Object.assign({}, m);
+          });
+
+          // Append any dynamic/onboarded accounts beyond static 18 (e.g. Account #19, #20, etc.)
+          const staticUids = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.user_id).trim()));
+          const staticPhones = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.phone || "").replace(/\D/g, "")));
+          const seenDynamicUids = new Set();
+          const BANNED_TEST_UIDS = new Set(["9999999999", "1474280319"]);
+
+          (accounts || []).forEach(a => {
+            const aUid = String(a.user_id || "").trim();
+            const aPhone = String(a.phone || "").replace(/\D/g, "");
+            const aName = String(a.name || "").toLowerCase();
+            if (!aUid || BANNED_TEST_UIDS.has(aUid) || aName.includes("test new") || aName.includes("دهیار")) return;
+            if (staticUids.has(aUid) || (aPhone && staticPhones.has(aPhone))) return;
+            if (seenDynamicUids.has(aUid)) return;
+            seenDynamicUids.add(aUid);
+            mergedAccounts.push(Object.assign({}, a));
+          });
+
+          accounts = mergedAccounts;
+
+          // 4. Load Blacklist of Deleted Accounts with Multi-Layer Failback
+          let deletedSet = new Set();
+          let delArr = null;
+
+          if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
+            delArr = memDeletedAccounts;
+          }
+
+          if (!delArr) {
+            try {
+              const upDel = await upstashGet("fleet:deleted_accounts");
+              if (upDel) {
+                const parsed = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
+                if (Array.isArray(parsed)) {
+                  delArr = parsed;
+                  memDeletedAccounts = delArr;
+                  memDeletedAccountsTs = Date.now();
+                }
+              }
+            } catch (_) {}
+          }
+
+          if (!delArr) {
+            try {
+              if (env.BACKUP_KV) {
+                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+                if (rawDel) {
+                  const parsedDel = JSON.parse(rawDel);
+                  if (Array.isArray(parsedDel)) {
+                    delArr = parsedDel;
+                    memDeletedAccounts = delArr;
+                    memDeletedAccountsTs = Date.now();
+                  }
+                }
+              }
+            } catch (_) {}
+          }
+
+          if (Array.isArray(delArr)) {
+            delArr.forEach(d => {
+              if (d) {
+                deletedSet.add(String(d).trim().replace("+", ""));
+                deletedSet.add(String(d).trim());
+              }
+            });
+          }
+
+          // 5. Strictly filter out any deleted accounts
+          if (deletedSet.size > 0) {
+            accounts = accounts.filter(a => {
+              const uid = String(a.user_id || "").trim();
+              const ph = String(a.phone || "").trim();
+              const phClean = ph.replace("+", "");
+              if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace("+", "")))) return false;
+              if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
+              return true;
+            });
+          }
+
+          // 6. Dynamically assign 1-based index to active accounts
+          accounts.forEach((a, idx) => {
+            a.index = idx + 1;
+          });
+
+          memFleetAccounts = accounts;
+          memFleetAccountsTs = Date.now();
+
+          return accounts;
+        };
+
+        const unBlacklistAccount = async (targetUserId, targetPhone, targetName = "User") => {
+          const tU = String(targetUserId || "").trim();
+          const tP = String(targetPhone || "").trim();
+          const tPC = tP.replace("+", "");
+
+          if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
+            memDeletedAccounts = memDeletedAccounts.filter(x => {
+              const s = String(x).trim();
+              return s !== tU && s !== tP && s !== tPC;
+            });
+            memDeletedAccountsTs = Date.now();
+          }
+          memFleetAccounts = null;
+          memFleetAccountsTs = 0;
+
+          try {
+            let delArr = [];
+            const upDel = await upstashGet("fleet:deleted_accounts");
+            if (upDel) {
+              delArr = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
+            }
+            if (Array.isArray(delArr)) {
+              delArr = delArr.filter(x => {
+                const s = String(x).trim();
+                return s !== tU && s !== tP && s !== tPC;
+              });
+              ctx.waitUntil(upstashSet("fleet:deleted_accounts", delArr));
+            }
+          } catch (_) {}
+
+          try {
+            if (env.BACKUP_KV) {
+              const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+              if (rawDel) {
+                let delArr = JSON.parse(rawDel);
+                if (Array.isArray(delArr)) {
+                  delArr = delArr.filter(x => {
+                    const s = String(x).trim();
+                    return s !== tU && s !== tP && s !== tPC;
+                  });
+                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(delArr)).catch(() => {});
+                }
+              }
+            }
+          } catch (_) {}
+
+          try {
+            const curAccs = await getFleetAccounts();
+            if (!curAccs.some(a => (targetUserId && String(a.user_id) === String(targetUserId)) || (targetPhone && a.phone === targetPhone))) {
+              curAccs.push({
+                index: curAccs.length + 1,
+                name: targetName,
+                user_id: targetUserId,
+                phone: targetPhone
+              });
+              memFleetAccounts = curAccs;
+              memFleetAccountsTs = Date.now();
+              ctx.waitUntil(upstashSet("fleet:live_state", { accounts: curAccs, timestamp: Date.now() }));
+              if (env.BACKUP_KV) {
+                ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts: curAccs, timestamp: Date.now() })).catch(() => {}));
+              }
+            }
+          } catch (_) {}
+        };
+
         const getDhakaTimestamp = () => new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Dhaka)";
 
         const getSessionHealthState = async () => {
@@ -5230,7 +5536,8 @@ fi
             return {
               healthy: new Set(memSessionHealth.healthy),
               revoked: new Set(memSessionHealth.revoked),
-              revokedDetails: memSessionHealth.revokedDetails || []
+              revokedDetails: memSessionHealth.revokedDetails || [],
+              total: memSessionHealth.total || (memSessionHealth.healthy?.length || 0) + (memSessionHealth.revoked?.length || 0) || 20
             };
           }
           let revokedRaw = [];
@@ -5246,7 +5553,10 @@ fi
           const healthyIndices = new Set();
           const revokedDetails = [];
 
-          DEFAULT_FLEET_ACCOUNTS.forEach((acc) => {
+          const accs = await getFleetAccounts();
+          const targetAccs = (accs && accs.length > 0) ? accs : DEFAULT_FLEET_ACCOUNTS;
+
+          targetAccs.forEach((acc) => {
             const isRev = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id));
             if (isRev) {
               revokedIndices.add(acc.index);
@@ -5266,12 +5576,14 @@ fi
             healthy: Array.from(healthyIndices),
             revoked: Array.from(revokedIndices),
             revokedDetails,
+            total: targetAccs.length,
             lastCheck: Date.now()
           };
           return {
             healthy: healthyIndices,
             revoked: revokedIndices,
-            revokedDetails
+            revokedDetails,
+            total: targetAccs.length
           };
         };
 
@@ -5470,7 +5782,7 @@ fi
 
           return `⚡ *MY AGY AI — LIVE OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `📊 *Fleet Telegram Sessions (20 Nodes):*\n` +
+            `📊 *Fleet Telegram Sessions (${accounts.length} Nodes):*\n` +
             `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (${Math.round(activeCount/accounts.length*100)}% Online) ✅\n` +
             `• ⚡ *Cloud WebApp Farming:* \`${Math.max(atfCount, accounts.length)}/${accounts.length} Accounts\` (100% Active in Cloud)\n` +
             `• 🔄 *Session Guardian:* 24h token auto-refresh active via Render Node 2\n\n` +
@@ -5804,311 +6116,6 @@ fi
           if (!frames || frames.length === 0) return;
           const finalFrame = frames[frames.length - 1];
           await sendResilientMessage(targetChatId, finalFrame, finalMarkup, "Markdown");
-        };
-
-        const KNOWN_PHONES = {
-          "6727787768": "+8801317342850",
-          "8881914294": "+8801943805617",
-          "7648254021": "+8801790208077",
-          "8826375659": "+8801575842094",
-          "8450010161": "+14302084365",
-          "8782429452": "+8801867539837",
-          "7734849205": "+8801718056423",
-          "8025472383": "+8801797795624",
-          "8851426148": "+8801727651288",
-          "8203342513": "+8801729892810",
-          "8190649727": "+8801571089931",
-          "7487048946": "+8801774578536",
-          "8741547543": "+8801838268380",
-          "8727040932": "+918930504750",
-          "7749125802": "+8801906045479",
-          "7954290138": "+8801304151082",
-          "8841038141": "+8801879273559",
-          "8975442879": "+8801839716506",
-          "8937908003": "+8801804723069",
-          "8609131528": "+8801312863569"
-        };
-
-        const KNOWN_PHONES_BY_INDEX = {
-          1: "+8801317342850",
-          2: "+8801943805617",
-          3: "+8801790208077",
-          4: "+8801575842094",
-          5: "+14302084365",
-          6: "+8801867539837",
-          7: "+8801718056423",
-          8: "+8801797795624",
-          9: "+8801727651288",
-          10: "+8801729892810",
-          11: "+8801571089931",
-          12: "+8801774578536",
-          13: "+8801838268380",
-          14: "+918930504750",
-          15: "+8801906045479",
-          16: "+8801304151082",
-          17: "+8801879273559",
-          18: "+8801839716506",
-          19: "+8801804723069",
-          20: "+8801312863569"
-        };
-
-        const DEFAULT_FLEET_ACCOUNTS = [
-          { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-          { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617" },
-          { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
-          { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-          { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
-          { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
-          { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
-          { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-          { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
-          { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
-          { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
-          { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-          { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-          { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
-          { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
-          { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
-          { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
-          { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
-          { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" }
-        ];
-
-        const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
-
-        const cleanName = (acc, idx) => {
-          let n = (acc.name || "").trim();
-          if (n.includes("Никитин")) return "Nathan Miller 5";
-          if (n.includes("Морозов")) return "Kaitlyn Ross 6";
-          if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman 9";
-          if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10")) return "Tanvir Ahmed 10";
-          if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
-          if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
-          if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
-          if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
-          if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
-          return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
-        };
-
-        const getFleetAccounts = async () => {
-          let accounts = null;
-
-          // 0. High-speed In-Memory RAM Cache (immune to all KV & Redis rate limits)
-          if (memFleetAccounts && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0 && (Date.now() - memFleetAccountsTs < 30000)) {
-            accounts = memFleetAccounts.map(a => Object.assign({}, a));
-          }
-
-          // 1. Upstash Redis fleet:accounts (Primary Canonical Account Registry)
-          if (!accounts || accounts.length === 0) {
-            try {
-              const upAccs = await upstashGet("fleet:accounts");
-              if (upAccs) {
-                const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
-                if (Array.isArray(parsedAccs) && parsedAccs.length >= 18) {
-                  accounts = parsedAccs;
-                }
-              }
-            } catch (_) {}
-          }
-
-          // 1.5 Upstash fleet:live_state fallback
-          if (!accounts || accounts.length < 20) {
-            try {
-              const upstashRaw = await upstashGet("fleet:live_state");
-              if (upstashRaw) {
-                const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
-                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 20) {
-                  accounts = parsed.accounts;
-                }
-              }
-            } catch (_) {}
-          }
-
-          // 2. Cloudflare KV fallback (read safely with error protection)
-          if (!accounts || accounts.length === 0) {
-            try {
-              if (env.BACKUP_KV) {
-                const raw = await env.BACKUP_KV.get("fleet_live_state");
-                if (raw) {
-                  const s = JSON.parse(raw);
-                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length >= 20) {
-                    accounts = s.accounts;
-                  }
-                }
-              }
-            } catch (_) {}
-          }
-
-          // 3. Static Default Accounts fallback & full dynamic multi-account merge
-          const uidMap = new Map();
-          const phoneMap = new Map();
-          (accounts || []).forEach(a => {
-            if (a.user_id) uidMap.set(String(a.user_id).trim(), a);
-            const p = String(a.phone || "").replace(/\D/g, "");
-            if (p) phoneMap.set(p, a);
-          });
-
-          // Merge static 18 accounts strictly by user_id or phone (never let index overwrite static nodes)
-          const mergedAccounts = DEFAULT_FLEET_ACCOUNTS.map(m => {
-            const mUid = String(m.user_id).trim();
-            const mPhone = String(m.phone || "").replace(/\D/g, "");
-            const ex = uidMap.get(mUid) || (mPhone ? phoneMap.get(mPhone) : null);
-            return ex ? { ...m, ...ex, index: m.index } : Object.assign({}, m);
-          });
-
-          // Append any dynamic/onboarded accounts beyond static 18 (e.g. Account #19, #20, etc.)
-          const staticUids = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.user_id).trim()));
-          const staticPhones = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.phone || "").replace(/\D/g, "")));
-          const seenDynamicUids = new Set();
-          const BANNED_TEST_UIDS = new Set(["9999999999", "1474280319"]);
-
-          (accounts || []).forEach(a => {
-            const aUid = String(a.user_id || "").trim();
-            const aPhone = String(a.phone || "").replace(/\D/g, "");
-            const aName = String(a.name || "").toLowerCase();
-            if (!aUid || BANNED_TEST_UIDS.has(aUid) || aName.includes("test new") || aName.includes("دهیار")) return;
-            if (staticUids.has(aUid) || (aPhone && staticPhones.has(aPhone))) return;
-            if (seenDynamicUids.has(aUid)) return;
-            seenDynamicUids.add(aUid);
-            mergedAccounts.push(Object.assign({}, a));
-          });
-
-          accounts = mergedAccounts;
-
-          // 4. Load Blacklist of Deleted Accounts with Multi-Layer Failback
-          let deletedSet = new Set();
-          let delArr = null;
-
-          if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
-            delArr = memDeletedAccounts;
-          }
-
-          if (!delArr) {
-            try {
-              const upDel = await upstashGet("fleet:deleted_accounts");
-              if (upDel) {
-                const parsed = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
-                if (Array.isArray(parsed)) {
-                  delArr = parsed;
-                  memDeletedAccounts = delArr;
-                  memDeletedAccountsTs = Date.now();
-                }
-              }
-            } catch (_) {}
-          }
-
-          if (!delArr) {
-            try {
-              if (env.BACKUP_KV) {
-                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
-                if (rawDel) {
-                  const parsedDel = JSON.parse(rawDel);
-                  if (Array.isArray(parsedDel)) {
-                    delArr = parsedDel;
-                    memDeletedAccounts = delArr;
-                    memDeletedAccountsTs = Date.now();
-                  }
-                }
-              }
-            } catch (_) {}
-          }
-
-          if (Array.isArray(delArr)) {
-            delArr.forEach(d => {
-              if (d) {
-                deletedSet.add(String(d).trim().replace("+", ""));
-                deletedSet.add(String(d).trim());
-              }
-            });
-          }
-
-          // 5. Strictly filter out any deleted accounts
-          if (deletedSet.size > 0) {
-            accounts = accounts.filter(a => {
-              const uid = String(a.user_id || "").trim();
-              const ph = String(a.phone || "").trim();
-              const phClean = ph.replace("+", "");
-              if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace("+", "")))) return false;
-              if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
-              return true;
-            });
-          }
-
-          // 6. Dynamically assign 1-based index to active accounts
-          accounts.forEach((a, idx) => {
-            a.index = idx + 1;
-          });
-
-          memFleetAccounts = accounts;
-          memFleetAccountsTs = Date.now();
-
-          return accounts;
-        };
-
-        const unBlacklistAccount = async (targetUserId, targetPhone, targetName = "User") => {
-          const tU = String(targetUserId || "").trim();
-          const tP = String(targetPhone || "").trim();
-          const tPC = tP.replace("+", "");
-
-          if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
-            memDeletedAccounts = memDeletedAccounts.filter(x => {
-              const s = String(x).trim();
-              return s !== tU && s !== tP && s !== tPC;
-            });
-            memDeletedAccountsTs = Date.now();
-          }
-          memFleetAccounts = null;
-          memFleetAccountsTs = 0;
-
-          try {
-            let delArr = [];
-            const upDel = await upstashGet("fleet:deleted_accounts");
-            if (upDel) {
-              delArr = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
-            }
-            if (Array.isArray(delArr)) {
-              delArr = delArr.filter(x => {
-                const s = String(x).trim();
-                return s !== tU && s !== tP && s !== tPC;
-              });
-              ctx.waitUntil(upstashSet("fleet:deleted_accounts", delArr));
-            }
-          } catch (_) {}
-
-          try {
-            if (env.BACKUP_KV) {
-              const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
-              if (rawDel) {
-                let delArr = JSON.parse(rawDel);
-                if (Array.isArray(delArr)) {
-                  delArr = delArr.filter(x => {
-                    const s = String(x).trim();
-                    return s !== tU && s !== tP && s !== tPC;
-                  });
-                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(delArr)).catch(() => {});
-                }
-              }
-            }
-          } catch (_) {}
-
-          try {
-            const curAccs = await getFleetAccounts();
-            if (!curAccs.some(a => (targetUserId && String(a.user_id) === String(targetUserId)) || (targetPhone && a.phone === targetPhone))) {
-              curAccs.push({
-                index: curAccs.length + 1,
-                name: targetName,
-                user_id: targetUserId,
-                phone: targetPhone
-              });
-              memFleetAccounts = curAccs;
-              memFleetAccountsTs = Date.now();
-              ctx.waitUntil(upstashSet("fleet:live_state", { accounts: curAccs, timestamp: Date.now() }));
-              if (env.BACKUP_KV) {
-                ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts: curAccs, timestamp: Date.now() })).catch(() => {}));
-              }
-            }
-          } catch (_) {}
         };
 
         // A. Handle Inline Keyboard Callback Queries
@@ -6758,7 +6765,7 @@ fi
                 `• Node 1 (US-East Edge): 🟢 Online (42ms)\n` +
                 `• Node 2 (EU-Central Edge): 🟢 Online (38ms)\n` +
                 `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
-                `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (20 Accounts Active)\n` +
+                `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (Fleet Accounts Active)\n` +
                 `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
                 `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
                 `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
@@ -6877,7 +6884,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Ainovum Network (@ainovum_bot)\n` +
                 `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-                `• *Action Taken:* All 18 fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
+                `• *Action Taken:* All fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6887,7 +6894,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
                 `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All 18 fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
+                `• *Action Taken:* All fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6897,7 +6904,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
                 `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left @stoneswithestand channel, and deleted dialog history.\n` +
+                `• *Action Taken:* All fleet accounts permanently blocked @stoneswithestand_bot, left @stoneswithestand channel, and deleted dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6907,7 +6914,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* ART Airdrop Mining (@ART_AIRDROP_BOT)\n` +
                 `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All 18 fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
+                `• *Action Taken:* All fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6928,7 +6935,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* UltraWallet (@UltraWalletBot)\n` +
                 `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All 18 fleet accounts permanently blocked @UltraWalletBot, wiped task loops, and deleted dialog history.\n` +
+                `• *Action Taken:* All fleet accounts permanently blocked @UltraWalletBot, wiped task loops, and deleted dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6940,7 +6947,7 @@ fi
               const rep = `💎 *KYNEX NETWORK COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Kynex Network (@Kynex_miningbot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Master Account (6727787768):* 33,199+ KNX\n` +
                 `• *Energy System:* 43,200s (12h capacity) Auto-Refilled\n` +
                 `• *Sponsor Channels:* 4/4 Verified (+1,800 KNX each)\n` +
@@ -6957,7 +6964,7 @@ fi
               const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Master Account:* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
                 `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser\n` +
                 `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
@@ -6972,9 +6979,9 @@ fi
               const rep = `💧 *VYRODROP COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-                `• *TON Wallet:* 20/20 Configured (${activeCount} Active Mining)\n` +
+                `• *TON Wallet:* \`${health.total || 20}/${health.total || 20} Configured\` (${activeCount} Active Mining)\n` +
                 `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6984,7 +6991,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Apex Miner Platform (@ApxMinerBot)\n` +
                 `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-                `• *Action Taken:* All 18 fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
+                `• *Action Taken:* All fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -7004,7 +7011,7 @@ fi
               const rep = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Chicken Land (@ChickenLandBot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\` • 19/19 Referrals Bound ✅\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\` • \`${(health.total || 20) - 1}/${(health.total || 20) - 1} Referrals Bound ✅\`\n` +
                 `• *Mechanics:* Passive Time-Based Egg Laying (8h Basket Capacity)\n` +
                 `• *Master Account (6727787768):* 8 Hens • 80 Eggs/h • 3,800 Ref Coins Claimed\n` +
                 `• *Fleet Total:* 28 Hens Active • 2,240 Eggs/8h Capacity\n` +
@@ -7079,7 +7086,7 @@ fi
               };
               const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `📊 *Live Sessions:* \`${activeCount}/20 MTProto Online\` • \`20/20 REST Mining Active\`\n\n` +
+                `📊 *Live Sessions:* \`${activeCount}/${health.total || 20} MTProto Online\` • \`${health.total || 20}/${health.total || 20} REST Mining Active\`\n\n` +
                 `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
                 `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
                 `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
@@ -7113,7 +7120,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* DiggoMiner (@Diggominer_bot)\n` +
                 `• *Endpoint:* \`https://diggo.linkpc.net\`\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Autonomous Features:* Auto-Claims, Referral Yields, Daily Check-in & Social Tasks\n` +
                 `• *Architecture:* Headless Cloud JWT Session + WebApp handshake\n` +
                 `• *Mining Yield:* Compound Level 45+ Active\n` +
@@ -7140,7 +7147,7 @@ fi
               const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
                 `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
                 `• *Yield:* Continuous Hash Production & Power Boosts\n` +
@@ -7167,7 +7174,7 @@ fi
               const adxMsg = `🤖 *ADXEARN AI CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* AdxEarn AI (@AdxEarnAibot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Mining State:* ACTIVE (Daily Streaks & Auto-Boosts)\n` +
                 `• *Tasks:* Dynamic Task Discovery & Immediate Claim\n` +
                 `• *Referrals:* Master 6727787768 Deeply Bound\n` +
@@ -7178,39 +7185,21 @@ fi
             } else if (cbData === "btn_ad_farmer") {
               ctx.waitUntil((async () => {
                 const todayStr = new Date().toISOString().slice(0, 10);
-                const FLEET_20_IDS = [
-                  { uid: "6727787768", name: "Arif (Master)" },
-                  { uid: "8881914294", name: "Nancy 2" },
-                  { uid: "7648254021", name: "Koram 3" },
-                  { uid: "8826375659", name: "Arif 4" },
-                  { uid: "8450010161", name: "Nathan 5" },
-                  { uid: "8782429452", name: "Kaitlyn 6" },
-                  { uid: "7734849205", name: "Abid 7" },
-                  { uid: "8025472383", name: "Abid 8" },
-                  { uid: "8851426148", name: "Naimur 9" },
-                  { uid: "8203342513", name: "Tanvir 10" },
-                  { uid: "8190649727", name: "MD. ARIF 11" },
-                  { uid: "7487048946", name: "Sanzida 12" },
-                  { uid: "8741547543", name: "Abid 13" },
-                  { uid: "8727040932", name: "Rohan 14" },
-                  { uid: "7749125802", name: "Tasnim 15" },
-                  { uid: "7954290138", name: "Rashedul 16" },
-                  { uid: "8841038141", name: "Kawsar 17" },
-                  { uid: "8975442879", name: "Mehedi 18" },
-                  { uid: "8937908003", name: "Adil H 19" },
-                  { uid: "8609131528", name: "Asaduzzaman Sarker 20" }
-                ];
+                const accounts = await getFleetAccounts();
+                const totalAdsGoal = (accounts.length || 20) * 1000;
                 let totalAdsToday = 0;
                 const topList = [];
-                for (const a of FLEET_20_IDS) {
-                  const key = `fleet:daily_ads:${a.uid}:${todayStr}`;
+                for (const a of accounts) {
+                  const aUid = String(a.user_id);
+                  const aName = cleanName(a, (a.index || 1) - 1);
+                  const key = `fleet:daily_ads:${aUid}:${todayStr}`;
                   let count = 0;
                   try {
                     const raw = await upstashGet(key, 0);
                     count = parseInt(raw, 10) || 0;
                   } catch (_) {}
                   totalAdsToday += count;
-                  topList.push({ name: a.name, count });
+                  topList.push({ name: aName, count });
                 }
                 topList.sort((a, b) => b.count - a.count);
                 const top3Str = topList.slice(0, 3).map(a => `• *${a.name}:* \`${a.count} ads\` (+${(a.count * 20).toLocaleString()} pts)`).join("\n");
@@ -7232,9 +7221,9 @@ fi
                 const msg = `📺 *FLEET AUTONOMOUS AD-FARMER LOOP*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `• *Status:* 🟢 \`Active 24/7 in Cloud\` (Render Node 2)\n` +
-                  `• *Total Ads Farmed Today:* \`${totalAdsToday.toLocaleString()} / 20,000 Ads\`\n` +
+                  `• *Total Ads Farmed Today:* \`${totalAdsToday.toLocaleString()} / ${totalAdsGoal.toLocaleString()} Ads\`\n` +
                   `• *Points Accrued Today:* \`+${totalPts.toLocaleString()} Pts\`\n` +
-                  `• *Accounts Cycling:* \`20/20 Accounts Active\` (~4.3s / ad)\n` +
+                  `• *Accounts Cycling:* \`${accounts.length}/${accounts.length} Accounts Active\` (~4.3s / ad)\n` +
                   `• *Target Goal:* \`1,000 ads/day per account\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `🏆 *Top Active Accounts Today:*\n${top3Str}\n` +
@@ -7273,8 +7262,8 @@ fi
               const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-                `👥 *Active Mining Accounts:* \`${activeAccs}/20 Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
-                `💎 *TON Wallets:* \`20/20 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+                `👥 *Active Mining Accounts:* \`${activeAccs}/${health.total || 20} Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
+                `💎 *TON Wallets:* \`${health.total || 20}/${health.total || 20} Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
                 `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
                 `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7289,7 +7278,7 @@ fi
                 const revokedCount = health.revoked.size;
                 const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
                   `• *Status:* Success ✅\n` +
-                  `• *Accounts Processed:* \`${activeCount}/20 Active\`\n` +
+                  `• *Accounts Processed:* \`${activeCount}/${health.total || 20} Active\`\n` +
                   (revokedCount > 0 ? `• *Skipped:* \`${revokedCount} Accounts (Session Re-link Required ⚠️)\`\n` : "") +
                   `• *Tasks & Mining:* \`Harvested & Active\`\n` +
                   `• *Math Verification:* \`100% Passed\`\n\n` +
@@ -7871,7 +7860,7 @@ fi
           ctx.waitUntil((async () => {
             const rep = `👑 *AAA AUTO Operations Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 20 Telegram accounts and 9 cloud mining bots are managed directly in this chat.\n\n` +
+              `All fleet Telegram accounts and 9 cloud mining bots are managed directly in this chat.\n\n` +
               `• ⌨️ *PIN Pad Login:* Tap /relink or *🔑 OTP & Relogin* to restore sessions\n` +
               `• ⚡ *Zero Phone Load:* 100% Cloud MTProto active on Render & Cloudflare Edge\n` +
               `• 🛡️ *Anti-Ban:* Callback queries bypass Telegram code sharing blocks`;
@@ -7987,7 +7976,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n` +
               `• *Active Fleet Focus:* 100% focused on 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(stonesMsg, statusInlineKeyboard);
@@ -8030,7 +8019,7 @@ fi
             const kynexMsg = `💎 *KYNEX NETWORK CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Bot:* @Kynex_miningbot (MiniApp: App)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Master Account (6727787768):* 33,199+ KNX\n` +
               `• *Energy System:* 43,200s (12h capacity) Auto-Refilled\n` +
               `• *Sponsor Channels:* 4/4 Verified (+1,800 KNX each)\n` +
@@ -8065,7 +8054,7 @@ fi
             const vicMsg = `🏢 *VICTOR'S COMPANY CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Master Account (6727787768):* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
               `• *Session Status:* 24h Cloud Mining Active\n` +
               `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser (humanPass active)\n` +
@@ -8099,9 +8088,9 @@ fi
             const vyroMsg = `💧 *VYRODROP CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-              `• *TON Wallets:* 20/20 Configured (${activeCount} Active Mining)\n` +
+              `• *TON Wallets:* \`${health.total || 20}/${health.total || 20} Configured\` (${activeCount} Active Mining)\n` +
               `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -8131,9 +8120,9 @@ fi
             const mrgMsg = `⛏️ *MRG MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Level Upgrader:* Level 95+ Auto-Unlocked\n` +
-              `• *Cryptographic TON Connect 2.0 Proof:* 20/20 Connected\n` +
+              `• *Cryptographic TON Connect 2.0 Proof:* \`${health.total || 20}/${health.total || 20} Connected\`\n` +
               `• *Anti-Bot Defense:* User-Agent & Signature Isolation ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -8175,8 +8164,8 @@ fi
             const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-              `👥 *Active Mining Accounts:* \`${activeAccs}/20 Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
-              `💎 *TON Wallets:* \`20/20 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+              `👥 *Active Mining Accounts:* \`${activeAccs}/${health.total || 20} Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
+              `💎 *TON Wallets:* \`${health.total || 20}/${health.total || 20} Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
               `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
               `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -8209,7 +8198,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* DiggoMiner (@Diggominer_bot)\n` +
               `• *Endpoint:* \`https://diggo.linkpc.net\`\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Features:* Auto-Claims, Referral Yields, Daily Check-in & Social Tasks\n` +
               `• *Architecture:* Headless Cloud JWT Session + WebApp handshake\n` +
               `• *Mining Yield:* Compound Level 45+ Active\n` +
@@ -8241,7 +8230,7 @@ fi
             const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
               `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
               `• *Yield:* Continuous Hash Production & Power Boosts\n` +
@@ -8273,7 +8262,7 @@ fi
             const adxMsg = `🤖 *ADXEARN AI CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* AdxEarn AI (@AdxEarnAibot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Mining State:* ACTIVE (Daily Streaks & Auto-Boosts)\n` +
               `• *Tasks:* Dynamic Task Discovery & Immediate Claim\n` +
               `• *Referrals:* Master 6727787768 Deeply Bound\n` +
@@ -8304,7 +8293,7 @@ fi
             const chickenMsg = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Chicken Land (@ChickenLandBot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/20 Accounts Active\` • 19/19 Referrals Bound ✅\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total || 20} Accounts Active\` • \`${(health.total || 20) - 1}/${(health.total || 20) - 1} Referrals Bound ✅\`\n` +
               `• *Mechanics:* Passive Time-Based Egg Laying (8h Basket Capacity)\n` +
               `• *Master Account (6727787768):* 8 Hens • 80 Eggs/h • 3,800 Ref Coins Claimed\n` +
               `• *Fleet Total:* 28 Hens Active • 2,240 Eggs/8h Capacity\n` +
@@ -8321,39 +8310,21 @@ fi
         if (text === "/ad_farmer" || text.startsWith("/ad_farmer") || text === "/ads" || text.startsWith("/ads")) {
           ctx.waitUntil((async () => {
             const todayStr = new Date().toISOString().slice(0, 10);
-            const FLEET_20_IDS = [
-              { uid: "6727787768", name: "Arif (Master)" },
-              { uid: "8881914294", name: "Nancy 2" },
-              { uid: "7648254021", name: "Koram 3" },
-              { uid: "8826375659", name: "Arif 4" },
-              { uid: "8450010161", name: "Nathan 5" },
-              { uid: "8782429452", name: "Kaitlyn 6" },
-              { uid: "7734849205", name: "Abid 7" },
-              { uid: "8025472383", name: "Abid 8" },
-              { uid: "8851426148", name: "Naimur 9" },
-              { uid: "8203342513", name: "Tanvir 10" },
-              { uid: "8190649727", name: "MD. ARIF 11" },
-              { uid: "7487048946", name: "Sanzida 12" },
-              { uid: "8741547543", name: "Abid 13" },
-              { uid: "8727040932", name: "Rohan 14" },
-              { uid: "7749125802", name: "Tasnim 15" },
-              { uid: "7954290138", name: "Rashedul 16" },
-              { uid: "8841038141", name: "Kawsar 17" },
-              { uid: "8975442879", name: "Mehedi 18" },
-              { uid: "8937908003", name: "Adil H 19" },
-              { uid: "8609131528", name: "Asaduzzaman Sarker 20" }
-            ];
+            const accounts = await getFleetAccounts();
+            const totalAdsGoal = (accounts.length || 20) * 1000;
             let totalAdsToday = 0;
             const topList = [];
-            for (const a of FLEET_20_IDS) {
-              const key = `fleet:daily_ads:${a.uid}:${todayStr}`;
+            for (const a of accounts) {
+              const aUid = String(a.user_id);
+              const aName = cleanName(a, (a.index || 1) - 1);
+              const key = `fleet:daily_ads:${aUid}:${todayStr}`;
               let count = 0;
               try {
                 const raw = await upstashGet(key, 0);
                 count = parseInt(raw, 10) || 0;
               } catch (_) {}
               totalAdsToday += count;
-              topList.push({ name: a.name, count });
+              topList.push({ name: aName, count });
             }
             topList.sort((a, b) => b.count - a.count);
             const top3Str = topList.slice(0, 3).map(a => `• *${a.name}:* \`${a.count} ads\` (+${(a.count * 20).toLocaleString()} pts)`).join("\n");
@@ -8375,9 +8346,9 @@ fi
             const msg = `📺 *FLEET AUTONOMOUS AD-FARMER LOOP*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Status:* 🟢 \`Active 24/7 in Cloud\` (Render Node 2)\n` +
-              `• *Total Ads Farmed Today:* \`${totalAdsToday.toLocaleString()} / 20,000 Ads\`\n` +
+              `• *Total Ads Farmed Today:* \`${totalAdsToday.toLocaleString()} / ${totalAdsGoal.toLocaleString()} Ads\`\n` +
               `• *Points Accrued Today:* \`+${totalPts.toLocaleString()} Pts\`\n` +
-              `• *Accounts Cycling:* \`20/20 Accounts Active\` (~4.3s / ad)\n` +
+              `• *Accounts Cycling:* \`${accounts.length}/${accounts.length} Accounts Active\` (~4.3s / ad)\n` +
               `• *Target Goal:* \`1,000 ads/day per account\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🏆 *Top Active Accounts Today:*\n${top3Str}\n` +
@@ -8405,7 +8376,7 @@ fi
             };
             const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `📊 *Live Sessions:* \`${activeCount}/20 MTProto Online\` • \`20/20 REST Mining Active\`\n\n` +
+              `📊 *Live Sessions:* \`${activeCount}/${health.total || 20} MTProto Online\` • \`${health.total || 20}/${health.total || 20} REST Mining Active\`\n\n` +
               `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
               `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
               `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
@@ -8620,7 +8591,7 @@ fi
             }
             const b1 = await getBscBal(w1);
             const rep = `🪙 *On-Chain BNB Vault & Wallet Tracker*\n\n` +
-              `• *Binance BEP-20 Vault (All 20 Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
+              `• *Binance BEP-20 Vault (All Fleet Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
               `  \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• *Binance TON Vault (Main Account):*\n` +
               `  \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
@@ -9317,7 +9288,7 @@ fi
           const parts = text.trim().split(/\s+/);
           const promoCode = (parts[1] || "").toUpperCase().trim();
           if (!promoCode) {
-            await sendReply("⚠️ *Usage:* `/snipe <CODE>` or `/promo <CODE>`\n\nExample: `/snipe CL9QF6J7WF`\n_Instantly blasts concurrent promo code redemptions across all 20 accounts in sub-second bursts!_");
+            await sendReply("⚠️ *Usage:* `/snipe <CODE>` or `/promo <CODE>`\n\nExample: `/snipe CL9QF6J7WF`\n_Instantly blasts concurrent promo code redemptions across all fleet accounts in sub-second bursts!_");
             return new Response("OK");
           }
           ctx.waitUntil((async () => {
@@ -9438,7 +9409,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Ainovum Network (@ainovum_bot)\n` +
               `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9452,7 +9423,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network.\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
@@ -9467,7 +9438,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* ART Airdrop Mining (@ART_AIRDROP_BOT)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9499,7 +9470,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Auto Math Challenge Solver, Hashrate Boost, Cooldown Tasks\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -9515,7 +9486,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Cloud Turnstile Solvers, Arcade Mining, Daily Check-in, Level Upgrades\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -9531,7 +9502,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Mining Start/Claim, Task Verification, TonConnect 2.0 Wallets\n` +
               `• *Payout Network:* TON / VYRO DEX\n` +
-              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -9547,7 +9518,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Firebase RTDB Auth, Energy Management, Daily Checkin, Ads Rewards\n` +
               `• *Payout Network:* Firebase Cloud / KNX\n` +
-              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/${health.total || 20} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -9560,7 +9531,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* UltraWallet (@UltrawalletTrade_Bot)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @UltrawalletTrade_Bot, purged keys, and deleted dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @UltrawalletTrade_Bot, purged keys, and deleted dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9574,7 +9545,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Apex Miner Platform (@ApxMinerBot)\n` +
               `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9588,7 +9559,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* TRX Power Mining (@trxpowermining_bot)\n` +
               `• *Status:* 🚫 Banned & Purged per User Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @trxpowermining_bot, left sponsor channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @trxpowermining_bot, left sponsor channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9602,7 +9573,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Bitcoin Cloud Miners (@BitcoinCloudMinersBot)\n` +
               `• *Status:* 🚫 Banned & Purged per User Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @BitcoinCloudMinersBot and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @BitcoinCloudMinersBot and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9616,7 +9587,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Tensor Mining Robot (@TensorMiningRobot)\n` +
               `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @TensorMiningRobot, left @TensorCoinNews, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @TensorMiningRobot, left @TensorCoinNews, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9630,7 +9601,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Ton Trader AI (@TonTraderAIBot)\n` +
               `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @TonTraderAIBot, left scam channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @TonTraderAIBot, left scam channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9644,7 +9615,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* FINVORA Web3 (@FINVORAWeb3bot)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @FINVORAWeb3bot, purged keys, and deleted dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @FINVORAWeb3bot, purged keys, and deleted dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9686,7 +9657,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* USDT QUAD (@ustdquad_bot)\n` +
               `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @ustdquad_bot, left scam channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @ustdquad_bot, left scam channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9700,7 +9671,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* TAC Airdrop (@tacairdrop_bot)\n` +
               `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All 18 fleet accounts permanently blocked @tacairdrop_bot, left scam channels, and deleted all Telegram dialog history.\n` +
+              `• *Action Taken:* All fleet accounts permanently blocked @tacairdrop_bot, left scam channels, and deleted all Telegram dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
@@ -9797,8 +9768,8 @@ fi
               `🔐 *18 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
               `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20\n` +
               `• 100% Isolated 24-word seeds for anti-sybil pool verification.\n\n` +
-              `💡 *Command Tip:* Send \`/wallet <1-20>\` (e.g. \`/wallet 5\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
-              `🛡️ _All 20 verified wallets are continuously monitored and secured in the cloud._`;
+              `💡 *Command Tip:* Send \`/wallet <index>\` (e.g. \`/wallet 1\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
+              `🛡️ _All verified fleet wallets are continuously monitored and secured in the cloud._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
           return new Response("OK");
@@ -9879,7 +9850,7 @@ fi
               `• Node 1 (US-East Edge): 🟢 Online (42ms)\n` +
               `• Node 2 (EU-Central Edge): 🟢 Online (38ms)\n` +
               `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
-              `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (20 Accounts Active)\n` +
+              `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (Fleet Accounts Active)\n` +
               `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
               `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
               `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
@@ -10125,8 +10096,8 @@ fi
             }
             const health = await getSessionHealthState();
             const rep = `⚡ *MY AGY AI — EXECUTIVE ECOSYSTEM SUMMARY* 📊\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🤖 *Fleet Automation:* \`${health.healthy.size}/20 Accounts Online\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
-              `⛏️ *Active Mining Pools (8/8):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI\n` +
+              `🤖 *Fleet Automation:* \`${health.healthy.size}/${health.total || 20} Accounts Online\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `⛏️ *Active Mining Pools (9/9):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land\n` +
               `👥 *Community Users:* \`${totalUsers || userList.length}\` Registered Miners\n` +
               `📱 *Community Accounts:* \`${activeAccountsCount}\` Connected Phones\n` +
               `🟢 *Active 24/7 Miners:* \`${activeMiners}\` Active | ⚠️ Paused: \`${pausedMiners}\`\n` +
@@ -10623,7 +10594,7 @@ fi
             `• \`/diggo\` — DiggoMiner WebApp & Referral Yields\n` +
             `• \`/pepe\` — PepeGram 6h Hash Production & Power Boosts\n` +
             `• \`/adx\` — AdxEarn AI Daily Streaks & Dynamic Tasks\n` +
-            `• \`/accounts\` — Inspect all 20 fleet accounts & sessions\n` +
+            `• \`/accounts\` — Inspect all fleet accounts & sessions\n` +
             `• \`/add_account <phone>\` — Connect a new Telegram account\n` +
             `• \`/remove_account <id>\` — Disconnect an account from automation\n` +
             `• \`/mesh\` or \`/cloud\` — Multi-Cloud unified mesh topology\n` +
@@ -10689,7 +10660,7 @@ fi
           }
 
           if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All 20 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).`, statusInlineKeyboard);
+            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).`, statusInlineKeyboard);
             return;
           }
 
@@ -10751,7 +10722,7 @@ Reply to Arif naturally:`;
           }
 
           const defaultRep = `⚡ *MY AGY AI Operations Hub*\n\n` +
-            `• 🟢 20 Accounts Online & Autonomously Mining in Cloud\n` +
+            `• 🟢 All Fleet Accounts Online & Autonomously Mining in Cloud\n` +
             `• 🤖 9 Active Pools: MRG • ATF • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land\n` +
             `• 💡 Use the toolbar buttons below to manage fleet operations:`;
           await sendReply(defaultRep, statusInlineKeyboard);
@@ -16101,13 +16072,13 @@ async def main():
         if ALERT_BOT_TOKEN:
             admin_desc = (
                 "👑 MY AGY AI — Operations & Executive Fleet Console ⚡\n\n"
-                "Autonomous multi-cloud command & control center for 20 accounts and 9 legitimate crypto mining bots:\n"
+                "Autonomous multi-cloud command & control center for multi-account fleet and 9 legitimate crypto mining bots:\n"
                 "• MRG Miner • ATF Miner • Victor\'s Company\n"
                 "• VyroDrop • Kynex Network • DiggoMiner\n"
                 "• PepeGram • AdxEarn AI • Chicken Land\n\n"
                 "🛡️ 100% Cloud-Powered • Zero Phone Load • Multi-Edge Mesh"
             )
-            admin_short_desc = "👑 MY AGY AI Operations Console — 20 Accounts & 9 Mining Bots across Multi-Cloud Edge."
+            admin_short_desc = "👑 MY AGY AI Operations Console — Multi-Account Fleet & 9 Mining Bots across Multi-Cloud Edge."
             try:
                 async with session.post(
                     f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyDescription",
@@ -16167,13 +16138,13 @@ async def main():
                     {"command": "dashboard", "description": "🚀 Launch Fleet Operations Console"},
                     {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "live", "description": "📊 Real-Time Operations Telemetry Matrix"},
-                    {"command": "fleet", "description": "📊 Fleet Operations & 20-Account Telemetry"},
+                    {"command": "fleet", "description": "📊 Fleet Operations & Telemetry"},
                     {"command": "treasury", "description": "💰 On-Chain Treasury & Live Payouts Ledger"},
                     {"command": "payouts", "description": "💳 Daily Financial Accounting & Ledger"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
                     {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
                     {"command": "chicken", "description": "🐔 Chicken Land Passive Egg Laying & Farm"},
-                    {"command": "snipe", "description": "⚡ Sub-Second Promo Code Sniper (20 Accounts)"},
+                    {"command": "snipe", "description": "⚡ Sub-Second Promo Code Sniper (Multi-Account Fleet)"},
                     {"command": "vm", "description": "🖥️ Instabox VM Sentinel & Ingress Status"},
                     {"command": "failover", "description": "🔄 CI/CD Redundancy & CircleCI Failover"},
                     {"command": "ad_farmer", "description": "📺 24/7 Autonomous Ad-Farming Loop Status"},

@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Cloudflare Edge Webhook Hoisting, 9-Bot Onboarding Expansion & Fleet De-Hardcoding (October 27, 2026)**:
+  - **Cloudflare Edge Webhook Hoisting & TDZ Elimination (`deploy_both_cf_workers.py`)**:
+    * Hoisted declaration block of `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`, `DEFAULT_FLEET_ACCOUNTS`, `STATIC_FLEET_WALLETS`, `cleanName`, `getFleetAccounts`, and `unBlacklistAccount` to the top of the webhook handler block right after `dashUrl`.
+    * Resolved critical Temporal Dead Zone (TDZ) issue where helper functions (`getSessionHealthState`, `renderMainMenuText`, `buildOtpMenuKeyboard`, etc.) referenced those consts prior to their initialization in the scope.
+    * Fixed `targetUids` ReferenceError on GET `/telegram-webhook` by binding `fleet_size` dynamically to `memFleetAccounts?.length || 20`.
+    * Removed accidental duplicate loop body and premature closing brace in `btn_ad_farmer` and `/ad_farmer`.
+    * Successfully deployed updated Cloudflare Edge Worker to primary Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified both `/telegram-webhook` and `/user-bot-webhook` return HTTP 200 OK with complete 9-bot metadata.
+  - **9-Bot Onboarding Referral Binding (`login_account.py`)**:
+    * Expanded `login_account.py` onboarding sequence from 5 bots to all 9 legitimate bots:
+      - 6. DiggoMiner (`@Diggominer_bot` / `ref_4088138f11effe8eef4b86ff`)
+      - 7. PepeGram (`@Pepe_gram_bot` / `1449`)
+      - 8. AdxEarn AI (`@AdxEarnAibot` / `6727787768`)
+      - 9. Chicken Land (`@ChickenLandBot` / `12668`)
+    * Updated final referral audit check to verify all 9/9 bots are bound to Master Referral ID `6727787768`.
+  - **Complete Fleet Size De-Hardcoding (Elastic Fleet Architecture)**:
+    * Replaced all static references to "20 Accounts", "20/20", and "20 Nodes" with dynamic `${health.total}` / `${accounts.length}` across all bot status summaries, commands (`/status`, `/farm`, `/mrg`, `/atf`, `/chicken`, `/victors`, `/vyro`, `/kynex`, `/diggo`, `/pepe`, `/adx`, `/ad_farmer`), and inline keyboard callbacks in `deploy_both_cf_workers.py`.
+    * Updated `public_admin/admin.html` header and telemetry badge counters to dynamically derive from `${fleet.length}`.
+    * Normalized comments and docstrings in `multichain_onchain_watcher.py` and `app.py` to reflect dynamic fleet accounts.
+
 - **🐛 Deep Codebase Bug Audit & Ground-Truth Telemetry Resolution (October 27, 2026)**:
   - **Victor's Company Telemetry & Unlock Loop Fix (`finish_all_fleet_sidetasks.py`)**:
     * Discovered that `api/me` returns `inAppBalance` (not `miningBalance`) and `peakLevel` (not `level`).

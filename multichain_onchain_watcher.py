@@ -74,7 +74,7 @@ CF_WORKER_URLS = [
 ]
 
 def load_fleet_ton_wallets() -> dict:
-    """Loads all 20 fleet TON wallets dynamically from fleet_ton_wallets.json."""
+    """Loads all fleet TON wallets dynamically from fleet_ton_wallets.json."""
     wallets_path = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
     if os.path.exists(wallets_path):
         try:
@@ -513,7 +513,7 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
         state["ton_balance"] = ton_bal
         results["ton"] = ton_bal
 
-    # 3.1 Fleet-Wide TON Balance Aggregator (Across All 20 Accounts)
+    # 3.1 Fleet-Wide TON Balance Aggregator (Across All Fleet Accounts)
     fleet_ton_wallets = load_fleet_ton_wallets()
     last_fleet_ton_check = state.get("last_fleet_ton_check_at", 0)
     if fleet_ton_wallets and (time.time() - last_fleet_ton_check > 21600 or "fleet_ton_total" not in state):

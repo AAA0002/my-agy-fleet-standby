@@ -5,6 +5,7 @@ Retrieves Telegram 2FA / Login Codes from active MTProto sessions.
 Allows logging back into the official Telegram Android app without SMS.
 """
 
+import os
 import sys
 import re
 import json
@@ -16,7 +17,8 @@ API_ID = 37321306
 API_HASH = "5cd9e5bbfb572a4429a0c54774153b47"
 
 def load_accounts():
-    with open("accounts.json", "r", encoding="utf-8") as f:
+    acc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "accounts.json")
+    with open(acc_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 async def check_recent_codes(client):
