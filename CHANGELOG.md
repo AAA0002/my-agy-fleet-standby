@@ -12,6 +12,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * `/promo` and `/snipe`: Converted fixed `/20 Accounts` to dynamic `/${accounts.length} Accounts`.
     * `getSessionHealthState()`: Converted static fallback `|| 20` to `accounts.length || 21`.
     * `admin.html`: Removed `idx <= 20` limit in "Cloud" filter (`if (fleetFilter === "cloud") return idx >= 9;`) and updated chip label dynamically to `Cloud #${fleet.length > 8 ? "9-" + fleet.length : "9+"}`.
+  - **9-Bot Telegram Chat Onboarding Completion (`app.py`)**:
+    * Identified why new accounts displayed only 6 mining bots in their Telegram inbox (MRG, ATF, Victor's, Vyro, Kynex, Diggo) while PepeGram, AdxEarn AI, and Chicken Land were absent from the chat list.
+    * Previous onboarding routine stopped after bot #5, only querying the remaining 3 bots via silent background WebApp HTTP requests without sending `/start` into the Telegram chat dialogue.
+    * Upgraded `bind_account_master_referrals` in `app.py` to explicitly dispatch `/start <ref>` across all 9 bots (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), ensuring all 9 bots open conversations, send their welcome greetings, and appear in the Telegram inbox.
+    * Replaced legacy `ALL_8_BOT_KEYS` with canonical `ALL_9_BOT_KEYS`.
   - **Account 21 Multi-Chain Wallets & Database Alignment**:
     * Verified Account #21 (`8669217201`, `Aaaa201`, `+8801913962342`) possesses a complete 5-chain cryptographic suite:
       - TON: `UQDH-Fr7IrmThtwnK86JeAg3R2S-ezhA1Gs801vOVaRWn_jw` (24-word recovery seed archived)

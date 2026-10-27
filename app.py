@@ -2075,14 +2075,15 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_8_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "pepegram", "adxearn", "diggo"]
-ALL_10_BOT_KEYS = ALL_8_BOT_KEYS  # Backward compatibility alias
+ALL_9_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "pepegram", "adxearn", "chickenland"]
+ALL_8_BOT_KEYS = ALL_9_BOT_KEYS
+ALL_10_BOT_KEYS = ALL_9_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 8 active fleet bots."""
-    if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
+    if acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
         return True
-    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_8_BOT_KEYS)
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_9_BOT_KEYS)
 
 
 
@@ -2318,10 +2319,72 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_10_BOT_KEYS):
+    # 6. DiggoMiner (Dual-Layer: Chat /start + WebApp handshake)
+    if force or not acc_entry.get("diggo_referral_bound"):
+        try:
+            try:
+                await client.send_message(DIGGO_BOT, f"/start {DIGGO_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            try:
+                from telethon.tl.functions.bots import AllowSendMessageRequest
+                await client(AllowSendMessageRequest(bot=DIGGO_BOT))
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=DIGGO_REFERRAL_CODE, default_url="https://diggo.linkpc.net/", candidate_short_names=["app", "miner"])
+            acc_entry["diggo_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Diggo referral bind note: {e}")
+
+    # 7. PepeGram (Dual-Layer: Chat /start + WebApp handshake)
+    if force or not acc_entry.get("pepegram_referral_bound"):
+        try:
+            try:
+                await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
+            acc_entry["pepegram_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
+
+    # 8. AdxEarn AI (Dual-Layer: Chat /start + WebApp handshake)
+    if force or not acc_entry.get("adxearn_referral_bound"):
+        try:
+            try:
+                await client.send_message(ADXEARN_BOT, f"/start {ADXEARN_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
+            acc_entry["adxearn_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] AdxEarn referral bind note: {e}")
+
+    # 9. Chicken Land (Dual-Layer: Chat /start + WebApp handshake)
+    if force or not acc_entry.get("chickenland_referral_bound"):
+        try:
+            try:
+                await client.send_message(CHICKENLAND_BOT, f"/start {CHICKENLAND_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=CHICKENLAND_REFERRAL_CODE, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"])
+            acc_entry["chickenland_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Chicken Land referral bind note: {e}")
+
+    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_9_BOT_KEYS):
+        acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_10_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 5 active fleet bots successfully bound to Master ID 6727787768!")
+    logger.info(f"[{name}] ✅ All 9 active fleet bots successfully bound to Master ID 6727787768!")
 
     # Wait 1.0s for Telegram bot backends to complete registration
     await asyncio.sleep(1.0)
