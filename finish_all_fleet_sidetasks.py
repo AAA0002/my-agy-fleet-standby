@@ -72,7 +72,7 @@ CF_WORKERS = [
 ]
 
 MASTER_UID = "6727787768"
-PRIMARY_TON_WALLET = "UQAWuK6X9s1fA0LzXGzM_81n1xL_T6_xY8Z_1x1x1x1x1x1"
+PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 
 # Load Accounts (with cloud backup fallback for Render/Cloud VMs)
 ACCOUNTS = []
