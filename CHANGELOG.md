@@ -8,6 +8,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Converted hardcoded `(accounts.length || 20)` in daily ad goal calculation to dynamic `accounts.length * 1000`.
     * Upgraded worker wallet telemetry from fixed `Accounts #2–20 (Workers): 19 Isolated TON v4r2 Wallets` to dynamic `Accounts #2–${accounts.length} (Workers): ${accounts.length - 1} Isolated TON v4r2 Wallets`.
     * Synchronized `/dashboard` system description from obsolete `5 Mining Bots` to `9 Mining Bots` (`⚡ MRG • 🪙 ATF • 🏢 Victor's • 💧 VyroDrop • 🌐 Kynex • ⛏️ Diggo • 🐸 PepeGram • 🤖 AdxEarn • 🐔 Chicken Land`).
+  - **Resilient Cloud Fallbacks & Multi-Chain Watcher Improvements**:
+    * `chickenland_promo_sniper.py`: Added Upstash Redis fallback (`miniapp_tokens`) to `load_fleet_tokens()` to ensure 100% token loading on ephemeral containers.
+    * `audit_bots_and_sidetasks.py`: Merged missing accounts from `TOKENS_DB` dynamically to audit all active token holders regardless of local file state.
+    * `finish_all_fleet_sidetasks.py`: Merged missing accounts dynamically from Upstash Redis `fleet:accounts`.
+    * `multichain_onchain_watcher.py`: Added `load_fleet_evm_wallets()` to dynamically track and watch all fleet EVM addresses alongside TON wallets.
   - **Cloud OTP Engine Cloud-First Dynamic Account Fetching (`app.py`)**:
     * Upgraded `get_account_otp` (`/api/fleet/otp/{acc_target}`) to fetch canonical account state via `await fetch_accounts_from_cloud()` (Upstash Redis, memory cache, Supabase) rather than relying solely on local ephemeral container `accounts.json`.
   - **Database Persistence & Edge Deployment**:

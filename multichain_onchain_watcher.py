@@ -84,6 +84,24 @@ def load_fleet_ton_wallets() -> dict:
         except Exception:
             pass
     return {}
+
+def load_fleet_evm_wallets() -> dict:
+    """Loads all fleet EVM wallets dynamically from fleet_evm_wallets.json."""
+    wallets_path = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+    if os.path.exists(wallets_path):
+        try:
+            with open(wallets_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return {k: v.get("address") for k, v in data.items() if k != "_guide" and v.get("address")}
+        except Exception:
+            pass
+    return {}
+
+_extra_evm = load_fleet_evm_wallets()
+if _extra_evm:
+    for _addr in _extra_evm.values():
+        if _addr and _addr.startswith("0x") and _addr.lower() not in [w.lower() for w in EVM_WALLETS]:
+            EVM_WALLETS.append(_addr)
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 
 BSC_RPCS = [

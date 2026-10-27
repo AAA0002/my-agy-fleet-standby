@@ -104,9 +104,16 @@ if os.path.exists(acc_path):
     except Exception:
         pass
 
-if not ACCOUNTS and TOKENS_DB:
-    for uid in TOKENS_DB.keys():
-        ACCOUNTS.append({"user_id": int(uid) if uid.isdigit() else uid, "name": f"Node_{uid}"})
+existing_uids = {str(a.get("user_id")) for a in ACCOUNTS}
+if TOKENS_DB:
+    for uid, tinfo in TOKENS_DB.items():
+        if str(uid) not in existing_uids:
+            ACCOUNTS.append({
+                "user_id": int(uid) if str(uid).isdigit() else uid,
+                "name": tinfo.get("name", f"Node_{uid}") if isinstance(tinfo, dict) else f"Node_{uid}",
+                "index": len(ACCOUNTS) + 1
+            })
+            existing_uids.add(str(uid))
 
 MASTER_UID = "6727787768"
 

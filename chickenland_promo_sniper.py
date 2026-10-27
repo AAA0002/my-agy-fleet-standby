@@ -136,6 +136,25 @@ def load_fleet_tokens() -> Dict[str, Dict[str, Any]]:
                         }
         except Exception:
             pass
+
+    if not fleet and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            req = urllib.request.Request(f"{UPSTASH_URL}/get/miniapp_tokens", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                res = data.get("result")
+                if res:
+                    tok_map = json.loads(res) if isinstance(res, str) else res
+                    for uid, toks in tok_map.items():
+                        tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                        if tok:
+                            fleet[str(uid)] = {
+                                "user_id": str(uid),
+                                "name": names.get(str(uid), f"User {uid}"),
+                                "b64_token": get_b64_token(tok)
+                            }
+        except Exception:
+            pass
             
     return fleet
 

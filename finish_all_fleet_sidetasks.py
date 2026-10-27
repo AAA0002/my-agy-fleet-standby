@@ -101,14 +101,19 @@ if not ACCOUNTS:
         except Exception:
             pass
 
-if not ACCOUNTS and UPSTASH_URL and UPSTASH_TOKEN:
+if UPSTASH_URL and UPSTASH_TOKEN:
     try:
         req = urllib.request.Request(f"{UPSTASH_URL}/get/fleet:accounts", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             res = data.get("result")
             if res:
-                ACCOUNTS = json.loads(res) if isinstance(res, str) else res
+                up_accs = json.loads(res) if isinstance(res, str) else res
+                existing_uids = {str(a.get("user_id")) for a in ACCOUNTS}
+                for a in up_accs:
+                    if str(a.get("user_id")) not in existing_uids:
+                        ACCOUNTS.append(a)
+                        existing_uids.add(str(a.get("user_id")))
     except Exception:
         pass
 
