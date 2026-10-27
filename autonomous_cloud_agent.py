@@ -64,7 +64,8 @@ CF_AI_NODES = [
 
 # Render Standby Token Collection Nodes (100% Free Cloud Failover)
 RENDER_STANDBY_NODES = [
-    ("Render Node 2 (Frankfurt - Primary)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens"),
+    ("Render Node 3 (Oregon - Primary Active)", "https://my-agy-fleet-standby-node3.onrender.com/collect-tokens"),
+    ("Render Node 2 (Frankfurt - Standby)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens"),
     ("Render Node 1 (Singapore - Standby)", "https://my-agy-fleet-standby.onrender.com/collect-tokens")
 ]
 

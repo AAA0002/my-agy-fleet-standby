@@ -12,7 +12,7 @@ import time
 import urllib.request
 import urllib.error
 
-RENDER_URL = os.getenv("RENDER_URL", "https://my-agy-fleet-standby.onrender.com/api/onboard-new-bots")
+RENDER_URL = os.getenv("RENDER_URL", "https://my-agy-fleet-standby-node3.onrender.com/api/onboard-new-bots")
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 ACCOUNTS_FILE = "/root/projects/AAA_AUTO/accounts.json"
 
