@@ -1392,7 +1392,93 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // Humanized Execution Pipeline: Active Fleet Mining Pools (8 Authentic Legitimate Bots)
+  // 9. Chicken Land (@ChickenLandBot)
+  const farmChickenland = async () => {
+    if (!accData.chickenland_init_data) return;
+    try {
+      const cInit = accData.chickenland_init_data;
+      const b64 = cInit.startsWith("TMA ") ? cInit.slice(4).trim() : btoa(decodeURIComponent(cInit));
+      const cHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `TMA ${b64}`,
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"
+      };
+      const rpc = async (path, body) => {
+        const resp = await fetch("https://app8968434282.tgcloud.ai/api/rpc", {
+          method: "POST",
+          headers: cHeaders,
+          body: JSON.stringify({ method: body !== undefined ? "POST" : "GET", path, body: body || {} })
+        });
+        return await resp.json().catch(() => ({ ok: false }));
+      };
+      
+      const meResp = await rpc("/api/me", { ref: "12668", lang: "en" });
+      if (meResp.ok) {
+        const usr = meResp.result?.user || {};
+        let hens = usr.hens || 0;
+        let rate = usr.rate || 0;
+
+        // Auto-captcha fallback
+        if (!usr.human) {
+          const cap = await rpc("/api/captcha", {});
+          if (cap.ok && cap.result?.kind === "turnstile") {
+            await rpc("/api/human", { fallback: true, why: "unsupported" });
+            await humanDelay(800, 1500);
+            const cap2 = await rpc("/api/captcha", {});
+            if (cap2.ok && cap2.result?.kind === "pick") {
+              const items = cap2.result.items || [];
+              const target = cap2.result.target;
+              const idx = items.indexOf(target);
+              if (idx >= 0) {
+                await rpc("/api/human", { pick: idx });
+                await humanDelay(800, 1200);
+              }
+            }
+          }
+        }
+
+        // Welcome bonus
+        if (!usr.welcome) {
+          await rpc("/api/welcome", {});
+        }
+
+        // Daily check-in
+        await rpc("/api/task", { id: "daily" });
+
+        // Sell eggs
+        await rpc("/api/sell", {});
+
+        // Tasks
+        for (const tid of ["channel", "payments", "dnews", "dpay", "dpromo"]) {
+          await rpc("/api/task/open", { id: tid });
+          await humanDelay(500, 1000);
+          await rpc("/api/task", { id: tid });
+        }
+
+        // Ref claim
+        await rpc("/api/ref/claim", {});
+
+        // Buy hens
+        const meAfter = await rpc("/api/me", { lang: "en" });
+        const cAfter = meAfter.result?.user?.coins || 0;
+        if (cAfter >= 1000) {
+          const buyCount = Math.floor(cAfter / 1000);
+          const buyResp = await rpc("/api/buy", { breed: "basic", n: buyCount });
+          if (buyResp.ok) {
+            hens = buyResp.result?.user?.hens || hens + buyCount;
+            rate = buyResp.result?.user?.rate || rate;
+          }
+        }
+        result.bots.chickenland = `farmed (hens: ${hens}, rate: ${rate}/h, coins: ${cAfter})`;
+      } else {
+        result.bots.chickenland = `auth_failed (${meResp.description || "unknown"})`;
+      }
+    } catch (e) {
+      result.bots.chickenland = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Active Fleet Mining Pools (9 Authentic Legitimate Bots)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1200, maxSec: 2400 },
     mrg: { minSec: 1800, maxSec: 3600 },
@@ -1401,7 +1487,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     kynex: { minSec: 2400, maxSec: 4800 },
     pepegram: { minSec: 1800, maxSec: 3600 },
     adxearn: { minSec: 3600, maxSec: 7200 },
-    diggo: { minSec: 1800, maxSec: 3600 }
+    diggo: { minSec: 1800, maxSec: 3600 },
+    chickenland: { minSec: 2400, maxSec: 4800 }
   };
 
   const botRoutines = [
@@ -1412,7 +1499,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) },
-    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) }
+    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) },
+    { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data) }
   ];
 
   const BOT_KEY_ALIASES = {
@@ -1421,6 +1509,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     vic: "victors", victor: "victors", victors: "victors",
     knx: "kynex", kynex: "kynex",
     dgo: "diggo", diggo: "diggo", diggominer: "diggo",
+    chicken: "chickenland", chickenland: "chickenland", chickenlandbot: "chickenland",
     atf: "atf", mrg: "mrg", vyro: "vyro"
   };
   const normTarget = targetBot ? (BOT_KEY_ALIASES[targetBot.toLowerCase()] || targetBot.toLowerCase()) : "all";
@@ -1521,7 +1610,7 @@ let memAdminUsersPayload = null;
 let memAdminUsersTimestamp = 0;
 
 const ALLOWED_FLEET_BOTS = [
-  "mrg", "atf", "victors", "vyro", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo"
+  "mrg", "atf", "victors", "vyro", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo", "chickenland", "chicken"
 ];
 
 function sanitizeFleetTokensObject(rawObj) {
@@ -11145,6 +11234,15 @@ Reply to Arif naturally:`;
         ref_url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768",
         description: "High-yield AdxEarn AI neural token mining & airdrop",
         cycle: "3 hours"
+      },
+      chickenland: {
+        id: "chickenland",
+        name: "Chicken Land",
+        icon: "🐔",
+        username: "ChickenLandBot",
+        ref_url: "https://t.me/ChickenLandBot?start=12668",
+        description: "Egg production & daily passive crypto rewards",
+        cycle: "8 hours"
       }
     };
 
@@ -11156,7 +11254,10 @@ Reply to Arif naturally:`;
       let detectedPool = "custom";
       let detectedPoolName = "Telegram WebApp";
       const lower = text.toLowerCase();
-      if (lower.includes("adxearn") || lower.includes("adxearnaibot") || lower.includes("adx_earn")) {
+      if (lower.includes("chickenland") || lower.includes("chickenlandbot") || lower.includes("tgcloud.ai") || lower.includes("app8968434282")) {
+        detectedPool = "chickenland";
+        detectedPoolName = "🐔 Chicken Land (@ChickenLandBot)";
+      } else if (lower.includes("adxearn") || lower.includes("adxearnaibot") || lower.includes("adx_earn")) {
         detectedPool = "adxearn";
         detectedPoolName = "💎 AdxEarn AI (@AdxEarnAibot)";
       } else if (lower.includes("pepe") || lower.includes("pepe_gram") || lower.includes("pepegram")) {
@@ -12013,6 +12114,15 @@ Reply to Arif naturally:`;
             ref_url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768",
             description: "High-yield AdxEarn AI neural token mining & airdrop",
             cycle: "3 hours"
+          },
+          chickenland: {
+            id: "chickenland",
+            name: "Chicken Land",
+            icon: "🐔",
+            username: "ChickenLandBot",
+            ref_url: "https://t.me/ChickenLandBot?start=12668",
+            description: "Egg production & daily passive crypto rewards",
+            cycle: "8 hours"
           }
         };
 
@@ -12024,7 +12134,10 @@ Reply to Arif naturally:`;
           let detectedPool = "custom";
           let detectedPoolName = "Telegram WebApp";
           const lower = text.toLowerCase();
-          if (lower.includes("adxearn") || lower.includes("adxearnaibot") || lower.includes("adx_earn")) {
+          if (lower.includes("chickenland") || lower.includes("chickenlandbot") || lower.includes("tgcloud.ai") || lower.includes("app8968434282")) {
+            detectedPool = "chickenland";
+            detectedPoolName = "🐔 Chicken Land (@ChickenLandBot)";
+          } else if (lower.includes("adxearn") || lower.includes("adxearnaibot") || lower.includes("adx_earn")) {
             detectedPool = "adxearn";
             detectedPoolName = "💎 AdxEarn AI (@AdxEarnAibot)";
           } else if (lower.includes("pepe") || lower.includes("pepe_gram") || lower.includes("pepegram")) {
@@ -12207,8 +12320,9 @@ Reply to Arif naturally:`;
           const diggoAccs = accs.filter(a => a.pool === "diggo" || a.pool === "all" || !a.pool).length;
           const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
           const adxearnAccs = accs.filter(a => a.pool === "adxearn" || a.pool === "all" || !a.pool).length;
+          const chickenlandAccs = accs.filter(a => a.pool === "chickenland" || a.pool === "all" || !a.pool).length;
 
-          const txt = `⛏️ *Cloud Mining Pools (8/8)*\n\n` +
+          const txt = `⛏️ *Cloud Mining Pools (9/9)*\n\n` +
             `1. ⚡ MRG (4h) • @mrgminerbot\n` +
             `2. 🪙 ATF (24h) • @ATF_AIRDROP_bot\n` +
             `3. 🏢 Victor's (8h) • @VictorsCompanybot\n` +
@@ -12216,7 +12330,8 @@ Reply to Arif naturally:`;
             `5. 🌐 Kynex (12h) • @kynexnetworkbot\n` +
             `6. ⛏️ Diggo (3h) • @Diggominer_bot\n` +
             `7. 🐸 PepeGram (3h) • @Pepe_gram_bot\n` +
-            `8. 💎 AdxEarn (3h) • @AdxEarnAibot\n\n` +
+            `8. 💎 AdxEarn (3h) • @AdxEarnAibot\n` +
+            `9. 🐔 Chicken Land (8h) • @ChickenLandBot\n\n` +
             `_Tap a pool below to manage or connect:_`;
 
           const btns = {
@@ -12236,6 +12351,9 @@ Reply to Arif naturally:`;
               [
                 { text: `🐸 PepeGram (${pepegramAccs})`, callback_data: "ub_pool_pepegram" },
                 { text: `💎 AdxEarn (${adxearnAccs})`, callback_data: "ub_pool_adxearn" }
+              ],
+              [
+                { text: `🐔 Chicken Land (${chickenlandAccs})`, callback_data: "ub_pool_chickenland" }
               ],
               [
                 { text: "➕ Connect Account", callback_data: "ub_add_acc" },

@@ -166,7 +166,9 @@ async def get_fleet_mining_totals() -> dict:
         "vyro": 0.0,
         "diggo": 0.0,
         "pepe": 0.0,
-        "adx": 0.0
+        "adx": 0.0,
+        "chicken_hens": 0,
+        "chicken_eggs": 0
     }
     rep_file = os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json")
     if os.path.exists(rep_file):
@@ -214,6 +216,12 @@ async def get_fleet_mining_totals() -> dict:
                     diggo_txt = str(bots.get("8. DiggoMiner", {}).get("core", {}))
                     m = re.search(r"([\d\.]+)\s*DIGGO", diggo_txt)
                     if m: totals["diggo"] += float(m.group(1))
+
+                    # 9. Chicken Land
+                    chk_core = bots.get("9. Chicken Land", {}).get("core", {})
+                    if isinstance(chk_core, dict):
+                        totals["chicken_hens"] += int(chk_core.get("hens", 0) or 0)
+                        totals["chicken_eggs"] += int(chk_core.get("eggs", 0) or 0) + int(chk_core.get("egg_bal", 0) or 0)
         except Exception:
             pass
             
@@ -328,6 +336,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Decentralized Block Mining & JWT)\n"
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"
             f"• *AdxEarn AI:* `{fleet_totals['adx']:,.0f} Points` earned (Daily Check-in Streaks & Tasks)\n"
+            f"• *Chicken Land:* `{fleet_totals['chicken_hens']} Hens` active laying `{fleet_totals['chicken_eggs']} Eggs` (Autonomous Egg Harvest & Selling)\n"
             f"• *On-Chain Target TON:* `{TON_PRIMARY_WALLET}`\n"
             f"• *Live On-Chain TON Balance:* `{wallet_ton:.4f} TON` (`~${wallet_ton_usd:.2f} USD` / `~৳{wallet_ton_bdt:.0f} BDT`)\n"
             f"• *TON Price (TonAPI):* `${ton_price:.2f} USD`\n\n"

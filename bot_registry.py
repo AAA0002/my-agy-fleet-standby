@@ -117,6 +117,19 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "sponsor_channels": [],
         "requires_turnstile": False,
         "is_active": True,
+    },
+    "chickenland": {
+        "id": "chickenland",
+        "name": "Chicken Land",
+        "bot_username": "ChickenLandBot",
+        "master_ref_code": "12668",
+        "app_url": "https://app8968434282.tgcloud.ai/",
+        "token_key": "chickenland_init_data",
+        "short_names": ["play", "app", "farm"],
+        "api_base": "https://app8968434282.tgcloud.ai/api",
+        "sponsor_channels": ["LandChickenNews", "ChickenLandPay", "ChickenLandCodes"],
+        "requires_turnstile": False,
+        "is_active": True,
     }
 }
 

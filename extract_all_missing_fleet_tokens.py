@@ -83,6 +83,13 @@ TARGET_BOTS = [
         "url": "https://app.adxearnai.xyz/index.html",
         "short_names": ["app", "startapp"],
         "name": "AdxEarn AI"
+    },
+    {
+        "key": "chickenland_init_data",
+        "bot": "ChickenLandBot",
+        "url": "https://app8968434282.tgcloud.ai/",
+        "short_names": ["play", "app", "farm", "miniapp"],
+        "name": "Chicken Land"
     }
 ]
 

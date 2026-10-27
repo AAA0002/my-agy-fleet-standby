@@ -16,7 +16,7 @@
 * **Master System Navigation Hub**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for the universal cheat sheet, credential index, route map, and navigation hub.
 * **Accounts**: **20 Telegram Accounts** (1 Master Account + 17 Static Worker Accounts + Account #19 Adil H + Account #20 Asaduzzaman Sarker) farming in parallel.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
-* **8 Active Legitimate Fleet Bots (Strict 8-Bot Integrity)**:
+* **9 Active Legitimate Fleet Bots (Strict 9-Bot Integrity)**:
   1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.
   2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`) — Cloud hash compounding, balance tracking, automatic claim loop.
   3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`) — HumanPass compounding, deep mining, wallet binding & Level 1 Miner hire.
@@ -25,6 +25,7 @@
   6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`) — 30-Day JWT Session Mining & dynamic social tasks.
   7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`) — 6-Hour Production, slot spins, ad rolls & team commissions.
   8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`) — Daily Streaks, farming boost & reward sweeps.
+  9. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`) — Egg production, basic hen flock expansion, auto-captcha solving, daily streak & referral commission claims.
   *(Defunct bots Astra Airdrop, LeafEarn, PumpkinEarn, Stones, AI Lab, UltraWallet, TRX Power permanently purged).*
 
 ---

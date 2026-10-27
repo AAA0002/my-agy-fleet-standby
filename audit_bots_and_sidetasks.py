@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import base64
 import asyncio
 import aiohttp
 import re
@@ -20,6 +21,13 @@ UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKE
 def load_tokens_db():
     tokens = {}
     local_path = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
+    local_data = {}
+    if os.path.exists(local_path):
+        try:
+            with open(local_path, "r") as f:
+                local_data = json.load(f)
+        except Exception:
+            pass
 
     # 1. Primary: Always fetch latest fresh tokens from Upstash Redis (miniapp_tokens)
     if UPSTASH_URL and UPSTASH_TOKEN:
@@ -36,22 +44,24 @@ def load_tokens_db():
                     if isinstance(parsed, dict) and len(parsed) > 0:
                         tokens = parsed
                         print(f"Loaded {len(tokens)} fresh accounts from Upstash Redis miniapp_tokens")
-                        try:
-                            with open(local_path, "w") as f:
-                                json.dump(tokens, f, indent=2)
-                        except Exception:
-                            pass
         except Exception as e:
             print(f"⚠️ Upstash miniapp_tokens fetch note: {e}")
 
-    # 2. Secondary: If Upstash failed or incomplete, load from local file
-    if not tokens and os.path.exists(local_path):
+    # Merge local tokens with Upstash tokens so nothing is ever lost
+    for uid, acc in local_data.items():
+        if uid not in tokens:
+            tokens[uid] = acc
+        else:
+            for k, v in acc.items():
+                if k not in tokens[uid] or not tokens[uid][k]:
+                    tokens[uid][k] = v
+
+    if tokens:
         try:
-            with open(local_path, "r") as f:
-                tokens = json.load(f)
-                print(f"Loaded {len(tokens)} accounts from local fleet_miniapp_tokens.json")
-        except Exception as e:
-            print(f"⚠️ Error reading local fleet_miniapp_tokens.json: {e}")
+            with open(local_path, "w") as f:
+                json.dump(tokens, f, indent=2)
+        except Exception:
+            pass
 
     # 3. Tertiary: Upstash fleet:tokens:* pipeline fallback
     if len(tokens) < 20 and UPSTASH_URL and UPSTASH_TOKEN:
@@ -661,6 +671,41 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["8. DiggoMiner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
+        # -------------------------------------------------------------
+        # 9. Chicken Land (@ChickenLandBot)
+        # -------------------------------------------------------------
+        c_init = tokens.get("chickenland_init_data")
+        b_rep = {"core": {}, "side_tasks": []}
+        if c_init:
+            try:
+                b64_c = c_init[4:].strip() if c_init.startswith("TMA ") else base64.b64encode((urllib.parse.unquote(c_init) if "%3D" in c_init else c_init).encode("latin1")).decode("latin1")
+                c_h = {"Content-Type": "application/json", "Authorization": f"TMA {b64_c}", "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"}
+                async with session.post("https://app8968434282.tgcloud.ai/api/rpc", json={"method": "POST", "path": "/api/me", "body": {"ref": "12668", "lang": "en"}}, headers=c_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        c_data = await r.json()
+                        u_c = c_data.get("result", {}).get("user", {})
+                        coins = u_c.get("coins", 0)
+                        hens = u_c.get("hens", 0)
+                        rate = u_c.get("rate", 0)
+                        eggs = u_c.get("eggs", 0)
+                        egg_bal = u_c.get("eggBal", 0)
+                        b_rep["core"] = {"coins": coins, "hens": hens, "rate": f"{rate}/h", "eggs": eggs, "egg_bal": egg_bal, "status": "Active & Laying Eggs 🟢"}
+                        
+                        # Side task check: daily
+                        d_task = u_c.get("daily", {})
+                        b_rep["side_tasks"].append(f"Daily Streak: {d_task.get('streak', 0)}d")
+                        
+                        # Side task check: tasks
+                        completed = len(u_c.get("tasks", []))
+                        b_rep["side_tasks"].append(f"Completed Tasks: {completed}")
+                    else:
+                        b_rep["core"]["status"] = f"HTTP {r.status} ⚠️"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["9. Chicken Land"] = b_rep
+        else:
+            report["bots"]["9. Chicken Land"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
     return report
 
 async def audit_single_account(acc, idx, total, tokens_db, sem):
@@ -694,7 +739,7 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
 
 async def main():
     print("="*80)
-    print("🚀 FLEET-WIDE 8-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
+    print("🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 20 ACCOUNTS)")
     print("="*80)
     
     fleet_reports = {}

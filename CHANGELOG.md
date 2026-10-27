@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐔 Integration of 9th Legitimate Fleet Bot: Chicken Land (@ChickenLandBot) (October 27, 2026)**:
+  - **Single Source of Truth Registration (`bot_registry.py`)**:
+    * Added `chickenland` to `ACTIVE_BOTS` (`@ChickenLandBot`, App URL `https://app8968434282.tgcloud.ai/`, Master ref `12668`, token key `chickenland_init_data`, sponsor channels `@LandChickenNews`, `@ChickenLandPay`, `@ChickenLandCodes`).
+    * Active legitimate fleet bots increased from 8 to 9.
+  - **Autonomous Mining Engine (`chickenland_miner.py`)**:
+    * Engineered complete autonomous module with TMA Base64 authorization parser, serverless JSON-RPC dispatcher, and automated CAPTCHA bypass (turnstile fallback + target icon picking).
+    * Implemented egg harvesting and selling (`/api/sell`), basic hen flock purchasing (`/api/buy`), basket storage upgrades (`/api/upgrade`), daily checkin claims, and referral commission claims (`/api/ref/claim`).
+  - **Fleet-Wide Onboarding & Token Synchronization (`onboard_chickenland_fleet.py`, `finalize_chickenland_fleet.py`)**:
+    * Automated Telethon onboarding across all 20 accounts: auto-joined sponsor channels, bound referrals to Master account (`12668`), and extracted 20/20 WebApp initData tokens into `fleet_miniapp_tokens.json`.
+    * Synced all 20 tokens to Upstash Redis (`fleet:tokens:{uid}:chickenland_init_data`) with validated JSON payloads.
+    * Solved captchas, claimed 1,000 welcome coins, bought hens, and activated egg laying across 19/20 accounts (6,240 eggs/day production capacity).
+    * Claimed +1,800 referral commission coins on Master account Arif (`6727787768`) and expanded Master flock to 7 hens (70 eggs/hour).
+  - **Cloudflare Edge Mesh Integration (`deploy_both_cf_workers.py`)**:
+    * Added `chickenland` to `MINING_POOLS` (icon 🐔, 8h cycle), `ALLOWED_FLEET_BOTS`, `BOT_COOLDOWNS`, and automated edge farm runner `farmChickenland`.
+    * Added inline keyboard management buttons and connection guides for `@ChickenLandBot` in User Bot commands.
+    * Successfully deployed updated Edge Worker to Primary Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) and verified health.
+  - **Token Refresher & Sidetask Sweeper Integration (`extract_all_missing_fleet_tokens.py`, `finish_all_fleet_sidetasks.py`, `audit_bots_and_sidetasks.py`)**:
+    * Added `chickenland` to `TARGET_BOTS` for autonomous 24h cloud refreshing.
+    * Integrated `sweep_chickenland_tasks` into parallel task pipeline and added `9. Chicken Land` status to live audits.
+  - **Dashboards & Financial Ledger (`dashboard.html`, `public/admin.html`, `public_admin/admin.html`, `daily_profit_reporter.py`)**:
+    * Added Chicken Land protocol card, status badges, and quick-action buttons across all dashboards.
+    * Updated financial report generator to compute and report active flock sizes, daily egg production, and coin balances.
+
+
 - **🛡️ Comprehensive System-Wide Audit, 8-Bot Ecosystem Harmonization & Active Token Safeguard (October 26, 2026)**:
   - **Active Token Safeguard Hardening (`purge_all_legacy_bot_tokens.py`)**:
     * Discovered and resolved critical flaw where `ALLOWED_KEYS` whitelist only permitted 5 bots (`mrg`, `atf`, `victors`, `vyro`, `kynex`), omitting `pepegram_init_data`, `adxearn_init_data`, and `diggo_init_data`.

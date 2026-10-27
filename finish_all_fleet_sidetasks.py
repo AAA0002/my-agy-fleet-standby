@@ -1225,6 +1225,111 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
     return res
 
 
+async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name: str, c_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps Chicken Land daily check-in, captcha validation, eggs collection/selling, social tasks, hen buying, and ref rewards."""
+    res = {"bot": "Chicken Land", "tasks_claimed": 0, "notes": [], "success": False}
+    if not c_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    try:
+        if c_init.startswith("TMA "):
+            b64_token = c_init[4:].strip()
+        elif "%3D" in c_init or "query_id=" in c_init or "user=" in c_init:
+            decoded = urllib.parse.unquote(c_init) if "%3D" in c_init else c_init
+            b64_token = base64.b64encode(decoded.encode("latin1")).decode("latin1")
+        else:
+            b64_token = c_init.strip()
+
+        c_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"TMA {b64_token}",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"
+        }
+        rpc_url = "https://app8968434282.tgcloud.ai/api/rpc"
+
+        async def rpc(path: str, body: dict = None) -> dict:
+            payload = {"method": "POST" if body is not None else "GET", "path": path, "body": body if body is not None else {}}
+            async with session.post(rpc_url, json=payload, headers=c_headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                return await resp.json()
+
+        # 1. Profile / Session
+        ref_to_use = "12668"
+        me_resp = await rpc("/api/me", {"ref": ref_to_use, "lang": "en"})
+        if not me_resp.get("ok"):
+            res["notes"].append(f"auth_failed_{me_resp.get('description', 'unknown')}")
+            return res
+
+        res["success"] = True
+        u_info = me_resp.get("result", {}).get("user", {})
+        res["balance"] = float(u_info.get("coins", 0))
+        res["hens"] = int(u_info.get("hens", 0))
+        res["rate"] = float(u_info.get("rate", 0))
+
+        # 2. Captcha verification if needed
+        if not u_info.get("human"):
+            cap = await rpc("/api/captcha", {})
+            if cap.get("ok") and cap.get("result", {}).get("kind") == "turnstile":
+                await rpc("/api/human", {"fallback": True, "why": "unsupported"})
+                await asyncio.sleep(0.5)
+                cap2 = await rpc("/api/captcha", {})
+                if cap2.get("ok") and cap2.get("result", {}).get("kind") == "pick":
+                    items = cap2["result"].get("items", [])
+                    tgt = cap2["result"].get("target", "")
+                    if tgt in items:
+                        await rpc("/api/human", {"pick": items.index(tgt)})
+
+        # 3. Welcome bonus
+        if not u_info.get("welcome"):
+            w_res = await rpc("/api/welcome", {})
+            if w_res.get("ok"):
+                res["tasks_claimed"] += 1
+                res["notes"].append("welcome_bonus_1000")
+
+        # 4. Daily Checkin
+        daily_res = await rpc("/api/task", {"id": "daily"})
+        if daily_res.get("ok"):
+            res["tasks_claimed"] += 1
+            res["notes"].append("daily_checkin")
+
+        # 5. Collect & Sell Eggs
+        sell_res = await rpc("/api/sell", {})
+        if sell_res.get("ok"):
+            eggs = sell_res.get("result", {}).get("eggs", 0)
+            if eggs > 0:
+                res["notes"].append(f"eggs_sold_{eggs}")
+
+        # 6. Tasks
+        completed_tasks = set(u_info.get("tasks", []))
+        for tid in ["channel", "payments", "dnews", "dpay", "dpromo", "c6"]:
+            if tid not in completed_tasks:
+                await rpc("/api/task/open", {"id": tid})
+                await asyncio.sleep(0.5)
+                t_claim = await rpc("/api/task", {"id": tid})
+                if t_claim.get("ok"):
+                    res["tasks_claimed"] += 1
+                    res["notes"].append(f"task_{tid}")
+
+        # 7. Ref claim
+        ref_claim = await rpc("/api/ref/claim", {})
+        if ref_claim.get("ok") and ref_claim.get("result", {}).get("coins", 0) > 0:
+            res["notes"].append(f"ref_coins_{ref_claim['result']['coins']}")
+
+        # 8. Buy hens if coins >= 1000
+        me_after = await rpc("/api/me", {"lang": "en"})
+        coins_after = me_after.get("result", {}).get("user", {}).get("coins", 0)
+        if coins_after >= 1000:
+            n_buy = int(coins_after // 1000)
+            buy_res = await rpc("/api/buy", {"breed": "basic", "n": n_buy})
+            if buy_res.get("ok"):
+                res["notes"].append(f"hens_bought_{n_buy}")
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:50]}")
+
+    return res
+
+
 
 # =============================================================================
 # 3. MAIN RUNNER (18-ACCOUNT PARALLEL PIPELINE)
@@ -1275,6 +1380,10 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         # 8. DiggoMiner
         diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), acc_toks)
         account_report["results"]["diggo"] = diggo_res
+
+        # 9. Chicken Land
+        chicken_res = await sweep_chickenland_tasks(session, uid, name, acc_toks.get("chickenland_init_data", ""), acc)
+        account_report["results"]["chickenland"] = chicken_res
 
         # Sync tokens to Cloudflare Workers if newly refreshed
         await sync_token_to_cf(session, uid, acc_toks)

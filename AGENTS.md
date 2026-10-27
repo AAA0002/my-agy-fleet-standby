@@ -88,7 +88,7 @@
 - **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
   - **Executive Fleet Operations Console (`admin.html` / `/admin`)**:
     - Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**.
-    - Displays real-time status of the 20 MTProto fleet accounts, 8 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
+    - Displays real-time status of the 20 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
     - Does NOT manage public end-users, ad impressions, or public community points.
   - **User Bot Admin Console (`user-admin.html` / `/user-admin`)**:
     - Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**.
@@ -99,8 +99,8 @@
 
 ---
 
-## 8. 🎯 Zero Fake Data & Ground-Truth 8-Bot Policy ("Strict 8-Bot Integrity")
-- **The 8 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **8 active legitimate bots**:
+## 8. 🎯 Zero Fake Data & Ground-Truth 9-Bot Policy ("Strict 9-Bot Integrity")
+- **The 9 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **9 active legitimate bots**:
   1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
   2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
   3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
@@ -109,6 +109,7 @@
   6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
   7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
   8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
+  9. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
 - **Zero Fake / Zero Dead Bot Querying**: Truly defunct bots (`Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `Ainovum`, `TRX Power`, `Bitcoin Cloud`, `Tensor`, `Ton Trader`, `USDT QUAD`, `TAC`, `Ominix`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
 
 ---
