@@ -1035,9 +1035,10 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
                 except Exception:
                     pass
 
-        # E. Rewarded Ad Task
+        # E. Rewarded Ad Task (Up to 4 ads per 24 hours)
         t_ad = tasks.get("ad") or {}
-        if t_ad.get("enabled") and not t_ad.get("claimed") and (t_ad.get("quotaUsed", 0) < t_ad.get("quotaTotal", 4)):
+        rem_ads = max(0, (t_ad.get("quotaTotal", 4) or 4) - (t_ad.get("quotaUsed", 0) or 0))
+        for _ in range(rem_ads):
             try:
                 async with session.post(f"{base_url}/api/adsgram/start", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as ar:
                     if ar.status == 200:

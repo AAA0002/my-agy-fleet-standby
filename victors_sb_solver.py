@@ -705,6 +705,7 @@ def solve_victors_with_seleniumbase():
                         window.turnstile.render = function(container, options) {{
                             try {{
                                 if (options) {{
+                                    options.appearance = 'always';
                                     const _origCb = options.callback;
                                     options.callback = function(tok) {{
                                         window.__victorsTurnstileToken = tok;
@@ -879,7 +880,7 @@ def solve_victors_with_seleniumbase():
                                             sitekey: '{VICTORS_SITEKEY}',
                                             action: 'login',
                                             theme: 'dark',
-                                            appearance: 'interaction-only',
+                                            appearance: 'always',
                                             callback: function(tok) {{
                                                 window.__victorsTurnstileToken = tok;
                                             }}

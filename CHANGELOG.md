@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Kynex 24h Energy & Boost Automation, MRG TonConnect Wallet Re-binding & Diggo 4x Ad Loop (October 27, 2026)**:
+  - **Kynex Network Energy Depletion & 00:00:00 Stopped State Solved**:
+    * Reverse-engineered `boost-energy.html` and `tasks.html` from `kynex.top`. Identified that mining stops when `energySeconds` drains to 0, requiring Daily Energy Ad Task (+12h Energy) and Boost Energy (Prime +5h, Advance +7h).
+    * Implemented programmatic Daily Energy Ad Task completion via RTDB writes (`users/{uid}/energyTaskProgress` -> `{"date": today, "count": 10}`, `users/{uid}/energyTaskClaimed` -> `{"date": today}`) and 43,200s (+12h) energy increment.
+    * Implemented programmatic Boost Energy ad completion: Prime (+5h via `boostAdProgress/prime` + `claimAdReward` callable) and Advance (+7h via `boostAdProgress/advanced` + `claimAdReward` callable).
+    * Implemented Milestone Boost claim (`claimAdsMilestoneBoost` callable) and automatic mining restart (`startMining` callable) ensuring mining session remains continuously ACTIVE.
+    * Tested live on Master Account (`6727787768`), topping energy up to 90,000s (25h) and restarting mining (`mining_active: True`, balance 142,545.8 KNX).
+    * Tested live on Koram Shah (`7648254021`, Account KS), topping energy up (`energy_task_+12h`, `boost_prime_+5h`, `claimed_35.89_KNX`, `mining_active: True`, balance 94,032.8 KNX).
+  - **MRG Miner Wallet Re-connection & Mining Unstuck for Account KS (`7648254021`)**:
+    * Diagnosed root cause for Account KS showing "Stopped / Connect GRAM Wallet" with 94.896525 MRG unclaimed: the account was missing an active TonConnect 2.0 proof binding.
+    * Programmatically signed and submitted TonConnect 2.0 proof-of-ownership via `create_mrg_ton_proof` and `/api/user/connect-wallet`.
+    * Wallet `UQC8xeCT2LQHUOceVFozYqRR8xEnxdZeo4Hsy_B9_jrkpp-1` was successfully bound (`isTonConnected: True`), automatically converting the 94.896525 MRG into inAppBalance (now 4,207.84 MRG) and restarting mining.
+    * Verified Account #1 (AH) upgraded miner level from 181 to 183.
+  - **DiggoMiner 4x Daily Rewarded Ads Loop**:
+    * Upgraded DiggoMiner ad routine in `deploy_both_cf_workers.py` and `finish_all_fleet_sidetasks.py` to loop through all remaining daily ad slots (`quotaTotal - quotaUsed`, up to 4/4 daily ads at +10 DIGGO each) via `/api/adsgram/start`, `/api/adsgram/complete`, and `/api/tasks/claim`.
+  - **Victor's Company Cloudflare Turnstile Render Appearance Fix**:
+    * Fixed Turnstile rendering in headless Chromium runners: patched `options.appearance` from `'interaction-only'` to `'always'` in `victors_sb_solver.py` and `mrg_turnstile_solver.py` so Cloudflare Turnstile iframes render immediately without requiring human user gestures.
+  - **Cloudflare Edge Synchronizer Deployment**:
+    * Deployed updated workers to Node 4 (`https://restore-agy.agorameet.workers.dev`) with active 24/7 edge cron trigger (`*/15 * * * *`). Verified Telegram webhook and bot menu button sync.
+
+
 - **⚡ AdxEarn AI Rewarded Ads & CPA Offers Automation, Victor's Company Cloud Solver Dispatch (October 27, 2026)**:
   - **AdxEarn AI Rewarded Video Ads & Flash Bonus Integration**:
     * Integrated `/rewards/ad-networks/status`, `/rewards/ad-verify-start`, and `/rewards/ad-claim` into `finish_all_fleet_sidetasks.py`, `deploy_both_cf_workers.py`, `mrg_turnstile_solver.py`, and `app.py`.

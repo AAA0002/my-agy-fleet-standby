@@ -1022,11 +1022,59 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         }
       } catch (_) {}
 
+      const todayStr = new Date().toISOString().slice(0, 10);
       try {
         const uResp = await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}.json?auth=${idToken}`);
         if (uResp.ok) {
           const uDoc = await uResp.json();
-          if ((uDoc?.energySeconds || 0) <= 60) {
+          let currSec = parseFloat(uDoc?.energySeconds || 0);
+
+          // 1. Daily Energy Ad Task (+12h Energy / 43200s)
+          if (uDoc?.energyTaskClaimed?.date !== todayStr) {
+            await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/energyTaskProgress.json?auth=${idToken}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: todayStr, count: 10 })
+            }).catch(() => {});
+            await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/energyTaskClaimed.json?auth=${idToken}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: todayStr })
+            }).catch(() => {});
+            currSec += 43200;
+            await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/energySeconds.json?auth=${idToken}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(currSec)
+            }).catch(() => {});
+          }
+
+          // 2. Prime Boost (+5h Energy)
+          const adsWatched = uDoc?.adsWatched || {};
+          const primeWatched = adsWatched.date === todayStr ? (adsWatched.prime || 0) : 0;
+          if (primeWatched < 1) {
+            await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/boostAdProgress/prime.json?auth=${idToken}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: todayStr, count: 5 })
+            }).catch(() => {});
+            await humanDelay(300, 600);
+            await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimAdReward", {
+              method: "POST", headers: kHeaders, body: JSON.stringify({ data: { tier: "prime" } })
+            }).catch(() => {});
+          }
+
+          // 3. Advance Boost (+7h Energy)
+          const advWatched = adsWatched.date === todayStr ? (adsWatched.advanced || 0) : 0;
+          if (advWatched < 1) {
+            await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/boostAdProgress/advanced.json?auth=${idToken}`, {
+              method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: todayStr, count: 10 })
+            }).catch(() => {});
+            await humanDelay(1500, 2500);
+            await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimAdReward", {
+              method: "POST", headers: kHeaders, body: JSON.stringify({ data: { tier: "advanced" } })
+            }).catch(() => {});
+          }
+
+          // 4. Milestone Boost
+          await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimAdsMilestoneBoost", {
+            method: "POST", headers: kHeaders, body: JSON.stringify({ data: {} })
+          }).catch(() => {});
+
+          // Baseline Safety Refill
+          if (currSec <= 60) {
             await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/energySeconds.json?auth=${idToken}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
@@ -1413,15 +1461,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }
         }
 
-        // Rewarded Ad Task
+        // Rewarded Ad Tasks (Up to 4 ads per 24 hours)
         const tAd = tasks.ad || {};
-        if (tAd.enabled && !tAd.claimed && ((tAd.quotaUsed || 0) < (tAd.quotaTotal || 4))) {
+        const remainingAds = Math.max(0, (tAd.quotaTotal || 4) - (tAd.quotaUsed || 0));
+        for (let adIdx = 0; adIdx < remainingAds; adIdx++) {
           const aResp = await fetch("https://diggo.linkpc.net/api/adsgram/start", {
             method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({})
           }).catch(() => null);
           if (aResp && aResp.ok) {
             const aData = await aResp.json().catch(() => ({}));
             if (aData.attemptId) {
+              await humanDelay(1500, 2500);
               await fetch("https://diggo.linkpc.net/api/adsgram/complete", {
                 method: "POST", headers: { ...dHeaders, "Idempotency-Key": randKey() }, body: JSON.stringify({ attemptId: aData.attemptId })
               }).catch(() => {});

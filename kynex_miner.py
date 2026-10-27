@@ -258,8 +258,68 @@ async def farm_kynex_account(
     result["balance"] = knx_bal
     result["level"] = level
     result["energy_seconds"] = energy_sec
+    import datetime
+    today_utc = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
 
-    # 3. Energy refill check: if energySeconds <= 0, refill to starter capacity (12h)
+    # 3. Energy Tasks & Boost Automation (Daily Energy Ad Task +12h, Prime +5h, Advance +7h)
+    # A. Daily Energy Ad Task (+12h Energy / 43,200s)
+    try:
+        energy_task_claimed = profile.get("energyTaskClaimed", {}) or {}
+        if energy_task_claimed.get("date") != today_utc:
+            url_prog = f"{DATABASE_URL}/users/{uid}/energyTaskProgress.json?auth={id_token}"
+            url_claim = f"{DATABASE_URL}/users/{uid}/energyTaskClaimed.json?auth={id_token}"
+            url_sec = f"{DATABASE_URL}/users/{uid}/energySeconds.json?auth={id_token}"
+            await session.put(url_prog, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
+            await session.put(url_claim, json={"date": today_utc}, timeout=aiohttp.ClientTimeout(total=8))
+            new_sec = (energy_sec or 0) + 43200.0
+            async with session.put(url_sec, json=new_sec, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    energy_sec = new_sec
+                    result["energy_seconds"] = energy_sec
+                    result["notes"].append("energy_task_+12h")
+    except Exception as e:
+        logger.debug(f"[{name}] Kynex energy task note: {e}")
+
+    # B. Prime Ads (+5h Energy / 18,000s)
+    try:
+        ads_watched = profile.get("adsWatched", {}) or {}
+        prime_watched = ads_watched.get("prime", 0) if ads_watched.get("date") == today_utc else 0
+        if prime_watched < 1:
+            url_prime = f"{DATABASE_URL}/users/{uid}/boostAdProgress/prime.json?auth={id_token}"
+            await session.put(url_prime, json={"date": today_utc, "count": 5}, timeout=aiohttp.ClientTimeout(total=8))
+            await jitter(0.4, 0.8)
+            res_prime = await call_kynex_function(session, id_token, "claimAdReward", {"tier": "prime"})
+            if res_prime and not res_prime.get("_error"):
+                energy_sec = float(res_prime.get("newEnergySeconds", energy_sec) or energy_sec)
+                result["energy_seconds"] = energy_sec
+                result["notes"].append("boost_prime_+5h")
+    except Exception as e:
+        logger.debug(f"[{name}] Kynex boost prime note: {e}")
+
+    # C. Advance Ads (+7h Energy / 25,200s)
+    try:
+        adv_watched = ads_watched.get("advanced", 0) if ads_watched.get("date") == today_utc else 0
+        if adv_watched < 1:
+            url_adv = f"{DATABASE_URL}/users/{uid}/boostAdProgress/advanced.json?auth={id_token}"
+            await session.put(url_adv, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
+            await asyncio.sleep(2.0)
+            res_adv = await call_kynex_function(session, id_token, "claimAdReward", {"tier": "advanced"})
+            if res_adv and not res_adv.get("_error"):
+                energy_sec = float(res_adv.get("newEnergySeconds", energy_sec) or energy_sec)
+                result["energy_seconds"] = energy_sec
+                result["notes"].append("boost_advance_+7h")
+    except Exception as e:
+        logger.debug(f"[{name}] Kynex boost advance note: {e}")
+
+    # D. Milestone Boost
+    try:
+        res_mile = await call_kynex_function(session, id_token, "claimAdsMilestoneBoost")
+        if res_mile and not res_mile.get("_error") and res_mile.get("granted"):
+            result["notes"].append(f"milestone_boost_unlocked_{len(res_mile['granted'])}")
+    except Exception as e:
+        logger.debug(f"[{name}] Kynex milestone boost note: {e}")
+
+    # E. Baseline Safety: if energy still <= 60, refill to starter capacity
     if energy_sec <= 60:
         try:
             url = f"{DATABASE_URL}/users/{uid}/energySeconds.json?auth={id_token}"

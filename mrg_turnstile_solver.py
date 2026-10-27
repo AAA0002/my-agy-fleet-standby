@@ -1113,6 +1113,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                     window.turnstile.render = function(container, options) {{
                         try {{
                             if (options) {{
+                                options.appearance = 'always';
                                 const _origCb = options.callback;
                                 options.callback = function(tok) {{
                                     window.__victorsTurnstileToken = tok;
