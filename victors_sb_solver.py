@@ -801,16 +801,45 @@ def solve_victors_with_seleniumbase():
                             break
 
                     iframe_info = sb.execute_script("""
-                        let iframes = Array.from(document.querySelectorAll('iframe'));
-                        for (const el of document.querySelectorAll('*')) {
-                            if (el.shadowRoot) {
-                                iframes.push(...Array.from(el.shadowRoot.querySelectorAll('iframe')));
+                        function findCfIframe(root) {
+                            if (!root) return null;
+                            let iframes = root.querySelectorAll ? Array.from(root.querySelectorAll('iframe')) : [];
+                            for (let f of iframes) {
+                                if (f.src && (f.src.includes('challenges.cloudflare.com') || f.src.includes('turnstile'))) return f;
                             }
+                            let all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+                            for (let el of all) {
+                                if (el.shadowRoot) {
+                                    let found = findCfIframe(el.shadowRoot);
+                                    if (found) return found;
+                                }
+                            }
+                            return null;
                         }
-                        let cf_if = iframes.find(f => f.src && (f.src.includes('challenges.cloudflare.com') || f.src.includes('turnstile')));
+
+                        let cf_if = findCfIframe(document);
+                        let cont = document.querySelector('div[class*="min-h"]') || document.querySelector('div[ref]');
+                        let cont_rect = cont ? cont.getBoundingClientRect() : null;
+
                         if (cf_if) {
                             let rect = cf_if.getBoundingClientRect();
-                            return { present: true, x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+                            return {
+                                present: true,
+                                x: rect.left || (cont_rect ? cont_rect.left : 0),
+                                y: rect.top || (cont_rect ? cont_rect.top : 0),
+                                width: rect.width || (cont_rect ? cont_rect.width : 300),
+                                height: rect.height || (cont_rect ? cont_rect.height : 65)
+                            };
+                        }
+                        if (cont_rect && cont_rect.height > 20) {
+                            return {
+                                present: true,
+                                container: true,
+                                x: cont_rect.left,
+                                y: cont_rect.top,
+                                width: cont_rect.width,
+                                height: cont_rect.height
+                            };
                         }
                         return { present: false };
                     """)
@@ -828,20 +857,29 @@ def solve_victors_with_seleniumbase():
                             try:
                                 bx = iframe_info.get("x", 0) + 32
                                 by = iframe_info.get("y", 0) + (iframe_info.get("height", 65) / 2)
+                                sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": bx, "y": by})
+                                time.sleep(0.05)
                                 sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mousePressed", "x": bx, "y": by, "button": "left", "clickCount": 1})
                                 time.sleep(0.1)
                                 sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": bx, "y": by, "button": "left", "clickCount": 1})
                             except Exception:
                                 pass
                     else:
-                        # 1. Trigger interaction-only activation by clicking the Turnstile host container
+                        # 1. Trigger interaction-only activation by real CDP click on the Turnstile host container
                         try:
-                            sb.execute_script("""
+                            cont_pos = sb.execute_script("""
                                 const el = document.querySelector('div[class*="min-h"]') || document.querySelector('h1') || document.body;
                                 if (el) {
-                                    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                                    const r = el.getBoundingClientRect();
+                                    return { x: r.left + 35, y: r.top + 35 };
                                 }
+                                return null;
                             """)
+                            if cont_pos:
+                                sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": cont_pos["x"], "y": cont_pos["y"]})
+                                sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mousePressed", "x": cont_pos["x"], "y": cont_pos["y"], "button": "left", "clickCount": 1})
+                                time.sleep(0.05)
+                                sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": cont_pos["x"], "y": cont_pos["y"], "button": "left", "clickCount": 1})
                         except Exception:
                             pass
 
