@@ -493,6 +493,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         ver_res = verify_human_token(m_init, api_tok)
         if ver_res.get("success"):
             claim_mining_reward(m_init, api_tok)
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
             save_mrg_pass_to_upstash(uid, api_tok)
             return True
 
@@ -751,6 +752,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         if ver_res.get("success"):
             logger.info(f"🎉 UID {uid}: Turnstile verify-human succeeded via DOM token!")
             claim_mining_reward(m_init, acquired_token["token"])
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
             save_mrg_pass_to_upstash(uid, acquired_token["token"])
             await context.close()
             return True
@@ -759,6 +761,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
         if acquired_token["token"]:
             claim_mining_reward(m_init, acquired_token["token"])
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
             save_mrg_pass_to_upstash(uid, acquired_token["token"])
         await context.close()
         return True
@@ -860,6 +863,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             if ver_res.get("success"):
                 logger.info(f"🎉 UID {uid}: Programmatic verify-human succeeded!")
                 claim_mining_reward(m_init, tok)
+                safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
                 save_mrg_pass_to_upstash(uid, tok)
                 await context.close()
                 return True
@@ -2786,11 +2790,13 @@ async def run_mrg_auto_solver():
             logger.warning(f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: Could not fetch account status ({stat.get('error')}).")
             continue
 
-        # Claim MRG side tasks via REST
+        # Claim MRG side tasks via REST (including recurring 24h/12h/6h tasks)
         completed_mrg_tasks = set(stat.get("completedTaskIds", []))
         for tk in stat.get("tasks", []):
             tk_id = tk.get("taskId")
-            if tk_id and tk_id not in completed_mrg_tasks:
+            tk_type = str(tk.get("taskType") or "")
+            is_recurring = "recurring" in tk_type
+            if tk_id and (tk_id not in completed_mrg_tasks or is_recurring):
                 safe_post(f"{API_BASE}/api/user/claim-task", {"initData": mrg_init, "taskId": tk_id})
 
         # Auto unlock level if balance permits
@@ -2819,6 +2825,14 @@ async def run_mrg_auto_solver():
                 f"[{idx:02d}/{len(FLEET_UIDS)}] UID {uid}: ✅ MRG Human pass active until {stat['humanVerifiedUntil']}. "
                 f"Bal: {stat['inAppBalance']:.1f} MRG, Unclaimed: {stat['unclaimed']:.2f} MRG"
             )
+            # CRITICAL: Instantly claim mining reward and daily checkin via REST for accounts with active pass
+            if stat.get("unclaimed", 0) > 0.05:
+                c_res = claim_mining_reward(mrg_init)
+                if c_res.get("success"):
+                    logger.info(f"🎉 UID {uid}: Successfully claimed {stat['unclaimed']:.2f} MRG via active human pass!")
+                    total_claimed_mrg += stat["unclaimed"]
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": mrg_init})
+            auto_unlock_mrg_level(mrg_init, cur_mrg_lvl, stat.get("inAppBalance", 0.0) + stat.get("unclaimed", 0.0))
 
     needed_mrg = len(accounts_needing_solver)
     total_browser_solves_needed = (

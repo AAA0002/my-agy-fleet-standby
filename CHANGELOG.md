@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 Critical Farm Engine Bug Fixes: MRG Daily Checkin, Recurring Task Resets & Active Pass Auto-Claims (October 27, 2026)**:
+  - **MRG Miner Daily Check-In Integration (`/api/user/daily-checkin`)**:
+    * Identified that the MRG Daily Check-in endpoint (`https://mrg.up.railway.app/api/user/daily-checkin`) was completely missing across all routines (`deploy_both_cf_workers.py`, `finish_all_fleet_sidetasks.py`, `mrg_turnstile_solver.py`, `app.py`).
+    * Integrated daily check-in calls across all 4 farming engines. Tested live on Koram Shah (`7648254021`), successfully claiming `+5 MRG` on Day 1 streak.
+  - **MRG Recurring Tasks Parsing Bug Fixed (`recurring_24h`, `recurring_12h`, `recurring_6h`)**:
+    * Diagnosed root cause of unclaimed MRG tasks: the parser checked `t.taskType === "recurring"` or `t.type.includes("recurring")`, but MRG API returns `taskType: "recurring_24h"`, `recurring_12h`, and `recurring_6h` (with `t.type` undefined).
+    * Upgraded check to `(t.taskType && String(t.taskType).includes("recurring"))` across `deploy_both_cf_workers.py`, `finish_all_fleet_sidetasks.py`, `mrg_turnstile_solver.py`, and `app.py`, allowing 6h, 12h, and 24h recurring tasks to be re-claimed automatically upon cooldown reset.
+  - **Active Human Pass Instant REST Claims in Phase 1 (`mrg_turnstile_solver.py`)**:
+    * Resolved critical flaw where accounts that already possessed an active human pass (`has_active_pass = True`) were skipped in Phase 1 and bypassed by Phase 2 browser solvers, leaving rewards unclaimed.
+    * Added immediate REST claiming for `claim_mining_reward` and `daily-checkin` during Phase 1 for all accounts with valid human passes, instantly compounding rewards into level upgrades.
+  - **DiggoMiner 8-Hour Offline Cap Claim Verification**:
+    * Verified that DiggoMiner hits an 8-hour cap (`offlineCapMs: 28800000`, ~25.29 DIGGO) where mining pauses until claimed. Verified live API execution claiming 25.30 DIGGO and increasing Master balance to 1,458.13 DIGGO with active restart.
+  - **Cloud Turnstile Solver Trigger**:
+    * Dispatched Run #10 on `AAA0002/cloud-fleet-solver` to solve Turnstile challenges and refresh `humanVerifiedUntil` across all 20 accounts.
+  - **Disaster Recovery & Deployment**:
+    * Deployed updated Cloudflare Edge Worker bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+
 - **💎 Zero Ecosystem Mixing Hardening, 9-Bot Fleet Synchronization & On-Chain Treasury Integration (October 27, 2026)**:
   - **Zero Ecosystem Mixing Compliance**:
     * Strictly decoupled Admin Bot (`@myagyai`, ID `8858823950`) and User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`) command trees, keyboards, and webhooks in `deploy_both_cf_workers.py`.

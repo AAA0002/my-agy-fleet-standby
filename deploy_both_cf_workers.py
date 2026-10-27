@@ -442,11 +442,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "8167732110:AAE...") }
           }).catch(() => {});
         }
+
+        // Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
+        await fetchWithRetry("https://mrg.up.railway.app/api/user/daily-checkin", {
+          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
+        }, 1, 600).catch(() => {});
+
         const tasks = meD.tasks || [];
         const completed = new Set(meD.completedTaskIds || []);
         for (const t of tasks) {
           const tid = t.taskId || t.id;
-          const isRecurring = t.taskType === "recurring" || (t.type && t.type.includes("recurring"));
+          const isRecurring = (t.taskType && String(t.taskType).includes("recurring")) || (t.type && String(t.type).includes("recurring"));
           if (tid && (!completed.has(tid) || isRecurring)) {
             const isLinkTask = (t.type === "link_visit" || t.url || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("social") || String(t.title || "").toLowerCase().includes("shorts") || String(t.title || "").toLowerCase().includes("discussion") || String(t.title || "").toLowerCase().includes("post"));
             const waitTime = isLinkTask ? 16000 : 2800;

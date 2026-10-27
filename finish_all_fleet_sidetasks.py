@@ -360,6 +360,17 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
         res["balance"] = in_bal
         res["level"] = cur_lvl
 
+        # 1.5. MRG Daily Check-in (+5 to +15 MRG daily streak)
+        try:
+            async with session.post("https://mrg.up.railway.app/api/user/daily-checkin", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as dcr:
+                if dcr.status == 200:
+                    dcd = await dcr.json()
+                    if dcd.get("success"):
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"checkin_reward_{dcd.get('reward', 5)}_streak_{dcd.get('streak', 1)}")
+        except Exception as ce:
+            logger.debug(f"[{name}] MRG checkin note: {ce}")
+
         # 2. Bind TON Wallet with TonConnect 2.0 Proof
         is_ton_conn = u_obj.get("isTonConnected", False)
         target_ton_w = get_ton_wallet_address(acc, uid)
@@ -385,12 +396,14 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
                 if cr.status in (200, 201):
                     res["notes"].append("ton_wallet_bound")
 
-        # 3. Tasks Completion
+        # 3. Tasks Completion (including recurring 24h/12h/6h tasks)
         completed = set(me_d.get("completedTaskIds", []))
         tasks = me_d.get("tasks", [])
         for t in tasks:
             tid = t.get("taskId")
-            if tid and tid not in completed:
+            t_type = str(t.get("taskType") or "")
+            is_rec = "recurring" in t_type
+            if tid and (tid not in completed or is_rec):
                 # Claim task
                 await jitter(0.8, 1.8)
                 async with session.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cl_resp:
@@ -405,6 +418,30 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
                             if cld2.get("success"):
                                 res["tasks_claimed"] += 1
                                 res["notes"].append(f"claimed_wait_{tid}")
+
+        # 3.5. Instant REST Claim if human pass is active
+        unclaimed_mined = float(u_obj.get("unclaimedMiningBalance", 0) or 0)
+        human_until = u_obj.get("humanVerifiedUntil")
+        if unclaimed_mined > 0.05 and human_until:
+            try:
+                from datetime import datetime, timezone
+                dt = datetime.fromisoformat(human_until.replace("Z", "+00:00"))
+                if (dt - datetime.now(timezone.utc)).total_seconds() > 300:
+                    claim_payload = {
+                        "initData": m_init,
+                        "deviceInfo": {
+                            "model": "SM-S928B", "ram": 12, "screen": "1080x2340",
+                            "vendor": "Google Inc. (Qualcomm)", "renderer": "ANGLE (Qualcomm, Adreno (TM) 750, OpenGL ES 3.2)",
+                            "cores": 8
+                        }
+                    }
+                    async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json=claim_payload, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
+                        if clr.status == 200:
+                            res["notes"].append(f"claimed_mined_{unclaimed_mined:.2f}")
+                            in_bal += unclaimed_mined
+                            res["balance"] = in_bal
+            except Exception:
+                pass
 
         # 4. Level Auto-Upgrade (if enough balance, including TON wallet balance)
         ton_holding = float(u_obj.get("tonWalletBalance", 0) or 0)

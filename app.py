@@ -5464,10 +5464,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     c_code, c_resp = await safe_post("https://mrg.up.railway.app/api/user/connect-wallet", conn_body, req_headers=m_headers)
                     logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet with TonConnect proof: {target_ton_w[:10]}... (res: {c_code})")
 
+                # Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
+                await safe_post("https://mrg.up.railway.app/api/user/daily-checkin", {"initData": m_init}, req_headers=m_headers)
+
                 completed = set(me_d.get("completedTaskIds", []))
                 for t in me_d.get("tasks", []):
                     tid = t.get("taskId")
-                    if tid and tid not in completed:
+                    is_rec = "recurring" in str(t.get("taskType", ""))
+                    if tid and (tid not in completed or is_rec):
                         is_link = (t.get("type") == "link_visit" or t.get("url") or "channel" in str(t.get("title", "")).lower() or "social" in str(t.get("title", "")).lower())
                         if is_link:
                             async def _mrg_claim_link_task(task_id):
