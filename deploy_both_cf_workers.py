@@ -4830,6 +4830,16 @@ fi
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: "@myagyai", text: bMsg, parse_mode: "Markdown" })
             }).catch(() => {}));
+
+            const notifChannel = env.ADMIN_NOTIFICATION_CHANNEL_ID || "-1004358687850";
+            if (notifChannel) {
+              const shortBackup = `📦 <b>Edge Backup Ready</b>\n• Node: <code>__SUBDOMAIN__.workers.dev</code>\n• Vault: @myagyai\n• Status: 🟢 100% Secure`;
+              ctx.waitUntil(fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: notifChannel, text: shortBackup, parse_mode: "HTML" })
+              }).catch(() => {}));
+            }
           }
         }
 
@@ -15851,6 +15861,7 @@ Reply to Arif naturally:`;
 
             const alertToken = env.ALERT_BOT_TOKEN;
             const ownerId = env.OWNER_ID || "6727787768";
+            const notifChannel = env.ADMIN_NOTIFICATION_CHANNEL_ID || "-1004358687850";
             if (alertToken && ownerId) {
               const adminTicket = `📩 *NEW USER SUPPORT TICKET*\n━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *From:* ${senderName} (@${msg.from?.username || "None"})\n` +
@@ -15864,6 +15875,19 @@ Reply to Arif naturally:`;
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: ownerId, text: adminTicket, parse_mode: "Markdown" })
               }).catch(() => {}));
+
+              // Short message for AAA Admin notification channel (-1004358687850)
+              if (notifChannel) {
+                const shortTicket = `📩 <b>User Support Ticket</b>\n` +
+                  `• <b>From:</b> ${senderName} (<code>${chatId}</code>)\n` +
+                  `• <b>Message:</b> "${userQuery.slice(0, 100)}${userQuery.length > 100 ? '...' : ''}"\n` +
+                  `👉 <code>/reply ${chatId} &lt;msg&gt;</code>`;
+                ctx.waitUntil(fetch(`https://api.telegram.org/bot${alertToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chat_id: notifChannel, text: shortTicket, parse_mode: "HTML" })
+                }).catch(() => {}));
+              }
             }
 
             const confirmMsg = `✅ *Support Ticket Delivered* 📩\n\n` +
@@ -16362,6 +16386,11 @@ async def deploy_account(acc):
             "name": "USER_BOT_TOKEN",
             "type": "plain_text",
             "text": USER_BOT_TOKEN,
+        },
+        {
+            "name": "ADMIN_NOTIFICATION_CHANNEL_ID",
+            "type": "plain_text",
+            "text": os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850"),
         },
         {
             "name": "FLEET_2FA_PASSWORD",

@@ -23,6 +23,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
+ADMIN_NOTIFICATION_CHANNEL_ID = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
 BACKUP_CHANNEL = "@myagyai"
 
 # Bot Fleet core files
@@ -340,6 +341,19 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             # 3. Post instructions to @myagyai (never pin, keep channel clean)
             async with session.post(url_msg, json={"chat_id": BACKUP_CHANNEL, "text": instructions, "parse_mode": "HTML"}):
                 pass
+
+            # 4. Post concise short status to AAA Admin notification channel (-1004358687850)
+            if ADMIN_NOTIFICATION_CHANNEL_ID:
+                short_notif = (
+                    f"🛡️ <b>Backup Synchronized</b>\n"
+                    f"• <b>Archive:</b> <code>{zip_filename}</code> ({zip_size_kb} KB)\n"
+                    f"• <b>Fleet:</b> <code>{accounts_count} Accounts</code> | <b>Vault:</b> <code>@myagyai</code>\n"
+                    f"• <b>Status:</b> 🟢 100% Encrypted & Ready"
+                )
+                try:
+                    await session.post(url_msg, json={"chat_id": ADMIN_NOTIFICATION_CHANNEL_ID, "text": short_notif, "parse_mode": "HTML"}, timeout=aiohttp.ClientTimeout(total=8))
+                except Exception:
+                    pass
 
             # Note: Local backup archive is preserved (up to 2 newest copies) via create_backup_zip pruning
             return True, f"✅ Backup uploaded to https://t.me/myagyai and saved locally!"

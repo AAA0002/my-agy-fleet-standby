@@ -73,7 +73,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
      * **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Dedicated exclusively to public end-users. Manages community multi-pool mining, points economy, daily check-in streaks, rewarded video ads, and Stars VIP passes. Handled via `USER_BOT_TOKEN`.
      * Never mix bot tokens, commands, webhooks, or handlers. Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN logins) must NEVER be exposed in the User Bot.
    - **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
-     * **Admin Channels & Vaults (Private/Administrative)**: Disaster Recovery Vault Channel (`@myagyai`, `-1004453515167`), Payouts & Daily Ledger (`-1004402765950`), and Fleet Internal Supergroup (`-1003973231307`). Strictly for disaster recovery archives, payout logs, and fleet telemetry. NEVER leak administrative data, encrypted archives, or internal fleet telemetry to User Community channels.
+     * **Admin Channels & Vaults (Private/Administrative)**: Disaster Recovery Vault Channel (`@myagyai`, `-1004453515167`), Payouts & Daily Ledger (`-1004402765950`), Fleet Internal Supergroup (`-1003973231307`), and Admin Notification Channel (`AAA Admin notification`, `-1004358687850`). Strictly for disaster recovery archives, payout logs, fleet telemetry, and short concise operational alert cards. NEVER leak administrative data, encrypted archives, or internal fleet telemetry to User Community channels.
      * **User Community Channels (Public/End-Users)**: Official Announcements (`@AAAAutoMiner`, `-1003684868577`), Community Mining Group (`@AAAAUTOMINING`, `-1004255751168`), and Activity & Verification (`@AAA_ACTIVITY`, `-1004332544939`). Exclusively for community announcements, mining updates, onboarding gates, and user activity. NEVER post admin logs, stack traces, disaster recovery dumps, or session credentials to these channels.
    - **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
      * **Executive Fleet Operations Console (`admin.html` at `/admin`)**: Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**. Displays real-time status of the 20 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers. Does NOT manage public end-users, ad impressions, or public community points.
@@ -319,6 +319,8 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - Purpose: On-chain withdrawal receipts, daily profit statements, Jetton gas refuel notifications, and accounting audit trail.
   - **Fleet Internal Supergroup**: Channel ID: `-1003973231307` (*AAA T Wallet Supergroup*)
     - Purpose: Internal fleet sync telemetry, multi-wallet heartbeat checks, and node failover alerts.
+  - **Admin Notification Channel**: `AAA Admin notification` (Channel ID: `-1004358687850`, Env: `ADMIN_NOTIFICATION_CHANNEL_ID: -1004358687850`)
+    - Purpose: Short, concise operational notifications for administrators (new account links, edge failover alerts, user support ticket alerts, and backup receipts).
 
   ---
 

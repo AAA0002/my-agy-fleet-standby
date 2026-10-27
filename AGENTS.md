@@ -79,6 +79,7 @@
     - 🛡️ Disaster Recovery Vault Channel: `@myagyai` (`-1004453515167`)
     - 💳 Payouts & Daily Ledger Channel: `-1004402765950`
     - 🏢 Fleet Internal Supergroup: `-1003973231307` (*AAA T Wallet Supergroup*)
+    - 🔔 Admin Notification Channel: `AAA Admin notification` (`-1004358687850` — Short, concise system & operational alert cards)
     - *Directive*: Strictly for system backups, encrypted disaster recovery archives, internal payout ledgers, and fleet health notifications. NEVER route, broadcast, or leak administrative data, encrypted archives, or internal fleet telemetry to user community channels.
   - **User Community Channels (Public/End-Users)**:
     - 📢 Official Announcements: `@AAAAutoMiner` (`-1003684868577`)

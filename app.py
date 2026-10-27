@@ -114,6 +114,7 @@ SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 API_ID = int(os.getenv("TELEGRAM_API_ID", "37321306"))
 API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
+ADMIN_NOTIFICATION_CHANNEL_ID = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ALERT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""
 USER_BOT_TOKEN = os.getenv("USER_BOT_TOKEN", "")
 PRIMARY_CHAT_ID = "6727787768"
@@ -620,10 +621,12 @@ async def _trigger_node_rotation(to_node: int, cooldown_seconds: int = 300):
         f"🛡️ <b>Anti-Ban Safeguard:</b> All Telegram MTProto sockets disconnected to prevent dual-IP bans.\n"
         f"⏸️ <b>Source Node:</b> Suspending container to freeze free tier hour usage."
     )
-    if REPORT_BOT_TOKEN and REPORT_CHAT_ID:
+    if REPORT_BOT_TOKEN:
         try:
             async with aiohttp.ClientSession() as s:
-                await s.post(f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage", json={"chat_id": REPORT_CHAT_ID, "text": alert_txt, "parse_mode": "HTML"})
+                for tid in [REPORT_CHAT_ID, ADMIN_NOTIFICATION_CHANNEL_ID]:
+                    if tid:
+                        await s.post(f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage", json={"chat_id": tid, "text": alert_txt, "parse_mode": "HTML"})
         except Exception:
             pass
 
@@ -3421,14 +3424,33 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"🚀 <b>Auto-Farming Status:</b> Active across all 9 legitimate bots in the cloud!"
     )
     async with aiohttp.ClientSession() as s:
-        try:
-            await s.post(
-                f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
-                timeout=aiohttp.ClientTimeout(total=8)
+        # Full detailed receipt with vault keys to Master Chat ID
+        if chat_id:
+            try:
+                await s.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
+                    timeout=aiohttp.ClientTimeout(total=8)
+                )
+            except Exception:
+                pass
+
+        # Concise short message to AAA Admin notification channel (-1004358687850)
+        if ADMIN_NOTIFICATION_CHANNEL_ID:
+            short_notif = (
+                f"{'🎉 <b>Account #' + str(idx) + ' Relinked</b>' if is_existing else '🎉 <b>New Account #' + str(idx) + ' Linked</b>'}\n"
+                f"• <b>Account:</b> {name} (<code>{phone}</code>)\n"
+                f"• <b>Status:</b> 🟢 9/9 Bots Mining Active\n"
+                f"• <b>Wallets:</b> Dedicated TON, EVM, TRON, SOL, BTC Bound ✅"
             )
-        except Exception:
-            pass
+            try:
+                await s.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={"chat_id": ADMIN_NOTIFICATION_CHANNEL_ID, "text": short_notif, "parse_mode": "HTML"},
+                    timeout=aiohttp.ClientTimeout(total=8)
+                )
+            except Exception:
+                pass
 
 
 async def sync_new_account_to_clouds(acc_entry: dict):
@@ -4928,7 +4950,7 @@ async def send_payout_receipt(message: str, dedupe_key: str = None):
     bot_token = os.getenv("REPORT_BOT_TOKEN", "")
     if not bot_token:
         return
-    targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
+    targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID, ADMIN_NOTIFICATION_CHANNEL_ID]
     async with aiohttp.ClientSession() as s:
         for tid in targets:
             try:
