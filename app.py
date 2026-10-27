@@ -1765,6 +1765,16 @@ async def api_chickenland_snipe(request: Request, code: str = "", buy_hens: bool
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     if not code:
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                code = body.get("code", "")
+                if "buy_hens" in body:
+                    buy_hens = bool(body["buy_hens"])
+        except Exception:
+            pass
+
+    if not code:
         raise HTTPException(status_code=400, detail="Missing promo code")
 
     from chickenland_promo_sniper import snipe_promo_fleet

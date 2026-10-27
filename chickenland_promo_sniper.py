@@ -358,7 +358,7 @@ async def watch_and_snipe_daemon(poll_interval: int = 10):
         else:
             if not is_code_claimed(code):
                 print(f"🔥 ACTIVE PROMO CODE FOUND ON STARTUP: {code}! LAUNCHING PARALLEL FLEET BURST...")
-                report = await snipe_promo_fleet(code, fleet=fleet)
+                report = await snipe_promo_fleet(code)
                 print(f"✅ Startup burst: {report['claimed_count']}/{report['total_accounts']} claimed, +{report['total_coins']} coins")
             seen_in_memory.add(code)
             mark_code_seen(code)
@@ -380,7 +380,7 @@ async def watch_and_snipe_daemon(poll_interval: int = 10):
                         continue
 
                     print(f"🔥 NEW PROMO CODE DETECTED: {code}! LAUNCHING PARALLEL FLEET BURST...")
-                    report = await snipe_promo_fleet(code, fleet=fleet)
+                    report = await snipe_promo_fleet(code)
                     print(f"✅ Burst complete: {report['claimed_count']}/{report['total_accounts']} claimed, +{report['total_coins']} coins in {report['burst_time_sec']}s")
             
         except Exception as e:

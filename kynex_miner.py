@@ -332,6 +332,8 @@ async def farm_kynex_account(
         await session.put(url_ultra, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
         url_ultra2 = f"{DATABASE_URL}/users/{uid}/boostAdProgress/ultraBoost.json?auth={id_token}"
         await session.put(url_ultra2, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
+        url_ultra3 = f"{DATABASE_URL}/users/{uid}/superBoostAdProgress.json?auth={id_token}"
+        await session.put(url_ultra3, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
         
         # Try server markAdWatchedForSuperBoost if open
         mark_res = await call_kynex_function(session, id_token, "markAdWatchedForSuperBoost")

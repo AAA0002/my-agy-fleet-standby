@@ -314,13 +314,13 @@ class ChickenLandMiner:
             cycle_report["ref_claimed"] = True
             cycle_report["ref_coins"] = ref_res.get("result", {}).get("coins", 0)
             
-        # Step 8: Buy hens
-        hens = self.buy_hens()
-        cycle_report["hens_bought"] = hens
-        
-        # Step 9: Upgrade basket
+        # Step 8: Upgrade basket if affordable
         upgraded = self.upgrade_basket()
         cycle_report["basket_upgraded"] = upgraded
+
+        # Step 9: Buy hens
+        hens = self.buy_hens()
+        cycle_report["hens_bought"] = hens
         
         # Final status
         final_prof = self.get_profile()

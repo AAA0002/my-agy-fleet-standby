@@ -2,6 +2,13 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Deep Bug Sweep, Resilient Parsing & Compounding Optimization (`victors_arcade_solver.py`, `chickenland_promo_sniper.py`, `app.py`, `chickenland_miner.py`, `kynex_miner.py`) (October 27, 2026)**:
+  - **Victor's Arcade Safe Null Handling (`victors_arcade_solver.py`)**: Hardened `st.get("user")` and `inAppBalance` extraction against null/missing objects from upstream server responses, preventing potential `AttributeError: 'NoneType' object has no attribute 'get'` crashes.
+  - **Promo Sniper Token Freshness (`chickenland_promo_sniper.py`)**: Removed stale startup token caching in `watch_and_snipe_daemon`. Bursts now dynamically pull fresh authorization tokens directly from Upstash Redis immediately before execution.
+  - **Chicken Land API Multi-Payload Support (`app.py`)**: Upgraded `/api/chickenland/snipe` endpoint to parse promo codes and flags from both query parameters and JSON request bodies (`await request.json()`).
+  - **Chicken Land Basket Compounding Order (`chickenland_miner.py`)**: Re-ordered routine farming cycles to upgrade basket capacity before purchasing hens, preventing egg capacity overflows as flocks expand.
+  - **Kynex Boost RTDB Alignment (`kynex_miner.py`)**: Added `superBoostAdProgress` synchronization alongside existing boost progress paths.
+
 - **⚡ Fleet Scaling & Complete De-Hardcoding (`dashboard.html`, `deploy_both_cf_workers.py`) (October 27, 2026)**:
   - **Dynamic Fleet Sizing Across UI & Cloud Engines**:
     * Resolved all remaining hardcoded `20` references in `dashboard.html` and Cloudflare Edge Worker endpoints. The fleet sizing is now 100% dynamic (`fleetAccounts.length` / `fleetTargetAccounts.length`), seamlessly scaling whether accounts are added, removed, or scaled in the future.
