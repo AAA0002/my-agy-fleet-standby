@@ -358,6 +358,64 @@ const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generi
   return detAns;
 };
 
+async function getRenderUrls() {
+  let active = "node3";
+  try {
+    const cached = await upstashGet("fleet:active_render_node", 30000);
+    if (cached === "node2" || cached === "node3") {
+      active = cached;
+    }
+  } catch (_) {}
+  if (active === "node3") {
+    return [
+      "https://my-agy-fleet-standby-node3.onrender.com",
+      "https://my-agy-fleet-standby-node2.onrender.com"
+    ];
+  }
+  return [
+    "https://my-agy-fleet-standby-node2.onrender.com",
+    "https://my-agy-fleet-standby-node3.onrender.com"
+  ];
+}
+
+async function fetchRenderWithFailover(path, init = {}, timeoutMs = 25000, ctx = null) {
+  const urls = await getRenderUrls();
+  for (const baseUrl of urls) {
+    try {
+      const res = await fetch(`${baseUrl}${path}`, {
+        ...init,
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (res.ok) {
+        const workingNode = baseUrl.includes("node3") ? "node3" : "node2";
+        const p = upstashSet("fleet:active_render_node", workingNode, 86400);
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(p);
+        } else {
+          p.catch(() => {});
+        }
+        return res;
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
+function getDynamicTonWallet(uid, accData) {
+  if (accData) {
+    if (accData.ton_wallet && typeof accData.ton_wallet === "object" && accData.ton_wallet.address) {
+      return accData.ton_wallet.address;
+    }
+    if (accData.ton && typeof accData.ton === "string") {
+      return accData.ton;
+    }
+    if (accData.ton_address && typeof accData.ton_address === "string") {
+      return accData.ton_address;
+    }
+  }
+  return FLEET_TON_WALLETS[String(uid)] || "";
+}
+
 async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null) {
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
@@ -435,12 +493,12 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       let meD = {};
       if (meResp && meResp.ok) {
         meD = await meResp.json().catch(() => ({}));
-        const targetTonW = FLEET_TON_WALLETS[String(uid)];
+        const targetTonW = getDynamicTonWallet(uid, accData);
         if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
-          fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/account/" + uid, {
+          fetchRenderWithFailover("/api/farm/account/" + uid, {
             method: "POST",
             headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "8167732110:AAE...") }
-          }).catch(() => {});
+          }, 15000, ctx).catch(() => {});
         }
 
         // Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
@@ -610,7 +668,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       }, 1, 800).catch(() => {});
 
       // Synchronize TON Wallet address
-      const targetTonW = FLEET_TON_WALLETS[String(uid)];
+      const targetTonW = getDynamicTonWallet(uid, accData);
       if (targetTonW) {
         await fetchWithRetry(`${atfBase}?action=sync_wallet&t=${Date.now()}`, {
           method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
@@ -731,7 +789,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         }
 
         // Connect TON wallet to qualify recruit & unlock Level 1 Miner
-        const vTonWallet = FLEET_TON_WALLETS[String(uid)];
+        const vTonWallet = getDynamicTonWallet(uid, accData);
         if (vTonWallet && me && !me.walletAddress) {
           await fetchWithRetry("https://server.victors.company/api/wallet/connect", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ address: vTonWallet })
@@ -2969,9 +3027,7 @@ export default {
           } catch (_) {}
         })());
 
-        const renderNodes = [
-          "https://my-agy-fleet-standby-node2.onrender.com"
-        ];
+        const renderNodes = await getRenderUrls();
         for (const rNode of renderNodes) {
           ctx.waitUntil(
             fetch(`${rNode}/api/farm/cloud-all`, {
@@ -3449,10 +3505,11 @@ fi
           const qPhone = url.searchParams.get("phone");
           if (qPhone) {
             const clean = qPhone.replace(/[^\d]/g, "");
-            for (let i = 1; i <= 20; i++) {
-              const ph = (KNOWN_PHONES_BY_INDEX[i] || "").replace(/[^\d]/g, "");
+            const allAccs = await getFleetAccounts();
+            for (const acc of allAccs) {
+              const ph = (acc.phone || "").replace(/[^\d]/g, "");
               if (ph && clean && (ph.includes(clean) || clean.includes(ph))) {
-                targetIdx = i;
+                targetIdx = acc.index;
                 break;
               }
             }
@@ -4246,10 +4303,10 @@ fi
       const adminCheck = await verifyAdminRequest(request);
       if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
       try {
-        const renderRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/user/session/check-all", {
+        const renderRes = await fetchRenderWithFailover("/api/user/session/check-all", {
           method: "POST",
           headers: { "Content-Type": "application/json" }
-        }).catch(() => null);
+        });
         if (renderRes && renderRes.ok) {
           const rData = await renderRes.json().catch(() => null);
           if (rData && rData.ok) {
@@ -4333,12 +4390,14 @@ fi
           "INSERT OR REPLACE INTO user_wallets (id, user_id, chat_id, chain, address, private_key, mnemonic, is_custom, created_at) VALUES (?, ?, ?, ?, ?, '', '', 1, ?);",
           [`${uid}_${chain}_custom`, uid, uid, chain, customAddr, nowTs]
         ).catch(() => null);
-        // Fire-and-forget sync to Render Node 2 in background
-        ctx.waitUntil(fetch("https://my-agy-fleet-standby-node2.onrender.com/api/user/wallet/custom", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-          body: JSON.stringify({ user_id: uid, address: customAddr, chain: chain })
-        }).catch(() => null));
+        // Fire-and-forget sync to active Render node in background
+        ctx.waitUntil((async () => {
+          await fetchRenderWithFailover("/api/user/wallet/custom", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
+            body: JSON.stringify({ user_id: uid, address: customAddr, chain: chain })
+          });
+        })());
         return new Response(JSON.stringify({ ok: true, user_id: uid, chain: chain, address: customAddr, message: `Custom ${chain.toUpperCase()} wallet bound successfully!` }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
@@ -4624,10 +4683,20 @@ fi
                 }
               }
 
+              // Update Upstash Redis
+              try {
+                let curAccs = await getFleetAccounts(true);
+                curAccs = curAccs.filter(a => String(a.user_id) !== targetRaw && String(a.user_id) !== targetClean && String(a.phone || "").replace("+", "") !== targetClean);
+                curAccs.forEach((a, i) => { a.index = i + 1; });
+                memFleetAccounts = curAccs;
+                memFleetAccountsTs = Date.now();
+                await upstashSet("fleet:accounts", curAccs);
+                if (targetRaw) await upstashDel(`account:${targetRaw}`).catch(() => {});
+                if (targetClean) await upstashDel(`account:${targetClean}`).catch(() => {});
+              } catch (_) {}
+
               // 4. Evict across Active Render Node
-              const rNodes = [
-                "https://my-agy-fleet-standby-node2.onrender.com"
-              ];
+              const rNodes = await getRenderUrls();
               for (const rUrl of rNodes) {
                 fetch(`${rUrl}/api/account/remove`, {
                   method: "POST",
@@ -5455,41 +5524,39 @@ fi
           return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
         };
 
-        const getFleetAccounts = async () => {
+        const getFleetAccounts = async (forceFresh = false) => {
           let accounts = null;
 
-          // 0. High-speed In-Memory RAM Cache (immune to all KV & Redis rate limits)
-          if (memFleetAccounts && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0 && (Date.now() - memFleetAccountsTs < 30000)) {
-            accounts = memFleetAccounts.map(a => Object.assign({}, a));
+          // 0. High-speed In-Memory RAM Cache
+          if (!forceFresh && memFleetAccounts && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0 && (Date.now() - memFleetAccountsTs < 15000)) {
+            return memFleetAccounts.map(a => Object.assign({}, a));
           }
 
           // 1. Upstash Redis fleet:accounts (Primary Canonical Account Registry)
-          if (!accounts || accounts.length === 0) {
-            try {
-              const upAccs = await upstashGet("fleet:accounts");
-              if (upAccs) {
-                const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
-                if (Array.isArray(parsedAccs) && parsedAccs.length >= 18) {
-                  accounts = parsedAccs;
-                }
+          try {
+            const upAccs = await upstashGet("fleet:accounts", 0);
+            if (upAccs) {
+              const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+              if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
+                accounts = parsedAccs.map(a => Object.assign({}, a));
               }
-            } catch (_) {}
-          }
+            }
+          } catch (_) {}
 
           // 1.5 Upstash fleet:live_state fallback
           if (!accounts || accounts.length === 0) {
             try {
-              const upstashRaw = await upstashGet("fleet:live_state");
+              const upstashRaw = await upstashGet("fleet:live_state", 0);
               if (upstashRaw) {
                 const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
                 if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
-                  accounts = parsed.accounts;
+                  accounts = parsed.accounts.map(a => Object.assign({}, a));
                 }
               }
             } catch (_) {}
           }
 
-          // 2. Cloudflare KV fallback (read safely with error protection)
+          // 2. Cloudflare KV fallback
           if (!accounts || accounts.length === 0) {
             try {
               if (env.BACKUP_KV) {
@@ -5497,50 +5564,19 @@ fi
                 if (raw) {
                   const s = JSON.parse(raw);
                   if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
-                    accounts = s.accounts;
+                    accounts = s.accounts.map(a => Object.assign({}, a));
                   }
                 }
               }
             } catch (_) {}
           }
 
-          // 3. Static Default Accounts fallback & full dynamic multi-account merge
-          const uidMap = new Map();
-          const phoneMap = new Map();
-          (accounts || []).forEach(a => {
-            if (a.user_id) uidMap.set(String(a.user_id).trim(), a);
-            const p = String(a.phone || "").replace(/\D/g, "");
-            if (p) phoneMap.set(p, a);
-          });
+          // 3. Fallback to default accounts ONLY if the database is 100% empty (initial setup)
+          if (!accounts || accounts.length === 0) {
+            accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
+          }
 
-          // Merge static 18 accounts strictly by user_id or phone (never let index overwrite static nodes)
-          const mergedAccounts = DEFAULT_FLEET_ACCOUNTS.map(m => {
-            const mUid = String(m.user_id).trim();
-            const mPhone = String(m.phone || "").replace(/\D/g, "");
-            const ex = uidMap.get(mUid) || (mPhone ? phoneMap.get(mPhone) : null);
-            return ex ? { ...m, ...ex, index: m.index } : Object.assign({}, m);
-          });
-
-          // Append any dynamic/onboarded accounts beyond static 18 (e.g. Account #19, #20, etc.)
-          const staticUids = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.user_id).trim()));
-          const staticPhones = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.phone || "").replace(/\D/g, "")));
-          const seenDynamicUids = new Set();
-          const BANNED_TEST_UIDS = new Set(["9999999999", "1474280319"]);
-
-          (accounts || []).forEach(a => {
-            const aUid = String(a.user_id || "").trim();
-            const aPhone = String(a.phone || "").replace(/\D/g, "");
-            const aName = String(a.name || "").toLowerCase();
-            if (!aUid || BANNED_TEST_UIDS.has(aUid) || aName.includes("test new") || aName.includes("دهیار")) return;
-            if (staticUids.has(aUid) || (aPhone && staticPhones.has(aPhone))) return;
-            if (seenDynamicUids.has(aUid)) return;
-            seenDynamicUids.add(aUid);
-            mergedAccounts.push(Object.assign({}, a));
-          });
-
-          accounts = mergedAccounts;
-
-          // 4. Load Blacklist of Deleted Accounts with Multi-Layer Failback
+          // 4. Load Blacklist of Deleted Accounts
           let deletedSet = new Set();
           let delArr = null;
 
@@ -5550,7 +5586,7 @@ fi
 
           if (!delArr) {
             try {
-              const upDel = await upstashGet("fleet:deleted_accounts");
+              const upDel = await upstashGet("fleet:deleted_accounts", 0);
               if (upDel) {
                 const parsed = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
                 if (Array.isArray(parsed)) {
@@ -5562,17 +5598,15 @@ fi
             } catch (_) {}
           }
 
-          if (!delArr) {
+          if (!delArr && env.BACKUP_KV) {
             try {
-              if (env.BACKUP_KV) {
-                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
-                if (rawDel) {
-                  const parsedDel = JSON.parse(rawDel);
-                  if (Array.isArray(parsedDel)) {
-                    delArr = parsedDel;
-                    memDeletedAccounts = delArr;
-                    memDeletedAccountsTs = Date.now();
-                  }
+              const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+              if (rawDel) {
+                const parsedDel = JSON.parse(rawDel);
+                if (Array.isArray(parsedDel)) {
+                  delArr = parsedDel;
+                  memDeletedAccounts = delArr;
+                  memDeletedAccountsTs = Date.now();
                 }
               }
             } catch (_) {}
@@ -5581,33 +5615,98 @@ fi
           if (Array.isArray(delArr)) {
             delArr.forEach(d => {
               if (d) {
-                deletedSet.add(String(d).trim().replace("+", ""));
-                deletedSet.add(String(d).trim());
+                const s = String(d).trim();
+                deletedSet.add(s);
+                deletedSet.add(s.replace("+", ""));
+                deletedSet.add(s.replace(/\D/g, ""));
               }
             });
           }
 
-          // 5. Strictly filter out any deleted accounts
+          // 5. Strictly filter out deleted accounts
           if (deletedSet.size > 0) {
             accounts = accounts.filter(a => {
               const uid = String(a.user_id || "").trim();
               const ph = String(a.phone || "").trim();
-              const phClean = ph.replace("+", "");
-              if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace("+", "")))) return false;
+              const phClean = ph.replace(/\D/g, "");
+              if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace(/\D/g, "")))) return false;
               if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
               return true;
             });
           }
 
-          // 6. Dynamically assign 1-based index to active accounts
-          accounts.forEach((a, idx) => {
+          // 6. Deduplicate by UID or phone
+          const uniqueAccounts = [];
+          const seenUids = new Set();
+          const seenPhones = new Set();
+          for (const a of accounts) {
+            const uid = String(a.user_id || "").trim();
+            const ph = String(a.phone || "").replace(/\D/g, "");
+            if (uid && seenUids.has(uid)) continue;
+            if (ph && seenPhones.has(ph)) continue;
+            if (uid) seenUids.add(uid);
+            if (ph) seenPhones.add(ph);
+            uniqueAccounts.push(a);
+          }
+
+          // 7. Dynamically assign 1-based sequential index (Account #1, #2, ... #N)
+          uniqueAccounts.forEach((a, idx) => {
             a.index = idx + 1;
           });
 
-          memFleetAccounts = accounts;
+          memFleetAccounts = uniqueAccounts;
           memFleetAccountsTs = Date.now();
 
-          return accounts;
+          return uniqueAccounts;
+        };
+
+        const saveFleetAccountDynamic = async (accData, phoneHint = "") => {
+          try {
+            let curList = await getFleetAccounts(true);
+            const uidStr = String(accData.user_id || "").trim();
+            const cleanP = String(accData.phone || phoneHint || "").replace(/\D/g, "");
+            let existingIdx = curList.findIndex(a => (uidStr && String(a.user_id) === uidStr) || (cleanP && String(a.phone || "").replace(/\D/g, "") === cleanP));
+            if (existingIdx >= 0) {
+              curList[existingIdx] = {
+                ...curList[existingIdx],
+                ...accData,
+                session_string: accData.session_string || curList[existingIdx].session_string,
+                status: "active"
+              };
+            } else {
+              const newEntry = {
+                index: curList.length + 1,
+                name: accData.name || "User",
+                username: accData.username || "None",
+                user_id: accData.user_id,
+                phone: accData.phone || phoneHint,
+                session_string: accData.session_string,
+                added_at: new Date().toISOString(),
+                status: "active",
+                ton_wallet: accData.ton_wallet || {},
+                evm_wallet: accData.evm_wallet || {},
+                tron_wallet: accData.tron_wallet || {},
+                solana_wallet: accData.solana_wallet || {},
+                btc_wallet: accData.btc_wallet || {}
+              };
+              curList.push(newEntry);
+            }
+            curList.forEach((a, i) => { a.index = i + 1; });
+            memFleetAccounts = curList;
+            memFleetAccountsTs = Date.now();
+            await upstashSet("fleet:accounts", curList);
+            if (uidStr) {
+              await upstashSet(`account:${uidStr}`, accData);
+            }
+            if (env.BACKUP_KV) {
+              await env.BACKUP_KV.put("fleet_accounts", JSON.stringify(curList)).catch(() => {});
+              await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts: curList, timestamp: Date.now() })).catch(() => {});
+            }
+            return curList;
+          } catch (e) {
+            console.error("saveFleetAccountDynamic error:", e);
+            return null;
+          }
         };
 
         const unBlacklistAccount = async (targetUserId, targetPhone, targetName = "User") => {
@@ -5736,7 +5835,8 @@ fi
         const onAccountRelinkSuccess = async (targetIdx) => {
           const numIdx = Number(targetIdx);
           if (!numIdx) return;
-          const acc = DEFAULT_FLEET_ACCOUNTS.find(a => a.index === numIdx);
+          const allAccs = await getFleetAccounts();
+          const acc = allAccs.find(a => a.index === numIdx);
           const uidStr = acc ? String(acc.user_id) : "";
           if (!memSessionHealth.healthy.includes(numIdx)) memSessionHealth.healthy.push(numIdx);
           memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== numIdx);
@@ -6374,6 +6474,7 @@ fi
                       ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
                       if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
                       ctx.waitUntil(unBlacklistAccount(res2fa.user_id, res2fa.phone || phoneToRelink, res2fa.name || "User"));
+                      ctx.waitUntil(saveFleetAccountDynamic(res2fa, phoneToRelink));
                       ctx.waitUntil(onAccountRelinkSuccess(targetIdx));
                       const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
                         `• *Name:* ${res2fa.name || "User"}\n` +
@@ -6413,6 +6514,7 @@ fi
                   ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
                   if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
                   ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phoneToRelink, res.name || "User"));
+                  ctx.waitUntil(saveFleetAccountDynamic(res, phoneToRelink));
                   ctx.waitUntil(onAccountRelinkSuccess(targetIdx));
                   const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
                     `• *Name:* ${res.name || "User"}\n` +
@@ -6595,18 +6697,21 @@ fi
 
               // Update Upstash Redis
               ctx.waitUntil(upstashSet("fleet:deleted_accounts", memDeletedAccounts).catch(() => {}));
+              ctx.waitUntil(upstashSet("fleet:accounts", accounts).catch(() => {}));
               ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }).catch(() => {}));
+              if (removedAcc && removedAcc.user_id) {
+                ctx.waitUntil(upstashDel(`account:${removedAcc.user_id}`).catch(() => {}));
+              }
 
               // Update KV safely
               if (env.BACKUP_KV) {
                 ctx.waitUntil(env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(memDeletedAccounts)).catch(() => {}));
+                ctx.waitUntil(env.BACKUP_KV.put("fleet_accounts", JSON.stringify(accounts)).catch(() => {}));
                 ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() })).catch(() => {}));
               }
 
               // Evict across Active Render Node
-              const renderNodes = [
-                "https://my-agy-fleet-standby-node2.onrender.com"
-              ];
+              const renderNodes = await getRenderUrls();
               for (const rUrl of renderNodes) {
                 ctx.waitUntil(fetch(`${rUrl}/api/account/remove`, {
                   method: "POST",
@@ -8106,10 +8211,12 @@ fi
               }
             }
 
-            // Otherwise show all 20 accounts relink picker
+            // Otherwise show all fleet accounts relink picker dynamically
+            const curAccs = await getFleetAccounts();
+            const totalCount = curAccs.length || 20;
             const relinkBtns = [];
             let row = [];
-            for (let i = 1; i <= 20; i++) {
+            for (let i = 1; i <= totalCount; i++) {
               row.push({ text: `⚡ #${i}`, callback_data: `btn_relink_${i}` });
               if (row.length === 3) {
                 relinkBtns.push(row);
@@ -8877,9 +8984,7 @@ fi
             }
 
             // Evict across Active Render Node
-            const renderNodes = [
-              "https://my-agy-fleet-standby-node2.onrender.com"
-            ];
+            const renderNodes = await getRenderUrls();
             for (const rUrl of renderNodes) {
               ctx.waitUntil(fetch(`${rUrl}/api/account/remove`, {
                 method: "POST",
@@ -8979,6 +9084,7 @@ fi
                   ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
                   if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
                   ctx.waitUntil(unBlacklistAccount(res2fa.user_id, res2fa.phone || phone, res2fa.name || "User"));
+                  ctx.waitUntil(saveFleetAccountDynamic(res2fa, phone));
                   const finalIdx = targetRelinkIdx || res2fa.index;
                   if (finalIdx) {
                     ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
@@ -9013,6 +9119,7 @@ fi
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
               if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
               ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
+              ctx.waitUntil(saveFleetAccountDynamic(res, phone));
               const finalIdx = targetRelinkIdx || res.index;
               if (finalIdx) {
                 ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
@@ -9086,6 +9193,7 @@ fi
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
               if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
               ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
+              ctx.waitUntil(saveFleetAccountDynamic(res, phone));
               const finalIdx = targetRelinkIdx || res.index;
               if (finalIdx) {
                 ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
@@ -15321,12 +15429,11 @@ Reply to Arif naturally:`;
 
             if (Object.keys(userWallets).length === 0) {
               try {
-                const gRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/user/wallet/generate", {
+                const gRes = await fetchRenderWithFailover("/api/user/wallet/generate", {
                   method: "POST",
                   headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-                  body: JSON.stringify({ user_id: String(chatId), name: senderName, chat_id: String(chatId) }),
-                  signal: AbortSignal.timeout(10000)
-                });
+                  body: JSON.stringify({ user_id: String(chatId), name: senderName, chat_id: String(chatId) })
+                }, 12000);
                 if (gRes.ok) {
                   const gData = await gRes.json();
                   if (gData.wallets) {
@@ -15891,12 +15998,15 @@ Reply to Arif naturally:`;
         }
         if (!tokens) return;
 
-        // 3.3 Keep-alive sentinel ping to Primary Render Node 2 (keeps MTProto gateway warm for instant OTP/login)
+        // 3.3 Keep-alive sentinel ping to Active Primary Render Node (keeps MTProto gateway warm for instant OTP/login)
         if (CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") {
-          fetch("https://my-agy-fleet-standby-node2.onrender.com/health", {
-            method: "GET",
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
-          }).catch(() => null);
+          ctx.waitUntil((async () => {
+            const activeUrls = await getRenderUrls();
+            fetch(`${activeUrls[0]}/health`, {
+              method: "GET",
+              headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            }).catch(() => null);
+          })());
         }
 
         const tokenEntries = Object.entries(tokens);
@@ -15907,8 +16017,11 @@ Reply to Arif naturally:`;
         }
 
 
-        // 3.4 Ping solely Active Primary Render Node 2 (Frankfurt). Standby Node 3 stays frozen in sleep!
-        fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => {});
+        // 3.4 Ping solely Active Primary Render Node
+        ctx.waitUntil((async () => {
+          const activeUrls = await getRenderUrls();
+          fetch(`${activeUrls[0]}/health`, { method: "GET" }).catch(() => {});
+        })());
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
         const nowMs = Date.now();

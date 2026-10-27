@@ -1204,6 +1204,30 @@ async def fetch_accounts_from_cloud():
     if FLEET_ACCOUNTS_CACHE:
         accounts_map.update(FLEET_ACCOUNTS_CACHE)
 
+    # 1.5 Primary Source of Truth: Canonical dynamic fleet accounts from Upstash Redis fleet:accounts
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.get(
+                    f"{UPSTASH_URL}/get/fleet:accounts",
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as r_fa:
+                    if r_fa.status == 200:
+                        fa_data = await r_fa.json()
+                        res_val = fa_data.get("result")
+                        if res_val:
+                            parsed_list = json.loads(res_val) if isinstance(res_val, str) else res_val
+                            if isinstance(parsed_list, list) and len(parsed_list) > 0:
+                                for a in parsed_list:
+                                    if isinstance(a, dict):
+                                        auid = str(a.get("user_id"))
+                                        if auid and auid.isdigit():
+                                            accounts_map[auid] = a
+                                logger.info(f"Loaded {len(accounts_map)} canonical accounts directly from Upstash fleet:accounts.")
+        except Exception as e_fa:
+            logger.warning(f"Could not load fleet:accounts from Upstash: {e_fa}")
+
     # 2. Load base fleet accounts from Cloudflare KV backup archive
     import zipfile
     import io
@@ -3388,7 +3412,10 @@ async def sync_new_account_to_clouds(acc_entry: dict):
                     break
             if not acc_found:
                 cur_accs.append(acc_entry)
-            idx_str = str(acc_entry.get("index") or "")
+            for i, a in enumerate(cur_accs):
+                a["index"] = i + 1
+            FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in cur_accs}
+            idx_str = str(acc_entry.get("index") or len(cur_accs))
             pipe_cmds = [
                 ["SET", f"account:{uid}", json.dumps(acc_entry)],
                 ["SADD", "fleet_accounts_set", uid],
@@ -4575,6 +4602,43 @@ async def api_remove_account(request: Request):
                 )
         except Exception:
             pass
+
+    # Remove from Upstash Redis (fleet:accounts, account:{uid}, and add to fleet:deleted_accounts)
+    if UPSTASH_URL and UPSTASH_TOKEN and target_id:
+        try:
+            up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
+            async with aiohttp.ClientSession() as s:
+                async with s.get(f"{UPSTASH_URL}/get/fleet:accounts", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        val = d.get("result")
+                        if val:
+                            acc_list = json.loads(val) if isinstance(val, str) else val
+                            if isinstance(acc_list, list):
+                                clean_list = [
+                                    a for a in acc_list
+                                    if str(a.get("user_id", "")).strip() != target_id
+                                    and str(a.get("phone", "")).replace("+", "").strip() != target_id
+                                    and str(a.get("index", "")).strip() != target_id
+                                ]
+                                for i, a in enumerate(clean_list):
+                                    a["index"] = i + 1
+                                pipe_del = [
+                                    ["SET", "fleet:accounts", json.dumps(clean_list)],
+                                    ["SADD", "fleet:deleted_accounts", target_id],
+                                    ["SREM", "fleet:healthy_sessions", target_id],
+                                    ["SREM", "fleet_accounts_set", target_id]
+                                ]
+                                if removed and removed.get("user_id"):
+                                    r_uid = str(removed.get("user_id"))
+                                    pipe_del.append(["DEL", f"account:{r_uid}"])
+                                    pipe_del.append(["SADD", "fleet:deleted_accounts", r_uid])
+                                    pipe_del.append(["SREM", "fleet:healthy_sessions", r_uid])
+                                await s.post(f"{UPSTASH_URL}/pipeline", headers=up_h, json=pipe_del, timeout=aiohttp.ClientTimeout(total=5))
+                                remaining_count = len(clean_list)
+                                FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in clean_list}
+        except Exception as up_e:
+            logger.warning(f"[Account Remove] Upstash removal note: {up_e}")
 
     return {
         "ok": True,
