@@ -202,6 +202,8 @@ IS_PRIMARY_HOST = (
 
 async def is_this_node_active() -> bool:
     """Dynamically determines if this Render node is the designated active MTProto coordinator."""
+    if os.getenv("IS_PRIMARY_COORDINATOR", "").lower() in ("1", "true"):
+        return True
     cur_n = get_current_node_number()
     raw_active = await get_active_render_node()
     active_str = str(raw_active).strip('"').strip("'").lower()
@@ -215,13 +217,14 @@ async def is_this_node_active() -> bool:
     return cur_n == active_n
 
 async def get_active_render_node() -> str:
-    """Returns the designated active Render node from Upstash Redis (default: node2)."""
+    """Returns the designated active Render node from Upstash Redis (default: current node)."""
+    cur_n = get_current_node_number()
     if not (UPSTASH_URL and UPSTASH_TOKEN):
-        return "node2"
+        return f"node{cur_n}"
     try:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         async with aiohttp.ClientSession() as s:
-            async with s.get(f"{UPSTASH_URL}/get/fleet:active_render_node", headers=up_h, timeout=aiohttp.ClientTimeout(total=2)) as r:
+            async with s.get(f"{UPSTASH_URL}/get/fleet:active_render_node", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as r:
                 if r.status == 200:
                     d = await r.json()
                     val = d.get("result")
@@ -229,7 +232,7 @@ async def get_active_render_node() -> str:
                         return str(val).lower()
     except Exception:
         pass
-    return "node2"
+    return f"node{cur_n}"
 
 async def is_in_maintenance_mode() -> tuple[bool, str, int]:
     """Checks if the fleet is in Maintenance Mode (during Render node rotation or cooldown).
@@ -1704,7 +1707,7 @@ async def chickenland_promo_watcher_loop():
     aiohttp parallel redemptions across all fleet accounts.
     """
     # Only run continuous watcher if this node is primary coordinator
-    is_active = (await is_this_node_active()) or IS_PRIMARY_HOST or (get_current_node_number() == 2)
+    is_active = (await is_this_node_active()) or IS_PRIMARY_HOST or (get_current_node_number() in (2, 3))
     if not is_active:
         logger.info("[ChickenLand Promo Sniper] Standby node detected; skipping watcher loop.")
         return
