@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Dashboard Dynamic OTP Grid & Mirror Synchronization (October 27, 2026)**:
+  - **Dynamic Account Selector Grid (`public_admin/admin.html`)**:
+    * Identified and eliminated hardcoded `Array.from({ length: 20 })` in the Telegram Login OTP tab, upgrading it to `Array.from({ length: fleet.length || DEFAULT_FLEET.length })`.
+    * Guaranteed that newly onboarded accounts (such as Account #21 `Aaaa201` and future accounts) automatically appear in the dashboard OTP selector grid without code edits.
+  - **Fleet Dashboard Mirrors 100% Synchronized**:
+    * Synchronized canonical, verified [`public_admin/admin.html`](file:///data/workspace/AAA_AUTO/public_admin/admin.html) across all mirror paths: [`public/admin.html`](file:///data/workspace/AAA_AUTO/public/admin.html), [`public_admin/admin/index.html`](file:///data/workspace/AAA_AUTO/public_admin/admin/index.html), [`public_admin/index.html`](file:///data/workspace/AAA_AUTO/public_admin/index.html), and [`dashboard.html`](file:///data/workspace/AAA_AUTO/dashboard.html).
+    * Deployed updated bundle to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev/admin`).
+  - **Disaster Recovery Backup**:
+    * Streamed fresh disaster recovery archive to `@myagyai` Telegram vault via `backup_manager.py`.
+
 - **🐛 Admin Console React Syntax Fix, Chicken Land Promo Snipe & Fleet Audit (October 27, 2026)**:
   - **`public_admin/admin.html` Syntax Error Resolution**:
     * Diagnosed and fixed fatal `SyntaxError: missing ) after argument list` at line 1911 by restoring the missing closing parenthesis `)` for Tab 2's root container `div`.

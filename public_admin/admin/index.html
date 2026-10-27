@@ -214,7 +214,8 @@ const KNOWN_PHONES_BY_INDEX = {
   17: "+8801879273559",
   18: "+8801839716506",
   19: "+8801804723069",
-  20: "+8801312863569"
+  20: "+8801312863569",
+  21: "+8801913962342"
 };
 
 const DEFAULT_FLEET = [
@@ -237,7 +238,8 @@ const DEFAULT_FLEET = [
   { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
   { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
   { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-  { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+  { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+  { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342", kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
 ];
 
 const FLEET_WALLETS_REGISTRY = [
@@ -460,6 +462,17 @@ const FLEET_WALLETS_REGISTRY = [
     "tron": "TVS6hMHnmwew9HZbM6j7aQ5KrsLE1V6oap",
     "sol": "CzewjbfNXKQRDsc6oJhGe1FPtrQinhEoQKE7eArQF99",
     "btc": "1KBrc3ipkoxtNQFNE8zJxKvKujT95pA5n6"
+  },
+  {
+    "index": 21,
+    "name": "Aaaa201",
+    "phone": "+8801913962342",
+    "user_id": "8669217201",
+    "ton": "UQDH-Fr7IrmThtwnK86JeAg3R2S-ezhA1Gs801vOVaRWn_jw",
+    "evm": "0xc9d8b0a0b1ad64ba90d26f1e4ae6c2bc184c0e3d",
+    "tron": "TUNUQVsy3umFWPWNJzvYmNe4zRHhcYCeut",
+    "sol": "4YMbFyjMxCpocfnKUvLfVF1EtmVzSvzzsJATrGjui3ai",
+    "btc": "1Ang9jyvFFAqwzAWcoNtjj5enHSeoDMfdt"
   }
 ];
 
@@ -1275,11 +1288,11 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text, model: aiSelectedModel })
       });
-      const ans = res?.answer || res?.response || "All fleet accounts are mining uninterrupted in the cloud edge mesh.";
+      const ans = res?.answer || res?.response || `All ${fleet.length} accounts are mining uninterrupted in the cloud edge mesh.`;
       const prov = res?.provider ? `${res.provider} (${res.model || "Edge"})` : "Ari Edge Sentinel";
       setAiMessages(prev => [...prev, { sender: "ai", text: ans, model: prov }]);
     } catch (_) {
-      setAiMessages(prev => [...prev, { sender: "ai", text: "Cloud mesh failover active. All fleet accounts operational." }]);
+      setAiMessages(prev => [...prev, { sender: "ai", text: `Cloud mesh failover active. ${fleet.length} accounts operational.` }]);
     }
     setAiLoading(false);
     haptic("success");
@@ -1301,7 +1314,7 @@ function App() {
       if (!matchSearch) return false;
       const idx = acc.index || 0;
       if (fleetFilter === "personal") return idx >= 1 && idx <= 8;
-      if (fleetFilter === "cloud") return idx >= 9 && idx <= 20;
+      if (fleetFilter === "cloud") return idx >= 9;
       return true;
     });
   }, [fleet, fleetSearchQuery, fleetFilter]);
@@ -1371,11 +1384,11 @@ function App() {
         React.createElement("div", null,
           React.createElement("div", { className: "flex items-center gap-1.5" },
             React.createElement("h1", { className: `font-black text-sm tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}` }, "MY AGY AI"),
-            React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono" }, "20 NODES")
+            React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono" }, `${fleet.length} NODES`)
           ),
           React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium" },
             React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
-            React.createElement("span", null, "20/20 Cloud Online • 5x Edge Mesh")
+            React.createElement("span", null, `${fleet.length}/${fleet.length} Cloud Online • 5x Edge Mesh`)
           )
         )
       ),
@@ -1450,7 +1463,7 @@ function App() {
             "Executive Fleet Console",
             React.createElement("span", { className: "px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-[9px] font-mono text-cyan-300" }, "@myagyai")
           ),
-          React.createElement("div", { className: "text-[9px] opacity-75 leading-tight" }, `${fleet.length || 20} MTProto accounts, 9 pools & treasury vaults`)
+          React.createElement("div", { className: "text-[9px] opacity-75 leading-tight" }, `${fleet.length} MTProto accounts, 9 pools & treasury vaults`)
         )
       ),
       React.createElement("a", { href: "/user-admin", className: "px-2 py-1 rounded-xl bg-violet-500/15 border border-violet-500/30 text-[10px] text-violet-400 hover:text-violet-300 font-bold shrink-0 flex items-center gap-1 transition" },
@@ -1531,7 +1544,7 @@ function App() {
         React.createElement("div", { className: "grid grid-cols-3 gap-1.5 text-center mb-3" },
           React.createElement("div", { className: `p-1.5 rounded-lg border ${subCardBg} text-[9px] font-mono text-emerald-400 font-bold flex items-center justify-center gap-1` },
             React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }),
-            "20/20 Nodes Online"
+            `${fleet.length}/${fleet.length} Nodes Online`
           ),
           React.createElement("div", { className: `p-1.5 rounded-lg border ${subCardBg} text-[9px] font-mono text-cyan-400 font-bold flex items-center justify-center gap-1` },
             React.createElement("span", null, "⚡"),
@@ -1576,7 +1589,8 @@ function App() {
             { name: "Kynex Net", key: "kynex", chain: "KNX", icon: "💎" },
             { name: "DiggoMiner", key: "diggo", chain: "DGO", icon: "⛏️" },
             { name: "PepeGram", key: "pepegram", chain: "TON", icon: "🐸" },
-            { name: "AdxEarn AI", key: "adxearn", chain: "ADX", icon: "🤖" }
+            { name: "AdxEarn AI", key: "adxearn", chain: "ADX", icon: "🤖" },
+            { name: "Chicken Land", key: "chickenland", chain: "EGG", icon: "🐔" }
           ].map((b, bIdx) => React.createElement("div", {
             key: bIdx,
             onClick: () => handleFarmSingleBot(b.key, b.name),
@@ -1598,7 +1612,7 @@ function App() {
         [
           { id: "all", label: `All (${fleet.length})` },
           { id: "personal", label: "Personal #1-8" },
-          { id: "cloud", label: "Cloud #9-20" }
+          { id: "cloud", label: `Cloud #${fleet.length > 8 ? "9-" + fleet.length : "9+"}` }
         ].map(chip => React.createElement("button", {
           key: chip.id,
           onClick: () => setFleetFilter(chip.id),
@@ -1616,7 +1630,7 @@ function App() {
             type: "text",
             value: fleetSearchQuery,
             onChange: (e) => setFleetSearchQuery(e.target.value),
-            placeholder: `Search ${fleet.length} fleet accounts by name, phone, or ID...`,
+            placeholder: `Search ${fleet.length} accounts by name, phone, or ID...`,
             className: `w-full pl-8 pr-3 py-2 border rounded-xl text-xs font-medium outline-none transition ${isDark ? 'bg-dark-850 border-dark-700 text-white placeholder-slate-500 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500'}`
           }),
           React.createElement("div", { className: "absolute left-2.5 top-2.5 text-slate-400" },
@@ -1678,7 +1692,7 @@ function App() {
               )
             ),
             React.createElement("div", { className: "flex flex-wrap gap-1 text-[8px] font-mono font-medium text-center" },
-              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex", "⛏️ Diggo", "🐸 Pepe", "🤖 AdxEarn"].map((botName, bIdx) => React.createElement("div", {
+              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex", "⛏️ Diggo", "🐸 Pepe", "🤖 AdxEarn", "🐔 Chicken"].map((botName, bIdx) => React.createElement("div", {
                 key: bIdx,
                 className: `rounded px-1.5 py-0.5 border ${subCardBg} text-slate-400 truncate`
               }, botName))
@@ -1783,7 +1797,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
               React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, `TON Blockchain (${fleet.length} Accounts Bound)`),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land")
             )
           ),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, `${fleet.length}/${fleet.length} Bound`)
@@ -1824,18 +1838,34 @@ function App() {
 
         // Fleet Accounts Wallet Roster
         React.createElement("div", { className: "space-y-2 max-h-[500px] overflow-y-auto pr-1" },
-          FLEET_WALLETS_REGISTRY.filter(w => {
-            if (!walletSearchQuery) return true;
-            const q = walletSearchQuery.toLowerCase();
-            return (w.name || "").toLowerCase().includes(q) ||
-                   (w.phone || "").includes(q) ||
-                   String(w.user_id || "").includes(q) ||
-                   (w.ton || "").toLowerCase().includes(q) ||
-                   (w.evm || "").toLowerCase().includes(q);
-          }).map(w => {
-            const chainsToDisplay = walletChainFilter === "all" 
-              ? ["ton", "evm", "tron", "sol", "btc"]
-              : [walletChainFilter];
+          (() => {
+            const activeWallets = (fleet && fleet.length > 0) ? fleet.map(a => {
+              const reg = FLEET_WALLETS_REGISTRY.find(w => w.index === a.index || String(w.user_id) === String(a.user_id));
+              return {
+                index: a.index,
+                name: a.name || (reg ? reg.name : `Account #${a.index}`),
+                phone: a.phone || (reg ? reg.phone : ""),
+                user_id: a.user_id || (reg ? reg.user_id : ""),
+                ton: (a.ton_wallet && a.ton_wallet.address) || (reg ? reg.ton : ""),
+                evm: (a.evm_wallet && a.evm_wallet.address) || (reg ? reg.evm : ""),
+                tron: (a.tron_wallet && a.tron_wallet.address) || (reg ? reg.tron : ""),
+                sol: (a.solana_wallet && a.solana_wallet.address) || (reg ? reg.sol : ""),
+                btc: (a.btc_wallet && a.btc_wallet.address) || (reg ? reg.btc : "")
+              };
+            }) : FLEET_WALLETS_REGISTRY;
+
+            return activeWallets.filter(w => {
+              if (!walletSearchQuery) return true;
+              const q = walletSearchQuery.toLowerCase();
+              return (w.name || "").toLowerCase().includes(q) ||
+                     (w.phone || "").includes(q) ||
+                     String(w.user_id || "").includes(q) ||
+                     (w.ton || "").toLowerCase().includes(q) ||
+                     (w.evm || "").toLowerCase().includes(q);
+            }).map(w => {
+              const chainsToDisplay = walletChainFilter === "all" 
+                ? ["ton", "evm", "tron", "sol", "btc"]
+                : [walletChainFilter];
 
             return React.createElement("div", {
               key: w.index,
@@ -1875,10 +1905,11 @@ function App() {
                 );
               })
             );
-          })
-        )
+          });
+        })()
       )
-    ),
+    )
+  ),
 
     // ==========================================================
     // TAB 3: ARI AI MULTI-MODEL STUDIO
@@ -1934,7 +1965,7 @@ function App() {
       // Prompt Quick Suggestions
       React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-1.5" },
         [
-          { label: "📊 Fleet Telemetry", cmd: "Summarize the 20-account fleet status and token accumulation." },
+          { label: "📊 Fleet Telemetry", cmd: "Summarize the fleet status and token accumulation across all active nodes." },
           { label: "👛 Vault Balances", cmd: "Check BNB vault and multi-chain wallet settlements." },
           { label: "🌾 Optimize Mining", cmd: "What is the optimal harvest schedule for MRG and ATF?" }
         ].map((chip, cIdx) => React.createElement("button", {
@@ -1977,17 +2008,18 @@ function App() {
           React.createElement("span", { className: "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full" }, "15m Window")
         ),
         React.createElement("p", { className: "text-xs text-slate-400 mb-3" },
-          "Instant code recovery across all fleet accounts via Render Session Collectors and Cloudflare Edge."
+          `Instant code recovery across all ${fleet.length} accounts via Render Session Collectors and Cloudflare Edge.`
         ),
 
         // Account Selector Buttons
         React.createElement("label", { className: "text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5" }, `Select Target Account (#1 - #${fleet.length})`),
         React.createElement("div", { className: "grid grid-cols-5 sm:grid-cols-10 gap-1.5 mb-3" },
-          Array.from({ length: fleet.length || 20 }, (_, i) => i + 1).map(num => React.createElement("button", {
+          Array.from({ length: fleet.length || DEFAULT_FLEET.length }, (_, i) => i + 1).map(num => React.createElement("button", {
             key: num,
             onClick: () => {
               setOtpTargetIndex(num);
-              setOtpTargetPhone(KNOWN_PHONES_BY_INDEX[num] || "");
+              const targetAcc = fleet[num - 1] || DEFAULT_FLEET[num - 1];
+              setOtpTargetPhone((targetAcc && targetAcc.phone) || KNOWN_PHONES_BY_INDEX[num] || "");
               handleFetchOtp(num);
             },
             className: `py-1.5 rounded-xl text-xs font-mono font-bold transition cursor-pointer border ${
@@ -2124,7 +2156,7 @@ function App() {
     // ==========================================================
     React.createElement("nav", { className: `fixed bottom-0 left-0 right-0 z-40 pro-dock py-1.5 px-3 flex items-center justify-around max-w-md mx-auto border-t ${isDark ? 'bg-dark-900/95 border-dark-800 text-slate-400' : 'bg-white/95 border-slate-200 text-slate-500'}` },
       [
-        { id: "fleet", label: "Fleet (20)", icon: "bot" },
+        { id: "fleet", label: `Fleet (${fleet.length})`, icon: "bot" },
         { id: "wallets", label: "Treasury", icon: "wallet" },
         { id: "ai", label: "Ari AI", icon: "sparkles" },
         { id: "otp", label: "OTP", icon: "key" },
@@ -2208,7 +2240,8 @@ function App() {
                   { name: "💎 Kynex", key: "kynex" },
                   { name: "⛏️ Diggo", key: "diggo" },
                   { name: "🐸 Pepe", key: "pepe" },
-                  { name: "🤖 AdxEarn", key: "adx" }
+                  { name: "🤖 AdxEarn", key: "adx" },
+                  { name: "🐔 Chicken", key: "chickenland" }
                 ].map((p, pIdx) => React.createElement("div", {
                   key: pIdx,
                   className: `p-1 rounded-lg border text-center ${subCardBg} flex items-center justify-center gap-1`
@@ -2220,7 +2253,13 @@ function App() {
             ),
             // Account Dedicated Multi-Chain Wallets in Drawer
             (() => {
-              const accWallets = FLEET_WALLETS_REGISTRY.find(w => w.index === accNum || String(w.user_id) === String(selectedAccount.user_id));
+              const accWallets = (selectedAccount && (selectedAccount.ton_wallet || selectedAccount.evm_wallet)) ? {
+                ton: (selectedAccount.ton_wallet && selectedAccount.ton_wallet.address) || selectedAccount.ton,
+                evm: (selectedAccount.evm_wallet && selectedAccount.evm_wallet.address) || selectedAccount.evm,
+                tron: (selectedAccount.tron_wallet && selectedAccount.tron_wallet.address) || selectedAccount.tron,
+                sol: (selectedAccount.solana_wallet && selectedAccount.solana_wallet.address) || selectedAccount.sol,
+                btc: (selectedAccount.btc_wallet && selectedAccount.btc_wallet.address) || selectedAccount.btc
+              } : FLEET_WALLETS_REGISTRY.find(w => w.index === accNum || String(w.user_id) === String(selectedAccount.user_id));
               if (!accWallets) return null;
 
               return React.createElement("div", { className: "space-y-1 pt-1" },
