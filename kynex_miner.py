@@ -18,6 +18,7 @@ import asyncio
 import logging
 import random
 import time
+import datetime
 from typing import Dict, Any, Optional
 
 import aiohttp
@@ -262,7 +263,6 @@ async def farm_kynex_account(
     result["balance"] = knx_bal
     result["level"] = level
     result["energy_seconds"] = energy_sec
-    import datetime
     today_utc = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
 
     # 3. Energy Tasks & Boost Automation (Daily Energy Ad Task +12h, Prime +5h, Advance +7h)

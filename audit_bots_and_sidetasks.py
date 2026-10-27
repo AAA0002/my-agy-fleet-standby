@@ -95,8 +95,18 @@ def load_tokens_db():
 
 TOKENS_DB = load_tokens_db()
 
-with open(os.path.join(BASE_DIR, "accounts.json"), "r") as f:
-    ACCOUNTS = json.load(f)
+ACCOUNTS = []
+acc_path = os.path.join(BASE_DIR, "accounts.json")
+if os.path.exists(acc_path):
+    try:
+        with open(acc_path, "r", encoding="utf-8") as f:
+            ACCOUNTS = json.load(f)
+    except Exception:
+        pass
+
+if not ACCOUNTS and TOKENS_DB:
+    for uid in TOKENS_DB.keys():
+        ACCOUNTS.append({"user_id": int(uid) if uid.isdigit() else uid, "name": f"Node_{uid}"})
 
 MASTER_UID = "6727787768"
 

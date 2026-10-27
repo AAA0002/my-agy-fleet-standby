@@ -167,7 +167,7 @@ async def redeem_single_account(
     }
     
     try:
-        async with session.post(RPC_URL, json=payload, headers=headers, timeout=8) as resp:
+        async with session.post(RPC_URL, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as resp:
             data = await resp.json()
             result["latency_ms"] = int((time.time() - t0) * 1000)
             
@@ -189,7 +189,7 @@ async def redeem_single_account(
                             "body": {"breed": "basic", "n": int(total_coins // 1000)}
                         }
                         try:
-                            async with session.post(RPC_URL, json=buy_payload, headers=headers, timeout=5) as b_resp:
+                            async with session.post(RPC_URL, json=buy_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as b_resp:
                                 b_data = await b_resp.json()
                                 if b_data.get("ok"):
                                     result["hen_bought"] = True

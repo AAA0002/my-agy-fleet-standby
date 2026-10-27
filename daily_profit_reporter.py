@@ -7,7 +7,7 @@ Calculates:
 - Total BNB farmed & withdrawn today
 - Real-time fiat valuation (USD $ and BDT ৳) via Binance API
 - Live On-Chain Wallet Balance from Binance Smart Chain
-- Cloudflare Edge Mini-App Yield (8 Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn)
+- Cloudflare Edge Mini-App Yield (9 Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land)
 Broadcasts report to Telegram Payout Channel (-1004402765950) & Admin DM (6727787768).
 """
 

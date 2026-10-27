@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Deep Codebase Bug Audit & Ground-Truth Telemetry Resolution (October 27, 2026)**:
+  - **Victor's Company Telemetry & Unlock Loop Fix (`finish_all_fleet_sidetasks.py`)**:
+    * Discovered that `api/me` returns `inAppBalance` (not `miningBalance`) and `peakLevel` (not `level`).
+    * Previously, `res["balance"]` and `cur_level` defaulted to 0, which caused unnecessary repeated unlock requests to `/api/levels/unlock`.
+    * Corrected extraction to `me.get("inAppBalance") or st.get("holding")` and `me.get("peakLevel")`, accurately capturing live balance (`1,322.77 VIC`) and level (`64`).
+  - **VyroDrop Balance & Active State Extraction (`finish_all_fleet_sidetasks.py`)**:
+    * Identified that `balances.poolRaw` stores accumulated VYRO tokens in 9-decimal nano-units.
+    * Added conversion `round(float(poolRaw) / 1e9, 2)` to populate `res["balance"]` (`162.77 VYRO`) and bound `res["mining_active"]` directly to `mining.status == 'ACTIVE'`.
+  - **DiggoMiner Balance & Level Mapping (`finish_all_fleet_sidetasks.py`)**:
+    * Populated missing `res["balance"]` (`1,458.13 DIGGO`) and `res["level"]` (`80`) from `state.balance` and `state.player.level`.
+  - **Chicken Land Basket Egg Accounting (`finish_all_fleet_sidetasks.py`)**:
+    * Extracted `user.eggs` into `res["eggs"]`, ensuring active basket eggs and hen counts are accurately tracked in fleet logs.
+  - **Disaster Recovery Backup Archive Completeness (`backup_manager.py`)**:
+    * Added `victors_sb_solver.py`, `chickenland_promo_sniper.py`, and `finalize_chickenland_fleet.py` to `CORE_BOT_FILES` so they are permanently preserved in disaster recovery archives uploaded to `@myagyai`.
+  - **Render Failover Node Pinning (`autonomous_cloud_agent.py`)**:
+    * Replaced decommissioned Node 3 (Oregon) with active Node 1 (Singapore) in `RENDER_STANDBY_NODES` failover list.
+  - **Ephemeral VM Resilience (`audit_bots_and_sidetasks.py`)**:
+    * Added fallback discovery to `TOKENS_DB` in case `accounts.json` is missing or unpopulated in fresh containers.
+  - **Aiohttp ClientTimeout Standardization (`chickenland_promo_sniper.py`)**:
+    * Replaced raw integer timeouts (`timeout=8`, `timeout=5`) with `aiohttp.ClientTimeout` objects.
+
 - **🚀 Full Fleet Sweep Optimization, De-hardcoding Across Dashboards & 100% 9-Bot Verification (October 27, 2026)**:
   - **AdxEarn AI & Victor's Company Unified Cooldown/Debounce Optimization**:
     * Refactored `sweep_adxearn_tasks` in `finish_all_fleet_sidetasks.py`: dynamically starts all eligible dynamic tasks, ad networks (`adsgram`, `monetag_ad`, `gigapub`, `monetag_popup`), and CPA offers concurrently, waits a single 16.2s cooldown, and claims all rewards in parallel. Slashed account sweep time from ~48s down to 16.2s (66% speedup).

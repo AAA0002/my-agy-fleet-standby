@@ -653,9 +653,9 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
         res["success"] = True
         st = m_d.get("state", {}) if isinstance(m_d, dict) else {}
         me = st.get("user") or m_d.get("user") or m_d
-        cur_level = me.get("level", 0)
+        cur_level = me.get("peakLevel") or st.get("mining", {}).get("level") or me.get("level", 0)
         res["level"] = cur_level
-        res["balance"] = me.get("miningBalance", 0)
+        res["balance"] = round(float(me.get("inAppBalance") or st.get("holding") or me.get("miningBalance", 0) or 0), 2)
 
         # 2. Tutorial
         if not me.get("tutorialDone"):
@@ -801,6 +801,22 @@ async def sweep_vyro_tasks(session: aiohttp.ClientSession, uid: str, name: str, 
         res["level"] = m_obj.get("level", 1)
         res["speed"] = m_obj.get("currentSpeed", 0)
 
+        # Balance from poolRaw (9 decimals nano-units)
+        b_raw = b_d.get("balances", {}).get("poolRaw", 0) or 0
+        res["balance"] = round(float(b_raw) / 1e9, 2)
+
+        # Mining state
+        min_state = b_d.get("mining", {})
+        res["mining_active"] = (min_state.get("status") == "ACTIVE")
+        if not res["mining_active"]:
+            try:
+                async with session.post("https://vyro.run.place/api/mining/start", json={"idempotencyKey": str(uuid.uuid4())}, headers=vy_h, timeout=aiohttp.ClientTimeout(total=6)) as sr:
+                    if sr.status in (200, 201):
+                        res["mining_active"] = True
+                        res["notes"].append("mining_started")
+            except Exception:
+                pass
+
         # 2. Side Tasks
         t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
         async with session.get("https://vyro.run.place/api/tasks?limit=8", headers=t_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
@@ -909,6 +925,8 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
                         st = p_d["state"]
                         auth_headers = candidate_h
                         res["success"] = True
+                        res["balance"] = float(st.get("balance") or 0.0)
+                        res["level"] = int(st.get("player", {}).get("level", 1) or 1)
                 else:
                     jwt_token = None
 
@@ -939,6 +957,8 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
 
             res["success"] = True
             st = a_d.get("state", {})
+            res["balance"] = float(st.get("balance") or 0.0)
+            res["level"] = int(st.get("player", {}).get("level", 1) or 1)
             if UPSTASH_URL and UPSTASH_TOKEN and jwt_token:
                 acc["diggo_jwt"] = jwt_token
                 try:
@@ -1398,6 +1418,7 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
         u_info = me_resp.get("result", {}).get("user", {})
         res["balance"] = float(u_info.get("coins", 0))
         res["hens"] = int(u_info.get("hens", 0))
+        res["eggs"] = int(u_info.get("eggs", 0) or 0)
         res["rate"] = float(u_info.get("rate", 0))
 
         # 2. Captcha verification if needed
