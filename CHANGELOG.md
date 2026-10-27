@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ Fleet Multi-Bot Bug Fixes & Resilient Automation Upgrades (October 27, 2026)**:
+  - **Kynex Network Rate-Limit Resilience (Advance Boost +7h)**:
+    * Identified that calling `claimAdReward` for tier `advanced` immediately after `prime` triggered HTTP 429 ("Please wait a moment before claiming another ad").
+    * Implemented a 12.0s debounce pause and automatic 15.0s backoff retry on 429 errors in `kynex_miner.py`, ensuring the +7h Advance Boost is reliably claimed across all accounts without dropping.
+  - **Victor's Company Recursive Shadow DOM Traversal & CDP Mouse Click**:
+    * Discovered that Cloudflare Turnstile creates its challenge iframe inside nested WebComponent shadow roots that are invisible to flat `document.querySelectorAll('*')` calls.
+    * Implemented recursive `findCfIframe` shadow DOM tree traversal and container bounding box detection (`div[class*="min-h"]`) in `victors_sb_solver.py`.
+    * Upgraded synthetic JavaScript events to trusted Chrome DevTools Protocol (CDP) hardware mouse events (`Input.dispatchMouseEvent` with `mouseMoved`, `mousePressed`, `mouseReleased`), ensuring Turnstile receives authentic `isTrusted: true` user interaction events in headless runners.
+  - **Sponsor Channels SSOT Synchronization (`bot_registry.py`)**:
+    * Added missing sponsor channels `@keepeye_app` for MRG Miner and Victor's Company, and `@PickaxeEmpire` for Victor's Company.
+    * Guarantees that token refreshers on Frankfurt Node 2 automatically join these required channels so side-tasks pass verification without HTTP 400 errors.
+  - **Cloudflare Edge D1 SQL Token Synchronization (`deploy_both_cf_workers.py`)**:
+    * Fixed D1 SQL secondary fallback query to include `'chickenland'` alongside the other 8 bots (`SELECT ... WHERE bot_name IN (..., 'chickenland')`).
+    * Deployed updated edge worker to Node 4 (`https://restore-agy.agorameet.workers.dev`) with active 15m cron (`*/15 * * * *`).
+  - **Chicken Land Automatic Egg Harvest Enhancement (`finish_all_fleet_sidetasks.py`)**:
+    * Fixed egg harvest check to invoke `/api/sell` whenever `hens > 0`, allowing the server to compute and convert accrued eggs from `eggsAt` into `eggBal` even when static `eggs == 0`.
+
 - **⚡ Kynex 24h Energy & Boost Automation, MRG TonConnect Wallet Re-binding & Diggo 4x Ad Loop (October 27, 2026)**:
   - **Kynex Network Energy Depletion & 00:00:00 Stopped State Solved**:
     * Reverse-engineered `boost-energy.html` and `tasks.html` from `kynex.top`. Identified that mining stops when `energySeconds` drains to 0, requiring Daily Energy Ad Task (+12h Energy) and Boost Energy (Prime +5h, Advance +7h).

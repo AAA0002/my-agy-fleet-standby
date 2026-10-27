@@ -1378,9 +1378,9 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
             res["tasks_claimed"] += 1
             res["notes"].append("daily_checkin")
 
-        # 5. Collect & Sell Eggs (only if basket has accumulated eggs)
+        # 5. Collect & Sell Eggs (if eggs in basket or hens active)
         current_coins = float(u_info.get("coins", 0) or 0)
-        if int(u_info.get("eggs", 0) or 0) > 0:
+        if int(u_info.get("eggs", 0) or 0) > 0 or int(u_info.get("hens", 0) or 0) > 0:
             sell_res = await rpc("/api/sell", {})
             if sell_res.get("ok"):
                 eggs = sell_res.get("result", {}).get("eggs", 0)
