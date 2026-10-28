@@ -158,6 +158,7 @@ def push_app():
     reg_file = os.path.join(BASE_DIR, "bot_registry.py")
     if os.path.exists(reg_file):
         push_file(reg_file, "bot_registry.py", "feat: 8-bot fleet registry single source of truth")
+        push_to_solver_repo(reg_file, "bot_registry.py", "feat: 8-bot fleet registry single source of truth")
     arc_file = os.path.join(BASE_DIR, "victors_arcade_solver.py")
     if os.path.exists(arc_file):
         push_file(arc_file, "victors_arcade_solver.py", "feat: Victor's Company Deep Mine arcade solver engine")

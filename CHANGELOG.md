@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 100% Fleet-Wide Task Completion, Sponsor Channels Resolution & Multi-Bot Harvest Optimization (October 28, 2026)**:
+  - **100% Task Completion Fleet-Wide on MRG Miner (`@mrgtoken_bot`)**:
+    * **Ground-Truth Fleet Audit (21/21 Accounts Verified 8/8)**: Audited all 21 fleet accounts against live Railway backend (`POST https://mrg.up.railway.app/api/user/me`). Verified **100% OF FLEET ACCOUNTS AT 8/8 (100%) TASKS COMPLETED**.
+    * **KeepEye.app Channel Join & Gate Unblocked**: Triggered Render Node 3 cloud-based channel sync (`/api/channels/sync-and-verify`), joining `@keepeye_app` across all secondary worker accounts (#2 Nancy, #3 Koram Shah, #4 Arif, #5 Nathan Miller 5, #6 Kaitlyn, #7 Abid Hasan, #8 Abid Hasan, #9 Node 9, #10 Tanvir Ahmed 10, #11 MD. ARIF HOSSAIN, #13 Abid, #14 Rohan Sharma 14, #15 Tiffany Тарасов, #16 Roger Волков, #17 Kawsar Mahmud 17, #18 Mary Каримов).
+    * **Instant REST Task Claims**: Claimed `task-1792840221525` (`Subscribe KeepEye.app News`, +10 MRG) across all remaining accounts immediately following membership synchronization.
+    * **24h & 6h Recurring Tasks Cleared**: Claimed `task-1791123671054` ("Subscribe MRG Withdrawal Daily", +15 MRG) for accounts #10, #11, and #12, and claimed 6h recurring tasks (`task-1791660600308` "React on Latest post" +15 MRG, `task-1791660785926` "Like Retweet on X" +15 MRG) for account #18 (Mary Каримов).
+  - **ATF Miner Instagram Tasks Integration (`finish_all_fleet_sidetasks.py` & `bot_registry.py`)**:
+    * **Discovered Missing Instagram Tasks**: Audited ATF frontend bundles (`atf_vip_ui_v1_22.js` and `atfIgLikeCommentTaskV1Script`). Identified two missing tasks: `ig_follow` (one-time Follow Instagram, +10 ATF) and `ig_like_comment` (repeatable Instagram Like & Comment, +1 ATF, cooldown managed).
+    * **Engine Update**: Added `ig_follow` and `ig_like_comment` to `atf_tasks` schedule in `finish_all_fleet_sidetasks.py`.
+    * **Sponsor Channel Realignment**: Updated ATF sponsor channel in `bot_registry.py` from obsolete `atfminers` to active official channel `@AI_TRADING_FOREX`.
+  - **PepeGram Sponsor Channels & Tasks Expansion (`bot_registry.py`)**:
+    * **PaperHouseNFT 1,000 Pips Task**: Identified that task `chan_paperhousenft` (+1,000 pips) enforces participation in `@PaperHouseNFT`.
+    * **Registry Expansion**: Updated `pepegram` in `bot_registry.py` to include active mandatory channels: `["pepe_grammmm", "BTCMAKERR", "PaperHouseNFT"]`.
+  - **AdxEarn AI Update Channel Binding (`bot_registry.py`)**:
+    * Added official update channel `@AdxearnAi` to `bot_registry.py` sponsor channels list to guarantee automatic joining for Task 6 ("Join AdxEarn Ai update", +300 pts).
+  - **DiggoMiner & Chicken Land 100% Task Verification**:
+    * **DiggoMiner**: Verified 100% completion across all available tasks (`checkin`, `play`, `telegram`, `community_react`, `x_follow`, `x_post`, `ad`).
+    * **Chicken Land**: Verified 100% active state: 5-day daily check-in streak, 10 hens laying eggs, and all 8 promo/community tasks (`c4`, `c5`, `c6`, `c7`, `channel`, `payments`, `invite3`, `chat`, `x`) claimed.
+  - **Cloud Deployments & Standby Synchronization**:
+    * Pushed updated `bot_registry.py` and `finish_all_fleet_sidetasks.py` to `AAA0002/my-agy-fleet-standby` and `AAA0002/cloud-fleet-solver`.
+    * Render Node 3 (Oregon) deployed live (`dep-dbh44mkipgvc73dnrf40`).
+
+
 - **⚡ Cloud Turnstile Proxy Elimination, Direct Fallback & 8-Bot Fleet Harvest Stabilization (October 28, 2026)**:
   - **Forensic Diagnosis of Cloud Turnstile Runner Failure (`mrg_turnstile_solver.py` & `cloud-fleet-solver`)**:
     * **Root Cause: Webshare HTTP 402 & Poisoned Free Proxy Fallback**: Discovered that when Webshare proxy bandwidth exhausted (`HTTP 402 Payment Required`), the solver fell back to scraping free proxies from `proxyscrape.com`. Free public proxies choke on Cloudflare Turnstile's WebSocket handshakes (`wss://challenges.cloudflare.com/`), causing `net::ERR_TIMED_OUT`, `net::ERR_CONNECTION_RESET`, and `Page.goto: Timeout 18000ms exceeded`. This repeatedly triggered the 5-failure circuit breaker and aborted Turnstile solving across the fleet.
