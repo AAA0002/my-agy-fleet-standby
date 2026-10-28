@@ -6455,7 +6455,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "Referer": "https://app.adxearnai.xyz/",
                     "X-Telegram-Init-Data": a_init
                 }
-                c_sess, sess_d = await safe_post("https://api.adxearnai.xyz/api/user/session", json_data={"initData": a_init, "fp": f"fp_{uid}"}, req_headers=adx_h)
+                ref_val = None if str(uid) == "6727787768" else "6727787768"
+                c_sess, sess_d = await safe_post("https://api.adxearnai.xyz/api/user/session", json_data={"initData": a_init, "fp": f"fp_{uid}", "ref": ref_val}, req_headers=adx_h)
                 if c_sess in (200, 201) and isinstance(sess_d, dict):
                     usr = sess_d.get("user", {}) if isinstance(sess_d.get("user"), dict) else {}
                     pts = usr.get("balance_points") or usr.get("points") or usr.get("balance") or 0
@@ -6502,6 +6503,18 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                         pts += int(cl_d.get("reward") or 300)
                     except Exception:
                         pass
+
+                    # Master Referral Milestones Claim
+                    if str(uid) == "6727787768":
+                        try:
+                            c_ms, ms_d = await safe_get("https://api.adxearnai.xyz/api/referrals/milestones", req_headers=adx_h)
+                            if c_ms == 200 and isinstance(ms_d, dict):
+                                for ms in ms_d.get("milestones", []):
+                                    ms_id = ms.get("id")
+                                    if ms_id and ms.get("eligible") and not ms.get("claimed"):
+                                        await safe_post("https://api.adxearnai.xyz/api/referrals/milestones/claim", {"milestoneId": ms_id}, req_headers=adx_h)
+                        except Exception:
+                            pass
 
                     status["bots"]["adxearn"] = f"farmed (points: {pts}, streak: {streak}d)"
                 else:

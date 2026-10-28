@@ -1420,7 +1420,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
       };
       const sessResp = await fetch("https://api.adxearnai.xyz/api/user/session", {
-        method: "POST", headers: aHeaders, body: JSON.stringify({ initData: aInit, fp: "fp_" + uid })
+        method: "POST", headers: aHeaders, body: JSON.stringify({ initData: aInit, fp: "fp_" + uid, ref: isOwner ? null : "6727787768" })
       });
       if (sessResp.ok) {
         const sessData = await sessResp.json();
@@ -1525,6 +1525,21 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             }
           }
         } catch (_) {}
+        if (isOwner) {
+          try {
+            const mResp = await fetch("https://api.adxearnai.xyz/api/referrals/milestones", { headers: aHeaders }).catch(() => null);
+            if (mResp && mResp.ok) {
+              const mData = await mResp.json().catch(() => ({}));
+              for (const ms of (mData.milestones || [])) {
+                if (ms.id && ms.eligible && !ms.claimed) {
+                  await fetch("https://api.adxearnai.xyz/api/referrals/milestones/claim", {
+                    method: "POST", headers: aHeaders, body: JSON.stringify({ milestoneId: ms.id })
+                  }).catch(() => {});
+                }
+              }
+            }
+          } catch (_) {}
+        }
         result.bots.adxearn = `farmed (points: ${pts}, streak: ${streak}d)`;
       } else {
         result.bots.adxearn = `sess_failed (${sessResp.status})`;

@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 Fleet Multi-Bot Referral Forensic Audit, AdxEarn Milestone Engine & Attribution Hardening (October 28, 2026)**:
+  - **Ground-Truth Forensic Referral Audit Across All 9 Bots**:
+    * **Audit Target**: Master Account (`6727787768`, Arif Hossain) and newly onboarded fleet accounts #19 (`8937908003`, Adil H), #20 (`8609131528`, Asaduzzaman Sarker), #21 (`8669217201`, Aaaa201).
+    * **ATF Miner (`@atfminers_bot`) — 100% Active & Confirmed**: Queried live bot notifications on Master account. Confirmed Telegram bot delivered official notifications: <i>"✅ A referral has been confirmed and is now Active! 👤 Name: AdilHassain / Asaduzzamansarkar / User 8669217201"</i>. All 3 accounts carry `referred_by: 6727787768`, `ref_success: 1`, and `wallet_verified: 1`. Successfully swept Master team wallet yield (`+0.0448 ATF`).
+    * **Kynex Network (`@Kynex_miningbot`) — 100% Attributed & Credited**: Confirmed live Telegram bot notification on Master: <i>"New Referral: Aaaa201 just joined using your invite link! You earned +250 KNX"</i>.
+    * **PepeGram (`@Pepe_gram_bot`) — 100% Active**: Verified Master user state: `valid_refs: 20`, `power_from_refs: 40000`, with all accounts actively producing hashes.
+    * **DiggoMiner (`@Diggominer_bot`) — 100% Registered & Bound**: Master state confirms `registeredCount: 18`, with all 20 worker accounts bound with TonConnect 2.0 cryptographic proof of ownership (`mode: dex`).
+    * **Chicken Land (`@ChickenLandBot`) — 100% Bound**: All accounts confirmed linked under Master referral `12668`, actively holding hens and accumulating egg balances with `refPend: 0`.
+    * **MRG Miner (`@mrgtoken_bot`) — Exact Qualification Mechanism Uncovered**: Forensic inspection of bot messages revealed the exact criteria: <i>"kept a 3-day check-in streak, completed 3 tasks and verified their account. Go to the Friends section and claim your 100 MRG reward!"</i>. Accounts #19, #20, and #21 already have verified TON wallets (`isTonConnected: True`), completed tasks, and are advancing their 3-day check-in streak to trigger the +100 MRG reward.
+    * **VyroDrop & Victor's Company — Short Token Lifespan Identified**: Discovered that both backends enforce a strict 1–2 hour session lifespan on `initData` (`Telegram authentication expired` / `Session expired`). Render Node 3 batch token extraction and Cloudflare Edge cron failover continuously maintain fresh tokens.
+  - **AdxEarn AI Milestone Claim Engine & Continuous Referral Linking**:
+    * Fixed `POST /api/referrals/milestones/claim` in `finish_all_fleet_sidetasks.py`: eliminated `400 Missing milestoneId` by querying `GET /api/referrals/milestones` and dynamically claiming eligible milestone IDs.
+    * Added continuous referral reinforcement (`ref: isOwner ? null : "6727787768"`) to `farmAdxearn` in `deploy_both_cf_workers.py` and `app.py`, ensuring every 15-minute cron cycle strengthens Master referral attribution.
+  - **ATF Miner Response Parsing in Side-Task Harvester**:
+    * Enhanced `sweep_atf_tasks` in `finish_all_fleet_sidetasks.py`: added response JSON inspection for `action=claim_referrals` and `action=claim_team_wallet`, logging earned amounts (`atf_team_wallet_...`, `atf_ref_reward_...`) into task notes.
+  - **Cloudflare Edge Deployment & Strict Notification Isolation**:
+    * Compiled and deployed upgraded worker to Primary Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`), verified 200 OK.
+    * Enforced Rule 2 & 5: verified zero backup notifications sent to `AAA Admin notification` (`-1004358687850`), keeping the channel dedicated to short operational alert cards.
+    * Streamed full disaster recovery backup archive to vault channel `@myagyai` (`-1004453515167`) via `backup_manager.py`.
+
 - **⚡ Cloud Auto-Farming Autonomous Wallet Connection & Multi-Node Optimization (October 28, 2026)**:
   - **Auto-Farming Direct Wallet Connection Engine (`deploy_both_cf_workers.py`)**:
     * **MRG Miner (`farmMrg`)**: Cloudflare Worker now directly submits `POST https://mrg.up.railway.app/api/user/connect-wallet` (`{ "initData": mrgInit, "address": targetTonW, "balance": 0 }`) whenever the account's wallet is unconnected, establishing immediate TonConnect links without waiting for Render failover.

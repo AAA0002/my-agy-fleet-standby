@@ -607,8 +607,24 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
         # 2. Daily claims & boosts
         await jitter(0.4, 0.9)
         async with session.post(f"{atf_base}?action=claim&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
-        async with session.post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
-        async with session.post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
+        async with session.post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r:
+            if r.status == 200:
+                try:
+                    c_ref = await r.json()
+                    if c_ref.get("status") == "success":
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"atf_ref_reward_{c_ref.get('claimed_amount', 0)}")
+                except Exception:
+                    pass
+        async with session.post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r:
+            if r.status == 200:
+                try:
+                    c_tw = await r.json()
+                    if c_tw.get("status") == "success":
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"atf_team_wallet_{c_tw.get('claimed_amount', 0)}")
+                except Exception:
+                    pass
         async with session.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
         async with session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
 
@@ -1486,7 +1502,19 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
 
         # 6. Referral Milestones Claim
         if str(uid) == MASTER_UID:
-            await session.post(f"{adx_base}/referrals/milestones/claim", json={}, headers=adx_headers)
+            try:
+                async with session.get(f"{adx_base}/referrals/milestones", headers=adx_headers, timeout=aiohttp.ClientTimeout(total=6)) as mr:
+                    if mr.status == 200:
+                        m_data = await mr.json()
+                        for ms in m_data.get("milestones", []):
+                            ms_id = ms.get("id")
+                            if ms_id and ms.get("eligible") and not ms.get("claimed"):
+                                async with session.post(f"{adx_base}/referrals/milestones/claim", json={"milestoneId": ms_id}, headers=adx_headers) as mcr:
+                                    if mcr.status == 200:
+                                        res["tasks_claimed"] += 1
+                                        res["notes"].append(f"adx_milestone_{ms_id}_claimed")
+            except Exception:
+                pass
 
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")
