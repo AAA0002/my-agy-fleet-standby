@@ -870,9 +870,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }, 1, 500).catch(() => {});
         }
 
-        // Connect TON wallet to qualify recruit & unlock Level 1 Miner
+        // Connect TON wallet if not yet connected
         const vTonWallet = getDynamicTonWallet(uid, accData);
-        if (vTonWallet && me && !me.walletAddress) {
+        if (vTonWallet && me && (!me.walletAddress || !me.walletOwned)) {
           await fetchWithRetry("https://server.victors.company/api/wallet/connect", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ address: vTonWallet })
           }, 1, 600).catch(() => {});
@@ -880,9 +880,23 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: "connect-wallet" })
           }, 1, 500).catch(() => {});
+          // If TonConnect proof is required on Victor's, trigger failover to Render node
+          if (!me.walletOwned && ctx && ctx.waitUntil) {
+            ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
+              method: "POST",
+              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "") }
+            }, 15000).catch(() => {}));
+          }
+        }
+
+        // Ensure Level 1 Miner is hired to start mining and eliminate home.noJob
+        const curLvl = Number(me?.level || me?.peakLevel || 0);
+        const manLvl = Number(me?.manualUnlockedLevel || 0);
+        if (curLvl < 1 || manLvl < 1) {
+          await humanDelay(500, 1000);
           await fetchWithRetry("https://server.victors.company/api/levels/unlock", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ level: 1 })
-          }, 1, 500).catch(() => {});
+          }, 2, 600).catch(() => {});
         }
 
         await humanDelay(800, 1600);
@@ -898,11 +912,12 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         }, 1, 800).catch(() => {});
 
         // 5. Level Unlock
-        if (me && me.unlockedLevel && me.level && me.unlockedLevel > me.level) {
+        const maxUnl = Number(me?.unlockedLevel || curLvl);
+        if (maxUnl > curLvl) {
           await humanDelay(800, 1500);
           await fetchWithRetry("https://server.victors.company/api/levels/unlock", {
-            method: "POST", headers: vHeaders, body: JSON.stringify({ level: me.unlockedLevel })
-          }, 1, 600).catch(() => {});
+            method: "POST", headers: vHeaders, body: JSON.stringify({ level: maxUnl })
+          }, 2, 600).catch(() => {});
         }
 
         // 6. Tasks (with 4.2s link verification debounce)
@@ -1090,6 +1105,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
           if (walletRequired) {
             result.bots.vyro = `wallet_required (TonConnect needed, lvl: ${mObj.level || 1})`;
+            // Trigger failover to Render Node 2/3 to connect TON wallet with TonConnect proof
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "") }
+              }, 15000).catch(() => {}));
+            }
           } else {
             result.bots.vyro = `farmed (lvl: ${mObj.level || 1}, speed: ${mObj.currentSpeed || 0})`;
           }
@@ -1664,7 +1686,15 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             }
           }
         }
-        result.bots.diggo = `farmed (lvl: ${lvl}, bal: ${bal.toFixed(2)})`;
+        if (!st.wallet?.address || !st.wallet?.holdings?.linked) {
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
+              method: "POST",
+              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "") }
+            }, 15000).catch(() => {}));
+          }
+        }
+        result.bots.diggo = `farmed (lvl: ${lvl}, bal: ${bal.toFixed(2)}, wallet: ${st.wallet?.address ? "bound" : "unbound"})`;
       } else {
         result.bots.diggo = `state_failed (${stResp.status})`;
       }

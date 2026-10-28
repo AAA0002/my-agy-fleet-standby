@@ -1047,6 +1047,52 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
                 "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
             }
 
+        # 1b. Ensure dedicated TON wallet is bound with TonConnect 2.0 proof
+        w_obj = st.get("wallet") or {}
+        if not w_obj.get("address") or not w_obj.get("holdings", {}).get("linked"):
+            target_ton = get_ton_wallet_address(acc, uid)
+            w_entry = ton_wallets.get(str(uid)) or ton_wallets.get(int(uid) if str(uid).isdigit() else 0) or (acc.get("ton_wallet") if isinstance(acc.get("ton_wallet"), dict) else {})
+            raw_mn = w_entry.get("mnemonic") or w_entry.get("mnemonic_words")
+            if target_ton and raw_mn:
+                try:
+                    async with session.post(f"{base_url}/api/ton/challenge", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as chr:
+                        if chr.status == 200:
+                            ch_data = await chr.json()
+                            nonce = ch_data.get("payload")
+                            if nonce:
+                                from nacl.signing import SigningKey
+                                from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+                                words = raw_mn.split() if isinstance(raw_mn, str) else raw_mn
+                                _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                                state_init_res = wallet_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = wallet_contract.address
+                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                                domain = "diggo.linkpc.net"
+                                domain_b = domain.encode("utf-8")
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                sig = SigningKey(priv_k[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                bind_payload = {
+                                    "address": raw_addr,
+                                    "network": "-239",
+                                    "publicKey": pub_k.hex(),
+                                    "walletStateInit": state_init_b64,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_b), "value": domain},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    }
+                                }
+                                async with session.post(f"{base_url}/api/ton/bind", json=bind_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as br:
+                                    if br.status in (200, 201):
+                                        res["notes"].append("diggo_ton_wallet_bound")
+                except Exception as b_err:
+                    logger.debug(f"[{name}] Diggo ton_bind note: {b_err}")
+
         # 2. Claim mining
         mining = st.get("mining") or {}
         if float(mining.get("pending", 0) or 0) > 0:

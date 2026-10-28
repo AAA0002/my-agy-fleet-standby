@@ -939,7 +939,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 4. VyroDrop (@vyrodrop_bot - Silent WebApp query, zero chat messages)
     vy_param = None if is_master else VYRO_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"], prefer_direct_url=True)
+    tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"], prefer_direct_url=False)
     if tok:
         tokens["vyro_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
@@ -3221,9 +3221,47 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         try:
             m_init = tokens["mrg_init_data"]
             m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz"}
+            ton_proof_payload = None
+            if raw_m and HAS_TONSDK:
+                try:
+                    async with http_session.post("https://mrg.up.railway.app/api/user/ton-proof-payload", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=6)) as pr:
+                        if pr.status == 200:
+                            pd = await pr.json()
+                            nonce = pd.get("payload")
+                            if nonce:
+                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
+                                _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                                state_init_res = wallet_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = wallet_contract.address
+                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                                domain = "app.mrgtoken.xyz"
+                                domain_b = domain.encode("utf-8")
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                from nacl.signing import SigningKey
+                                sig = SigningKey(priv_k[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                ton_proof_payload = {
+                                    "address": raw_addr,
+                                    "walletStateInit": state_init_b64,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_b), "value": domain},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    }
+                                }
+                except Exception as m_pr_err:
+                    logger.debug(f"[{name}] MRG tonProof bind note: {m_pr_err}")
+
+            conn_body = {"initData": m_init, "address": target_ton, "balance": 0}
+            if ton_proof_payload:
+                conn_body["tonProof"] = ton_proof_payload
             await http_session.post(
                 "https://mrg.up.railway.app/api/user/connect-wallet",
-                json={"initData": m_init, "address": target_ton, "balance": 0},
+                json=conn_body,
                 headers=m_headers,
                 timeout=aiohttp.ClientTimeout(total=8)
             )
@@ -3268,13 +3306,59 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
                 "Origin": "https://app.victors.company",
                 "Referer": "https://app.victors.company/"
             }
-            # Connect TON wallet
-            await http_session.post(
-                "https://server.victors.company/api/wallet/connect",
-                json={"address": target_ton},
-                headers=v_h,
-                timeout=aiohttp.ClientTimeout(total=8)
-            )
+            v_pass = get_cached_upstash_pass(f"victors:pass:{uid}")
+            if v_pass:
+                v_h["x-human-pass"] = str(v_pass)
+
+            # Try TonConnect 2.0 Proof connection
+            ton_connected = False
+            if raw_m and HAS_TONSDK:
+                try:
+                    async with http_session.get("https://server.victors.company/api/wallet/proof-payload", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as npr:
+                        if npr.status == 200:
+                            np_d = await npr.json()
+                            nonce = np_d.get("payload")
+                            if nonce:
+                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
+                                _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
+                                    mnemonics=words, version=WalletVersionEnum.v4r2
+                                )
+                                state_init_res = wallet_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = wallet_contract.address
+                                friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
+                                domain_bytes = b"app.victors.company"
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_bytes)) + domain_bytes + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                from nacl.signing import SigningKey
+                                sig = SigningKey(priv_key_bytes[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                conn_body = {
+                                    "address": friendly_addr,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_bytes), "value": "app.victors.company"},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    },
+                                    "stateInit": state_init_b64,
+                                    "publicKey": pub_key_bytes.hex()
+                                }
+                                async with http_session.post("https://server.victors.company/api/wallet/connect", json=conn_body, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as cwr:
+                                    if cwr.status in (200, 201):
+                                        ton_connected = True
+                except Exception as vp_err:
+                    logger.debug(f"[{name}] Victor's tonProof note: {vp_err}")
+
+            if not ton_connected:
+                # Fallback to standard connect
+                await http_session.post(
+                    "https://server.victors.company/api/wallet/connect",
+                    json={"address": target_ton},
+                    headers=v_h,
+                    timeout=aiohttp.ClientTimeout(total=8)
+                )
             # Claim connect-wallet task
             await http_session.post(
                 "https://server.victors.company/api/tasks/claim",
@@ -3303,10 +3387,12 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
                 "Origin": "https://vyro.run.place",
                 "Referer": "https://vyro.run.place/"
             }
+            v_pass = get_cached_upstash_pass(f"vyro:pass:{uid}")
+            ch_body = {"turnstileToken": v_pass} if v_pass else {}
             # Request TonConnect challenge
             async with http_session.post(
                 "https://vyro.run.place/api/wallet/challenge",
-                json={},
+                json=ch_body,
                 headers=vy_h,
                 timeout=aiohttp.ClientTimeout(total=8)
             ) as ch_res:
@@ -3345,6 +3431,67 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
                         logger.info(f"[{name}] 💎 Bound VyroDrop TonConnect wallet: {friendly_addr[:12]}... & initiated mining!")
         except Exception as vye:
             logger.debug(f"[{name}] VyroDrop wallet bind note: {vye}")
+
+    # 5. DiggoMiner TON Wallet Binding with TonConnect 2.0 Proof
+    diggo_jwt = tokens.get("diggo_jwt")
+    if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with http_session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as djr:
+                if djr.status == 200:
+                    jd = await djr.json()
+                    if jd.get("result"): diggo_jwt = str(jd["result"]).strip()
+        except Exception:
+            pass
+
+    if diggo_jwt and raw_m and HAS_TONSDK:
+        try:
+            d_headers = {
+                "Authorization": f"Bearer {diggo_jwt}",
+                "Content-Type": "application/json",
+                "Origin": "https://diggo.linkpc.net",
+                "Referer": "https://diggo.linkpc.net/",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"
+            }
+            async with http_session.get("https://diggo.linkpc.net/api/state", headers=d_headers, timeout=aiohttp.ClientTimeout(total=5)) as st_r:
+                if st_r.status == 200:
+                    st_d = await st_r.json()
+                    cur_w = st_d.get("state", {}).get("wallet", {})
+                    if not cur_w.get("address") or not cur_w.get("holdings", {}).get("linked"):
+                        async with http_session.post("https://diggo.linkpc.net/api/ton/challenge", json={}, headers=d_headers, timeout=aiohttp.ClientTimeout(total=6)) as chr:
+                            if chr.status == 200:
+                                ch_d = await chr.json()
+                                nonce = ch_d.get("payload")
+                                if nonce:
+                                    words = raw_m.split() if isinstance(raw_m, str) else raw_m
+                                    _, pub_k, priv_k, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                                    state_init_res = w_contract.create_state_init()
+                                    state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                    t_addr = w_contract.address
+                                    raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                                    domain = "diggo.linkpc.net"
+                                    domain_b = domain.encode("utf-8")
+                                    ts_now = int(time.time())
+                                    msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                    digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                    from nacl.signing import SigningKey
+                                    sig = SigningKey(priv_k[:32]).sign(digest).signature
+                                    sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                    bind_body = {
+                                        "address": raw_addr,
+                                        "network": "-239",
+                                        "publicKey": pub_k.hex(),
+                                        "walletStateInit": state_init_b64,
+                                        "proof": {
+                                            "timestamp": ts_now,
+                                            "domain": {"lengthBytes": len(domain_b), "value": domain},
+                                            "signature": sig_b64,
+                                            "payload": nonce
+                                        }
+                                    }
+                                    await http_session.post("https://diggo.linkpc.net/api/ton/bind", json=bind_body, headers=d_headers, timeout=aiohttp.ClientTimeout(total=8))
+                                    logger.info(f"[{name}] 💎 Bound DiggoMiner TON wallet with TonConnect proof: {raw_addr}!")
+        except Exception as de:
+            logger.debug(f"[{name}] Diggo wallet bind note: {de}")
 
 
 async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool = False):
@@ -5979,9 +6126,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
                 # 3. Connect TON wallet if not yet connected
                 v_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address")
-                if v_ton_w and not me.get("walletAddress"):
+                if v_ton_w and (not me.get("walletAddress") or not me.get("walletOwned")):
                     w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
                     raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
+                    ton_proof_success = False
                     if raw_m:
                         try:
                             np_code, np_res = await safe_get("https://server.victors.company/api/wallet/proof-payload", req_headers=v_h)
@@ -6013,19 +6161,24 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     "stateInit": state_init_b64,
                                     "publicKey": pub_key_bytes.hex()
                                 }
-                                await safe_post("https://server.victors.company/api/wallet/connect", json_data=conn_body, req_headers=v_h)
+                                c_code, c_d = await safe_post("https://server.victors.company/api/wallet/connect", json_data=conn_body, req_headers=v_h)
+                                if c_code in (200, 201):
+                                    ton_proof_success = True
+                                    await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
                         except Exception:
                             pass
-                    await safe_post("https://server.victors.company/api/wallet/connect", json_data={"address": v_ton_w}, req_headers=v_h)
-                    await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
+                    if not ton_proof_success:
+                        await safe_post("https://server.victors.company/api/wallet/connect", json_data={"address": v_ton_w}, req_headers=v_h)
+                        await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
 
                 # 4. Levels unlock (Hire Level 1 Miner to start mining and eliminate home.noJob)
-                manual_lvl = me.get("manualUnlockedLevel", 0)
-                if manual_lvl < 1 or lvl < 1:
+                manual_lvl = int(me.get("manualUnlockedLevel") or 0)
+                cur_lvl = int(me.get("level") or me.get("peakLevel") or 0)
+                if manual_lvl < 1 or cur_lvl < 1:
                     await jitter(0.4, 0.9)
                     await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": 1}, req_headers=v_h)
-                unlocked = me.get("unlockedLevel", lvl)
-                if unlocked > lvl:
+                unlocked = int(me.get("unlockedLevel") or cur_lvl)
+                if unlocked > cur_lvl:
                     await jitter(0.5, 1.2)
                     await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
 
@@ -6415,6 +6568,45 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         c_code, c_data = await safe_post("https://diggo.linkpc.net/api/claims/mining", json_data={}, req_headers=claim_h)
                         if c_code == 200 and isinstance(c_data, dict):
                             bal += float(c_data.get("amount", 0.0) or 0.0)
+
+                    # 1b. Ensure dedicated TON wallet is bound with TonConnect 2.0 proof
+                    cur_w = st.get("wallet") or {}
+                    if not cur_w.get("address") or not cur_w.get("holdings", {}).get("linked"):
+                        w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
+                        raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
+                        if raw_m and HAS_TONSDK:
+                            try:
+                                _, ch_d = await safe_post("https://diggo.linkpc.net/api/ton/challenge", json_data={}, req_headers=d_h)
+                                nonce = ch_d.get("payload") if isinstance(ch_d, dict) else None
+                                if nonce:
+                                    words = raw_m.split() if isinstance(raw_m, str) else raw_m
+                                    _, pub_k, priv_k, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                                    state_init_res = w_contract.create_state_init()
+                                    state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                    t_addr = w_contract.address
+                                    raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                                    domain_b = b"diggo.linkpc.net"
+                                    ts_now = int(time.time())
+                                    msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                    digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                    from nacl.signing import SigningKey
+                                    sig = SigningKey(priv_k[:32]).sign(digest).signature
+                                    sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                    bind_body = {
+                                        "address": raw_addr,
+                                        "network": "-239",
+                                        "publicKey": pub_k.hex(),
+                                        "walletStateInit": state_init_b64,
+                                        "proof": {
+                                            "timestamp": ts_now,
+                                            "domain": {"lengthBytes": len(domain_b), "value": "diggo.linkpc.net"},
+                                            "signature": sig_b64,
+                                            "payload": nonce
+                                        }
+                                    }
+                                    await safe_post("https://diggo.linkpc.net/api/ton/bind", json_data=bind_body, req_headers=d_h)
+                            except Exception as db_e:
+                                logger.debug(f"[{name}] Diggo ton_bind in farm note: {db_e}")
                     # 2. Side Tasks: Daily Checkin & Referral Commission
                     await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "checkin"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                     await safe_post("https://diggo.linkpc.net/api/referrals/claim", json_data={}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})

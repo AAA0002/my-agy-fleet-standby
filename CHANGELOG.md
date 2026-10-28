@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Comprehensive Fleet Wallet Binding Engine & Bot Mining Activation (October 28, 2026)**:
+  - **DiggoMiner Fleet TonConnect 2.0 Proof Binding (`bind_all_fleet_diggo_wallets.py`)**:
+    * Discovered that DiggoMiner exposes `/api/ton/challenge` and `/api/ton/bind`, requiring TonConnect 2.0 proof-of-ownership with `network: "-239"`.
+    * Implemented `bind_all_fleet_diggo_wallets.py` and executed a full sweep across all 21 fleet accounts.
+    * Successfully bound and verified all 20 worker accounts (#2–#21) on DiggoMiner with authentic Ed25519 cryptographic signatures and stateInit BOCs, linking DEX holdings and non-custodial wallet balances.
+    * Integrated DiggoMiner TonConnect proof verification directly into `sweep_diggo_tasks` in `finish_all_fleet_sidetasks.py`, `_farm_diggo` in `app.py`, and `farmDiggo` in `deploy_both_cf_workers.py`.
+  - **Victor's Company Level 1 Miner Unlock & TonConnect Fix**:
+    * Resolved critical mining stall bug where accounts with `me.level === 0` were skipped by `if (me && me.unlockedLevel && me.level && ...)` because `0` evaluates to falsy in JavaScript.
+    * Decoupled Level 1 Miner unlock from `!me.walletAddress`: both `deploy_both_cf_workers.py` and `app.py` now unconditionally unlock Level 1 Miner (`POST /api/levels/unlock` `{ "level": 1 }`) whenever `level < 1` or `manualUnlockedLevel < 1`, eliminating `home.noJob` across all accounts.
+    * Fixed `_farm_victors` in `app.py`: removed redundant plaintext `wallet/connect` call that was overwriting TonConnect proofs, and added `walletOwned` verification.
+    * Created `bind_all_fleet_victors_wallets.py` with full 21-account parity (including Account #21 `8669217201`).
+  - **VyroDrop Mining Wallet Requirement & Token Expiration Fix**:
+    * Fixed `deploy_both_cf_workers.py`: when VyroDrop returns `409 MINING_WALLET_REQUIRED`, the worker now triggers an asynchronous failover delegate to Render Node 2/3 to connect the TON wallet via TonConnect proof rather than giving up.
+    * Fixed `extract_bot_webapp_token` in `app.py`: changed `prefer_direct_url=True` to `False` for VyroDrop, ensuring Telethon uses `RequestAppWebViewRequest` to extract standalone 24-hour WebApp tokens rather than short-lived 1-hour `query_id` tokens that were triggering `TELEGRAM_AUTH_INVALID`.
+  - **MRG Miner TonConnect Proof Parity**:
+    * Upgraded `bind_wallets_to_bots` in `app.py` to sign and attach `tonProof` to `/api/user/connect-wallet`, matching the proven implementation in `_farm_mrg`.
+  - **Cloudflare Edge Node 4 Re-Deployment & Disaster Recovery**:
+    * Compiled and deployed upgraded Cloudflare Worker to Primary Node 4 (`agorameet.workers.dev`), verified 100% active and healthy.
+    * Streamed disaster recovery backup archive to `@myagyai` vault channel via `backup_manager.py`.
+
 - **🚀 System-Wide Fleet Architecture & Reliability Hardening (October 28, 2026)**:
   - **Account Indices & Roster Sequence Invariant**:
     * Fixed indexing discrepancy in `accounts.json` where Account #20 (`Asaduzzaman Sarker`, `8609131528`) had an errant `account_index: 19`, correcting it to `account_index: 20` and aligning with its multi-chain wallet blocks.

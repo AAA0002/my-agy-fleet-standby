@@ -462,12 +462,12 @@ Whenever a new account is onboarded, its wallet secrets and metadata are automat
 
 #### 💎 Autonomous Bot Wallet Binding & Mining Kick-Off (`bind_wallets_to_bots`)
 Several bots strictly require dedicated wallet connections to initiate mining or qualify recruits:
-- **MRG Miner**: `POST https://mrg.up.railway.app/api/user/connect-wallet` with account TON address.
-- **ATF Miner**: `POST https://atfminers.asloni.online/miner/index.php?action=sync_wallet` with dedicated TON address, public key, and TonConnect 2.0 cryptographic proof (`domain: atfminers.asloni.online`, `atf_wp_...` payload).
-- **Victor's Company**: `POST https://server.victors.company/api/wallet/connect` + `POST /api/tasks/claim` (`connect-wallet`) + `POST /api/levels/unlock` (`level: 1` hiring Level 1 Miner to start continuous mining and eliminate `home.noJob`).
-- **VyroDrop**: Solves TonConnect challenge via `POST https://vyro.run.place/api/wallet/challenge`, cryptographically signs with account Ed25519 seed, binds via `POST /api/wallet/connect`, and starts mining session (`POST /api/mining/start`).
-- **Astra Airdrop**: Supabase RPC `astra_sync_wallet` with account TON address.
-- **Execution Hook**: `bind_wallets_to_bots` runs automatically during onboarding and re-login for both brand-new and re-linked accounts.
+- **MRG Miner**: `POST https://mrg.up.railway.app/api/user/connect-wallet` with account TON address, signed TonConnect 2.0 cryptographic proof (`domain: app.mrgtoken.xyz`), stateInit BOC, and nonce from `/api/user/ton-proof-payload`.
+- **ATF Miner**: `POST https://atfminers.asloni.online/miner/index.php?action=sync_wallet` with dedicated TON address, public key, and TonConnect 2.0 cryptographic proof (`domain: atfminers.asloni.online`, `atf_wp_...` payload), setting `wallet_verified: 1`.
+- **Victor's Company**: `POST https://server.victors.company/api/wallet/connect` with signed TonConnect 2.0 proof + `POST /api/tasks/claim` (`connect-wallet`) + `POST /api/levels/unlock` (`level: 1` hiring Level 1 Miner to start continuous mining and eliminate `home.noJob`).
+- **DiggoMiner**: `POST https://diggo.linkpc.net/api/ton/challenge` -> retrieves nonce -> signs `ton-proof-item-v2` (`domain: diggo.linkpc.net`, `network: "-239"`) -> `POST https://diggo.linkpc.net/api/ton/bind` (`bind_all_fleet_diggo_wallets.py`), linking DEX holdings and non-custodial wallet balances across all 20 worker accounts.
+- **VyroDrop**: Solves TonConnect challenge via `POST https://vyro.run.place/api/wallet/challenge` (passing `turnstileToken`), cryptographically signs with account Ed25519 seed, binds via `POST /api/wallet/connect`, and starts mining session (`POST /api/mining/start`).
+- **Execution Hook**: `bind_wallets_to_bots` runs automatically during onboarding, token refresh, and farming cycles across Cloudflare Workers and Render Node 2/3.
 
 ---
 
