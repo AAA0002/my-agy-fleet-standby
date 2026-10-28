@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Deep Fleet Farming Remediation & Cloud Turnstile Solver Unblocking (October 28, 2026)**:
+  - **MRG Miner Root-Cause Remediation across All 21 Accounts**:
+    * **Audit & Diagnostics**: Tested live MRG API directly against `mrg.up.railway.app/api/user/claim-mining` across all 21 fleet accounts. Account 1 (Master) and Account 21 succeeded (200 OK), while Accounts 2–20 were blocked with `HTTP 403 {"code":"HUMAN_CHECK_REQUIRED"}` with >1,130 MRG trapped unclaimed.
+    * **Cooldown Masking Bug Resolved in `app.py`**: Fixed line 5812 where `claim_stat` was formatted as `farmed (security_check_needed: ...)`. In routine execution (`_run_single_routine`), `bot_res.startswith("farmed")` falsely treated the 403 challenge as a successful claim, setting a 2h–8h cooldown to Upstash Redis and skipping retries. Changed to `security_check_needed ({unclaimed_val:.1f} MRG unclaimed)` so `is_success = False`, triggering short 3-minute retries.
+    * **Cloudflare WARP Datacenter Block Bypassed in `cloud-fleet-solver`**: Analysis of runner logs uncovered that Cloudflare WARP SOCKS5 on `127.0.0.1:40000` routed all browser traffic through Cloudflare datacenter IP space (AS13335), causing Cloudflare Turnstile to block interactive checkbox challenges. Removed WARP setup from `.github/workflows/mrg_turnstile_solver.yml` and eliminated WARP priority from `mrg_turnstile_solver.py`.
+    * **Pass TTL Aligned to 24 Hours**: Updated `save_mrg_pass_to_upstash` and `save_victors_pass_to_upstash` from `ex=3600` (1h) to `ex=86400` (24h) to match server-side `humanVerifiedUntil` lifetime.
+    * **Runner Pipeline Synchronized**: Pushed verified changes to `AAA0002/cloud-fleet-solver` (`22c3854e`, `35decb0e`) and dispatched run `40725217796` with Patchright stealth Chromium.
+  - **Dual Admin Dashboards & UI Excellence**:
+    * Cleaned up remaining obsolete "9 Pools" / "9-pool" labels across `public/admin.html`, `dashboard.html`, `public_admin/admin.html`, and `public/user-admin.html` to strictly reflect the 8 authentic mining pools.
+    * Deployed updated `app.py` to Render Standby Node 3 (`dep-dbh225mi0phs73agqe3g`) and Cloudflare Edge Worker Node 4 (`restore-agy.agorameet.workers.dev`).
+
 - **🛑 Complete Permanent Purge & Decommissioning of VyroDrop across Fleet & Edge Mesh (October 28, 2026)**:
   - **Ground-Truth 8-Bot Fleet Policy Enacted**:
     * VyroDrop (`@vyrodrop_bot` / `https://vyro.run.place/`) permanently decommissioned and purged following executive directive.

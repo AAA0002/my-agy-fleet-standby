@@ -154,21 +154,40 @@ def push_app():
     if os.path.exists(emt_f):
         push_file(emt_f, "extract_all_missing_fleet_tokens.py", "feat: 10-bot missing tokens batch extractor")
     
-    # Strictly Pin Deployment EXCLUSIVELY to Render Node 2 (Frankfurt - Abid)
-    # Node 1 (Singapore) and Node 3 (Oregon) are suspended to guarantee ZERO IP collisions
-    node2_key = env.get("RENDER_API_KEY_2", "")
-    srv_node2 = "srv-dan5q00ae00c73djummg"
+    # Dynamic Render Deployment: Detect active node from Upstash Redis or default to Node 3
+    active_node = "node3"
     try:
-        req_dep2 = urllib.request.Request(
-            f"https://api.render.com/v1/services/{srv_node2}/deploys",
+        up_url = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL")
+        up_tok = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN")
+        if up_url and up_tok:
+            chk_req = urllib.request.Request(f"{up_url}/get/fleet:active_render_node", headers={"Authorization": f"Bearer {up_tok}"})
+            with urllib.request.urlopen(chk_req, timeout=5) as c_resp:
+                val = json.loads(c_resp.read().decode()).get("result")
+                if val:
+                    active_node = val
+    except Exception:
+        pass
+
+    if active_node == "node2":
+        node_key = env.get("RENDER_API_KEY_2", "")
+        srv_id = "srv-dan5q00ae00c73djummg"
+        node_name = "Render Node 2 (Frankfurt)"
+    else:
+        node_key = env.get("RENDER_API_KEY_3") or env.get("RENDER_API_KEY", "")
+        srv_id = "srv-db437o3tqb8s73dt4erg"
+        node_name = "Render Node 3 (Oregon)"
+
+    try:
+        req_dep = urllib.request.Request(
+            f"https://api.render.com/v1/services/{srv_id}/deploys",
             data=json.dumps({"clearCache": "do_not_clear"}).encode(),
-            headers={"Authorization": f"Bearer {node2_key}", "Content-Type": "application/json"}
+            headers={"Authorization": f"Bearer {node_key}", "Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req_dep2, timeout=15) as d_resp:
+        with urllib.request.urlopen(req_dep, timeout=15) as d_resp:
             d_data = json.loads(d_resp.read().decode())
-            print(f"🚀 Render Node 2 (Frankfurt) deployment triggered: {d_data.get('id')}")
+            print(f"🚀 {node_name} deployment triggered: {d_data.get('id')}")
     except Exception as de:
-        print(f"Note triggering Render Node 2 deploy: {de}")
+        print(f"Note triggering {node_name} deploy: {de}")
 
 if __name__ == "__main__":
     push_app()

@@ -25,23 +25,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libgbm-dev
 
-      - name: Install & Configure Cloudflare WARP (Local SOCKS5 Proxy)
-        run: |
-          # Add Cloudflare official repository and install cloudflare-warp
-          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
-          sudo apt-get update && sudo apt-get install -y cloudflare-warp
-          # Start service and register local SOCKS5 proxy on 127.0.0.1:40000
-          sudo systemctl enable --now warp-svc.service || sudo nohup warp-svc > /dev/null 2>&1 &
-          sleep 4
-          warp-cli --accept-tos registration new 2>/dev/null || warp-cli --accept-tos register 2>/dev/null || true
-          warp-cli --accept-tos mode proxy 2>/dev/null || warp-cli --accept-tos set-mode proxy 2>/dev/null || true
-          warp-cli --accept-tos proxy port 40000 2>/dev/null || warp-cli --accept-tos set-proxy-port 40000 2>/dev/null || true
-          warp-cli --accept-tos connect 2>/dev/null || true
-          sleep 3
-          # Verify local proxy routing through Cloudflare edge network
-          curl -s --socks5 127.0.0.1:40000 https://www.cloudflare.com/cdn-cgi/trace/ || echo "WARP local proxy ready"
-
       - name: Install Python Dependencies & Patchright Stealth Engine
         run: |
           pip install --upgrade pip

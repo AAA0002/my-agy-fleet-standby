@@ -96,37 +96,52 @@ jobs:
           CF_SECRET_KEY: "${{ secrets.CF_SECRET_KEY || secrets.SECRET_KEY }}"
         run: |
           python - << 'EOF'
-          import urllib.request, json
-          # Strict 1-IP Pinning: ONLY Render Node 2 in Frankfurt connects to Telegram MTProto.
-          # Zero Telethon connections on GitHub Actions to guarantee NO multi-IP collisions or AuthKeyDuplicatedError.
-          import os
+          import urllib.request, json, os
           sec = os.environ.get("CF_SECRET_KEY", "")
-          url = f"https://my-agy-fleet-standby-node2.onrender.com/collect-tokens?secret={sec}&sync=1"
-          try:
-              req = urllib.request.Request(url, headers={"Authorization": f"Bearer {sec}"})
-              with urllib.request.urlopen(req, timeout=90) as resp:
-                  data = json.loads(resp.read().decode())
-                  print(f"✅ Render Node 2 Token Collection Succeeded: {data}")
-          except Exception as e:
-              print(f"⚠️ Note on Render Node 2 trigger: {e}")
+          nodes = [
+              ("Render Node 3 (Oregon)", "https://my-agy-fleet-standby-node3.onrender.com/collect-tokens"),
+              ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens")
+          ]
+          for name, base in nodes:
+              url = f"{base}?secret={sec}&sync=1"
+              try:
+                  req = urllib.request.Request(url, headers={"Authorization": f"Bearer {sec}"})
+                  with urllib.request.urlopen(req, timeout=90) as resp:
+                      data = json.loads(resp.read().decode())
+                      print(f"✅ {name} Token Collection Succeeded: {data}")
+                      break
+              except Exception as e:
+                  print(f"⚠️ Note on {name} trigger: {e}")
           EOF
 
       - name: Dispatch Render Standby Multi-Node Cloud Farming
         if: success()
+        env:
+          CF_SECRET_KEY: "${{ secrets.CF_SECRET_KEY || secrets.SECRET_KEY }}"
         run: |
           python - << 'EOF'
-          import urllib.request, json
+          import urllib.request, json, os
+          sec = os.environ.get("CF_SECRET_KEY", "")
           nodes = [
-              "https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all",
-              "https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all"
+              ("Render Node 3 (Oregon)", "https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all"),
+              ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all")
           ]
-          for url in nodes:
+          for name, base in nodes:
+              url = f"{base}?secret={sec}"
               try:
-                  req = urllib.request.Request(url, data=b"{}", headers={"Content-Type": "application/json"})
-                  with urllib.request.urlopen(req, timeout=10) as r:
-                      print(f"Triggered Render node: {url} -> {r.status}")
+                  req = urllib.request.Request(
+                      url,
+                      data=b"{}",
+                      headers={
+                          "Content-Type": "application/json",
+                          "Authorization": f"Bearer {sec}"
+                      }
+                  )
+                  with urllib.request.urlopen(req, timeout=15) as r:
+                      print(f"Triggered {name}: {r.status}")
+                      break
               except Exception as e:
-                  print(f"Note on {url}: {e}")
+                  print(f"Note on {name}: {e}")
           EOF
 
       - name: Failover to Render Standby Mesh if GitHub Actions Fails
@@ -137,8 +152,9 @@ jobs:
           import json
 
           render_nodes = [
-              ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/collect-tokens"),
-              ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens")
+              ("Render Node 3 (Oregon)", "https://my-agy-fleet-standby-node3.onrender.com/collect-tokens"),
+              ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens"),
+              ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/collect-tokens")
           ]
 
           print("⚠️ GitHub Actions token extraction failed. Triggering Render Standby failover...")

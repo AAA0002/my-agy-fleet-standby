@@ -5,6 +5,7 @@ export const CONFIG = {
   UPSTASH_TOKEN: (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "",
   WEBAPP_URL: "https://app8858823950.tgcloud.ai/",
   BACKEND_NODES: [
+    "https://my-agy-fleet-standby-node3.onrender.com",
     "https://my-agy-fleet-standby-node2.onrender.com"
   ],
   EDGE_MESH: [

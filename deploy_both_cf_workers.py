@@ -368,15 +368,15 @@ async function getRenderUrls() {
       active = cached;
     }
   } catch (_) {}
-  if (active === "node3") {
+  if (active === "node2") {
     return [
-      "https://my-agy-fleet-standby-node3.onrender.com",
-      "https://my-agy-fleet-standby-node2.onrender.com"
+      "https://my-agy-fleet-standby-node2.onrender.com",
+      "https://my-agy-fleet-standby-node3.onrender.com"
     ];
   }
   return [
-    "https://my-agy-fleet-standby-node2.onrender.com",
-    "https://my-agy-fleet-standby-node3.onrender.com"
+    "https://my-agy-fleet-standby-node3.onrender.com",
+    "https://my-agy-fleet-standby-node2.onrender.com"
   ];
 }
 
@@ -2588,15 +2588,15 @@ export default {
           active = cached;
         }
       } catch (_) {}
-      if (active === "node3") {
+      if (active === "node2") {
         return [
-          "https://my-agy-fleet-standby-node3.onrender.com",
-          "https://my-agy-fleet-standby-node2.onrender.com"
+          "https://my-agy-fleet-standby-node2.onrender.com",
+          "https://my-agy-fleet-standby-node3.onrender.com"
         ];
       }
       return [
-        "https://my-agy-fleet-standby-node2.onrender.com",
-        "https://my-agy-fleet-standby-node3.onrender.com"
+        "https://my-agy-fleet-standby-node3.onrender.com",
+        "https://my-agy-fleet-standby-node2.onrender.com"
       ];
     };
 
@@ -2865,7 +2865,7 @@ export default {
         provider: "Cloudflare Edge AI Sentinel",
         model: "edge-native-fallback",
         node: CURRENT_SUBDOMAIN,
-        answer: "Hi Arif! All accounts across our mining fleet are online, healthy, and actively farming 24/7 across all 9 bots in the cloud via Cloudflare Workers AI."
+        answer: "Hi Arif! All accounts across our mining fleet are online, healthy, and actively farming 24/7 across all 8 bots in the cloud via Cloudflare Workers AI."
       };
     };
 
@@ -2976,7 +2976,7 @@ export default {
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 9 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 8 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -2991,9 +2991,9 @@ export default {
           `Each connected account uses 100 points/day for continuous 24/7 cloud mining.`;
       } else if (pLow.includes("withdraw") || pLow.includes("payout") || pLow.includes("cashout") || pLow.includes("balance")) {
         fallbackAns = `⛏️ *Autonomous Cloud Auto-Farming:*\n\n` +
-          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 9 bots.\n` +
+          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 8 bots.\n` +
           `• All mined tokens, coins, and rewards accumulate directly inside each official Telegram bot.\n` +
-          `• Tap */pools* to see the complete list of 9 supported crypto mining pools.`;
+          `• Tap */pools* to see the complete list of 8 supported crypto mining pools.`;
       } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
         fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
           `• *Direct Ticket:* Send \`/support <your message>\` in this chat to reach Platform Support directly.\n` +
@@ -6119,10 +6119,10 @@ fi
             const name = cleanName(a, i);
 
             let statusDetail = isHost
-              ? `  └ 🟢 MTProto Online • 9/9 Active Pools • Master Account 👑`
+              ? `  └ 🟢 MTProto Online • 8/8 Active Pools • Master Account 👑`
               : (isRev
-                ? `  └ 🔴 Needs Re-link • 8/9 Active Pools (REST Active)`
-                : `  └ 🟢 MTProto Online • 9/9 Active Pools`);
+                ? `  └ 🔴 Needs Re-link • 7/8 Active Pools (REST Active)`
+                : `  └ 🟢 MTProto Online • 8/8 Active Pools`);
 
             const header = isHost
               ? `• *#${idx} ${name}*${phoneStr} 👑`
@@ -6532,7 +6532,7 @@ fi
                         `• *User ID:* \`${res2fa.user_id}\`\n` +
                         `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
                         `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
-                        `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
+                        `✅ *100% Cloud MTProto Active!*\nAll 8 autonomous farming bots are online 24/7 in the cloud.`;
                       await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                       return new Response("OK");
                     }
@@ -6571,7 +6571,7 @@ fi
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
                     `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
-                    `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
+                    `✅ *100% Cloud MTProto Active!*\nAll 8 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
                 }
@@ -7454,7 +7454,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                    { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -9168,7 +9168,7 @@ fi
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Phone:* \`${res.phone || phone}\`\n` +
-                `• *Master Referrals:* 🚀 \`All 9 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
                 `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
@@ -10708,7 +10708,7 @@ fi
           const parts = text.split(/\s+/);
           const bMsg = parts.slice(1).join(" ").trim();
           if (!bMsg) {
-            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 9 pools are active & paying out!`", statusInlineKeyboard);
+            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 8 pools are active & paying out!`", statusInlineKeyboard);
             return new Response("OK");
           }
           ctx.waitUntil((async () => {
@@ -11683,7 +11683,7 @@ Reply to Arif naturally:`;
                   `• Channels: 3/3 ✅\n` +
                   `• Ad Watched: +20 Pts ✅\n` +
                   `• Balance: ${profile.points} Pts\n\n` +
-                  `24/7 cloud mining is active across all 9 bots!`;
+                  `24/7 cloud mining is active across all 8 bots!`;
                 ctx.waitUntil(
                   fetch(`https://api.telegram.org/bot${env.USER_BOT_TOKEN}/sendMessage`, {
                     method: "POST",
@@ -13477,7 +13477,7 @@ Reply to Arif naturally:`;
 
             const walletMsg = `💎 *YOUR NON-CUSTODIAL WALLET SUITE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 9 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
+              `All 8 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
               `🌐 *Bot-Managed Multi-Chain Wallets:*\n` +
               `• *TON (v4r2):*\n  \`${tonAddr}\`\n` +
               `• *EVM (BSC / ETH):*\n  \`${evmAddr}\`\n` +
@@ -13712,7 +13712,7 @@ Reply to Arif naturally:`;
                 `• *Pass Status:* ${passBadge}\n` +
                 `• *Points Balance:* ${profile.points} Pts\n\n` +
                 `📱 *Active Accounts:*\n${accList}\n\n` +
-                `💡 _Every account automatically farms all 9 pools 24/7 in the cloud._`;
+                `💡 _Every account automatically farms all 8 pools 24/7 in the cloud._`;
               const inlineBtns = [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
@@ -13869,7 +13869,7 @@ Reply to Arif naturally:`;
             const guideKb = {
               inline_keyboard: [
                 [{ text: "📱 1-Tap QR Login (0 Codes)", callback_data: "ub_login_qr" }, { text: "📱 Phone Login", callback_data: "ub_login_phone" }],
-                [{ text: "💎 My Wallets & Secrets", callback_data: "ub_wallets" }, { text: "⛏️ View 9 Pools", callback_data: "ub_pools" }],
+                [{ text: "💎 My Wallets & Secrets", callback_data: "ub_wallets" }, { text: "⛏️ View 8 Pools", callback_data: "ub_pools" }],
                 [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "📊 Dashboard", callback_data: "ub_stats" }]
               ]
             };
@@ -14193,7 +14193,7 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 8 Pools Active");
                 const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
@@ -14427,7 +14427,7 @@ Reply to Arif naturally:`;
             await saveUserProfile(chatId, profile);
             ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `WebApp Connected (${label})`, "24/7 Autonomous Mining Live"));
 
-            const poolInfo = MINING_POOLS[poolKey] || { name: "All 9 Pools" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "All 8 Pools" };
             const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY!* 🚀\n\n` +
               `• *Label:* \`${label}\`\n` +
               `• *Account:* ${accName} (@${accUsername || "None"})\n` +
@@ -15218,7 +15218,7 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 8 Pools Active");
                 const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
@@ -15315,8 +15315,8 @@ Reply to Arif naturally:`;
             const promptConnect = `➕ *Connect Account for 24/7 Cloud Mining* 🚀\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Active Slots:* ${profile.accounts.length} / ${totalSlots} Connected\n` +
-              `• *Cloud Nodes:* 🟢 Frankfurt Standby Node 2 Active\n` +
-              `• *Protocols:* All 9 Pools Automated 24/7\n\n` +
+              `• *Cloud Nodes:* 🟢 Render Cloud Node Active\n` +
+              `• *Protocols:* All 8 Pools Automated 24/7\n\n` +
               `👉 *Choose Connection Method:*\n\n` +
               `1️⃣ *⚡ 1-Tap QR Device Link (Fastest):*\n` +
               `Link your Telegram session directly with zero SMS codes and zero typing!\n\n` +
@@ -15475,7 +15475,7 @@ Reply to Arif naturally:`;
 
             const walletMsg = `💎 *YOUR NON-CUSTODIAL WALLET SUITE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 9 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
+              `All 8 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
               `🌐 *Bot-Managed Multi-Chain Wallets:*\n` +
               `• *TON (v4r2):*\n  \`${tonAddr}\`\n` +
               `• *EVM (BSC / ETH):*\n  \`${evmAddr}\`\n` +

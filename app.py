@@ -5812,9 +5812,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             claim_stat = "farmed"
             if claim_d and isinstance(claim_d, dict):
                 if claim_d.get("code") == "HUMAN_CHECK_REQUIRED":
-                    claim_stat = f"farmed (security_check_needed: {unclaimed_val:.1f} MRG)"
+                    claim_stat = f"security_check_needed ({unclaimed_val:.1f} MRG unclaimed)"
                 elif claim_d.get("success"):
                     claim_stat = f"farmed (auto-claimed {claim_d.get('claimedAmount', 'reward')} MRG)"
+                elif claim_d.get("error"):
+                    claim_stat = f"claim_failed ({claim_d.get('error')})"
             status["bots"]["mrg"] = f"{claim_stat}{bal_str}"
         except Exception as e:
             status["bots"]["mrg"] = f"error: {format_error(e)}"
@@ -6809,7 +6811,7 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
 
 @app.post("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
-    """Executes on-demand cloud fleet farming cycle across all 9 legitimate bots for accounts."""
+    """Executes on-demand cloud fleet farming cycle across all 8 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
