@@ -99,27 +99,10 @@ _VERIFIED_MRG_PROXIES = []
 
 def get_webshare_proxy() -> dict | None:
     """
-    Fetches an active high-speed proxy (Cloudflare WARP local SOCKS5 or Webshare)
-    to bypass Cloudflare WAF datacenter blocks in GitHub Actions and cloud runners.
+    Fetches an active high-speed elite proxy (Webshare or elite residential/datacenter pool)
+    to bypass Cloudflare WAF datacenter rate limits in GitHub Actions and cloud runners.
+    Returns None if direct runner connection is preferred.
     """
-    # 0. Check local Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000 (pre-test against Cloudflare Turnstile)
-    try:
-        import socket
-        with socket.create_connection(("127.0.0.1", 40000), timeout=0.8):
-            try:
-                import urllib.request
-                ph = urllib.request.ProxyHandler({"http": "socks5h://127.0.0.1:40000", "https": "socks5h://127.0.0.1:40000"})
-                opener = urllib.request.build_opener(ph)
-                test_req = urllib.request.Request("https://challenges.cloudflare.com/turnstile/v0/api.js", headers={"User-Agent": "Mozilla/5.0"})
-                with opener.open(test_req, timeout=4) as tr:
-                    if tr.status == 200:
-                        logger.info("🌐 Detected active verified Cloudflare WARP SOCKS5 proxy on 127.0.0.1:40000")
-                        return {"server": "socks5://127.0.0.1:40000"}
-            except Exception as warp_err:
-                logger.warning(f"⚠️ Cloudflare WARP failed Turnstile check ({warp_err}); bypassing WARP for clean runner connection.")
-    except Exception:
-        pass
-
     global _VERIFIED_MRG_PROXIES
     if _VERIFIED_MRG_PROXIES:
         random.shuffle(_VERIFIED_MRG_PROXIES)
@@ -208,7 +191,7 @@ def get_webshare_proxy() -> dict | None:
             ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
             opener = urllib.request.build_opener(ph)
             test_req = urllib.request.Request(
-                "https://challenges.cloudflare.com/turnstile/v0/api.js",
+                "https://app.mrgtoken.xyz",
                 headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"}
             )
             try:
@@ -216,7 +199,7 @@ def get_webshare_proxy() -> dict | None:
                     if tr.status == 200:
                         verified = {"server": proxy_str}
                         _VERIFIED_MRG_PROXIES.append(verified)
-                        logger.info(f"🌐 Verified live fallback proxy: {p} (Cloudflare Turnstile HTTP 200 OK)")
+                        logger.info(f"🌐 Verified live fallback proxy: {p} (MRG App HTTP 200 OK)")
                         if len(_VERIFIED_MRG_PROXIES) >= 3:
                             break
             except Exception:
@@ -901,7 +884,7 @@ def save_mrg_pass_to_upstash(uid: int, turnstile_token: str):
     """Saves valid MRG turnstile token to Upstash Redis for edge nodes."""
     try:
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/set/mrg:pass:{uid}?ex=3600",
+            f"{UPSTASH_URL}/set/mrg:pass:{uid}?ex=86400",
             data=json.dumps({"turnstileToken": turnstile_token, "updated_at": time.time()}).encode(),
             headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
             method="POST"
@@ -993,7 +976,7 @@ def save_victors_pass_to_upstash(uid: int, human_pass: str):
     """Saves valid Victor's Company humanPass to Upstash Redis for edge nodes."""
     try:
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/set/victors:pass:{uid}",
+            f"{UPSTASH_URL}/set/victors:pass:{uid}?ex=86400",
             data=json.dumps({"humanPass": human_pass, "updated_at": time.time()}).encode(),
             headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
             method="POST"
