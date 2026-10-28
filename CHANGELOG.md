@@ -20,6 +20,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Wired automated dual-push: running `push_to_standby_repo.py` now automatically pushes solver updates to both `AAA0002/my-agy-fleet-standby` and `AAA0002/cloud-fleet-solver`.
     * Render Node 3 Oregon deployed live (`dep-dbh3iju7bikc73els900`).
     * Full disaster recovery archive streamed to Telegram vault `@myagyai` (`-1004453515167`).
+  - **Edge Worker MRG Verify-Human & Check-in Hardening (`deploy_both_cf_workers.py`)**:
+    * **Turnstile Activation**: Synchronized Cloudflare Worker MRG routine (`farmMrg`) with `app.py` by calling `POST /api/user/verify-human` with `turnstileToken` before `claim-mining` to activate the server-side 24h pass.
+    * **Daily Check-in Token Pass-Through**: Forwarded `turnstileToken` into `daily-checkin` payload to eliminate `403 HUMAN_CHECK_REQUIRED` blocks on daily streak claims.
+    * **Dynamic Coordinator Badge**: Updated edge status builder to dynamically read `fleet:active_render_node` from Upstash Redis, correctly reporting active coordinator (Render Node 3 Oregon) in live command cards.
+    * **Node 4 Redeployed**: Redeployed Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
 
 - **🛡️ Cloud Turnstile DOM Null Guardrail, Non-Blocking Channel Joins & 100% Task Claims (October 28, 2026)**:
   - **Cloudflare Turnstile Solver DOM Guardrail (`mrg_turnstile_solver.py` & `cloud-fleet-solver`)**:
