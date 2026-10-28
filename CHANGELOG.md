@@ -2,6 +2,31 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎨 Multi-Dashboard Fleet & Community Modernization (October 28, 2026)**:
+  - **Executive Fleet Operations Console (`admin.html` / `/admin`)**:
+    * Updated Account #10 (`8203342513`) to display authentic name `"Tanvir Ahmed 10"` and verified non-custodial TON v4r2 address `"UQCEbrd5e0H9vicsVnGWRNHyiFNBxfN7SRwwlJRgCbKkIIjb"`, matching `fleet_ton_wallets.json`.
+    * Upgraded all fleet and wallet roster counters and comments from 20 to 21 accounts (including Account #21 `Aaaa201`).
+    * Unified bot key handlers in Account Detail drawer for PepeGram (`pepegram`) and AdxEarn AI (`adxearn`) to match Cloudflare Worker `/api/farm/*` routing.
+    * Added **1-Click Cloud Token Refresher button** (`handleRefreshTokens`) directly in Tab 5 (Cloud Mesh Matrix) triggering `/api/tokens/refresh` to autonomously pull and synchronize fresh WebApp tokens across the 21 accounts on Render Standby Node 2.
+    * Synchronized across `public_admin/admin.html`, `public/admin.html`, `public_admin/index.html`, `public_admin/admin/index.html`, `dashboard.html`, and `tgcloud_admin_bot/public/index.html`.
+  - **User Bot Admin Console (`user-admin.html` / `/user-admin`)**:
+    * Corrected official bot usernames and direct referral URLs across all 9 supported pools:
+      - MRG Miner: `@mrgtoken_bot` (`https://t.me/mrgtoken_bot?start=ref_IRN1G3XD`)
+      - ATF Miner: `@atfminers_bot` (`https://t.me/atfminers_bot?start=6727787768`)
+      - Kynex Network: `@Kynex_miningbot` (`https://t.me/Kynex_miningbot`)
+      - PepeGram: `@Pepe_gram_bot` (`https://t.me/Pepe_gram_bot?start=6727787768`)
+      - AdxEarn AI: `@AdxEarnAibot` (`https://t.me/AdxEarnAibot/app?startapp=ref_6727787768`)
+    * Hardened pool miner counter logic (`hasAcc`) to match canonical keys (`pepegram`/`pepe`, `adxearn`/`adx`).
+    * Updated broadcast messaging templates (`onboard`, `revoked`) to explicitly reflect all 9 active bots including Chicken Land.
+    * Synchronized across `public_admin/user-admin.html`, `public/user-admin.html`, `public_admin/user-admin/index.html`, and `public_admin/users/index.html`.
+  - **Public User Mining WebApp (`miner/index.html` / `/miner` / `index.html`)**:
+    * Updated all stale "8 Pools" / "All 8 Pools" references across action bars, protocol badges, protocol selector, and account cards to **9 Verified Mining Protocols**.
+    * Corrected official bot links for MRG Miner, ATF Miner, and Kynex Network to their active Telegram handles.
+    * Synchronized `public/app/index.html` (which was previously missing Protocol 9: Chicken Land) to full parity with `public_ads/miner/index.html`.
+  - **Cloudflare Edge Mesh Deployment**:
+    * Compiled and deployed updated frontends via `deploy_both_cf_workers.py` to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Verified live 200 OK responses across `/admin` (130 KB), `/user-admin` (114 KB), `/miner` (163 KB), `/ad` (123 KB), and `/health`.
+
 - **🛡️ Strict Disaster Recovery Vault Isolation & Channel Cleanup (October 28, 2026)**:
   - **Purged Backup Alerts from `AAA Admin notification` (`-1004358687850`) in `backup_manager.py`**:
     * Enforced zero-leakage channel boundaries: disaster recovery encrypted archives, restore one-liners, and backup synchronization notifications are strictly isolated to the private `@myagyai` vault channel (`-1004453515167`).
