@@ -1779,6 +1779,9 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             finally:
                 if 'context' in locals():
                     await context.close()
+    elif ch_code == 401:
+        logger.warning(f"⚠️ [VyroDrop] UID {uid}: Telegram authentication expired (401). Skipping gracefully without tripping circuit breaker.")
+        return True
     else:
         logger.error(f"❌ [VyroDrop] UID {uid}: Unexpected challenge response: {ch_code} {ch_body}")
         return False
@@ -2988,10 +2991,27 @@ async def run_mrg_auto_solver():
             from playwright.async_api import async_playwright
             logger.info("🌐 Using Playwright browser engine.")
 
+        # Dynamically refresh miniapp_tokens and fleet_ton_wallets right before browser solving
+        fresh_tokens = load_all_miniapp_tokens()
+        if fresh_tokens:
+            for vy_acc in vyro_needing_solver:
+                u_str = str(vy_acc["uid"])
+                if u_str in fresh_tokens and fresh_tokens[u_str].get("vyro_init_data"):
+                    vy_acc["init_data"] = fresh_tokens[u_str]["vyro_init_data"]
+            for v_acc in victors_needing_solver:
+                u_str = str(v_acc["uid"])
+                if u_str in fresh_tokens and fresh_tokens[u_str].get("victors_init_data"):
+                    v_acc["init_data"] = fresh_tokens[u_str]["victors_init_data"]
+            for acc in accounts_needing_solver:
+                u_str = str(acc["uid"])
+                if u_str in fresh_tokens and fresh_tokens[u_str].get("mrg_init_data"):
+                    acc["init_data"] = fresh_tokens[u_str]["mrg_init_data"]
+        fleet_ton_wallets = load_fleet_ton_wallets()
+
         # Prioritize Master Account (6727787768) first in every queue
-        accounts_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
-        victors_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
         vyro_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
+        victors_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
+        accounts_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
         atf_needing_solver.sort(key=lambda a: 0 if str(a["uid"]) == "6727787768" else 1)
 
         is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
@@ -3011,7 +3031,61 @@ async def run_mrg_auto_solver():
         async with async_playwright() as p:
             browser = await p.chromium.launch(**launch_kwargs)
 
-            # A. Solve MRG passes (Protected by 5-fail circuit breaker)
+            # A. Solve VyroDrop wallet onboarding (Priority #1 - Unlocks mining permanently across all fleet accounts)
+            vyro_fails = 0
+            for vy_acc in vyro_needing_solver:
+                if vyro_fails >= 5:
+                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped (5 failures). Skipping remaining Vyro browser solves.")
+                    break
+                vy_uid = vy_acc["uid"]
+                vy_init = vy_acc["init_data"]
+                w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
+                try:
+                    vy_res = await asyncio.wait_for(
+                        solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
+                        timeout=45.0
+                    )
+                    if vy_res:
+                        vyro_wallets_connected += 1
+                        vyro_fails = 0
+                    else:
+                        vyro_fails += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"VyroDrop solve timed out (45s) for UID {vy_uid}")
+                    vyro_fails += 1
+                except Exception as vye:
+                    logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
+                    vyro_fails += 1
+                await asyncio.sleep(0.5)
+
+            # B. Solve Victor's Company passes & unlock Level 1 Miner (Protected by 5-fail circuit breaker)
+            vic_fails = 0
+            for v_acc in victors_needing_solver:
+                if vic_fails >= 5:
+                    logger.warning("⚠️ Victor's Turnstile consecutive failure circuit breaker tripped. Skipping remaining Victor's browser solves.")
+                    break
+                v_uid = v_acc["uid"]
+                v_init = v_acc["init_data"]
+                try:
+                    v_res = await asyncio.wait_for(
+                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(str(v_uid) == "6727787768")),
+                        timeout=50.0
+                    )
+                    if v_res:
+                        victors_solved += 1
+                        vic_fails = 0
+                        victors_active.append(v_acc)
+                    else:
+                        vic_fails += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"Victor's solve timed out (50s) for UID {v_uid}")
+                    vic_fails += 1
+                except Exception as ve:
+                    logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
+                    vic_fails += 1
+                await asyncio.sleep(0.5)
+
+            # C. Solve MRG passes (Protected by 5-fail circuit breaker)
             mrg_fails = 0
             for acc in accounts_needing_solver:
                 if mrg_fails >= 5:
@@ -3040,60 +3114,6 @@ async def run_mrg_auto_solver():
                 else:
                     mrg_fails += 1
 
-                await asyncio.sleep(0.5)
-
-            # B. Solve Victor's Company passes (Protected by 5-fail circuit breaker)
-            vic_fails = 0
-            for v_acc in victors_needing_solver:
-                if vic_fails >= 5:
-                    logger.warning("⚠️ Victor's Turnstile consecutive failure circuit breaker tripped. Skipping remaining Victor's browser solves.")
-                    break
-                v_uid = v_acc["uid"]
-                v_init = v_acc["init_data"]
-                try:
-                    v_res = await asyncio.wait_for(
-                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(str(v_uid) == "6727787768")),
-                        timeout=50.0
-                    )
-                    if v_res:
-                        victors_solved += 1
-                        vic_fails = 0
-                        victors_active.append(v_acc)
-                    else:
-                        vic_fails += 1
-                except asyncio.TimeoutError:
-                    logger.warning(f"Victor's solve timed out (50s) for UID {v_uid}")
-                    vic_fails += 1
-                except Exception as ve:
-                    logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
-                    vic_fails += 1
-                await asyncio.sleep(0.5)
-
-            # C. Solve VyroDrop wallet onboarding (Protected by 5-fail circuit breaker)
-            vyro_fails = 0
-            for vy_acc in vyro_needing_solver:
-                if vyro_fails >= 5:
-                    logger.warning("⚠️ VyroDrop Turnstile wallet onboarding circuit breaker tripped (5 failures). Skipping remaining Vyro browser solves.")
-                    break
-                vy_uid = vy_acc["uid"]
-                vy_init = vy_acc["init_data"]
-                w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
-                try:
-                    vy_res = await asyncio.wait_for(
-                        solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
-                        timeout=45.0
-                    )
-                    if vy_res:
-                        vyro_wallets_connected += 1
-                        vyro_fails = 0
-                    else:
-                        vyro_fails += 1
-                except asyncio.TimeoutError:
-                    logger.warning(f"VyroDrop solve timed out (35s) for UID {vy_uid}")
-                    vyro_fails += 1
-                except Exception as vye:
-                    logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
-                    vyro_fails += 1
                 await asyncio.sleep(0.5)
 
             # D. Solve ATF Miner entry captcha (Protected by 2-fail circuit breaker)
