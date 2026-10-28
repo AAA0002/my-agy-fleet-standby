@@ -1930,6 +1930,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
 // Module-level in-memory cache to strictly protect Cloudflare KV 1,000 writes/day quota
 let memFleetState = null;
+let memFleetStateTs = 0;
 let lastFleetKvWrite = 0;
 let memMultichainState = null;
 let lastMultichainKvWrite = 0;
@@ -3419,6 +3420,7 @@ fi
         body.node = "__SUBDOMAIN__";
         body.synced_at = new Date().toISOString();
         memFleetState = body;
+        memFleetStateTs = Date.now();
 
         // 1. High-speed Upstash Redis Cloud Cache (10k requests/day, 0 KV writes)
         ctx.waitUntil(upstashSet("fleet:live_state", body));
@@ -3461,6 +3463,7 @@ fi
             } else {
               memFleetState.accounts.push(acc);
             }
+            memFleetStateTs = Date.now();
           }
           ctx.waitUntil(upstashSet("account:" + uid, acc));
           ctx.waitUntil(upstashSet("fleet:live_state", memFleetState));
@@ -3506,7 +3509,14 @@ fi
             a.index = idx + 1;
             const uidStr = String(a.user_id || "");
             const hasTokens = Boolean((memTokens && uidStr && memTokens[uidStr]) || a.miniapp_tokens_synced);
-            const hasSession = !!(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 10);
+            let hasSession = !!(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 10);
+            if (!hasSession && Array.isArray(memFleetAccounts)) {
+              const match = memFleetAccounts.find(m => (uidStr && String(m.user_id) === uidStr) || m.index === a.index);
+              if (match && match.session_string && match.session_string.trim().length > 10) {
+                a.session_string = match.session_string;
+                hasSession = true;
+              }
+            }
             const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || !hasSession;
             a.session_revoked = isRev;
             a.status = isRev ? "Needs Re-link" : "Active";
@@ -3521,7 +3531,8 @@ fi
           return stateObj;
         };
 
-        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length > 0) {
+        const isFreshRequested = url.searchParams.get("fresh") === "1" || url.searchParams.get("nocache") === "1";
+        if (!isFreshRequested && memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length > 0 && (Date.now() - memFleetStateTs < 15000)) {
           memFleetState = ensureFullFleet(memFleetState);
           return new Response(JSON.stringify(memFleetState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
@@ -3533,6 +3544,7 @@ fi
             if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
               parsed = ensureFullFleet(parsed);
               memFleetState = parsed;
+              memFleetStateTs = Date.now();
               return new Response(JSON.stringify(parsed), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
             }
           } catch (_) {}
@@ -3546,6 +3558,7 @@ fi
             if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
               const synthesized = ensureFullFleet({ ...DEFAULT_FLEET_DATA, accounts: parsedAccs });
               memFleetState = synthesized;
+              memFleetStateTs = Date.now();
               ctx.waitUntil(upstashSet("fleet:live_state", synthesized));
               return new Response(JSON.stringify(synthesized), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
             }
@@ -3561,14 +3574,16 @@ fi
             if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
               parsed = ensureFullFleet(parsed);
               memFleetState = parsed;
+              memFleetStateTs = Date.now();
               return new Response(JSON.stringify(parsed), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
             }
           }
         } catch (_) {}
 
-        // 3. Fallback to robust DEFAULT_FLEET_DATA (20 Accounts)
+        // 3. Fallback to robust DEFAULT_FLEET_DATA (21 Accounts)
         const fallbackFleet = ensureFullFleet({ ...DEFAULT_FLEET_DATA });
         memFleetState = fallbackFleet;
+        memFleetStateTs = Date.now();
         ctx.waitUntil(upstashSet("fleet:live_state", fallbackFleet));
         return new Response(JSON.stringify(fallbackFleet), {
           headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders }

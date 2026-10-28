@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎉 Fleet Expansion: Account #21 Fully Relinked, PepeGram Activated & 21/21 Fleet 100% Active (October 28, 2026)**:
+  - **Account #21 Telegram MTProto Relink Complete**:
+    * User successfully performed QR/OTP relink for Account #21 (`Aaaa201`, `+8801913962342`, Telegram ID `8669217201`) via Admin Bot `@myagyai` / Render Standby Node 3.
+    * MTProto `StringSession` (353 chars) synchronized across `accounts.json`, Upstash Redis (`account:8669217201`, `fleet:accounts`), and Cloudflare KV.
+    * Evicted Account #21 from `fleet:revoked_sessions` (`[]` empty) and added to `fleet:healthy_sessions` (21 active).
+  - **PepeGram HTTP 404 Resolved & Production Started**:
+    * With Account #21 active in Telegram, authenticated via MTProto to `https://app.miniempire.app/miniapp/auth?tid=1449` (`HTTP 200`, Power: 200).
+    * Executed `start-production` and `tasks/ad-roll`, achieving active hash generation across all 21 fleet accounts.
+  - **All 9 WebApp Hashes Synced**:
+    * Render Frankfurt Node 2 / Node 3 extracted and pushed fresh 24h WebApp tokens to Upstash Redis (`fleet:tokens:8669217201`) for all 9 legitimate bots (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land).
+  - **Edge Worker RAM Cache TTL Patch (`deploy_both_cf_workers.py`)**:
+    * Fixed stale RAM caching bug where `memFleetState` lacked TTL expiry, retaining pre-relink account states in worker isolates.
+    * Added 15-second cache TTL check (`Date.now() - memFleetStateTs < 15000`) and `fresh=1`/`nocache=1` query parameter bypass.
+    * Added session fallback in `ensureFullFleet` to check `memFleetAccounts` whenever `a.session_string` is omitted in state telemetry.
+    * Re-deployed Primary Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/api/fleet/status` now reports `Total: 21, Active: 21, Revoked: 0` (`🟢 Online`).
+  - **Headless Solver Runner Bug Fix (`AAA0002/cloud-fleet-solver`)**:
+    * Fixed `NameError: name 'BACKUP_CHANNEL' is not defined` in `mrg_turnstile_solver.py` and `victors_sb_solver.py`.
+    * Pushed commit `d5fa966` and launched GitHub Actions Run #40612417876.
+
 - **🐞 Ground-Truth Fix: Session Health Audit Accuracy & Unlinked Account #21 Status (October 28, 2026)**:
   - **Eradicated False Positive MTProto Status in Session Audit (`deploy_both_cf_workers.py`)**:
     * Discovered critical flaw in `getSessionHealthState()` and `/api/fleet/status` where accounts without an active `session_string` were falsely displayed as `🟢 Online` simply because they were not explicitly present in `fleet:revoked_sessions`.

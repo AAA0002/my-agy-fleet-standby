@@ -363,6 +363,12 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Redis Key Garbage Collection (`clean_up_system.py`)**: Implemented automated sweeping for legacy defunct bot records, successfully eliminating 100 stale keys from Upstash Redis and pruning 5 old GitHub Actions workflow runs.
     - **Mobile & PRoot Detection Hardening (`restore.sh`)**: Added PRoot and Android environment detection to strictly prevent local background bot execution on Samsung Galaxy A30 during system recovery.
 
+46. **Fleet Full Health Achievement & Account #21 Ground Truth Synchronization (October 28, 2026)**:
+    - **Account #21 MTProto Authorization**: Captured and verified Telethon `StringSession` for Account #21 (`8669217201`, `+8801913962342`) via Admin Bot `@myagyai`. Synchronized across Upstash Redis `account:8669217201`, `fleet:accounts`, and Cloudflare KV.
+    - **PepeGram Operational**: Resolved HTTP 404 by completing first-run user activation on `https://app.miniempire.app/miniapp/auth?tid=1449`, initiating active production and ad-roll hash generation.
+    - **Cloudflare Edge Worker Cache Hardening**: Fixed edge worker isolate RAM cache TTL expiry in `deploy_both_cf_workers.py`. Deployed to Primary Node 4 (`restore-agy.agorameet.workers.dev`), achieving verified `21/21 Active, 0 Revoked` telemetry.
+    - **Cloud Runner Bug Fix**: Fixed `BACKUP_CHANNEL` NameError in `mrg_turnstile_solver.py` and `victors_sb_solver.py` on `AAA0002/cloud-fleet-solver`. Run #40612417876 verified running smoothly.
+
 ---
 
 ## 📂 7. Key File Index
@@ -385,7 +391,7 @@ Certain farming bots require a connected wallet before mining will unlock or pro
   - `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (Public markdown directory).
   - `public_admin/fleet_wallets_data.json` (Static registry).
   - `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `fleet_tron_wallets.json`, `fleet_solana_wallets.json`, `fleet_btc_wallets.json`.
-  - `accounts.json` (18 fleet account sessions).
+  - `accounts.json` (21 fleet account sessions).
 
 ---
 
