@@ -41,11 +41,11 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
-# All 9 Verified Legitimate Fleet Bots & Referral Codes
-MRG_BOT = "mrgminerbot"
+# All 8 Verified Legitimate Fleet Bots & Referral Codes
+MRG_BOT = "mrgtoken_bot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 
-ATF_BOT = "ATF_AIRDROP_bot"
+ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
 
 VICTORS_BOT = "VictorsCompanybot"

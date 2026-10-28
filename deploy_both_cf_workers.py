@@ -5295,13 +5295,13 @@ fi
       });
     }
 
-    // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account)
-    if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools") {
+    // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account, Channels, Mute)
+    if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools" || path.startsWith("/api/channels") || path === "/api/mute-all-chats") {
       const renderNodes = await getRenderUrls();
       for (const rNode of renderNodes) {
         try {
           const targetPath = (path === "/api/pools" || path === "/api/mining-pools") ? "/api/farm/status" : path;
-          const resp = await fetch(`${rNode}${targetPath}`, {
+          const resp = await fetch(`${rNode}${targetPath}${url.search || ""}`, {
             method: request.method,
             headers: {
               "Content-Type": "application/json",

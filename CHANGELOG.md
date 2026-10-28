@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Comprehensive Auto-Farming, Task Auto-Claiming, Channel Sync & Edge Proxy Overhaul (October 28, 2026)**:
+  - **MRG Miner Daily Check-in & Tasks Resolution Across Accounts**:
+    * **Forensic Diagnosis of User Screenshot**: Analyzed user screenshot showing available tasks ("Vote for MRG Token Migration", "Subscribe MRG Channel", "Subscribe MRG Withdrawal", "Subscribe KeepEye.app News", "React on Latest post") and unclaimed Daily Check-in.
+    * **Root Cause 1: Prerequisite Sponsor Channel Membership Gate**: Discovered MRG rejects task claims with `HTTP 400 {"code":"Please join the Telegram channel/group (@mrgminer) before claiming this task!"}` if the account is not an active participant of `@mrgminer`, `@mrgwithdrawal`, and `@keepeye_app`.
+    * **Root Cause 2: Daily Check-in Turnstile Challenge**: Discovered `/api/user/daily-checkin` enforces Cloudflare Turnstile human pass (`HTTP 403 HUMAN_CHECK_REQUIRED`), which was failing silently because `turnstileToken` was omitted from check-in requests.
+    * **Cloud-First Channel Sync Executed**: Triggered 100% cloud-based `/api/channels/sync-and-verify` on Render Node 3 for worker accounts (#12, #19, #20, #21), automatically joining `@mrgminer`, `@mrgwithdrawal`, `@keepeye_app`, `@DurovKidney`, and `@mrgfun`.
+    * **Instant Task Sweeper & Verification**: Upgraded `_farm_mrg` in `app.py` to claim uncompleted tasks directly with rapid jitter (0.4s–0.9s) rather than unmonitored 15s background tasks. Executed live claims: Account 21 balance jumped from 130.05 to 195.05 MRG (5/5 tasks claimed, Level 16), Account 20 claimed 9/9 tasks (595.0 MRG), Account 19 claimed 4/4 tasks (650.0 MRG), Account 12 claimed 3/3 tasks.
+    * **Turnstile Pass-Through on Check-In**: Updated `_farm_mrg` to forward `turnstileToken` directly to `POST /api/user/daily-checkin` and report streak and reward telemetry.
+  - **Single-Account Farm Filter & Query Preservation Fix**:
+    * **`app.py`**: Added `target_uid` filtering logic to `api_farm_cloud_all` so single-account modal clicks exclusively farm the requested account instead of the entire 21-account fleet.
+    * **`deploy_both_cf_workers.py`**: Fixed edge worker reverse-proxy to preserve `url.search` when proxying `/api/farm/cloud-all` to Render Node.
+    * **Proxy Route Additions**: Added `/api/channels` and `/api/mute-all-chats` to Cloudflare Worker proxy routes, enabling dashboard triggers to reach Render Standby seamlessly.
+  - **Canonical Bot Usernames Synchronized**:
+    * Corrected legacy aliases (`mrgminerbot` -> `mrgtoken_bot`, `ATF_AIRDROP_bot` -> `atfminers_bot`) across `app.py`, `login_account.py`, and `refresh_cloud_tokens.py`.
+  - **Dashboard Modal Enhancements (`public/admin.html` & `dashboard.html`)**:
+    * Added `handleSyncChannels` ("🔄 Sync Tasks") action button to the account details modal (`selectedAccount`), giving administrators a 1-click cloud channel sync and task claim tool per account.
+  - **Deployments & Synchronization**:
+    * Deployed Cloudflare Worker Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized Admin Bot & User Bot webhooks, descriptions, menu buttons, and command lists.
+
+
 - **⚡ Deep Fleet Farming Remediation & Cloud Turnstile Solver Unblocking (October 28, 2026)**:
   - **MRG Miner Root-Cause Remediation across All 21 Accounts**:
     * **Audit & Diagnostics**: Tested live MRG API directly against `mrg.up.railway.app/api/user/claim-mining` across all 21 fleet accounts. Account 1 (Master) and Account 21 succeeded (200 OK), while Accounts 2–20 were blocked with `HTTP 403 {"code":"HUMAN_CHECK_REQUIRED"}` with >1,130 MRG trapped unclaimed.

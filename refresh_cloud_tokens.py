@@ -46,9 +46,9 @@ CF_NODES = [
     "https://restore-agy.aaaai.workers.dev"
 ]
 
-# 5 Active Legitimate Fleet Bots & Referral Codes
-MRG_BOT = "mrgminerbot"
-ATF_BOT = "ATF_AIRDROP_bot"
+# 8 Active Legitimate Fleet Bots & Referral Codes
+MRG_BOT = "mrgtoken_bot"
+ATF_BOT = "atfminers_bot"
 VICTORS_BOT = "VictorsCompanybot"
 KYNEX_BOT = "Kynex_miningbot"
 
