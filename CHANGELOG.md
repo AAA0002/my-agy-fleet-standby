@@ -2,6 +2,11 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Strict Disaster Recovery Vault Isolation & Channel Cleanup (October 28, 2026)**:
+  - **Purged Backup Alerts from `AAA Admin notification` (`-1004358687850`) in `backup_manager.py`**:
+    * Enforced zero-leakage channel boundaries: disaster recovery encrypted archives, restore one-liners, and backup synchronization notifications are strictly isolated to the private `@myagyai` vault channel (`-1004453515167`).
+    * Removed backup dispatch logic targeting the `AAA Admin notification` channel, reserving `-1004358687850` strictly for high-signal system and operational events (account linking, solver telemetry, on-chain deposits).
+
 - **💎 Fleet-Wide Wallet Connection Engine & VyroDrop Mining Activation Fix (October 28, 2026)**:
   - **Account #10 Authentic TON v4r2 Keypair Provisioning**:
     * Discovered that Account #10 (`8203342513`) was labeled with a custodial address without a 24-word seed phrase (`mnemonic: null`), preventing TonConnect 2.0 cryptographic proof generation across all mining bots.
