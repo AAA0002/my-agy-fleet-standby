@@ -497,7 +497,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         ver_res = verify_human_token(m_init, api_tok)
         if ver_res.get("success"):
             claim_mining_reward(m_init, api_tok)
-            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init, "turnstileToken": api_tok})
             save_mrg_pass_to_upstash(uid, api_tok)
             return True
 
@@ -674,7 +674,21 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     try:
         await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
     except Exception as e:
-        logger.warning(f"UID {uid} navigation note: {e}")
+        logger.warning(f"UID {uid} navigation failed: {e}")
+        await context.close()
+        return False
+
+    # Verify DOM document is intact
+    try:
+        has_dom = await page.evaluate("() => document.body !== null")
+        if not has_dom:
+            logger.warning(f"UID {uid} DOM body is null after navigation")
+            await context.close()
+            return False
+    except Exception as e:
+        logger.warning(f"UID {uid} DOM check failed: {e}")
+        await context.close()
+        return False
 
     await asyncio.sleep(2.0)
 
@@ -756,7 +770,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         if ver_res.get("success"):
             logger.info(f"🎉 UID {uid}: Turnstile verify-human succeeded via DOM token!")
             claim_mining_reward(m_init, acquired_token["token"])
-            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init, "turnstileToken": acquired_token["token"]})
             save_mrg_pass_to_upstash(uid, acquired_token["token"])
             await context.close()
             return True
@@ -765,7 +779,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
         if acquired_token["token"]:
             claim_mining_reward(m_init, acquired_token["token"])
-            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
+            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init, "turnstileToken": acquired_token["token"]})
             save_mrg_pass_to_upstash(uid, acquired_token["token"])
         await context.close()
         return True
@@ -774,6 +788,11 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     solve_js = f"""
         async () => {{
             return new Promise((resolve) => {{
+                let doc = document.body || document.documentElement;
+                if (!doc) {{
+                    resolve({{ success: false, error: 'no_dom' }});
+                    return;
+                }}
                 let container = document.getElementById('cf-manual-slot');
                 if (!container) {{
                     container = document.createElement('div');
@@ -786,7 +805,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     container.style.height = '65px';
                     container.style.zIndex = '9999999';
                     container.style.background = '#18181b';
-                    document.body.appendChild(container);
+                    doc.appendChild(container);
                 }} else {{
                     container.innerHTML = '';
                 }}
@@ -818,7 +837,8 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                         s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
                         s.async = true;
                         s.defer = true;
-                        document.head.appendChild(s);
+                        let head = document.head || document.getElementsByTagName('head')[0] || doc;
+                        head.appendChild(s);
                     }}
                     let attempts = 0;
                     const iv = setInterval(() => {{
@@ -867,7 +887,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             if ver_res.get("success"):
                 logger.info(f"🎉 UID {uid}: Programmatic verify-human succeeded!")
                 claim_mining_reward(m_init, tok)
-                safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init})
+                safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": m_init, "turnstileToken": tok})
                 save_mrg_pass_to_upstash(uid, tok)
                 await context.close()
                 return True
@@ -893,6 +913,26 @@ def save_mrg_pass_to_upstash(uid: int, turnstile_token: str):
             pass
     except Exception as e:
         logger.warning(f"Error saving MRG pass to Redis for UID {uid}: {e}")
+
+
+def get_mrg_pass_from_upstash(uid: int) -> str | None:
+    """Retrieves cached MRG turnstile token from Upstash Redis."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/get/mrg:pass:{uid}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                parsed = json.loads(res) if isinstance(res, str) else res
+                tok = parsed.get("turnstileToken") if isinstance(parsed, dict) else str(parsed)
+                if tok and str(tok).strip() not in ("null", "nil", "None", ""):
+                    return str(tok).strip()
+    except Exception:
+        pass
+    return None
 
 
 def solve_turnstile_via_api(sitekey: str, page_url: str, action: str = "login", cdata: str = None) -> str | None:
@@ -2407,7 +2447,11 @@ async def run_mrg_auto_solver():
                 if c_res.get("success"):
                     logger.info(f"🎉 UID {uid}: Successfully claimed {stat['unclaimed']:.2f} MRG via active human pass!")
                     total_claimed_mrg += stat["unclaimed"]
-            safe_post(f"{API_BASE}/api/user/daily-checkin", {"initData": mrg_init})
+            cached_pass = get_mrg_pass_from_upstash(uid)
+            checkin_body = {"initData": mrg_init}
+            if cached_pass:
+                checkin_body["turnstileToken"] = cached_pass
+            safe_post(f"{API_BASE}/api/user/daily-checkin", checkin_body)
             auto_unlock_mrg_level(mrg_init, cur_mrg_lvl, stat.get("inAppBalance", 0.0) + stat.get("unclaimed", 0.0))
 
     needed_mrg = len(accounts_needing_solver)
