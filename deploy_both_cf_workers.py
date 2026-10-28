@@ -555,6 +555,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
         const claimPayload = { initData: mrgInit, deviceInfo: devInfo };
         if (mrgTurnstileToken) {
+          await fetchWithRetry("https://mrg.up.railway.app/api/user/verify-human", {
+            method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, turnstileToken: mrgTurnstileToken })
+          }, 1, 600).catch(() => {});
           claimPayload.turnstileToken = mrgTurnstileToken;
         }
 
@@ -590,9 +593,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }
         }
 
-        // Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
+        // Claim MRG Daily Check-in (+5 to +15 MRG daily streak with turnstile pass)
+        const checkinBody = { initData: mrgInit };
+        if (mrgTurnstileToken) {
+          checkinBody.turnstileToken = mrgTurnstileToken;
+        }
         await fetchWithRetry("https://mrg.up.railway.app/api/user/daily-checkin", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
+          method: "POST", headers: mrgHeaders, body: JSON.stringify(checkinBody)
         }, 1, 600).catch(() => {});
 
         const tasks = meD.tasks || [];
