@@ -30,14 +30,14 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 TARGET_BOTS = [
     {
         "key": "mrg_init_data",
-        "bot": "mrgminerbot",
+        "bot": "mrgtoken_bot",
         "url": "https://app.mrgtoken.xyz/",
         "short_names": ["app", "miniapp"],
         "name": "MRG Miner"
     },
     {
         "key": "atf_init_data",
-        "bot": "ATF_AIRDROP_bot",
+        "bot": "atfminers_bot",
         "url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "short_names": ["app", "miner", "play"],
         "name": "ATF Miner"
@@ -176,9 +176,32 @@ async def process_account(acc, idx, total, tokens_data):
             pass
 
 async def sync_tokens_to_cloudflare(tokens_data):
-    print("\n🌐 Synchronizing updated fleet tokens to 5 Cloudflare Worker nodes...")
+    print("\n🌐 Synchronizing updated fleet tokens to 5 Cloudflare Worker nodes & Upstash Redis...")
     import urllib.request
     payload = json.dumps(tokens_data).encode("utf-8")
+
+    up_url = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL")
+    up_tok = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN")
+    if up_url and up_tok:
+        for uid, tok_dict in tokens_data.items():
+            try:
+                existing = {}
+                g_req = urllib.request.Request(f"{up_url}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {up_tok}"})
+                with urllib.request.urlopen(g_req, timeout=4) as gr:
+                    gd = json.loads(gr.read().decode())
+                    if gd.get("result"):
+                        existing = json.loads(gd["result"]) if isinstance(gd["result"], str) else gd["result"]
+                merged = {**existing, **tok_dict}
+                p_req = urllib.request.Request(
+                    f"{up_url}/set/fleet:tokens:{uid}",
+                    data=json.dumps(merged).encode("utf-8"),
+                    headers={"Authorization": f"Bearer {up_tok}", "Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(p_req, timeout=4) as pr:
+                    pass
+            except Exception as e:
+                print(f"  ⚠️ Upstash note for {uid}: {e}")
 
     for cf_url in CF_WORKERS:
         sync_url = f"{cf_url}/api/miniapp/tokens/sync"
@@ -200,8 +223,23 @@ async def sync_tokens_to_cloudflare(tokens_data):
             print(f"  ⚠️ Sync note for {cf_url}: {e}")
 
 async def main():
-    with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-        accounts = json.load(f)
+    accounts = []
+    up_url = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL")
+    up_tok = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN")
+    if up_url and up_tok:
+        try:
+            import urllib.request
+            req = urllib.request.Request(f"{up_url}/get/fleet:accounts", headers={"Authorization": f"Bearer {up_tok}"})
+            with urllib.request.urlopen(req, timeout=5) as r:
+                res = json.loads(r.read().decode()).get("result")
+                if res:
+                    accounts = json.loads(res) if isinstance(res, str) else res
+        except Exception as e:
+            print(f"Redis accounts fetch note: {e}")
+
+    if not accounts and os.path.exists(ACCOUNTS_FILE):
+        with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+            accounts = json.load(f)
 
     tokens_data = {}
     if os.path.exists(TOKENS_FILE):
