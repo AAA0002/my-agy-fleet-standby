@@ -2663,7 +2663,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
     """
     STRICT IMMUTABILITY GUARD:
     Finds existing account and authentic multi-chain wallets across:
-    1. Static Fleet Registry (Nodes 1-18)
+    1. Static Fleet Registry (21 Accounts)
     2. public_admin/fleet_wallets_data.json
     3. fleet_ton_wallets.json / fleet_evm_wallets.json / fleet_tron_wallets.json
     4. accounts.json
@@ -2826,7 +2826,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
     return (None, None, None)
 
 def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str, phone: str = "", username: str = "") -> dict:
-    """Returns official fleet wallets for pre-configured accounts (Nodes 1-18), or generates unique isolated wallets for new accounts."""
+    """Returns official fleet wallets for pre-configured accounts (21 Fleet Accounts), or generates unique isolated wallets for new accounts."""
     uid = str(user_id or "").strip()
     matched = get_fleet_static_account(account_index=account_index, user_id=user_id, phone=phone)
     if matched:

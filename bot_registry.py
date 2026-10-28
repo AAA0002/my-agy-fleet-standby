@@ -17,7 +17,8 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
     "mrg": {
         "id": "mrg",
         "name": "MRG Miner",
-        "bot_username": "mrgminerbot",
+        "bot_username": "mrgtoken_bot",
+        "bot_aliases": ["mrgminerbot"],
         "master_ref_code": "ref_IRN1G3XD",
         "app_url": "https://app.mrgtoken.xyz/",
         "token_key": "mrg_init_data",
@@ -30,7 +31,8 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
     "atf": {
         "id": "atf",
         "name": "ATF Miner",
-        "bot_username": "ATF_AIRDROP_bot",
+        "bot_username": "atfminers_bot",
+        "bot_aliases": ["ATF_AIRDROP_bot", "atfminerbot"],
         "master_ref_code": "6727787768",
         "app_url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "token_key": "atf_init_data",
@@ -70,6 +72,7 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "id": "kynex",
         "name": "Kynex Network",
         "bot_username": "Kynex_miningbot",
+        "bot_aliases": ["kynexnetworkbot"],
         "master_ref_code": "6727787768",
         "app_url": "https://kynex.top/telegram-auth.html",
         "token_key": "kynex_init_data",

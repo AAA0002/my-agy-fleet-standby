@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 System-Wide Fleet Architecture & Reliability Hardening (October 28, 2026)**:
+  - **Account Indices & Roster Sequence Invariant**:
+    * Fixed indexing discrepancy in `accounts.json` where Account #20 (`Asaduzzaman Sarker`, `8609131528`) had an errant `account_index: 19`, correcting it to `account_index: 20` and aligning with its multi-chain wallet blocks.
+    * Added top-level `account_index: 21` for Account #21 (`Aaaa201`, `8669217201`), ensuring deterministic 1-to-21 sequential mapping across all parsers.
+  - **Master Vault & Single Source of Truth Alignment**:
+    * Updated `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` Account #10 name to `"Tanvir Ahmed 10"`, matching authentic `UQCEbrd5e0H9vicsVnGWRNHyiFNBxfN7SRwwlJRgCbKkIIjb` keypair.
+    * Updated `bot_registry.py` with official primary usernames (`mrgtoken_bot`, `atfminers_bot`, `Kynex_miningbot`) and registered legacy aliases (`mrgminerbot`, `ATF_AIRDROP_bot`, `kynexnetworkbot`) for backwards-compatible MTProto queries.
+  - **Disaster Recovery & Script Execution Coverage**:
+    * Added `chickenland_miner.py`, `onboard_chickenland_fleet.py`, and `extract_all_missing_fleet_tokens.py` to `backup_manager.py` `CORE_BOT_FILES` and `restore.sh` execution permission grants.
+    * Updated `cloud_wallet_sweeper.py` docstrings to 20 isolated worker wallets (Accounts #2-#21).
+    * Enhanced `session_guardian.py` to probe Render Node 3 (Oregon Coordinator), Render Node 2 (Frankfurt Standby), and Primary Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev/health`).
+  - **Automated Infrastructure Sanitation**:
+    * Executed `clean_up_system.py` to remove stale workspace caches, cap Upstash Redis lists, enforce Zero Phone Load, and purge 47 legacy GitHub Actions workflow runs.
+
 - **🎨 Multi-Dashboard Fleet & Community Modernization (October 28, 2026)**:
   - **Executive Fleet Operations Console (`admin.html` / `/admin`)**:
     * Updated Account #10 (`8203342513`) to display authentic name `"Tanvir Ahmed 10"` and verified non-custodial TON v4r2 address `"UQCEbrd5e0H9vicsVnGWRNHyiFNBxfN7SRwwlJRgCbKkIIjb"`, matching `fleet_ton_wallets.json`.

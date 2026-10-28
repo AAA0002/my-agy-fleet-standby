@@ -25,8 +25,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("session_guardian")
 
-RENDER_URL = "https://my-agy-fleet-standby-node2.onrender.com/health"
-CF_URL = "https://restore-agy.aaaai2.workers.dev"
+RENDER_NODE3_URL = "https://my-agy-fleet-standby-node3.onrender.com/health"
+RENDER_NODE2_URL = "https://my-agy-fleet-standby-node2.onrender.com/health"
+CF_URL = "https://restore-agy.agorameet.workers.dev/health"
 
 def ping_url(url: str):
     try:
@@ -47,10 +48,11 @@ def touch_pty():
 
 def main():
     logger.info("🛡️ Session Guardian started. Anti-idle keepalive active.")
-    r_stat = ping_url(RENDER_URL)
+    r3_stat = ping_url(RENDER_NODE3_URL)
+    r2_stat = ping_url(RENDER_NODE2_URL)
     c_stat = ping_url(CF_URL)
     touch_pty()
-    logger.info(f"Heartbeat sent: Render Node 2 -> {r_stat} | CF Edge -> {c_stat}")
+    logger.info(f"Heartbeat sent: Render Node 3 -> {r3_stat} | Render Node 2 -> {r2_stat} | CF Edge -> {c_stat}")
 
 if __name__ == "__main__":
     main()
