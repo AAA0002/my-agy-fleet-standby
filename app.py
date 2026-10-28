@@ -471,9 +471,9 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgminerbot"
+MRG_BOT = "mrgtoken_bot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
-ATF_BOT = "ATF_AIRDROP_bot"
+ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
 VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
@@ -5746,28 +5746,27 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet with TonConnect proof: {target_ton_w[:10]}... (res: {c_code})")
 
                 # Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
-                await safe_post("https://mrg.up.railway.app/api/user/daily-checkin", {"initData": m_init}, req_headers=m_headers)
+                checkin_payload = {"initData": m_init}
+                if mrg_turnstile_tok:
+                    checkin_payload["turnstileToken"] = mrg_turnstile_tok
+                chk_code, chk_res = await safe_post("https://mrg.up.railway.app/api/user/daily-checkin", checkin_payload, req_headers=m_headers)
+                if chk_res and isinstance(chk_res, dict) and chk_res.get("success"):
+                    logger.info(f"[{name}] ⛏️ [MRG] Daily check-in claimed! streak: {chk_res.get('streak')}, reward: +{chk_res.get('reward', 5)} MRG")
 
                 completed = set(me_d.get("completedTaskIds", []))
                 for t in me_d.get("tasks", []):
                     tid = t.get("taskId")
                     is_rec = "recurring" in str(t.get("taskType", ""))
                     if tid and (tid not in completed or is_rec):
-                        is_link = (t.get("type") == "link_visit" or t.get("url") or "channel" in str(t.get("title", "")).lower() or "social" in str(t.get("title", "")).lower())
-                        if is_link:
-                            async def _mrg_claim_link_task(task_id):
-                                await asyncio.sleep(15)
-                                _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
-                                if cl_d and not cl_d.get("success") and ("wait" in json.dumps(cl_d).lower() or "second" in json.dumps(cl_d).lower()):
-                                    await asyncio.sleep(12)
-                                    await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
-                            bg_tasks.append(asyncio.create_task(_mrg_claim_link_task(tid)))
-                        else:
-                            await jitter(1.8, 3.2)
-                            _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": tid}, req_headers=m_headers)
-                            if cl_d and not cl_d.get("success") and ("wait" in json.dumps(cl_d).lower() or "second" in json.dumps(cl_d).lower()):
+                        await jitter(0.4, 0.9)
+                        _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": tid}, req_headers=m_headers)
+                        if cl_d and isinstance(cl_d, dict):
+                            if cl_d.get("success"):
+                                logger.info(f"[{name}] ⛏️ [MRG] Claimed task {tid} ({t.get('title')}) +{t.get('reward')} MRG")
+                                completed.add(tid)
+                            elif "wait" in json.dumps(cl_d).lower() or "second" in json.dumps(cl_d).lower():
                                 async def _mrg_retry_claim(task_id):
-                                    await asyncio.sleep(14)
+                                    await asyncio.sleep(15)
                                     await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
                                 bg_tasks.append(asyncio.create_task(_mrg_retry_claim(tid)))
 
@@ -6835,13 +6834,18 @@ async def api_farm_cloud_all(request: Request):
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
                 accounts = await fetch_accounts_from_cloud()
                 total = len(accounts) if accounts else 0
-                midpoint = (total + 1) // 2
-                if shard_param == "1":
-                    accounts = [a for a in accounts if int(a.get("index") or 0) <= midpoint]
-                    logger.info(f"[Farm Trigger] Partition Shard 1: Selected accounts 1-{midpoint} ({len(accounts)}/{total} accounts)")
-                elif shard_param == "2":
-                    accounts = [a for a in accounts if int(a.get("index") or 0) > midpoint]
-                    logger.info(f"[Farm Trigger] Partition Shard 2: Selected accounts {midpoint+1}-{total} ({len(accounts)}/{total} accounts)")
+                target_uid = request.query_params.get("uid") or body.get("uid")
+                if target_uid:
+                    accounts = [a for a in accounts if str(a.get("user_id")) == str(target_uid) or str(a.get("index")) == str(target_uid)]
+                    logger.info(f"[Farm Trigger] Single-account filter: Selected account UID {target_uid} ({len(accounts)} accounts)")
+                else:
+                    midpoint = (total + 1) // 2
+                    if shard_param == "1":
+                        accounts = [a for a in accounts if int(a.get("index") or 0) <= midpoint]
+                        logger.info(f"[Farm Trigger] Partition Shard 1: Selected accounts 1-{midpoint} ({len(accounts)}/{total} accounts)")
+                    elif shard_param == "2":
+                        accounts = [a for a in accounts if int(a.get("index") or 0) > midpoint]
+                        logger.info(f"[Farm Trigger] Partition Shard 2: Selected accounts {midpoint+1}-{total} ({len(accounts)}/{total} accounts)")
 
                 tokens = await fetch_cloud_miniapp_tokens(session)
                 t_start = time.time()
@@ -7025,8 +7029,8 @@ async def inspect_referrals_master(request: Request):
     sess_str = master_acc.get("session_string") or master_acc.get("session")
     cl = create_telethon_client(sess_str=sess_str, identifier=master_acc.get("phone") or "Master", proxy_val=master_acc.get("proxy"))
     bots_to_query = [
-        ("mrg", "mrgminerbot", ["/start"]),
-        ("atf", "ATF_AIRDROP_bot", ["/start"]),
+        ("mrg", "mrgtoken_bot", ["/start"]),
+        ("atf", "atfminers_bot", ["/start"]),
         ("victors", "VictorsCompanybot", ["/start"]),
         ("kynex", "Kynex_miningbot", ["/start"])
     ]
@@ -7393,8 +7397,8 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         target_acc = next((a for a in accounts if str(a.get("user_id")) == str(req_uid)), None)
 
     bot_map = {
-        "mrg": "mrgminerbot",
-        "atf": "ATF_AIRDROP_bot",
+        "mrg": "mrgtoken_bot",
+        "atf": "atfminers_bot",
         "victors": "VictorsCompanybot",
         "kynex": "Kynex_miningbot"
     }
@@ -7446,8 +7450,8 @@ async def mute_all_chats_endpoint(request: Request):
 
     accounts = await fetch_accounts_from_cloud()
     all_targets_to_mute = [
-        "mrgminerbot", "mrgminer", "mrgfun", "mrgwithdrawal",
-        "ATF_AIRDROP_bot", "atfminers",
+        "mrgtoken_bot", "mrgminerbot", "mrgminer", "mrgfun", "mrgwithdrawal",
+        "atfminers_bot", "ATF_AIRDROP_bot", "atfminers",
         "Kynex_miningbot", "kynex_mining",
         "VictorsCompanybot", "VictorsCompany",
         "Diggominer_bot", "diggo_community",
@@ -7524,8 +7528,8 @@ async def inspect_bot_chat(uid: str, request: Request):
             return {"ok": False, "uid": uid, "error": "Account is locked by another process"}
         cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
         bots_to_check = [
-            ("mrg", "mrgminerbot"),
-            ("atf", "ATF_AIRDROP_bot"),
+            ("mrg", "mrgtoken_bot"),
+            ("atf", "atfminers_bot"),
             ("victors", "VictorsCompanybot"),
             ("kynex", "Kynex_miningbot")
         ]
@@ -7708,7 +7712,7 @@ except Exception:
 
 # 8 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
-    "mrgminerbot", "ATF_AIRDROP_bot",
+    "mrgtoken_bot", "atfminers_bot",
     "VictorsCompanybot",
     "Kynex_miningbot", "Diggominer_bot",
     "Pepe_gram_bot", "AdxEarnAibot",
