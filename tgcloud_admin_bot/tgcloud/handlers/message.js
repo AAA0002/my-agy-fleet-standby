@@ -210,8 +210,8 @@ Tap any account node below to dispatch an official verification code:`;
       return;
     }
 
-    if (cmd === '/farm' || rawText.includes("Farm 9 Bots") || rawText.includes("Farm 5 Bots") || lowerText === 'farm') {
-      await sendLivingDashboard(chatId, "⚡ *Dispatching 100% Cloud Mining across 9 Pools...*\n\n• Target: All 20 Fleet Accounts (Nodes 01-20)\n• Backend: Render Standby Node 2 (Frankfurt)\n\n_Executing 100% in cloud, 0% phone load..._", null);
+    if (cmd === '/farm' || rawText.includes("Farm 8 Bots") || rawText.includes("Farm 9 Bots") || rawText.includes("Farm 5 Bots") || lowerText === 'farm') {
+      await sendLivingDashboard(chatId, "⚡ *Dispatching 100% Cloud Mining across 8 Pools...*\n\n• Target: All 20 Fleet Accounts (Nodes 01-20)\n• Backend: Render Standby Node 2 (Frankfurt)\n\n_Executing 100% in cloud, 0% phone load..._", null);
       await dispatchParallelFarming().catch(() => {});
       
       const banner = 

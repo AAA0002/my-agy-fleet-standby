@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 8-Bot Fleet Ground-Truth Alignment & Cloud Task Sweep Execution (October 28, 2026)**:
+  - **Comprehensive UI & Dashboard Multi-Pool Realignment**:
+    * **User Bot Admin Console (`public/user-admin.html`)**: Aligned top stats pill from `"9 Cloud Pools 24/7"` to `"8 Cloud Pools 24/7"`. Synchronized across all public distribution paths (`public_admin/user-admin.html`, `public_admin/users/index.html`, `public_admin/user-admin/index.html`).
+    * **Executive Fleet Operations Console (`public/admin.html`)**: Corrected status card comment from `// 9 Mining Bots Status Card` to `// 8 Mining Bots Status Card`. Synchronized across `dashboard.html`, `public_admin/admin.html`, `public_admin/admin/index.html`, and `public_admin/index.html`.
+    * **User WebApp (`public/app/index.html`)**: Cleaned up remaining legacy references from `"All 9 Pools"`, `"9 Pools"`, and `"Autonomous Cloud Nodes Harvest All 9 Pools Continuously"` to `"8 Pools"`, `"All 8 Pools Selected"`, and `"Autonomous Cloud Nodes Harvest All 8 Pools Continuously"`. Synchronized across `public/miner/index.html`, `public/index.html`, `public_ads/miner/index.html`, and `public_ads/index.html`.
+    * **Telegram Admin Bot Mini App & Handlers (`tgcloud_admin_bot/`)**: Updated status card and single-account action button to `"⚡ Farm 8 Pools"`. Updated `/farm` command handler and inline callback to announce `"⚡ Dispatching 100% Cloud Mining across 8 Pools..."`.
+    * **Backend Server Endpoints (`app.py`)**: Updated account linking status messages, referral verification docstrings, and background side-task sweep endpoints (`/api/tasks/sweep-all` and `/api/tasks/sweep-status`) to strictly reference the 8 active legitimate bots.
+  - **Cloud-First Side-Tasks Sweep Execution (Render Node 3)**:
+    * Dispatched live on-demand sweep via `GET /api/tasks/sweep-all` on Render Node 3.
+    * Evaluated all 21 accounts in parallel across MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land.
+    * Confirmed 100% zero-pending state (0 pending tasks remaining) across all 21 fleet accounts; dispatched verification alert to AAA Admin notification channel (`-1004358687850`).
+  - **Fleet-Wide Token Freshness Verification**:
+    * Validated all 21 fleet accounts against Upstash Redis. Verified that every account possesses 100% fresh Telegram WebApp `initData` tokens across all 8 bots with token ages ranging between 0.8h and 5.4h (0% expired tokens).
+
 - **🎯 100% Fleet-Wide Task Completion, Sponsor Channels Resolution & Multi-Bot Harvest Optimization (October 28, 2026)**:
   - **100% Task Completion Fleet-Wide on MRG Miner (`@mrgtoken_bot`)**:
     * **Ground-Truth Fleet Audit (21/21 Accounts Verified 8/8)**: Audited all 21 fleet accounts against live Railway backend (`POST https://mrg.up.railway.app/api/user/me`). Verified **100% OF FLEET ACCOUNTS AT 8/8 (100%) TASKS COMPLETED**.

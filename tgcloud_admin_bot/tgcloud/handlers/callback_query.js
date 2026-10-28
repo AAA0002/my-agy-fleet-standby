@@ -568,7 +568,7 @@ Please reply directly with the full phone number including international country
   }
 
   if (data === 'btn_farm_all') {
-    await replyOrEdit(chatId, messageId, "⚡ *Dispatching 100% Cloud Mining across 9 Pools...*\n\n• Target: All 20 Fleet Accounts (Nodes 01-20)\n• Backend: Render Standby Node 2 (Frankfurt)\n\n_Executing 100% in cloud, 0% phone load..._", null);
+    await replyOrEdit(chatId, messageId, "⚡ *Dispatching 100% Cloud Mining across 8 Pools...*\n\n• Target: All 20 Fleet Accounts (Nodes 01-20)\n• Backend: Render Standby Node 2 (Frankfurt)\n\n_Executing 100% in cloud, 0% phone load..._", null);
     await dispatchParallelFarming().catch(() => {});
     
     const banner = 

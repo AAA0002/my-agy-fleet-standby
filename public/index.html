@@ -361,7 +361,7 @@
           <div class="min-w-0 text-left">
             <div class="font-bold text-xs text-white flex items-center gap-1.5">
               <span>Instant Cloud Harvest</span>
-              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-semibold border border-emerald-500/30">9 Pools</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-semibold border border-emerald-500/30">8 Pools</span>
             </div>
             <div class="text-[10px] text-slate-300 truncate mt-0.5">Claim yields across all connected accounts now</div>
           </div>
@@ -629,7 +629,7 @@
                 <h2 class="font-bold text-xs sm:text-sm text-white font-display">Link Mining Account</h2>
                 <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">24/7 CLOUD</span>
               </div>
-              <p class="text-[10px] text-slate-400 font-mono">Autonomous Cloud Nodes Harvest All 9 Pools Continuously</p>
+              <p class="text-[10px] text-slate-400 font-mono">Autonomous Cloud Nodes Harvest All 8 Pools Continuously</p>
             </div>
           </div>
           <button onclick="switchTab('accounts')" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-[10px] font-mono flex items-center gap-1">
@@ -661,11 +661,11 @@
         <div class="space-y-1.5 pt-1">
           <div class="flex items-center justify-between text-[10px] font-mono">
             <span class="text-slate-400 font-semibold uppercase tracking-wider">Target Mining Protocols:</span>
-            <span class="text-cyan-400 font-bold text-[9px]" id="selected-pool-label">All 9 Pools Selected</span>
+            <span class="text-cyan-400 font-bold text-[9px]" id="selected-pool-label">All 8 Pools Selected</span>
           </div>
           <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
             <button onclick="selectMiningPool('all')" data-pool="all" class="pool-chip active-pool px-3 py-1.5 rounded-xl border text-[10px] font-mono font-bold shrink-0">
-              🌐 All 9 Pools
+              🌐 All 8 Pools
             </button>
             <button onclick="selectMiningPool('mrg')" data-pool="mrg" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               ⚡ MRG
@@ -1837,7 +1837,7 @@
       // Render 7-Day Stepper Nodes
       renderStreakStepper(streakDays, p.can_claim_daily !== false);
 
-      // 9 Pools Badges
+      // 8 Pools Badges
       const accs = p.accounts || [];
       const matchPool = (a, pKey) => a.pool === pKey || a.pool === 'all' || !a.pool;
       const mrgC = accs.filter(a => matchPool(a, 'mrg')).length;
@@ -2181,7 +2181,7 @@
 
       container.innerHTML = accs.map((a, idx) => {
         const initial = (a.name || a.label || 'M').charAt(0).toUpperCase();
-        const pLabel = poolLabels[a.pool] || (a.pool ? a.pool.toUpperCase() : 'All 9 Pools');
+        const pLabel = poolLabels[a.pool] || (a.pool ? a.pool.toUpperCase() : 'All 8 Pools');
         return `
         <div class="card-glass p-3.5 rounded-2xl flex items-center justify-between gap-3 border border-white/10 hover:border-cyan-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">

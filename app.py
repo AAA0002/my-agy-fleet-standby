@@ -2073,10 +2073,10 @@ ALL_9_BOT_KEYS = ALL_8_BOT_KEYS
 ALL_10_BOT_KEYS = ALL_8_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
-    if acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 8 active fleet bots."""
+    if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
         return True
-    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_9_BOT_KEYS)
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_8_BOT_KEYS)
 
 
 
@@ -3513,7 +3513,7 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
             short_notif = (
                 f"{'🎉 <b>Account #' + str(idx) + ' Relinked</b>' if is_existing else '🎉 <b>New Account #' + str(idx) + ' Linked</b>'}\n"
                 f"• <b>Account:</b> {name} (<code>{phone}</code>)\n"
-                f"• <b>Status:</b> 🟢 9/9 Bots Mining Active\n"
+                f"• <b>Status:</b> 🟢 8/8 Bots Mining Active\n"
                 f"• <b>Wallets:</b> Dedicated TON, EVM, TRON, SOL, BTC Bound ✅"
             )
             try:
@@ -3758,7 +3758,7 @@ async def onboard_user_bot_account(chat_id: str, uid: int, name: str, uname: str
         wallet_msg = (
             f"🎉 *Account Connected for 24/7 Cloud Mining!* 🟢\n\n"
             f"• *Account:* {name} (`{phone}`)\n"
-            f"• *Status:* 🟢 Active 24/7 Cloud Automated (9 Pools)\n\n"
+            f"• *Status:* 🟢 Active 24/7 Cloud Automated (8 Pools)\n\n"
             f"🔑 *YOUR DEDICATED NON-CUSTODIAL WALLETS:*\n"
             f"💎 *TON Address:* `{ton_w.get('address', '')}`\n"
             f"📝 *TON 24-Word Recovery Phrase:*\n"
@@ -6650,7 +6650,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False, target_bot: str = "all") -> dict:
-    """Executes full autonomous cloud farming and task completions across all 9 legitimate bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 8 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -6914,12 +6914,12 @@ async def api_tasks_sweep_all(request: Request):
             LAST_SWEEP_RUN["output"] = str(e)
 
     asyncio.create_task(_run_sweep())
-    return {"ok": True, "status": "dispatched", "message": "9-Bot fleet side-task sweep dispatched on Render Node 2."}
+    return {"ok": True, "status": "dispatched", "message": "8-Bot fleet side-task sweep dispatched on Render Node 2."}
 
 
 @app.get("/api/tasks/sweep-status")
 async def api_tasks_sweep_status():
-    """Returns the latest status of the 9-bot side-task sweep."""
+    """Returns the latest status of the 8-bot side-task sweep."""
     return {"ok": True, "last_sweep_run": LAST_SWEEP_RUN}
 
 
@@ -7806,7 +7806,7 @@ async def channel_status_endpoint(request: Request):
 async def sync_and_verify_channels_endpoint(request: Request):
     """
     Type B Channel & Bot Management Engine:
-    Ensures all fleet accounts join mandatory sponsor channels, unblock all 9 legitimate bots,
+    Ensures all fleet accounts join mandatory sponsor channels, unblock all 8 legitimate bots,
     and permanently mute all channels/bots to prevent notification spam.
     Protects against Telegram's 500-channel limit by leaving unwhitelisted spam channels if dialogs > 400.
     """
