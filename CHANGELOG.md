@@ -3,6 +3,9 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🌐 8-Bot Fleet Ground-Truth Alignment & Cloud Task Sweep Execution (October 28, 2026)**:
+  - **ATF Miner Fleet-Wide Session Cookie Isolation (`finish_all_fleet_sidetasks.py`)**:
+    * **Root Cause: Cross-Account Cookie Jar Collision**: Discovered that a shared `aiohttp.ClientSession` across concurrent worker tasks caused ATF stateful session cookies (`atf_tma_session`, `__Host-atf_fg_v1`) to bleed between accounts, resulting in intermittent `401 Unauthorized` responses and missed task claims on secondary worker accounts.
+    * **Isolated Account-Level Session Scope**: Refactored `sweep_atf_tasks` to instantiate an independent, account-scoped `aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))` per invocation. Verified live against multiple worker accounts (Nancy #2, Koram #3, Tanvir #10), flawlessly claiming one-time and repeatable tasks (`ig_follow`, `ig_like_comment`, `website_visit`, `telegram_react_latest`, `twitter_retweet`, `youtube_like_comment`) with 100% success rate.
   - **Comprehensive UI & Dashboard Multi-Pool Realignment**:
     * **User Bot Admin Console (`public/user-admin.html`)**: Aligned top stats pill from `"9 Cloud Pools 24/7"` to `"8 Cloud Pools 24/7"`. Synchronized across all public distribution paths (`public_admin/user-admin.html`, `public_admin/users/index.html`, `public_admin/user-admin/index.html`).
     * **Executive Fleet Operations Console (`public/admin.html`)**: Corrected status card comment from `// 9 Mining Bots Status Card` to `// 8 Mining Bots Status Card`. Synchronized across `dashboard.html`, `public_admin/admin.html`, `public_admin/admin/index.html`, and `public_admin/index.html`.
