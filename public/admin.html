@@ -1240,9 +1240,14 @@ function App() {
     showToast(`Joining channels & sweeping tasks for ${accName}... 🔄`, "info");
     haptic("medium");
     try {
-      const res = await fetchMeshApi(`/api/channels/sync-and-verify?uid=${uid}`, { method: "POST" });
-      if (res && res.ok) showToast(`Channels synced & tasks claimed for ${accName}!`, "success");
-      else showToast(`Dispatched channel & task sync for ${accName}`, "info");
+      await fetchMeshApi(`/api/channels/sync-and-verify?uid=${uid}`, { method: "POST" });
+      setTimeout(async () => {
+        try {
+          await fetchMeshApi(`/api/farm/cloud-all?uid=${uid}`, { method: "POST" });
+          showToast(`Channels synced & tasks sweeping for ${accName}! ⚡`, "success");
+        } catch (_) {}
+      }, 3500);
+      showToast(`Channel join dispatched for ${accName}! Sweeping tasks in 3s...`, "info");
     } catch (_) {
       showToast(`Dispatched to cloud`, "info");
     }
