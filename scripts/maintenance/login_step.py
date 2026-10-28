@@ -17,8 +17,10 @@ from telethon.errors import (
     PasswordHashInvalidError
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+BASE_DIR = PROJECT_ROOT
+ACCOUNTS_FILE = os.path.join(PROJECT_ROOT, "accounts.json")
 SESSION_FILE = os.path.join(BASE_DIR, "temp_relogin")
 STATE_FILE = os.path.join(BASE_DIR, "temp_relogin_state.json")
 

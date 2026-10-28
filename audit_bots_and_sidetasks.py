@@ -722,7 +722,7 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
 
 async def main():
     print("="*80)
-    print(f"🚀 FLEET-WIDE 9-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL {len(ACCOUNTS)} ACCOUNTS)")
+    print(f"🚀 FLEET-WIDE 8-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL {len(ACCOUNTS)} ACCOUNTS)")
     print("="*80)
     
     fleet_reports = {}
@@ -747,10 +747,10 @@ async def main():
     if bot_token and notif_channel:
         healthy_accounts = sum(1 for r in fleet_reports.values() if sum(1 for b, v in r.get("bots", {}).items() if not v.get("error")) >= 5)
         short_card = (
-            f"🔍 <b>Fleet-Wide 9-Bot Audit Complete</b>\n"
+            f"🔍 <b>Fleet-Wide 8-Bot Audit Complete</b>\n"
             f"• <b>Accounts Audited:</b> <code>{len(fleet_reports)}/{len(fleet_reports)} Checked</code>\n"
             f"• <b>Operational Nodes:</b> <code>{healthy_accounts}/{len(fleet_reports)} Healthy</code>\n"
-            f"• <b>Active Protocols:</b> <code>9/9 Legitimate Mining Pools</code>\n"
+            f"• <b>Active Protocols:</b> <code>8/8 Legitimate Mining Pools</code>\n"
             f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
         )
         try:

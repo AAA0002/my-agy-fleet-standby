@@ -20,8 +20,10 @@ from telethon import password as pwd_mod
 
 load_dotenv()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+BASE_DIR = PROJECT_ROOT
+ACCOUNTS_FILE = os.path.join(PROJECT_ROOT, "accounts.json")
 
 API_ID = int(os.getenv("TELEGRAM_API_ID", 37321306))
 API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")

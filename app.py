@@ -2394,7 +2394,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 9-bot farming finished!")
+                logger.info(f"[{name}] ✅ Complete initial 8-bot farming finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
@@ -5854,111 +5854,131 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     p.update(extra)
                 return p
 
-            await jitter(1.0, 2.2)
-            _, log_data = await safe_post(f"{atf_base}?action=login&t={int(time.time()*1000)}", atf_payload(), atf_h)
-            
-            # ATF Cloudflare Turnstile entry captcha check
-            if (not log_data) or (isinstance(log_data, dict) and log_data.get("reason") in ("entry_captcha_required", "captcha_required")):
-                atf_pass = get_cached_upstash_pass(f"atf:pass:{uid}")
-                if atf_pass is None and UPSTASH_URL and UPSTASH_TOKEN:
-                    try:
-                        async with session.get(f"{UPSTASH_URL}/get/atf:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as ar:
-                            if ar.status == 200:
-                                ad = await ar.json()
-                                if ad.get("result"):
-                                    parsed_a = json.loads(ad["result"]) if isinstance(ad["result"], str) else ad["result"]
-                                    atf_pass = parsed_a.get("captcha_token") or parsed_a.get("token") or parsed_a
-                                    set_cached_upstash_pass(f"atf:pass:{uid}", atf_pass, ttl=86400 * 5)
-                    except Exception:
-                        pass
-                if atf_pass:
-                    await safe_post(f"{atf_base}?action=verify_entry_captcha&t={int(time.time()*1000)}", atf_payload({"captcha_token": atf_pass}), atf_h)
-                    await jitter(0.5, 1.2)
-                    _, log_data = await safe_post(f"{atf_base}?action=login&t={int(time.time()*1000)}", atf_payload(), atf_h)
+            # Per-account isolated aiohttp session to prevent cross-account cookie collisions on atf_tma_session
+            async with aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True)) as atf_session:
+                async def atf_safe_post(url, json_data=None, req_headers=None, timeout_sec=8, retries=2):
+                    h = req_headers or atf_h
+                    for attempt in range(retries):
+                        try:
+                            async with atf_session.post(url, json=json_data, headers=h, timeout=aiohttp.ClientTimeout(total=timeout_sec)) as resp:
+                                data = None
+                                try:
+                                    data = await resp.json()
+                                except Exception:
+                                    pass
+                                return resp.status, data
+                        except Exception:
+                            if attempt < retries - 1:
+                                await asyncio.sleep(0.8)
+                    return 0, None
 
-            if isinstance(log_data, dict) and log_data.get("reason") in ("entry_captcha_required", "captcha_required"):
-                status["bots"]["atf"] = "entry_captcha_required (Turnstile needed)"
-                return
-            if isinstance(log_data, dict) and log_data.get("reason") == "entry_risk_captcha_required":
-                status["bots"]["atf"] = "entry_risk_captcha_required (Image challenge needed)"
-                return
+                await jitter(1.0, 2.2)
+                _, log_data = await atf_safe_post(f"{atf_base}?action=login&t={int(time.time()*1000)}", atf_payload(), atf_h)
+                
+                # ATF Cloudflare Turnstile entry captcha check
+                if (not log_data) or (isinstance(log_data, dict) and log_data.get("reason") in ("entry_captcha_required", "captcha_required")):
+                    atf_pass = get_cached_upstash_pass(f"atf:pass:{uid}")
+                    if atf_pass is None and UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with session.get(f"{UPSTASH_URL}/get/atf:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as ar:
+                                if ar.status == 200:
+                                    ad = await ar.json()
+                                    if ad.get("result"):
+                                        parsed_a = json.loads(ad["result"]) if isinstance(ad["result"], str) else ad["result"]
+                                        atf_pass = parsed_a.get("captcha_token") or parsed_a.get("token") or parsed_a
+                                        set_cached_upstash_pass(f"atf:pass:{uid}", atf_pass, ttl=86400 * 5)
+                        except Exception:
+                            pass
+                    if atf_pass:
+                        await atf_safe_post(f"{atf_base}?action=verify_entry_captcha&t={int(time.time()*1000)}", atf_payload({"captcha_token": atf_pass}), atf_h)
+                        await jitter(0.5, 1.2)
+                        _, log_data = await atf_safe_post(f"{atf_base}?action=login&t={int(time.time()*1000)}", atf_payload(), atf_h)
 
-            completed_tasks = set()
-            task_cooldowns = {}
-            if log_data and isinstance(log_data, dict):
-                completed_tasks = set(log_data.get("user", {}).get("completed_tasks", []))
-                task_cooldowns = log_data.get("task_cooldowns", {})
+                if isinstance(log_data, dict) and log_data.get("reason") in ("entry_captcha_required", "captcha_required"):
+                    status["bots"]["atf"] = "entry_captcha_required (Turnstile needed)"
+                    return
+                if isinstance(log_data, dict) and log_data.get("reason") == "entry_risk_captcha_required":
+                    status["bots"]["atf"] = "entry_risk_captcha_required (Image challenge needed)"
+                    return
 
-            await jitter(1.0, 2.0)
-            await safe_post(f"{atf_base}?action=claim&t={int(time.time()*1000)}", atf_payload(), atf_h)
-            await jitter(0.8, 1.8)
-            await safe_post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", atf_payload(), atf_h)
-            await jitter(0.8, 1.8)
-            await safe_post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", atf_payload(), atf_h)
+                completed_tasks = set()
+                task_cooldowns = {}
+                if log_data and isinstance(log_data, dict):
+                    completed_tasks = set(log_data.get("user", {}).get("completed_tasks", []))
+                    task_cooldowns = log_data.get("task_cooldowns", {})
 
-            # Ensure dedicated TON wallet is synced to ATF
-            try:
-                ton_addr = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address")
-                if ton_addr:
-                    await safe_post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", atf_payload({"wallet": ton_addr}), atf_h)
-            except Exception:
-                pass
+                await jitter(1.0, 2.0)
+                await atf_safe_post(f"{atf_base}?action=claim&t={int(time.time()*1000)}", atf_payload(), atf_h)
+                await jitter(0.8, 1.8)
+                await atf_safe_post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", atf_payload(), atf_h)
+                await jitter(0.8, 1.8)
+                await atf_safe_post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", atf_payload(), atf_h)
 
-            # Math challenge with human delay and Cloudflare Workers AI challenge solver
-            try:
-                _, chd = await safe_post(f"{atf_base}?action=get_math_challenge&t={int(time.time()*1000)}", atf_payload({"scope": "start_mine"}), atf_h)
-                if chd and chd.get("status") == "success" and chd.get("challenge_id"):
-                    q = chd.get("question", "")
-                    ans = await solve_bot_challenge_with_cloudflare_ai(q, "ATF Miner")
-                    await jitter(2.2, 4.5)
-                    await safe_post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", atf_payload({"math_challenge_id": chd["challenge_id"], "math_answer": ans}), atf_h)
-            except Exception:
-                pass
-
-            await jitter(1.0, 2.0)
-            await safe_post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", atf_payload(), atf_h)
-            await safe_post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", atf_payload(), atf_h)
-
-            # Task completions with cooldown checks
-            now_sec = int(time.time())
-            atf_tasks = [
-                {"id": "telegram_join", "repeatable": False, "min_s": 10},
-                {"id": "telegram_join_fa", "repeatable": False, "min_s": 10},
-                {"id": "twitter_follow", "repeatable": False, "min_s": 10},
-                {"id": "youtube_subscribe", "repeatable": False, "min_s": 10},
-                {"id": "website_visit", "repeatable": True, "min_s": 10},
-                {"id": "telegram_react_latest", "repeatable": True, "min_s": 20},
-                {"id": "twitter_retweet", "repeatable": True, "min_s": 30},
-                {"id": "youtube_like_comment", "repeatable": True, "min_s": 30}
-            ]
-            for t in atf_tasks:
+                # Ensure dedicated TON wallet is synced to ATF
                 try:
-                    tid = t["id"]
-                    is_rep = t["repeatable"]
-                    cd = int(task_cooldowns.get(tid, 0) or 0)
-                    can_do = (tid not in completed_tasks) if not is_rep else (now_sec >= cd)
-                    if can_do:
-                        s_at = int(time.time()) - t["min_s"] - 5
-                        await safe_post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                        await asyncio.sleep(1.5)
-                        _, cl_res = await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                        if cl_res and cl_res.get("status") != "success" and ("wait" in json.dumps(cl_res).lower() or "progress" in json.dumps(cl_res).lower()):
-                            await asyncio.sleep(2.5)
-                            await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                        await asyncio.sleep(1.0)
+                    ton_addr = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address")
+                    if ton_addr:
+                        await atf_safe_post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", atf_payload({"wallet": ton_addr}), atf_h)
                 except Exception:
                     pass
 
-            bal_str = ""
-            if log_data and isinstance(log_data, dict):
-                u_obj = log_data.get("user") if isinstance(log_data.get("user"), dict) else log_data
-                lvl = u_obj.get("miner_level") or log_data.get("miner_level") or 1
+                # Math challenge with human delay, local instant solver & Cloudflare Workers AI challenge solver fallback
                 try:
-                    bal = float(u_obj.get("mined_balance") or log_data.get("mined_balance") or 0)
-                except (ValueError, TypeError):
-                    bal = 0.0
-                bal_str = f" (lvl: {lvl}, bal: {bal:.1f} ATF)"
-            status["bots"]["atf"] = f"farmed{bal_str}"
+                    _, chd = await atf_safe_post(f"{atf_base}?action=get_math_challenge&t={int(time.time()*1000)}", atf_payload({"scope": "start_mine"}), atf_h)
+                    if chd and chd.get("status") == "success" and chd.get("challenge_id"):
+                        q = chd.get("question", "")
+                        ans = solve_atf_math(q)
+                        if not ans or ans == "0":
+                            ans = await solve_bot_challenge_with_cloudflare_ai(q, "ATF Miner")
+                        await jitter(1.5, 3.2)
+                        await atf_safe_post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", atf_payload({"math_challenge_id": chd["challenge_id"], "math_answer": ans}), atf_h)
+                except Exception:
+                    pass
+
+                await jitter(1.0, 2.0)
+                await atf_safe_post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", atf_payload(), atf_h)
+                await atf_safe_post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", atf_payload(), atf_h)
+
+                # Task completions with cooldown checks
+                now_sec = int(time.time())
+                atf_tasks = [
+                    {"id": "telegram_join", "repeatable": False, "min_s": 10},
+                    {"id": "telegram_join_fa", "repeatable": False, "min_s": 10},
+                    {"id": "twitter_follow", "repeatable": False, "min_s": 10},
+                    {"id": "youtube_subscribe", "repeatable": False, "min_s": 10},
+                    {"id": "website_visit", "repeatable": True, "min_s": 10},
+                    {"id": "telegram_react_latest", "repeatable": True, "min_s": 20},
+                    {"id": "twitter_retweet", "repeatable": True, "min_s": 30},
+                    {"id": "youtube_like_comment", "repeatable": True, "min_s": 30}
+                ]
+                for t in atf_tasks:
+                    try:
+                        tid = t["id"]
+                        is_rep = t["repeatable"]
+                        cd = int(task_cooldowns.get(tid, 0) or 0)
+                        can_do = (tid not in completed_tasks) if not is_rep else (now_sec >= cd)
+                        if can_do:
+                            s_at = int(time.time()) - t["min_s"] - 5
+                            await atf_safe_post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                            await asyncio.sleep(1.5)
+                            _, cl_res = await atf_safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                            if cl_res and cl_res.get("status") != "success" and ("wait" in json.dumps(cl_res).lower() or "progress" in json.dumps(cl_res).lower()):
+                                await asyncio.sleep(2.5)
+                                await atf_safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                            await asyncio.sleep(1.0)
+                    except Exception:
+                        pass
+
+                bal_str = ""
+                if log_data and isinstance(log_data, dict):
+                    u_obj = log_data.get("user") if isinstance(log_data.get("user"), dict) else log_data
+                    lvl = u_obj.get("miner_level") or log_data.get("miner_level") or 1
+                    try:
+                        bal = float(u_obj.get("mined_balance") or log_data.get("mined_balance") or 0)
+                    except (ValueError, TypeError):
+                        bal = 0.0
+                    bal_str = f" (lvl: {lvl}, bal: {bal:.1f} ATF)"
+                status["bots"]["atf"] = f"farmed{bal_str}"
         except Exception as e:
             status["bots"]["atf"] = f"error: {format_error(e)}"
 
@@ -6166,9 +6186,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 10. PepeGram (@Pepe_gram_bot)
     async def _farm_pepegram():
-        if tokens.get("pepegram_init_data"):
+        p_init = tokens.get("pepegram_init_data") or tokens.get("pepe_init_data")
+        if p_init:
             try:
-                p_init = tokens["pepegram_init_data"]
                 pepe_h = {
                     **headers,
                     "Content-Type": "application/json",
@@ -6180,11 +6200,16 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     usr = auth_d.get("user", {}) if isinstance(auth_d.get("user"), dict) else {}
                     hashes = float(usr.get("hashes", 0))
                     power = int(usr.get("power", 0))
+                    ends_at = int(usr.get("hashes_production_ends_at", 0) or 0)
                     await safe_post("https://app.miniempire.app/miniapp/claim-welcome-bonus?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/claim?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
-                    await safe_post("https://app.miniempire.app/miniapp/start-production?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    now_ts = int(time.time())
+                    if now_ts >= ends_at:
+                        await safe_post("https://app.miniempire.app/miniapp/start-production?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/tasks/mine?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/tasks/slot-spin?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    await safe_post("https://app.miniempire.app/miniapp/tasks/ad-roll?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    await safe_post("https://app.miniempire.app/miniapp/tasks/ad-roll2?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     status["bots"]["pepegram"] = f"farmed (power: {power}, hashes: {hashes:.2f})"
                 else:
                     status["bots"]["pepegram"] = f"auth_failed ({c_auth})"
@@ -6196,9 +6221,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 11. AdxEarn AI (@AdxEarnAibot)
     async def _farm_adxearn():
-        if tokens.get("adxearn_init_data"):
+        a_init = tokens.get("adxearn_init_data") or tokens.get("adx_init_data")
+        if a_init:
             try:
-                a_init = tokens["adxearn_init_data"]
                 adx_h = {
                     **headers,
                     "Content-Type": "application/json",
@@ -6218,6 +6243,20 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         reward = claim_d.get("reward", 0)
                         pts += reward
                     await safe_post("https://api.adxearnai.xyz/api/farming/start", json_data={}, req_headers=adx_h)
+                    await safe_post("https://api.adxearnai.xyz/api/farming/boost", json_data={}, req_headers=adx_h)
+
+                    # Dynamic Rewards Tasks
+                    try:
+                        c_tk, tk_d = await safe_get("https://api.adxearnai.xyz/api/rewards/tasks", req_headers=adx_h)
+                        if c_tk == 200 and isinstance(tk_d, dict):
+                            for tk in tk_d.get("tasks", []):
+                                t_id = tk.get("id")
+                                if t_id and not tk.get("completed") and not tk.get("claimed"):
+                                    await safe_post("https://api.adxearnai.xyz/api/rewards/task-start", {"taskId": t_id}, req_headers=adx_h)
+                                    await asyncio.sleep(1.0)
+                                    await safe_post("https://api.adxearnai.xyz/api/rewards/task-claim", {"taskId": t_id}, req_headers=adx_h)
+                    except Exception:
+                        pass
 
                     # Ad Networks & Flash Bonus
                     try:
@@ -6549,8 +6588,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
-        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
-        {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
+        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data") or tokens.get("pepe_init_data"))},
+        {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data") or tokens.get("adx_init_data"))},
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
         {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data"))},
     ]

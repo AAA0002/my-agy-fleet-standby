@@ -189,10 +189,16 @@ def push_app():
         push_file(clean_file, "clean_up_system.py", "feat: autonomous multi-tier clean up engine")
     rct_f = os.path.join(BASE_DIR, "refresh_cloud_tokens.py")
     if os.path.exists(rct_f):
-        push_file(rct_f, "refresh_cloud_tokens.py", "feat: 10-bot cloud token refresher")
+        push_file(rct_f, "refresh_cloud_tokens.py", "feat: 8-bot cloud token refresher")
     emt_f = os.path.join(BASE_DIR, "extract_all_missing_fleet_tokens.py")
     if os.path.exists(emt_f):
-        push_file(emt_f, "extract_all_missing_fleet_tokens.py", "feat: 10-bot missing tokens batch extractor")
+        push_file(emt_f, "extract_all_missing_fleet_tokens.py", "feat: 8-bot missing tokens batch extractor")
+    chk_f = os.path.join(BASE_DIR, "chickenland_miner.py")
+    if os.path.exists(chk_f):
+        push_file(chk_f, "chickenland_miner.py", "feat: Chicken Land autonomous cloud farming engine")
+    chk_sniper = os.path.join(BASE_DIR, "chickenland_promo_sniper.py")
+    if os.path.exists(chk_sniper):
+        push_file(chk_sniper, "chickenland_promo_sniper.py", "feat: Chicken Land promo code sniper")
     
     # Dynamic Render Deployment: Detect active node from Upstash Redis or default to Node 3
     active_node = "node3"

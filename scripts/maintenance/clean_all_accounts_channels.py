@@ -18,8 +18,10 @@ from telethon.sessions import StringSession
 from telethon.tl.functions.channels import LeaveChannelRequest
 from telethon.tl.types import Channel
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+BASE_DIR = PROJECT_ROOT
+ACCOUNTS_FILE = os.path.join(PROJECT_ROOT, "accounts.json")
 
 API_ID = int(os.getenv("TELEGRAM_API_ID", "23788736"))
 API_HASH = os.getenv("TELEGRAM_API_HASH", "8098c495e2820d82935041ff91176b65")

@@ -47,21 +47,34 @@ CF_NODES = [
 ]
 
 # 8 Active Legitimate Fleet Bots & Referral Codes
+try:
+    from bot_registry import get_all_sponsor_channels
+    MANDATORY_SPONSOR_CHANNELS = get_all_sponsor_channels()
+except Exception:
+    MANDATORY_SPONSOR_CHANNELS = [
+        "AI_TRADING_FOREX", "AdxearnAi", "BTCMAKERR", "ChickenLandCodes", "ChickenLandPay",
+        "DurovKidney", "EarnVaulte", "LandChickenNews", "PaperHouseNFT", "PickaxeEmpire",
+        "TheBoss_Victor", "VICWithdrawals", "VictorsCompany", "Web3Primeteam", "keepeye_app",
+        "kynex_mining", "mrgminer", "mrgwithdrawal", "pepe_grammmm", "solanamemes001", "victors_company"
+    ]
+
 MRG_BOT = "mrgtoken_bot"
 ATF_BOT = "atfminers_bot"
 VICTORS_BOT = "VictorsCompanybot"
 KYNEX_BOT = "Kynex_miningbot"
+PEPEGRAM_BOT = "Pepe_gram_bot"
+ADXEARN_BOT = "AdxEarnAibot"
+DIGGO_BOT = "Diggominer_bot"
+CHICKENLAND_BOT = "ChickenLandBot"
 
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
 VICTORS_REF = "ref_A20AA96F18"
 KYNEX_REF = "6727787768"
-
-MANDATORY_SPONSOR_CHANNELS = [
-    "mrgminer", "mrgwithdrawal", "DurovKidney",
-    "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
-    "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"
-]
+PEPEGRAM_REF = "1449"
+ADXEARN_REF = "ref_6727787768"
+DIGGO_REF = "ref_4088138f11effe8eef4b86ff"
+CHICKENLAND_REF = "12668"
 
 
 def load_accounts():
@@ -331,6 +344,52 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if tok:
             tokens["kynex_init_data"] = tok
             print(f"  💎 Kynex Network: Collected")
+        await asyncio.sleep(0.5)
+
+        # 5. PepeGram (@Pepe_gram_bot)
+        pepe_tok = await extract_bot_webapp_token(cl, PEPEGRAM_BOT, start_param=PEPEGRAM_REF, default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
+        if pepe_tok:
+            tokens["pepegram_init_data"] = pepe_tok
+            print(f"  🐸 PepeGram: Collected")
+        await asyncio.sleep(0.5)
+
+        # 6. AdxEarn AI (@AdxEarnAibot)
+        adx_p = None if is_master else ADXEARN_REF
+        adx_tok = await extract_bot_webapp_token(cl, ADXEARN_BOT, start_param=adx_p, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
+        if adx_tok:
+            tokens["adxearn_init_data"] = adx_tok
+            print(f"  🤖 AdxEarn AI: Collected")
+        await asyncio.sleep(0.5)
+
+        # 7. DiggoMiner (@Diggominer_bot)
+        dig_p = None if is_master else DIGGO_REF
+        dig_tok = await extract_bot_webapp_token(cl, DIGGO_BOT, start_param=dig_p, default_url="https://diggo.linkpc.net/", candidate_short_names=["app", "miner"])
+        if dig_tok:
+            tokens["diggo_init_data"] = dig_tok
+            print(f"  ⛏️ DiggoMiner: Collected")
+            # Immediate JWT exchange while auth_date is < 30s old
+            try:
+                async with session.post(
+                    "https://diggo.linkpc.net/api/auth/telegram",
+                    json={"initData": dig_tok},
+                    headers={"Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as r_dig:
+                    if r_dig.status == 200:
+                        d_dig = await r_dig.json()
+                        jwt_tok = d_dig.get("token")
+                        if jwt_tok:
+                            tokens["diggo_jwt"] = jwt_tok
+            except Exception:
+                pass
+        await asyncio.sleep(0.5)
+
+        # 8. Chicken Land (@ChickenLandBot)
+        chk_p = None if is_master else CHICKENLAND_REF
+        chk_tok = await extract_bot_webapp_token(cl, CHICKENLAND_BOT, start_param=chk_p, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"])
+        if chk_tok:
+            tokens["chickenland_init_data"] = chk_tok
+            print(f"  🐔 Chicken Land: Collected")
 
         # Auto-join mandatory sponsor channels for side-task verification
         for s_ch in MANDATORY_SPONSOR_CHANNELS:

@@ -15,7 +15,11 @@ from patchright.async_api import async_playwright
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("victors_master_claim")
 
-config = dotenv_values(".env")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+sys.path.insert(0, PROJECT_ROOT)
+
+config = dotenv_values(os.path.join(PROJECT_ROOT, ".env"))
 api_id = int(config.get("TELEGRAM_API_ID", 28005322))
 api_hash = config.get("TELEGRAM_API_HASH", "5cd9b2512f7f2b1d7d0a51c4db223b47")
 UPSTASH_URL = config.get("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
@@ -25,10 +29,15 @@ VICTORS_SITEKEY = "0x4AAAAAAFD0KRgPRFVwDvgn"
 VICTORS_ORIGIN = "https://app.victors.company"
 VICTORS_API = "https://server.victors.company/api"
 
-with open("accounts.json") as f:
+accs_file = os.path.join(PROJECT_ROOT, "accounts.json")
+with open(accs_file) as f:
     accs = json.load(f)
 
-master = [a for a in accs if str(a.get("user_id")) == "6727787768"][0]
+masters = [a for a in accs if str(a.get("user_id")) == "6727787768"]
+if not masters:
+    logger.error("Master account 6727787768 not found in accounts.json")
+    sys.exit(1)
+master = masters[0]
 uid = 6727787768
 
 def safe_api(method, endpoint, payload=None, headers=None):
@@ -70,8 +79,12 @@ async def main():
         req_up = urllib.request.Request(f"{UPSTASH_URL}/get/miniapp_tokens", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
         with urllib.request.urlopen(req_up, timeout=10) as resp:
             data = json.loads(resp.read().decode())
-            res = json.loads(data["result"])
-            if isinstance(res, str): res = json.loads(res)
+            raw_res = data.get("result")
+            if raw_res:
+                res = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+                if isinstance(res, str): res = json.loads(res)
+            else:
+                res = {}
             if str(uid) in res:
                 res[str(uid)]["victors_init_data"] = v_init
                 res[str(uid)]["synced_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

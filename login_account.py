@@ -607,6 +607,25 @@ async def bind_referrals(client, me, acc_entry):
     except Exception as e:
         print(f"  ❌ Warning binding Chicken Land referral: {e}")
 
+    # Auto-join all mandatory sponsor channels for immediate side-task qualification
+    print("  • Auto-joining all mandatory sponsor channels across all 8 bots...")
+    try:
+        from bot_registry import get_all_sponsor_channels
+        s_channels = get_all_sponsor_channels()
+    except Exception:
+        s_channels = [
+            "mrgminer", "mrgwithdrawal", "keepeye_app", "AI_TRADING_FOREX",
+            "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
+            "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
+            "PaperHouseNFT", "pepe_grammmm", "BTCMAKERR", "AdxearnAi"
+        ]
+    for ch in s_channels:
+        try:
+            await client(JoinChannelRequest(ch))
+            await asyncio.sleep(0.3)
+        except Exception:
+            pass
+
     # Audit final referral status
     all_8_keys = [
         "mrg_referral_bound",
@@ -626,9 +645,9 @@ async def bind_referrals(client, me, acc_entry):
         acc_entry["all_4_referrals_bound"] = True
         acc_entry["all_17_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 9/9 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 8/8 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/9 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/8 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

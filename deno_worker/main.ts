@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
       notify: "POST /notify"
     },
     cloud_integrations: {
-      render_nodes: 2,
+      render_nodes: 3,
       cloudflare_shards: 3,
       deno_edge_nodes: 2,
       supabase_postgres: "CONNECTED",

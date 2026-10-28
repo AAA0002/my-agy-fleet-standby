@@ -1,25 +1,35 @@
 import os
+import sys
 import json
 import time
 import urllib.request
 import urllib.parse
+from dotenv import load_dotenv
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
 from telethon.tl.types import InputBotAppShortName
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+sys.path.insert(0, PROJECT_ROOT)
+
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 API_ID = int(os.getenv("TELEGRAM_API_ID", "24726207"))
 API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
-ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+ACCOUNTS_FILE = os.path.join(PROJECT_ROOT, "accounts.json")
 
-CHANNELS = [
-    "mrgminer",
-    "mrgfun",
-    "VictorsCompany",
-    "atfminers"
-]
+try:
+    from bot_registry import get_all_sponsor_channels
+    CHANNELS = get_all_sponsor_channels()
+except Exception:
+    CHANNELS = [
+        "mrgminer", "mrgwithdrawal", "keepeye_app",
+        "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
+        "AI_TRADING_FOREX", "kynex_mining", "EarnVaulte", "solanamemes001",
+        "Web3Primeteam", "PaperHouseNFT", "pepe_grammmm", "BTCMAKERR", "AdxearnAi"
+    ]
 
 def main():
     with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
@@ -54,7 +64,10 @@ def main():
 
             # 2. MRG Miner: Claim Telegram Channel task
             try:
-                bot_mrg = client.get_input_entity("mrgminerbot")
+                try:
+                    bot_mrg = client.get_input_entity("mrgtoken_bot")
+                except Exception:
+                    bot_mrg = client.get_input_entity("mrgminerbot")
                 res_m = client(RequestAppWebViewRequest(
                     peer=bot_mrg,
                     app=InputBotAppShortName(bot_id=bot_mrg, short_name="app"),

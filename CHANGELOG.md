@@ -2,6 +2,31 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Deep Fleet-Wide Bug Audit, ATF Session Isolation, Multi-Bot Auto-Farming Hardening & Maintenance Path Resolution (October 28, 2026)**:
+  - **ATF Miner Cookie Isolation in Master Server Engine (`app.py`)**:
+    * **Root Cause: Cross-Account Cookie Jar Contamination**: Discovered that `_farm_atf` in `app.py` previously utilized the shared `aiohttp.ClientSession` across concurrent accounts in `farm_with_sem(4)`. As a result, the ATF Miner backend set session cookies (`atf_tma_session` and `__Host-atf_fg_v1`) tied to one `tg_id`, which leaked into concurrent requests for other accounts, triggering intermittent `401 Unauthorized` responses and session invalidation.
+    * **Isolated Account-Level Session Scope**: Refactored `_farm_atf` to instantiate an independent `aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True))` per account invocation with dedicated `atf_safe_post`.
+    * **Deterministic Math Challenge Resolution**: Integrated instant local arithmetic challenge solver `solve_atf_math(q)` into `_farm_atf` with automatic fallback to Cloudflare Workers AI, eliminating external network latency and rate-limit timeouts.
+  - **PepeGram & AdxEarn AI Dual-Key Normalization & Dynamic Tasks Harvest Expansion (`app.py`)**:
+    * Supported both key formats (`pepegram_init_data` / `pepe_init_data`, `adxearn_init_data` / `adx_init_data`) in `_farm_pepegram`, `_farm_adxearn`, and `bot_routines` active check pipelines.
+    * Expanded `_farm_pepegram` with free power boost claims (`/tasks/ad-roll`, `/tasks/ad-roll2`) and production start state validation.
+    * Expanded `_farm_adxearn` with dynamic rewards tasks inspection/claims (`/rewards/tasks`, `/rewards/task-start`, `/rewards/task-claim`) and farming boost (`/farming/boost`).
+  - **Master Victor's Company Solver Resilience (`scripts/runners/solve_and_claim_master_victors.py`)**:
+    * Patched `.env` and `accounts.json` path resolution to resolve relative to `PROJECT_ROOT`.
+    * Guarded against `IndexError` when querying master account `6727787768` in `accounts.json`.
+    * Guarded against `TypeError` when reading `miniapp_tokens` from Upstash Redis if the key returns `None`.
+  - **Maintenance Scripts Broken Relative Paths & Identifier Resolution (`scripts/maintenance/`)**:
+    * Resolved broken relative paths (`BASE_DIR`) in 9 maintenance scripts (`clean_all_accounts_channels.py`, `setup_2fa_step.py`, `auto_bind_login_emails.py`, `bind_all_2fa_emails.py`, `rename_bought_accounts.py`, `login_email_manager.py`, `login_step.py`, `leave_unwanted_channels.py`, `update_names_with_numbers.py`).
+    * Added fallback resolution for `mrgtoken_bot` in `batch_join_and_verify_channels.py`.
+  - **Autonomous System Sanitation Engine (`clean_up_system.py`)**:
+    * Added `fleet:vyro:*`, `fleet:last_farm:vyro:*`, and `fleet:farm_error:vyro:*` to Redis `dead_patterns` to purge any residual decommissioned VyroDrop keys.
+    * Aligned docstrings and logging to Strict 8-Bot Integrity.
+  - **Standby Deployment Synchronizer Expansion (`push_to_standby_repo.py`)**:
+    * Added `chickenland_miner.py` and `chickenland_promo_sniper.py` to auto-synchronization roster for Render Standby deployments.
+    * Updated commit descriptors from legacy 10-bot to 8-bot standard.
+  - **Audit Engine Realignment (`audit_bots_and_sidetasks.py`)**:
+    * Aligned headers and notification telemetry cards from legacy 9-Bot to 8-Bot standard.
+
 - **🌐 8-Bot Fleet Ground-Truth Alignment & Cloud Task Sweep Execution (October 28, 2026)**:
   - **ATF Miner Fleet-Wide Session Cookie Isolation (`finish_all_fleet_sidetasks.py`)**:
     * **Root Cause: Cross-Account Cookie Jar Collision**: Discovered that a shared `aiohttp.ClientSession` across concurrent worker tasks caused ATF stateful session cookies (`atf_tma_session`, `__Host-atf_fg_v1`) to bleed between accounts, resulting in intermittent `401 Unauthorized` responses and missed task claims on secondary worker accounts.

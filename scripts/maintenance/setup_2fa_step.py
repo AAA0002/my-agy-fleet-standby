@@ -12,8 +12,10 @@ from telethon import TelegramClient, functions, types, errors
 from telethon.sessions import StringSession
 from telethon import password as pwd_mod
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+BASE_DIR = PROJECT_ROOT
+ACCOUNTS_FILE = os.path.join(PROJECT_ROOT, "accounts.json")
 STATE_FILE = os.path.join(BASE_DIR, "temp_2fa_state.json")
 
 API_ID = 37321306
