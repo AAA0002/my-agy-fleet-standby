@@ -6078,12 +6078,22 @@ fi
             mrgSecReq = Math.max(0, accounts.length - mrgActive);
           } catch (_) {}
 
+          let coordNodeDesc = "Render Node 3 (Oregon) • Active Coordinator";
+          try {
+            const actNode = await upstashGet("fleet:active_render_node", 30000);
+            if (actNode === "node2") {
+              coordNodeDesc = "Render Node 2 (Frankfurt) • Active Coordinator";
+            } else if (actNode === "node3") {
+              coordNodeDesc = "Render Node 3 (Oregon) • Active Coordinator";
+            }
+          } catch (_) {}
+
           return `⚡ *MY AGY AI — LIVE OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `📊 *Fleet Telegram Sessions (${accounts.length} Nodes):*\n` +
             `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (${Math.round(activeCount/accounts.length*100)}% Online) ✅\n` +
             `• ⚡ *Cloud WebApp Farming:* \`${Math.max(atfCount, accounts.length)}/${accounts.length} Accounts\` (100% Active in Cloud)\n` +
-            `• 🔄 *Session Guardian:* 24h token auto-refresh active via Render Node 2\n\n` +
+            `• 🔄 *Session Guardian:* 24h token auto-refresh active via Render Node 3\n\n` +
             `🤖 *8 Legitimate Active Bots (Live Ground-Truth):*\n` +
             `• 🪙 *ATF Miner:* \`${atfCount || accounts.length}/${accounts.length} Active\` • Cryptographic Math Solver\n` +
             `• ⚡ *MRG Miner:* \`${mrgActive}/${accounts.length} Active\` • Level 95+ Auto-Upgrade\n` +
@@ -6094,7 +6104,7 @@ fi
             `• 🤖 *AdxEarn AI:* \`${adxCount || accounts.length}/${accounts.length} Active\` • Daily Mining & Streaks\n` +
             `• 🐔 *Chicken Land:* \`${chkCount || accounts.length}/${accounts.length} Active\` • 8h Basket (${chkHens} Hens, ${chkEggs} Eggs)\n\n` +
             `☁️ *Cloud Infrastructure & Mesh:*\n` +
-            `• 🖥️ *Coordinator Node:* Render Node 2 (Frankfurt) • Active Coordinator\n` +
+            `• 🖥️ *Coordinator Node:* ${coordNodeDesc}\n` +
             `• 🖥️ *Cloud VM Sentinel:* Online (Quad-Layer Anti-Pause • 4 vCPUs • 8 GB RAM)\n` +
             `• 🌐 *VM Ingress:* \`2000-agqvyhmhjo2ajhpryq6lz5ewcy.instabox.tech\`\n` +
             `• 🔄 *CI/CD Redundancy:* GitHub Actions + CircleCI Failover Active\n` +
