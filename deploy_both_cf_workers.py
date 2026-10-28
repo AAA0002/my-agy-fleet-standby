@@ -3505,11 +3505,12 @@ fi
           accs.forEach((a, idx) => {
             a.index = idx + 1;
             const uidStr = String(a.user_id || "");
-            const hasTokens = Boolean((memTokens && uidStr && memTokens[uidStr]) || a.miniapp_tokens_synced || (a.mining_active && !revokedSet.has(String(a.index))));
-            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || (!a.session_string && !hasTokens);
+            const hasTokens = Boolean((memTokens && uidStr && memTokens[uidStr]) || a.miniapp_tokens_synced);
+            const hasSession = !!(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 10);
+            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || !hasSession;
             a.session_revoked = isRev;
             a.status = isRev ? "Needs Re-link" : "Active";
-            a.mining_active = !isRev;
+            a.mining_active = hasTokens;
             a.health_icon = isRev ? "🔴" : "🟢";
           });
           stateObj.accounts = accs;
@@ -5913,7 +5914,9 @@ fi
           const targetAccs = (accs && accs.length > 0) ? accs : DEFAULT_FLEET_ACCOUNTS;
 
           targetAccs.forEach((acc) => {
-            const isRev = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id));
+            const hasSession = !!(acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 10);
+            const isExplicitRevoked = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id));
+            const isRev = isExplicitRevoked || !hasSession;
             if (isRev) {
               revokedIndices.add(acc.index);
               revokedDetails.push({
@@ -5921,7 +5924,7 @@ fi
                 user_id: acc.user_id,
                 name: acc.name,
                 phone: acc.phone,
-                reason: "Session Invalidation (AUTH_KEY_DUPLICATED)"
+                reason: !hasSession ? "Missing MTProto Session (Needs QR/OTP Link)" : "Session Invalidation (AUTH_KEY_DUPLICATED)"
               });
             } else {
               healthyIndices.add(acc.index);
@@ -6220,7 +6223,9 @@ fi
             const isHost = String(acc.user_id) === "6727787768";
             const name = isHost ? `${rawName} 👑` : rawName;
             if (REVOKED_INDICES.has(idx)) {
-              revokedList.push({ idx, name, phone: ph, user_id: acc.user_id });
+              const rDetail = (health.revokedDetails || []).find(d => d.index === idx);
+              const reason = rDetail ? rDetail.reason : (acc.session_string ? "AUTH_KEY_DUPLICATED — Multi-IP clash. REST mining active; need code for MTProto." : "MTProto session missing — Tap Re-link below to scan QR / OTP.");
+              revokedList.push({ idx, name, phone: ph, user_id: acc.user_id, reason });
             } else {
               activeList.push({ idx, name, phone: ph, user_id: acc.user_id });
             }
@@ -6263,7 +6268,7 @@ fi
               `🟢 *Active MTProto Sessions (${activeList.length}):*\n` +
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n\n` +
               `🔴 *Needs Re-link (${revokedList.length}):*\n` +
-              revokedList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`)\n  └ ⚠️ _AUTH_KEY_DUPLICATED — Multi-IP clash. REST mining active; need code for MTProto._`).join("\n") + `\n` +
+              revokedList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`)\n  └ ⚠️ _${a.reason}_`).join("\n") + `\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `💡 *WebApp 401 Note:*\n` +
               `If an individual MiniApp returns 401 (e.g. Victor's / Vyro / Diggo), it means only the temporary 24h WebApp URL expired and is being silently refreshed by Render Node 2. The underlying Telegram session is 100% intact!\n\n` +

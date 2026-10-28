@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐞 Ground-Truth Fix: Session Health Audit Accuracy & Unlinked Account #21 Status (October 28, 2026)**:
+  - **Eradicated False Positive MTProto Status in Session Audit (`deploy_both_cf_workers.py`)**:
+    * Discovered critical flaw in `getSessionHealthState()` and `/api/fleet/status` where accounts without an active `session_string` were falsely displayed as `🟢 Online` simply because they were not explicitly present in `fleet:revoked_sessions`.
+    * Upgraded `getSessionHealthState()` to strictly verify that `acc.session_string` exists and is non-empty (`length > 10`).
+    * Accounts without an MTProto session are now accurately and deterministically classified as `🔴 Needs Re-link (Missing MTProto Session / Needs QR/OTP Link)` with status `🔴 Needs Code`.
+  - **Dynamic Re-link Action Trigger in Admin Bot**:
+    * Updated `buildSessionAuditResponse` so `revokedList` surfaces the exact missing session reason (`Missing MTProto Session (Needs QR/OTP Link)`) and automatically renders dedicated `[🔑 Re-link #21]` action buttons.
+  - **Redis Set Realignment**:
+    * Evicted index `'21'` from `fleet:healthy_sessions` and added `'21'` and `'8669217201'` to `fleet:revoked_sessions` until MTProto QR/OTP authorization is completed.
+  - **Cloudflare Edge Deployment**:
+    * Re-deployed updated worker script to Primary Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/api/fleet/status` now reports `Total: 21, Active: 20, Revoked: 1` (`Account #21: Needs Re-link 🔴`).
+
 - **🚀 Fleet Synchronization, Headless Solver Runner Update & Node 3 Parity (October 27, 2026)**:
   - **Public Headless Runner Synchronized (`AAA0002/cloud-fleet-solver`)**:
     * Pushed commit `fb0db62` to `AAA0002/cloud-fleet-solver` with zero plaintext secrets (Rule 10 compliant).
