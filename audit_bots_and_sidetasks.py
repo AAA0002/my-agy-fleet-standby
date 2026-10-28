@@ -358,44 +358,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["3. Victor's Company"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
-        # 4. VyroDrop
-        vyro_init = tokens.get("vyro_init_data")
-        if vyro_init:
-            vy_h = {
-                **headers,
-                "Authorization": f"tma {vyro_init}",
-                "X-Vyro-UI-Contract": "claim-inactivity-v1",
-                "Referer": "https://vyro.run.place/"
-            }
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                # Bootstrap
-                async with session.get("https://vyro.run.place/api/bootstrap", headers=vy_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        bd = await r.json()
-                        m = bd.get("miner", {})
-                        b_rep["core"]["bootstrap"] = f"Level {m.get('level', 1)}, Speed: {m.get('currentSpeed', 0)}"
-                    else:
-                        b_rep["core"]["bootstrap"] = f"HTTP {r.status}"
-
-                # Mining claim / start
-                async with session.post("https://vyro.run.place/api/mining/start", json={"idempotencyKey": str(uuid.uuid4())}, headers=vy_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    b_rep["core"]["start_mining"] = f"HTTP {r.status}"
-
-                # Tasks
-                t_hdrs = {**vy_h, "x-vyro-tasks-protocol": "2"}
-                async with session.get("https://vyro.run.place/api/tasks?limit=5", headers=t_hdrs, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        td = await r.json()
-                        tasks = td.get("tasks", [])
-                        b_rep["side_tasks"].append(f"Tasks: {len(tasks)} available")
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["4. VyroDrop"] = b_rep
-        else:
-            report["bots"]["4. VyroDrop"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
-
-        # 5. Kynex Network
+        # 4. Kynex Network
         kynex_init = tokens.get("kynex_init_data")
         if kynex_init:
             k_h = {**headers, "Content-Type": "application/json", "Origin": "https://kynex.top", "Referer": "https://kynex.top/"}

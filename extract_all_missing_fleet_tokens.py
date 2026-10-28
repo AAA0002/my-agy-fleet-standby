@@ -50,13 +50,6 @@ TARGET_BOTS = [
         "name": "Victor's Company"
     },
     {
-        "key": "vyro_init_data",
-        "bot": "vyrodrop_bot",
-        "url": "https://vyro.run.place/",
-        "short_names": ["app", "vyro", "play", "mine"],
-        "name": "VyroDrop"
-    },
-    {
         "key": "kynex_init_data",
         "bot": "Kynex_miningbot",
         "url": "https://kynex.top/telegram-auth.html",

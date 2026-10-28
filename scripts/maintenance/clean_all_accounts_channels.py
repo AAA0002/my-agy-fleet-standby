@@ -5,7 +5,7 @@ Leaves and removes all unwanted third-party promotional channels from all 13 fle
 Preserves:
 - @myagyai (Disaster Recovery Vault)
 - All official fleet channels (AAA*)
-- Verified official farming bot channels (MRG, ATF, Victor's Company, VyroDrop)
+- Verified official farming bot channels (MRG, ATF, Victor's Company)
 - All personal chats, groups, and contacts
 """
 
@@ -78,8 +78,7 @@ PROTECTED_USERNAMES = {
     "myagyai",
     "mrgminer",
     "mrgfun",
-    "VictorsCompany",
-    "vyrodrop",
+    "VictorsCompany"
 }
 
 PROTECTED_CHANNEL_IDS = {

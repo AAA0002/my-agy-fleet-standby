@@ -537,7 +537,7 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's automated mining fleet (MY AGY AI). Fleet state: ${fleet.length} active accounts across all 9 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's automated mining fleet (MY AGY AI). Fleet state: ${fleet.length} active accounts across all 8 legitimate bots (MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
@@ -641,7 +641,6 @@ function App() {
         { name: "MRG Miner", token: "TON" },
         { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)" },
         { name: "Victor's Company", token: "TON" },
-        { name: "VyroDrop", token: "TON" },
         { name: "Kynex Network", token: "KNX" }
       ].map((b, i) => React.createElement("div", {
         key: i,
@@ -820,7 +819,7 @@ function App() {
             action: async () => {
               showToast("AI: Dispatched harvest across all bots!", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 9 legitimate mining platforms (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land). WebApp tokens and sessions are active." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 legitimate mining platforms (MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land). WebApp tokens and sessions are active." }]);
             }
           },
           {
@@ -841,12 +840,12 @@ function App() {
             }
           },
           {
-            title: "💧 VyroDrop Claims",
-            desc: "Harvest & Boosts",
+            title: "🐔 Chicken Land",
+            desc: "Egg Harvest & Selling",
             action: async () => {
-              showToast("AI: Running VyroDrop harvest...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "vyro_harvest" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "💧 Harvest VyroDrop" }, { sender: "ai", text: "✅ VyroDrop harvest and energy booster cycle dispatched across active fleet accounts!" }]);
+              showToast("AI: Running Chicken Land harvest...", "info");
+              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "chicken_harvest" }) });
+              setAiMessages(prev => [...prev, { sender: "user", text: "🐔 Harvest Chicken Land Eggs" }, { sender: "ai", text: "✅ Chicken Land egg collection and selling cycle dispatched across active fleet accounts!" }]);
             }
           },
           {
@@ -990,13 +989,12 @@ function App() {
             )
           ),
 
-          // 9-Bot Mining Matrix in Drawer
+          // 8-Bot Mining Matrix in Drawer
           React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
             [
               { name: "MRG Miner (TON)", status: "⚡ 4h Mining Active" },
               { name: "ATF Miner (TON)", status: `🪙 ${parseFloat(selectedAccount.atf_balance || 0).toFixed(1)} ATF (Accumulating)` },
               { name: "Victor's Company", status: "🏢 Arcade & Shift Active" },
-              { name: "VyroDrop (TON)", status: "💧 6h Claim Ready" },
               { name: "Kynex Network", status: "🌐 12h Node Live" },
               { name: "DiggoMiner", status: "⛏️ 3h Block Mining" },
               { name: "PepeGram (PEPE)", status: "🐸 3h Yield Active" },

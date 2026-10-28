@@ -10,7 +10,7 @@ Guarantees:
 2. Pure Python bit-exact cryptographic derivations (Zero C compilation required).
 3. Immediate atomic persistence into accounts.json, fleet_*_wallets.json,
    FLEET_WALLETS_SECRETS_MASTER_VAULT.txt, and Upstash Redis.
-4. Autonomous bot wallet binding across MRG, ATF, Victor's Company, VyroDrop.
+4. Autonomous bot wallet binding across MRG, ATF, Victor's Company.
 =============================================================================
 """
 
@@ -894,56 +894,3 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
             logger.info(f"[{name}] 💎 Bound Victor's Company TON wallet: {target_ton[:12]}... & unlocked Level 1 Miner!")
         except Exception as ve:
             logger.debug(f"[{name}] Victor's wallet bind note: {ve}")
-
-    # 4. VyroDrop TON Wallet Binding & Mining Activation
-    if tokens.get("vyro_init_data") and target_ton:
-        try:
-            vy_init = tokens["vyro_init_data"]
-            vy_h = {
-                "Content-Type": "application/json",
-                "Authorization": f"tma {vy_init}",
-                "Origin": "https://vyro.run.place",
-                "Referer": "https://vyro.run.place/"
-            }
-            timeout_cfg = aiohttp.ClientTimeout(total=8) if (aiohttp and hasattr(aiohttp, "ClientTimeout")) else 8
-            # Request TonConnect challenge
-            async with http_session.post("https://vyro.run.place/api/wallet/challenge", json={}, headers=vy_h, timeout=timeout_cfg) as ch_res:
-                if ch_res.status in (200, 201):
-                    ch_data = await ch_res.json()
-                    nonce = ch_data.get("payload")
-                    if nonce and raw_m:
-                        try:
-                            from tonsdk.contract.wallet import Wallets, WalletVersionEnum
-                            words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                            _, pub_k_b, priv_k_b, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-                            state_init_res = w_contract.create_state_init()
-                            state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                            t_addr = w_contract.address
-                            friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
-                            domain_b = b"vyro.run.place"
-                            ts_now = int(time.time())
-                            msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                            digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                            from nacl.signing import SigningKey
-                            sig = SigningKey(priv_k_b[:32]).sign(digest).signature
-                            sig_b64 = base64.b64encode(sig).decode("utf-8")
-                            conn_body = {
-                                "address": friendly_addr,
-                                "chain": "-239",
-                                "publicKey": pub_k_b.hex(),
-                                "walletStateInit": state_init_b64,
-                                "proof": {
-                                    "timestamp": ts_now,
-                                    "domain": {"lengthBytes": len(domain_b), "value": "vyro.run.place"},
-                                    "signature": sig_b64,
-                                    "payload": nonce
-                                }
-                            }
-                            await http_session.post("https://vyro.run.place/api/wallet/connect", json=conn_body, headers=vy_h, timeout=timeout_cfg)
-                            import uuid
-                            await http_session.post("https://vyro.run.place/api/mining/start", json={"idempotencyKey": str(uuid.uuid4())}, headers=vy_h, timeout=timeout_cfg)
-                            logger.info(f"[{name}] 💎 Bound VyroDrop TonConnect wallet: {friendly_addr[:12]}... & initiated mining!")
-                        except Exception as nacl_err:
-                            logger.debug(f"[{name}] Vyro TonConnect cryptographic proof note: {nacl_err}")
-        except Exception as vye:
-            logger.debug(f"[{name}] VyroDrop wallet bind note: {vye}")

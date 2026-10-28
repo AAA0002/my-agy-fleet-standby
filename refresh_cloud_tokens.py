@@ -50,19 +50,17 @@ CF_NODES = [
 MRG_BOT = "mrgminerbot"
 ATF_BOT = "ATF_AIRDROP_bot"
 VICTORS_BOT = "VictorsCompanybot"
-VYRO_BOT = "vyrodrop_bot"
 KYNEX_BOT = "Kynex_miningbot"
 
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
 VICTORS_REF = "ref_A20AA96F18"
-VYRO_REF = "ref_myFjrqqE4WN_"
 KYNEX_REF = "6727787768"
 
 MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
-    "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"
+    "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"
 ]
 
 
@@ -327,21 +325,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
             print(f"  🏢 Victor's Company: Collected")
         await asyncio.sleep(0.5)
 
-        # 4. VyroDrop
-        vy_p = None if is_master else VYRO_REF
-        if vy_p:
-            try:
-                await cl.send_message(VYRO_BOT, f"/start {vy_p}")
-                await asyncio.sleep(0.4)
-            except Exception:
-                pass
-        tok = await extract_bot_webapp_token(cl, VYRO_BOT, start_param=vy_p, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
-        if tok:
-            tokens["vyro_init_data"] = tok
-            print(f"  💧 VyroDrop: Collected")
-        await asyncio.sleep(0.5)
-
-        # 5. Kynex Network (@Kynex_miningbot)
+        # 4. Kynex Network (@Kynex_miningbot)
         ky_p = None if is_master else KYNEX_REF
         tok = await extract_bot_webapp_token(cl, KYNEX_BOT, start_param=ky_p, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
         if tok:

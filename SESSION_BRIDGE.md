@@ -15,19 +15,18 @@
 * **Architecture**: 100% Cloud-First Autonomous Telegram Mini-App Mining & Multi-Chain Wallet Fleet.
 * **Master System Navigation Hub**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for the universal cheat sheet, credential index, route map, and navigation hub.
 * **Accounts**: **Dynamic Scaling Fleet Accounts** (1 Master Account + Static Worker Accounts + Elastic Expansion Nodes) farming concurrently without hardcoded limits. Dynamically derived from `accounts.json` and Upstash Redis `fleet:tokens:*`.
-* **Unified Auto-Farming Architecture**: All 9 active bot connectors share a unified, modular execution engine across cloud infrastructure, parameterized cleanly across bot identities and account contexts.
+* **Unified Auto-Farming Architecture**: All 8 active bot connectors share a unified, modular execution engine across cloud infrastructure, parameterized cleanly across bot identities and account contexts.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
-* **9 Active Legitimate Fleet Bots (Strict 9-Bot Integrity)**:
+* **8 Active Legitimate Fleet Bots (Strict 8-Bot Integrity)**:
   1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.
   2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`) — Cloud hash compounding, balance tracking, automatic claim loop.
   3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`) — HumanPass compounding, deep mining, wallet binding & Level 1 Miner hire.
-  4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`) — Autonomous 0.05 VYRO/h Cloud Solver, TonConnect 2.0 wallet binding & mining start.
-  5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`) — 15-Min Energy Sweep & node farming.
-  6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`) — 30-Day JWT Session Mining & dynamic social tasks.
-  7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`) — 6-Hour Production, slot spins, ad rolls & team commissions.
-  8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`) — Daily Streaks, farming boost & reward sweeps.
-  9. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`) — Egg production, basic hen flock expansion, auto-captcha solving, daily streak & referral commission claims.
-  *(Defunct bots Astra Airdrop, LeafEarn, PumpkinEarn, Stones, AI Lab, UltraWallet, TRX Power permanently purged).*
+  4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`) — 15-Min Energy Sweep & node farming.
+  5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`) — 30-Day JWT Session Mining & dynamic social tasks.
+  6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`) — 6-Hour Production, slot spins, ad rolls & team commissions.
+  7. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`) — Daily Streaks, farming boost & reward sweeps.
+  8. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`) — Egg production, basic hen flock expansion, auto-captcha solving, daily streak & referral commission claims.
+  *(Defunct bots VyroDrop, Astra Airdrop, LeafEarn, PumpkinEarn, Stones, AI Lab, UltraWallet, TRX Power permanently purged).*
 
 ---
 
@@ -97,7 +96,6 @@ Certain farming bots require a connected wallet before mining will unlock or pro
 | Bot Name | Wallet Network | API Handshake & Activation Flow |
 | :--- | :--- | :--- |
 | **Victor's Company** | TON / EVM | 1. Calls `POST /api/wallet/connect` with address.<br>2. Calls `POST /api/tasks/complete` with task ID `connect-wallet`.<br>3. Calls `POST /api/levels/unlock` for level 1 to hire Level 1 Miner. |
-| **VyroDrop** | TON | 1. Signs or simulates TonConnect 2.0 challenge/proof.<br>2. Verifies wallet via `POST /api/auth/verify-wallet`.<br>3. Activates mining loop via `POST /api/mining/start`. |
 | **MRG Miner** | TON | Binds target TON wallet address during onboarding handshake for automated earnings. |
 | **ATF Miner** | TON | Syncs TON wallet to `atfminers.asloni.online/miner/index.php?action=sync_wallet`. |
 | **Kynex Network** | TON | Synchronizes account state via Firebase Auth & RTDB profile onboarding. |

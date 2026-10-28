@@ -5,7 +5,6 @@ Executes the full 4-bot referral binding pipeline via login_account.bind_referra
 1. MRG Miner (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
 2. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768 + WebApp login + sync TON wallet + claim
 3. Victor's Company (@VictorsCompanybot) -> /start ref_A20AA96F18 + WebApp login
-4. VyroDrop (@vyrodrop_bot) -> /start ref_myFjrqqE4WN_ + WebApp bootstrap
 """
 
 import asyncio

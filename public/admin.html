@@ -1607,7 +1607,6 @@ function App() {
             { name: "MRG Miner", key: "mrg", chain: "TON", icon: "⚡" },
             { name: "ATF Miner", key: "atf", chain: "TON", icon: "🪙" },
             { name: "Victor's Co", key: "victors", chain: "TON", icon: "🏢" },
-            { name: "VyroDrop", key: "vyro", chain: "TON", icon: "💧" },
             { name: "Kynex Net", key: "kynex", chain: "KNX", icon: "💎" },
             { name: "DiggoMiner", key: "diggo", chain: "DGO", icon: "⛏️" },
             { name: "PepeGram", key: "pepegram", chain: "TON", icon: "🐸" },
@@ -1714,7 +1713,7 @@ function App() {
               )
             ),
             React.createElement("div", { className: "flex flex-wrap gap-1 text-[8px] font-mono font-medium text-center" },
-              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex", "⛏️ Diggo", "🐸 Pepe", "🤖 AdxEarn", "🐔 Chicken"].map((botName, bIdx) => React.createElement("div", {
+              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💎 Kynex", "⛏️ Diggo", "🐸 Pepe", "🤖 AdxEarn", "🐔 Chicken"].map((botName, bIdx) => React.createElement("div", {
                 key: bIdx,
                 className: `rounded px-1.5 py-0.5 border ${subCardBg} text-slate-400 truncate`
               }, botName))
@@ -1819,7 +1818,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
               React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, `TON Blockchain (${fleet.length} Accounts Bound)`),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land")
             )
           ),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, `${fleet.length}/${fleet.length} Bound`)
@@ -2264,13 +2263,12 @@ function App() {
               )
             ),
             React.createElement("div", { className: "space-y-1.5" },
-              React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block" }, "Active Mining Pools (9/9)"),
-              React.createElement("div", { className: "grid grid-cols-3 gap-1 text-[8px] font-mono" },
+              React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block" }, "Active Mining Pools (8/8)"),
+              React.createElement("div", { className: "grid grid-cols-4 gap-1 text-[8px] font-mono" },
                 [
                   { name: "⚡ MRG", key: "mrg" },
                   { name: "🪙 ATF", key: "atf" },
                   { name: "🏢 Victor", key: "victors" },
-                  { name: "💧 Vyro", key: "vyro" },
                   { name: "💎 Kynex", key: "kynex" },
                   { name: "⛏️ Diggo", key: "diggo" },
                   { name: "🐸 PepeGram", key: "pepegram" },

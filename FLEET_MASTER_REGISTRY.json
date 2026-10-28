@@ -239,11 +239,6 @@
       "policy": "GameFi continuous revenue, Cloudflare Turnstile humanPass, recruit bonus compounding"
     },
     {
-      "name": "VyroDrop",
-      "bot": "vyrodrop_bot",
-      "policy": "DEX liquidity speed miner, TonConnect 2.0 signed proof, mining session cycles"
-    },
-    {
       "name": "Kynex Network",
       "bot": "Kynex_miningbot",
       "policy": "Cloud Functions callable mining, energy cycles, daily checkin, and social tasks"

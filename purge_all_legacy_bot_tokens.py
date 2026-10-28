@@ -16,11 +16,11 @@ ONLY THE 8 LEGITIMATE FLEET BOTS ARE PRESERVED:
   - mrg_init_data
   - atf_init_data
   - victors_init_data
-  - vyro_init_data
   - kynex_init_data
   - pepegram_init_data
   - adxearn_init_data
   - diggo_init_data
+  - chickenland_init_data
   (+ non-bot metadata: account_id, name, synced_at, updated_at, username, phone, uid)
 """
 
@@ -28,6 +28,7 @@ import os
 import sys
 import json
 import time
+from typing import Any
 import urllib.request
 import logging
 
@@ -74,15 +75,15 @@ ALLOWED_KEYS = {
     "mrg_init_data",
     "atf_init_data",
     "victors_init_data",
-    "vyro_init_data",
     "kynex_init_data",
     "pepegram_init_data",
     "adxearn_init_data",
-    "diggo_init_data"
+    "diggo_init_data",
+    "chickenland_init_data"
 }
 
 PURGED_BOT_NAMES = [
-    "stones", "ailab", "ultrawallet", "finvora", "ainovum", "tensor",
+    "vyro", "vyrodrop", "stones", "ailab", "ultrawallet", "finvora", "ainovum", "tensor",
     "tontrader", "tac", "usdtquad", "apx", "ominix", "art", "trxpower",
     "turbogram", "mininggram"
 ]

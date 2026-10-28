@@ -2,7 +2,7 @@ with open('public_admin/admin.html', 'r') as f:
     text = f.read()
 
 # Replace bot names emojis
-text = text.replace('["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex"]', '["MRG Pool", "ATF Farm", "Victor Corp", "VyroDrop", "Kynex Net"]')
+text = text.replace('["⚡ MRG", "🪙 ATF", "🏢 Victor", "💎 Kynex"]', '["MRG Pool", "ATF Farm", "Victor Corp", "Kynex Net"]')
 
 # Replace add modal emoji
 text = text.replace('React.createElement("span", { className: "w-8 h-8 rounded-xl bg-blue-500/20 text-cyan-400 flex items-center justify-center text-sm font-black border border-blue-500/30" }, "➕")', 'React.createElement("span", { className: "w-8 h-8 rounded-xl bg-blue-500/20 text-cyan-400 flex items-center justify-center border border-blue-500/30" }, React.createElement(Icon, { name: "plus", className: "w-4 h-4" }))')

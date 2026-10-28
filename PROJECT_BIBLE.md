@@ -42,7 +42,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 7. **🌐 Elastic Fleet Scaling & Zero Hardcoding**:
    - **Never hardcode 20 accounts or static lengths**: Accounts can increase or decrease dynamically. All scripts, queries, rosters, and UIs must derive fleet size dynamically via `len(accounts)`, `fleet.length`, `accounts.json`, and Upstash Redis `fleet:tokens:*` keys.
 8. **🤖 Unified Auto-Farming Engine Architecture**:
-   - The auto farming engine (MRG, ATF, Victor's Company, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land) is a unified, modular execution core. Both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) leverage identical reliable bot connectors, cleanly distinguished solely by bot token and chat destination.
+   - The auto farming engine (MRG, ATF, Victor's Company, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land) is a unified, modular execution core. Both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) leverage identical reliable bot connectors, cleanly distinguished solely by bot token and chat destination.
 6. **🔗 Dual-Layer Referral Binding Architecture & Silent Farming**:
    - **Routine Silent Farming**: All 20 fleet accounts execute 24/7 autonomous farming exclusively through **Telegram Mini App REST APIs** (authenticating with cryptographically signed `tgWebAppData` extracted via `RequestAppWebViewRequest`). Routine bot chats remain 100% silent without chat clutter.
    - **Dual-Layer Initial Referral Binding**: To guarantee 100% recruit-to-master attribution across diverse bot backends, initial onboarding executes a synchronized two-layer protocol:
@@ -66,7 +66,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - The system **ONLY creates new wallets for genuinely brand-new accounts**, NEVER for old or existing accounts.
    - When an account logs in or reconnects, the system checks `FLEET_STATIC_REGISTRY`, chain-specific JSON vaults (`fleet_*_wallets.json`), and `accounts.json` to 100% preserve existing authentic wallets and private keys with zero regeneration.
    - Brand-new accounts generate dedicated 5-chain non-custodial suites (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) and automatically archive all secrets across `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` (local master secrets vault, strictly gitignored), `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `public_admin/fleet_wallets_data.json`, `fleet_*_wallets.json`, `accounts.json`, and Upstash Redis.
-   - Farming bots requiring wallet connections (Victor's Company, VyroDrop, MRG, ATF) automatically bind authentic wallets and initiate mining upon onboarding.
+   - Farming bots requiring wallet connections (Victor's Company, MRG, ATF) automatically bind authentic wallets and initiate mining upon onboarding.
 10. **🤖 Strict Separation of Bot Ecosystems, Channels & Admin Dashboards ("Zero Ecosystem Mixing")**:
    - **Independent Bot Ecosystems**:
      * **Admin Bot (`@myagyai`, ID `8858823950`)**: Reserved strictly for administrators. Orchestrates 20 MTProto fleet accounts, 8-pool mining passes, node failover, sentinel monitoring, and disaster recovery archives. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
@@ -82,7 +82,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - **State & Database Isolation**:
      * Namespace separation in Upstash Redis, Supabase, and Turso LibSQL: `fleet:*` and `accounts.json` strictly for Admin Bot and 20 fleet accounts; `ub_*`, `user:*`, `points:*`, and Turso LibSQL tables `user_accounts` & `user_wallets` strictly for User Bot.
 11. **📱 Authentic User Account Onboarding (1-Tap Device Link, QR Login & Phone SMS OTP)**:
-    - **Authentic Cryptographic Device Pairing**: Third-party Telegram mini apps (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Pepe, Adx) require cryptographic HMAC-SHA256 signatures (`initData`) or MTProto session strings.
+    - **Authentic Cryptographic Device Pairing**: Third-party Telegram mini apps (MRG, ATF, Victor's, Kynex, Diggo, Pepe, Adx, Chicken) require cryptographic HMAC-SHA256 signatures (`initData`) or MTProto session strings.
     - **1-Tap Telegram Device Pairing & QR Modal**: User Bot (`@AAAPREMIUMAPPSbot`) and Mini App (`/miner`) provide authentic 1-Tap QR Login (`tg://login?token=...` via Render Node 2 `/api/account/login/qr-start` with `is_user_bot: true`). The Mini App displays an animated laser scanner (`.scan-laser`), corner reticles, 120s countdown timer with auto-refresh, and a direct `⚡ Link Device in Telegram Now` button that triggers native Telegram device authorization.
     - **Phone SMS OTP + 2FA Stepper**: 3-step progress stepper (`[1. Phone] ── [2. Code] ── [3. 2FA Cloud Pass]`) with country code quick helpers (`+880`, `+1`, `+91`, `+44`), large spaced 5-digit verification code input, and cloud 2FA password handling. Sessions are stored isolated in Turso LibSQL table `user_accounts` and Upstash `ub_user:<uid>:accounts`.
     - **Dynamic Slot Allocation Meter**: Visual slot meter (`updateSlotsWidget()`) showing active, available, and locked slots (`Connected Accounts: X / Y Slots Active`) across `#tab-connect` and `#tab-accounts`.
@@ -105,31 +105,30 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Auto-Lock & Inactivity Guards**: Instant 1-tap `🔒 Lock` button, 15-minute inactivity auto-lock, and 5-minute background tab auto-lock via Page Visibility API (`document.hidden`).
     - **Desktop Ergonomics & Sound**: Physical keyboard listeners (`0-9`, Backspace, Escape), dual auth mode switch, zero-asset Web Audio API synthesizer (`playSound()`), and Telegram haptics.
     - **Master Directory Reference**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for complete technical architecture and cheat sheet.
-15. **🎯 Zero Fake Data & Ground-Truth 9-Bot Policy ("Strict 9-Bot Integrity")**:
-    - The farming fleet exclusively operates across and monitors the **9 active legitimate bots**:
+15. **🎯 Zero Fake Data & Ground-Truth 8-Bot Policy ("Strict 8-Bot Integrity")**:
+    - The farming fleet exclusively operates across and monitors the **8 active legitimate bots**:
       1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
       2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
       3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
-      4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`)
-      5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
-      6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
-      7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
-      8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
-      9. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
-    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct bots (`Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AiLab`, `UltrawalletTrade`, `TRX Power`, `Finvora`, `Gold Keepers`, `EarnCraft`, `Art Airdrop`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. (Astra Airdrop backend at `bcbwqnkfyrpjhctesvnp.supabase.co` is verified restricted with HTTP 402 exceed_egress_quota by third-party developer). Active mining pools comprise the 9 legitimate bots: **MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, and Chicken Land**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
-    - **Cloudflare Edge 9-Bot Matrix Unification**: `ALLOWED_FLEET_BOTS` across Cloudflare Workers encompasses all 9 active protocols (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `pepegram`, `adxearn`, `diggo`, `chickenland`). `sanitizeFleetTokensObject` preserves `diggo_jwt` and `victors_human_pass` alongside all WebApp initData hashes, ensuring 100% of accounts are farmed across all active pools during 15-minute cron triggers (`*/15 * * * *`).
+      4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
+      5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
+      6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
+      7. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
+      8. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
+    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct or purged bots (`VyroDrop`, `Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AiLab`, `UltrawalletTrade`, `TRX Power`, `Finvora`, `Gold Keepers`, `EarnCraft`, `Art Airdrop`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Active mining pools comprise the 8 legitimate bots: **MRG Miner, ATF Miner, Victor's Company, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, and Chicken Land**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+    - **Cloudflare Edge 8-Bot Matrix Unification**: `ALLOWED_FLEET_BOTS` across Cloudflare Workers encompasses all 8 active protocols (`mrg`, `atf`, `victors`, `kynex`, `pepegram`, `adxearn`, `diggo`, `chickenland`). `sanitizeFleetTokensObject` preserves `diggo_jwt` and `victors_human_pass` alongside all WebApp initData hashes, ensuring 100% of accounts are farmed across all active pools during 15-minute cron triggers (`*/15 * * * *`).
 16. **🔄 24-Hour WebApp Token Lifetime & Autonomous Cloud Refresher**:
     - **Token Lifespan**: Telegram WebApp `initData` cryptographically expires after 24 hours (`auth_date` validation). Never allow tokens to age past 18 hours.
     - **100% Cloud Token Refresher**: Token collection runs on Render Frankfurt Node 2 (`/collect-tokens`), extracting fresh WebApp hashes via MTProto and simultaneously synchronizing both `fleet:tokens:{uid}` and `miniapp_tokens` in Upstash Redis and Cloudflare KV.
 17. **🌐 Strict Multi-Repository Privacy & Runner Architecture**:
     - **Master Repositories (Strictly 100% PRIVATE)**: `AAA0002/ATL` and `AAA0002/my-agy-fleet-standby` contain core architecture, configurations, and internal scripts. They MUST remain private at all times.
     - **Public Solver Runner (Unlimited Free Minutes)**: `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing ZERO plaintext secrets, zero private keys, and zero sessions. It runs headless Patchright Chromium on GitHub Actions to solve Cloudflare Turnstile challenges and execute multi-bot farming with unlimited free minutes. All runtime secrets are delivered via GitHub Encrypted Secrets (`secrets.UPSTASH_TOKEN`, etc.).
-    - **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`, `vyro:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
+    - **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
 18. **⚡ Two-Phase Decoupled Solver Architecture (`mrg_turnstile_solver.py`)**:
-    - **Phase 1: Rapid REST Pre-Flight & Instant Harvesting**: Audits all 20 accounts across Victor's Company, VyroDrop, ATF Miner, and MRG Miner via sub-second REST endpoints. Accounts with active passes (`victors:pass:{uid}`, connected Vyro wallets, active ATF sessions) have their rewards, checkins, shift claims, and tasks processed instantly via REST without touching the browser.
+    - **Phase 1: Rapid REST Pre-Flight & Instant Harvesting**: Audits all accounts across Victor's Company, ATF Miner, and MRG Miner via sub-second REST endpoints. Accounts with active passes (`victors:pass:{uid}`, active ATF sessions) have their rewards, checkins, shift claims, and tasks processed instantly via REST without touching the browser.
     - **Phase 2: Targeted Browser Solving**: Decoupled Chromium from the main loop; launches Patchright Chromium stealth strictly for the subset of accounts that genuinely require Turnstile passes or onboarding challenges. If zero accounts need solving, the browser is completely bypassed, reducing execution time from 35+ minutes to ~2 minutes. Turnstile appearance is set to `'always'` with recursive shadow DOM traversal and authentic CDP hardware mouse clicks (`Input.dispatchMouseEvent`) across all runners, ensuring Cloudflare iframes render and solve reliably in headless environments.
     - **Phase 3 & 4: Deep Mine Arcade 10-Run Sweep, Kynex Farm & Energy Boost**: Automates Victor's Company Deep Mine arcade minigame (`victors_arcade_solver.py`) across all available daily runs (`max_runs=10` or dynamic `playsLeft` down to 0) with 0% bust hazard guarantee on safe rows 0-1 yielding +15 to +28 VIC net profit per run. Automates Kynex Network farming (`kynex_miner.py`) with full multi-ad cycling across all 5 networks in `tasksAds.json` to complete daily limits (1, 2, 5, 5, 10 ads = 23 total ads) to unlock full KNX payouts, Daily Energy Ad Task (+12h Energy / 43,200s), Prime Boost (+5h Energy / 18,000s), Advance Boost (+7h Energy / 25,200s with 12s rate-limit delay and 429 backoff retry), Milestone Boost, Daily Invite Bonus, Super Power Boost claim (+100% mining for 50h), and mining session restarts so mining time never stops at "00:00:00" and energy remains full 24h+.
-    - **Fleet-Wide Side-Task Expansion**: VyroDrop sweeps up to 50 tasks (`/api/tasks?limit=50`). Chicken Land dynamically discovers and claims all `main`, `daily`, and `custom` partner missions via `/api/tasks`. DiggoMiner cycles 4x daily ads. AdxEarn AI parallelizes dynamic tasks, 4 ad networks, and CPA offers.
+    - **Fleet-Wide Side-Task Expansion**: Chicken Land dynamically discovers and claims all `main`, `daily`, and `custom` partner missions via `/api/tasks`. DiggoMiner cycles 4x daily ads. AdxEarn AI parallelizes dynamic tasks, 4 ad networks, and CPA offers.
     - **DiggoMiner 4x Daily Ad Loop**: Cycles through all 4 daily rewarded ad slots per 24 hours (`/api/adsgram/start` + `/api/adsgram/complete` + `/api/tasks/claim`), claiming +10 DIGGO per ad.
 19. **🐔 Chicken Land Sub-Second Promo Code Sniper & Autonomous Compounding (`chickenland_promo_sniper.py`)**:
     - **Real-Time Channel Ingestion**: Programmatically scrapes `@ChickenLandCodes` (`https://t.me/s/ChickenLandCodes`) to detect drops of limited-user promo codes. Filters exhausted/claimed codes via DOM state and tracks history in Upstash Redis (`chickenland:seen_codes` / `chickenland:claimed_codes`).
@@ -304,7 +303,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       * `/llama <prompt>`: Meta Llama 3.2 rapid edge copilot.
       * `/image <prompt>` / `/draw <prompt>`: Stable Diffusion XL binary photo generator with direct Telegram photo upload.
       * `/ai <prompt>`: Native Cloudflare Workers AI edge cascade (`@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`, `@cf/meta/llama-3.2-3b-instruct`). 100% Free, zero external API keys.
-      * `/mrg`, `/atf`, `/victors`, `/vyro`, `/kynex`, `/diggo`, `/pepe`, `/adx`, `/chicken`: Dedicated telemetry & command centers for all 9 legitimate active bots.
+      * `/mrg`, `/atf`, `/victors`, `/kynex`, `/diggo`, `/pepe`, `/adx`, `/chicken`: Dedicated telemetry & command centers for all 8 legitimate active bots.
       * `/treasury`, `/payouts`: Real-time on-chain Binance Master Vault (BEP-20) and TON Master Vault accounting & live ledger.
       * `/models`: Directory of active edge AI models.
     - **Executive Fleet Operations Console (`/admin`)**:

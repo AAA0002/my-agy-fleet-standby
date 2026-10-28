@@ -154,7 +154,6 @@ const POOLS_LIST = [
   { name: "MRG Miner", key: "mrg", icon: "⚡", cadence: "Hashrate Active", username: "mrgminerbot", url: "https://t.me/mrgminerbot" },
   { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming", username: "atfminerbot", url: "https://t.me/atfminerbot" },
   { name: "Victor's Company", key: "victors", icon: "🏢", cadence: "Mining Active", username: "VictorsCompanybot", url: "https://t.me/VictorsCompanybot" },
-  { name: "VyroDrop", key: "vyro", icon: "💧", cadence: "High-Yield", username: "VyroDropBot", url: "https://t.me/VyroDropBot" },
   { name: "Kynex Network", key: "kynex", icon: "🌐", cadence: "12h Energy Reserve", username: "kynexnetworkbot", url: "https://t.me/kynexnetworkbot" },
   { name: "DiggoMiner", key: "diggo", icon: "⛏️", cadence: "30d JWT Mining", username: "DiggoMinerBot", url: "https://t.me/DiggoMinerBot" },
   { name: "Astra Airdrop", key: "astra", icon: "⭐", cadence: "Supabase Boost", username: "astra_airdrop_bot", url: "https://t.me/astra_airdrop_bot" },

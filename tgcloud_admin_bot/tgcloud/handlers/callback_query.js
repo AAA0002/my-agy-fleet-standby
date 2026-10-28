@@ -136,7 +136,7 @@ export default async function (callbackQuery, ctx) {
     await replyOrEdit(chatId, messageId, `⚡ *Farming Node #${idx < 10 ? '0' + idx : idx} (${acc.name})...*\n\nDispatched to Render Standby cloud cluster...`, null);
     await requestBackend(`/api/farm/account/${uid}`, 'POST', {}).catch(() => {});
 
-    await replyOrEdit(chatId, messageId, `✅ *Node #${idx < 10 ? '0' + idx : idx} Mining Cycle Dispatched!* 🟢\n\nActive bots farmed: MRG, ATF, Victor's, VyroDrop, Kynex Network.\n100% cloud execution, 0% phone load.`, {
+    await replyOrEdit(chatId, messageId, `✅ *Node #${idx < 10 ? '0' + idx : idx} Mining Cycle Dispatched!* 🟢\n\nActive bots farmed: MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land.\n100% cloud execution, 0% phone load.`, {
       inline_keyboard: [
         [{ text: `📱 Back to Node #${idx < 10 ? '0' + idx : idx}`, callback_data: `btn_account_view_${idx}` }],
         [{ text: "📱 Fleet Matrix", callback_data: "btn_fleet_accounts" }],
@@ -573,19 +573,19 @@ Please reply directly with the full phone number including international country
     
     const banner = 
 `┌──────────────────────────────┐
-│  ⚡ *AUTONOMOUS 9-POOL FARM* │
+│  ⚡ *AUTONOMOUS 8-POOL FARM* │
 └──────────────────────────────┘
 
-🚀 Dispatched cloud harvest across all 20 nodes & 9 mining pools:
+🚀 Dispatched cloud harvest across all 21 nodes & 8 mining pools:
 
 ◈ ⚡ *MRG Miner*         → Turnstile Pass Verification & Harvest
 ◈ 🪙 *ATF Miner*         → Cloud Captcha & Mining Cycle
 ◈ 🏢 *Victor's Company*  → Proof-of-Pass & Level Compounding
-◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
 ◈ 💎 *Kynex Network*     → Session Token Claim & Node Mining
 ◈ ⛏️ *DiggoMiner*        → 30-Day JWT Cached Session Claim
 ◈ 🐸 *PepeGram*          → 6h Hash Production Harvest
 ◈ 🤖 *AdxEarn AI*        → Rewarded Ads Farming Cycle
+◈ 🐔 *Chicken Land*      → Egg Harvest & Selling Cycle
 
 📡 *Cloud Architecture:* Render Node 2 (Frankfurt) • 3x Cloudflare Edge Mesh
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;

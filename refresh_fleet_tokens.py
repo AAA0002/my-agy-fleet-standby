@@ -47,8 +47,7 @@ CF_SECRET = os.getenv("CF_SECRET_KEY") or os.getenv("SECRET_KEY", "")
 REFERRALS = {
     "mrg": "ref_IRN1G3XD",
     "atf": PRIMARY_ID,
-    "victors": "ref_A20AA96F18",
-    "vyro": "ref_myFjrqqE4WN_"
+    "victors": "ref_A20AA96F18"
 }
 
 STATIC_BNB_WEBHOOKS = {
@@ -157,23 +156,6 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
                 print("    ✅ Victor's Company token OK")
         except Exception as e:
             print(f"    ⚠️ Victor's note: {e}")
-
-        # 4. VyroDrop (@vyrodrop_bot)
-        try:
-            bot_vy = await client.get_entity("vyrodrop_bot")
-            res_vy = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_vy,
-                bot=bot_vy,
-                platform="android",
-                url="https://vyro.run.place/",
-                start_param=REFERRALS["vyro"] if uid != PRIMARY_ID else None
-            ))
-            vy_init = extract_web_app_data(res_vy.url)
-            if vy_init:
-                account_tokens["vyro_init_data"] = vy_init
-                print("    ✅ VyroDrop token OK")
-        except Exception as e:
-            print(f"    ⚠️ VyroDrop note: {e}")
 
 
     finally:

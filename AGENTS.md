@@ -1,7 +1,7 @@
 # Antigravity Rules & Directives for AAA AUTO
 
 > 📖 **MANDATORY PROJECT REFERENCE**:
-> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [SESSION_BRIDGE.md](./SESSION_BRIDGE.md) and [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for complete instant handover context, full system architecture, 8 active legitimate bots (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI), 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
+> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [SESSION_BRIDGE.md](./SESSION_BRIDGE.md) and [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for complete instant handover context, full system architecture, 8 active legitimate bots (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
 
 ---
 
@@ -100,18 +100,17 @@
 
 ---
 
-## 8. 🎯 Zero Fake Data & Ground-Truth 9-Bot Policy ("Strict 9-Bot Integrity")
-- **The 9 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **9 active legitimate bots**:
+## 8. 🎯 Zero Fake Data & Ground-Truth 8-Bot Policy ("Strict 8-Bot Integrity")
+- **The 8 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **8 active legitimate bots**:
   1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
   2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
   3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
-  4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`)
-  5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
-  6. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
-  7. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
-  8. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
-  9. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
-- **Zero Fake / Zero Dead Bot Querying**: Truly defunct bots (`Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `Ainovum`, `TRX Power`, `Bitcoin Cloud`, `Tensor`, `Ton Trader`, `USDT QUAD`, `TAC`, `Ominix`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+  4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
+  5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
+  6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
+  7. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
+  8. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
+- **Zero Fake / Zero Dead Bot Querying**: Truly defunct or purged bots (`VyroDrop`, `Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `Ainovum`, `TRX Power`, `Bitcoin Cloud`, `Tensor`, `Ton Trader`, `USDT QUAD`, `TAC`, `Ominix`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
 
 ---
 
@@ -124,6 +123,6 @@
 ## 10. 🌐 Strict Multi-Repository Privacy & Runner Architecture
 - **Master Repositories (Strictly 100% PRIVATE)**: `AAA0002/ATL` and `AAA0002/my-agy-fleet-standby` contain core architecture, configurations, and internal scripts. They MUST remain private at all times.
 - **Public Solver Runner (Unlimited Free Minutes)**: `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing ZERO plaintext secrets, zero private keys, and zero sessions. It runs headless Patchright Chromium on GitHub Actions to solve Cloudflare Turnstile challenges and execute multi-bot farming with unlimited free minutes. All runtime secrets are delivered via GitHub Encrypted Secrets (`secrets.UPSTASH_TOKEN`, etc.).
-- **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`, `vyro:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
+- **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
 
 

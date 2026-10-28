@@ -18,7 +18,6 @@ CHANNELS = [
     "mrgminer",
     "mrgfun",
     "VictorsCompany",
-    "vyrodrop",
     "atfminers"
 ]
 

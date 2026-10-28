@@ -2,7 +2,32 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🎯 Fleet Multi-Bot Referral Forensic Audit, AdxEarn Milestone Engine & Attribution Hardening (October 28, 2026)**:
+- **🛑 Complete Permanent Purge & Decommissioning of VyroDrop across Fleet & Edge Mesh (October 28, 2026)**:
+  - **Ground-Truth 8-Bot Fleet Policy Enacted**:
+    * VyroDrop (`@vyrodrop_bot` / `https://vyro.run.place/`) permanently decommissioned and purged following executive directive.
+    * Active fleet pools consolidated to **8 authentic legitimate bots**:
+      1. ⚡ MRG Miner (`@mrgtoken_bot`)
+      2. 🪙 ATF Miner (`@atfminers_bot`)
+      3. 🏢 Victor's Company (`@VictorsCompanybot`)
+      4. 🌐 Kynex Network (`@Kynex_miningbot`)
+      5. ⛏️ DiggoMiner (`@Diggominer_bot`)
+      6. 🐸 PepeGram (`@Pepe_gram_bot`)
+      7. 🤖 AdxEarn AI (`@AdxEarnAibot`)
+      8. 🐔 Chicken Land (`@ChickenLandBot`)
+    * `vyrodrop_bot` added to `FLEET_BANNED_SCAMMERS` in `app.py` to automatically block and delete dialogs if it contacts any fleet account.
+  - **Comprehensive Codebase & Backend Purge**:
+    * **`app.py`**: Completely purged `_farm_vyro()`, `vyro` cooldown intervals, routine arrays, bot aliases, study bot mappings, telemetry summary cards, mute chat lists, and sponsor channel dependencies. Updated `ALL_9_BOT_KEYS` and status cards to 8 bots.
+    * **`deploy_both_cf_workers.py`**: Purged all VyroDrop routines (`farmVyro`), wallet challenge bindings, `/vyro` commands, inline buttons, and pool counters across Cloudflare Workers.
+    * **`mrg_turnstile_solver.py`**: Removed `solve_vyro_wallet_onboarding()`, `check_and_farm_vyro_rest()`, `save_vyro_pass_to_upstash()`, and Phase A browser solve loop.
+    * **Helper Scripts**: Purged all VyroDrop token extractions, referral handlers, and wallet bindings from `extract_all_missing_fleet_tokens.py`, `refresh_cloud_tokens.py`, `refresh_fleet_tokens.py`, `login_account.py`, `fleet_wallet_provisioner.py`, `daily_profit_reporter.py`, `commercial_user_isolation.py`, and `autonomous_cloud_agent.py`.
+  - **Frontends & Dashboards Sanitization**:
+    * `public/admin.html`, `public/user-admin.html`, `public/index.html`, `public/miner/index.html`, `public/app/index.html`, and `dashboard.html`: Removed VyroDrop cards, chips, badges, and metrics.
+    * Completely mirrored and synchronized updates across `public_admin/` and `public_ads/`.
+  - **Upstash Redis & Storage Sanitization**:
+    * Executed `purge_all_legacy_bot_tokens.py`: purged `vyro_init_data` from `miniapp_tokens` and all 21 account records.
+    * Verified 0 `vyro:*` keys remaining in Upstash Redis.
+  - **Documentation & Agent Rules Updated**:
+    * Updated `AGENTS.md`, `PROJECT_BIBLE.md`, `SESSION_BRIDGE.md`, and `CHANGELOG.md` reflecting strict 8-bot ground truth.
   - **Ground-Truth Forensic Referral Audit Across All 9 Bots**:
     * **Audit Target**: Master Account (`6727787768`, Arif Hossain) and newly onboarded fleet accounts #19 (`8937908003`, Adil H), #20 (`8609131528`, Asaduzzaman Sarker), #21 (`8669217201`, Aaaa201).
     * **ATF Miner (`@atfminers_bot`) — 100% Active & Confirmed**: Queried live bot notifications on Master account. Confirmed Telegram bot delivered official notifications: <i>"✅ A referral has been confirmed and is now Active! 👤 Name: AdilHassain / Asaduzzamansarkar / User 8669217201"</i>. All 3 accounts carry `referred_by: 6727787768`, `ref_success: 1`, and `wallet_verified: 1`. Successfully swept Master team wallet yield (`+0.0448 ATF`).

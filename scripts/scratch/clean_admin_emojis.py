@@ -48,7 +48,6 @@ text = text.replace(
 text = text.replace('{ name: "MRG Miner", chain: "TON", icon: "⚡" }', '{ name: "MRG Miner", chain: "TON", logo: "MRG" }')
 text = text.replace('{ name: "ATF Miner", chain: "TON", icon: "🪙" }', '{ name: "ATF Miner", chain: "TON", logo: "ATF" }')
 text = text.replace('{ name: "Victor\'s Co", chain: "TON", icon: "🏢" }', '{ name: "Victor\'s Co", chain: "TON", logo: "TON" }')
-text = text.replace('{ name: "VyroDrop", chain: "TON", icon: "💧" }', '{ name: "VyroDrop", chain: "TON", logo: "TON" }')
 text = text.replace('{ name: "Kynex Net", chain: "KNX", icon: "💎" }', '{ name: "Kynex Net", chain: "KNX", logo: "TON" }')
 text = text.replace(
     'React.createElement("span", { className: "text-sm" }, b.icon),',

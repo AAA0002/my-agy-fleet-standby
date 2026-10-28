@@ -116,7 +116,7 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
             print(f"❌ Error pushing {repo_path} to {repo}: {pe}")
 
 def push_app():
-    push_file(STANDBY_SRC, "app.py", "feat: 8-bot fleet auto-farming (MRG, ATF, Victors, Vyro, Kynex, Diggo, Pepe, Adx)")
+    push_file(STANDBY_SRC, "app.py", "feat: 8-bot fleet auto-farming (MRG, ATF, Victors, Kynex, Diggo, Pepe, Adx, Chicken)")
     kynex_file = os.path.join(BASE_DIR, "kynex_miner.py")
     if os.path.exists(kynex_file):
         push_file(kynex_file, "kynex_miner.py", "feat: Kynex Network cloud mining engine")

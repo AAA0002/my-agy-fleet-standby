@@ -6,16 +6,15 @@ COMPREHENSIVE MULTI-BOT FLEET SIDE-TASK HARVESTER & AUTOMATION ENGINE
 =============================================================================
 Sweeps and completes all available side-tasks, daily check-ins, social joins,
 cooldown missions, wallet verifications, and referral commission claims across
-all dynamic accounts in the fleet for all 9 legitimate bots:
-  1. MRG Miner (@mrg_miner_bot)
-  2. ATF Miner (@atf_miner_bot)
+all dynamic accounts in the fleet for all 8 legitimate bots:
+  1. MRG Miner (@mrgtoken_bot)
+  2. ATF Miner (@atfminers_bot)
   3. Victor's Company (@VictorsCompanybot)
-  4. VyroDrop (@vyrodrop_bot)
-  5. Kynex Network (@Kynex_miningbot)
-  6. PepeGram (@pepe_mine_bot)
-  7. AdxEarn AI (@AdxEarnAibot)
-  8. DiggoMiner (@diggominer_bot)
-  9. Chicken Land (@ChickenLandBot)
+  4. Kynex Network (@Kynex_miningbot)
+  5. PepeGram (@Pepe_gram_bot)
+  6. AdxEarn AI (@AdxEarnAibot)
+  7. DiggoMiner (@Diggominer_bot)
+  8. Chicken Land (@ChickenLandBot)
 
 Zero Phone Load (Rule 4): Runs once as a clean batch script in cloud/container,
 exits cleanly, and persists updated tokens to Upstash Redis and Cloudflare Edge.
@@ -857,85 +856,6 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
     return res
 
 
-async def sweep_vyro_tasks(session: aiohttp.ClientSession, uid: str, name: str, vy_init: str, acc: dict) -> Dict[str, Any]:
-    """Sweeps VyroDrop tasks, referral claims, and mining status."""
-    res = {"bot": "VyroDrop", "tasks_claimed": 0, "notes": [], "success": False}
-    if not vy_init:
-        res["notes"].append("no_init_data")
-        return res
-
-    vy_h = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-        "Authorization": f"tma {vy_init}",
-        "X-Vyro-UI-Contract": "claim-inactivity-v1",
-        "X-Vyro-Market-Balances": "2",
-        "X-Vyro-Dex": "1",
-        "Referer": "https://vyro.run.place/"
-    }
-
-    try:
-        # 1. Bootstrap
-        async with session.get("https://vyro.run.place/api/bootstrap", headers=vy_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-            if r.status != 200:
-                res["notes"].append(f"bootstrap_{r.status}")
-                return res
-            b_d = await r.json()
-
-        res["success"] = True
-        m_obj = b_d.get("miner", {})
-        res["level"] = m_obj.get("level", 1)
-        res["speed"] = m_obj.get("currentSpeed", 0)
-
-        # Balance from poolRaw (9 decimals nano-units)
-        b_raw = b_d.get("balances", {}).get("poolRaw", 0) or 0
-        res["balance"] = round(float(b_raw) / 1e9, 2)
-
-        # Mining state
-        min_state = b_d.get("mining", {})
-        res["mining_active"] = (min_state.get("status") == "ACTIVE")
-        if not res["mining_active"]:
-            try:
-                async with session.post("https://vyro.run.place/api/mining/start", json={"idempotencyKey": str(uuid.uuid4())}, headers=vy_h, timeout=aiohttp.ClientTimeout(total=6)) as sr:
-                    if sr.status in (200, 201):
-                        res["mining_active"] = True
-                        res["notes"].append("mining_started")
-            except Exception:
-                pass
-
-        # 2. Side Tasks
-        t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
-        async with session.get("https://vyro.run.place/api/tasks?limit=50", headers=t_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
-            if tr.status == 200:
-                t_d = await tr.json()
-                tasks = t_d.get("tasks", []) if isinstance(t_d, dict) else []
-                for t in tasks:
-                    if isinstance(t, dict) and t.get("id") and t.get("state") != "CLAIMED":
-                        tid = t["id"]
-                        await jitter(0.4, 0.8)
-                        async with session.post(f"https://vyro.run.place/api/tasks/{tid}/open", json={}, headers=t_headers) as o_r: pass
-                        await jitter(0.8, 1.4)
-                        async with session.post(f"https://vyro.run.place/api/tasks/{tid}/verify", json={}, headers=t_headers) as v_r:
-                            if v_r.status == 200:
-                                vd = await v_r.json()
-                                if vd.get("task", {}).get("canClaim"):
-                                    async with session.post(f"https://vyro.run.place/api/tasks/{tid}/claim", json={"idempotencyKey": str(uuid.uuid4())}, headers=t_headers) as c_r:
-                                        if c_r.status in (200, 201):
-                                            res["tasks_claimed"] += 1
-                                            res["notes"].append(f"task_{tid}")
-
-        # 3. Referral claims
-        await jitter(0.4, 0.8)
-        async with session.post("https://vyro.run.place/api/referrals/claim", json={"kind": "DIRECT", "idempotencyKey": str(uuid.uuid4())}, headers=vy_h) as dr:
-            if dr.status in (200, 201): res["notes"].append("direct_ref_claimed")
-        async with session.post("https://vyro.run.place/api/referrals/claim", json={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, headers=vy_h) as mr:
-            if mr.status in (200, 201): res["notes"].append("mining_ref_claimed")
-
-    except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
-
-    return res
-
-
 async def sweep_kynex_tasks(session: aiohttp.ClientSession, uid: str, name: str, ky_init: str, acc: dict) -> Dict[str, Any]:
     """Sweeps Kynex Network daily checkin, sponsor channels, and rewarded ads."""
     res = {"bot": "Kynex Network", "tasks_claimed": 0, "notes": [], "success": False}
@@ -1706,27 +1626,23 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         vic_res = await sweep_victors_tasks(session, uid, name, acc_toks.get("victors_init_data", ""), acc)
         account_report["results"]["victors"] = vic_res
 
-        # 4. VyroDrop
-        vyro_res = await sweep_vyro_tasks(session, uid, name, acc_toks.get("vyro_init_data", ""), acc)
-        account_report["results"]["vyro"] = vyro_res
-
-        # 5. Kynex Network
+        # 4. Kynex Network
         kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
         account_report["results"]["kynex"] = kynex_res
 
-        # 6. PepeGram
+        # 5. PepeGram
         pepe_res = await sweep_pepegram_tasks(session, uid, name, acc_toks.get("pepegram_init_data", ""), acc)
         account_report["results"]["pepegram"] = pepe_res
 
-        # 7. AdxEarn AI
+        # 6. AdxEarn AI
         adx_res = await sweep_adxearn_tasks(session, uid, name, acc_toks.get("adxearn_init_data", ""), acc)
         account_report["results"]["adxearn"] = adx_res
 
-        # 8. DiggoMiner
+        # 7. DiggoMiner
         diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), {**acc, **acc_toks})
         account_report["results"]["diggo"] = diggo_res
 
-        # 9. Chicken Land
+        # 8. Chicken Land
         chicken_res = await sweep_chickenland_tasks(session, uid, name, acc_toks.get("chickenland_init_data", ""), acc)
         account_report["results"]["chickenland"] = chicken_res
 
@@ -1740,7 +1656,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info(f"🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
+    logger.info(f"🎯 STARTING COMPLETE 8-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -1756,7 +1672,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 80)
-        logger.info(f"📊 9-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
+        logger.info(f"📊 8-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
         logger.info("=" * 80)
         total_tasks = 0
         for rep in reports:
@@ -1765,15 +1681,14 @@ async def main():
             mrg_cl = res.get("mrg", {}).get("tasks_claimed", 0)
             atf_cl = res.get("atf", {}).get("tasks_claimed", 0)
             vic_cl = res.get("victors", {}).get("tasks_claimed", 0)
-            vyr_cl = res.get("vyro", {}).get("tasks_claimed", 0)
             kyn_cl = res.get("kynex", {}).get("tasks_claimed", 0)
             pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
             adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
             dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
             chk_cl = res.get("chickenland", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl
+            acc_total = mrg_cl + atf_cl + vic_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} | Tot: {acc_total}")
 
         logger.info("=" * 80)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
@@ -1785,7 +1700,6 @@ async def main():
         mrg_tot = sum(r["results"].get("mrg", {}).get("tasks_claimed", 0) for r in reports)
         atf_tot = sum(r["results"].get("atf", {}).get("tasks_claimed", 0) for r in reports)
         vic_tot = sum(r["results"].get("victors", {}).get("tasks_claimed", 0) for r in reports)
-        vyr_tot = sum(r["results"].get("vyro", {}).get("tasks_claimed", 0) for r in reports)
         kyn_tot = sum(r["results"].get("kynex", {}).get("tasks_claimed", 0) for r in reports)
         pep_tot = sum(r["results"].get("pepegram", {}).get("tasks_claimed", 0) for r in reports)
         adx_tot = sum(r["results"].get("adxearn", {}).get("tasks_claimed", 0) for r in reports)
@@ -1795,10 +1709,10 @@ async def main():
 
         if bot_token and notif_channel:
             short_card = (
-                f"⚡ <b>Fleet 9-Bot Auto-Harvest Complete</b>\n"
+                f"⚡ <b>Fleet 8-Bot Auto-Harvest Complete</b>\n"
                 f"• <b>Accounts Farmed:</b> <code>{len(ACCOUNTS)}/{len(ACCOUNTS)} Online</code>\n"
                 f"• <b>Tasks & Rewards Claimed:</b> <code>{total_tasks} Total Claimed</code>\n"
-                f"• <b>Pools Claimed (9/9):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • VYRO:{vyr_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot}</code>\n"
+                f"• <b>Pools Claimed (8/8):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot}</code>\n"
                 f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>Render Cloud Mesh</code>\n"
                 f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
             )

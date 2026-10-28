@@ -466,36 +466,7 @@
           </div>
         </div>
 
-        <!-- Protocol 4: VyroDrop -->
-        <div class="card-glass-interactive p-3 rounded-2xl flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 font-black">
-              💧
-            </div>
-            <div class="min-w-0 text-left">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-xs text-white">VyroDrop</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">12h cycle</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-teal-500/20 text-teal-300 rounded font-bold">Earn VYRO</span>
-              </div>
-              <div class="text-[10px] text-slate-400 truncate mt-0.5">High-Yield TON Mining • Task Automation</div>
-              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-vyro-count">0 Connected Accounts</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button id="btn-harvest-vyro" onclick="harvestSingleBot('vyro')" class="px-2 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest VyroDrop">
-              ⚡
-            </button>
-            <button onclick="openConnectTab('vyro')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
-              Connect
-            </button>
-            <a href="https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            </a>
-          </div>
-        </div>
-
-        <!-- Protocol 5: Kynex Network -->
+        <!-- Protocol 4: Kynex Network -->
         <div class="card-glass-interactive p-3 rounded-2xl flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
             <div class="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 font-black">
@@ -705,9 +676,6 @@
             <button onclick="selectMiningPool('victors')" data-pool="victors" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               🏢 Victor's
             </button>
-            <button onclick="selectMiningPool('vyro')" data-pool="vyro" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
-              💧 Vyro
-            </button>
             <button onclick="selectMiningPool('kynex')" data-pool="kynex" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               🌐 Kynex
             </button>
@@ -799,7 +767,7 @@
           </summary>
           <div class="pt-2 space-y-2">
             <p class="text-[10px] text-slate-400 leading-relaxed">
-              If you copied a WebApp URL or initData from a mining bot (e.g. MRG, ATF, Vyro), paste it below. The system will auto-detect the bot.
+              If you copied a WebApp URL or initData from a mining bot (e.g. MRG, ATF, Victor's), paste it below. The system will auto-detect the bot.
             </p>
             <div class="flex items-center gap-2">
               <input type="text" id="input-manual-session" placeholder="https://...#tgWebAppData=... or query_id=..." class="flex-1 p-2 rounded-xl bg-black/60 border border-white/10 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-cyan-500" />
@@ -1875,7 +1843,6 @@
       const mrgC = accs.filter(a => matchPool(a, 'mrg')).length;
       const atfC = accs.filter(a => matchPool(a, 'atf')).length;
       const victorsC = accs.filter(a => matchPool(a, 'victors')).length;
-      const vyroC = accs.filter(a => matchPool(a, 'vyro')).length;
       const kynexC = accs.filter(a => matchPool(a, 'kynex')).length;
       const diggoC = accs.filter(a => matchPool(a, 'diggo')).length;
       const adxearnC = accs.filter(a => matchPool(a, 'adxearn')).length;
@@ -1885,7 +1852,6 @@
       const mrgEl = document.getElementById('pool-mrg-count');
       const atfEl = document.getElementById('pool-atf-count');
       const vicEl = document.getElementById('pool-victors-count');
-      const vyrEl = document.getElementById('pool-vyro-count');
       const kynEl = document.getElementById('pool-kynex-count');
       const diggoEl = document.getElementById('pool-diggo-count');
       const adxearnEl = document.getElementById('pool-adxearn-count');
@@ -1895,7 +1861,6 @@
       if (mrgEl) mrgEl.textContent = `${mrgC} Connected Account${mrgC === 1 ? '' : 's'}`;
       if (atfEl) atfEl.textContent = `${atfC} Connected Account${atfC === 1 ? '' : 's'}`;
       if (vicEl) vicEl.textContent = `${victorsC} Connected Account${victorsC === 1 ? '' : 's'}`;
-      if (vyrEl) vyrEl.textContent = `${vyroC} Connected Account${vyroC === 1 ? '' : 's'}`;
       if (kynEl) kynEl.textContent = `${kynexC} Connected Account${kynexC === 1 ? '' : 's'}`;
       if (diggoEl) diggoEl.textContent = `${diggoC} Connected Account${diggoC === 1 ? '' : 's'}`;
       if (adxearnEl) adxearnEl.textContent = `${adxearnC} Connected Account${adxearnC === 1 ? '' : 's'}`;
@@ -2086,11 +2051,10 @@
       selectedPool = pKey;
       const labelEl = document.getElementById('selected-pool-label');
       const poolLabels = {
-        all: 'All 9 Pools Selected (Recommended)',
+        all: 'All 8 Pools Selected (Recommended)',
         mrg: 'MRG Miner Selected',
         atf: 'ATF Miner Selected',
         victors: "Victor's Company Selected",
-        vyro: 'VyroDrop Selected',
         kynex: 'Kynex Network Selected',
         diggo: 'DiggoMiner Selected',
         adxearn: 'AdxEarn AI Selected',
@@ -2207,13 +2171,12 @@
         mrg: '⚡ MRG Miner',
         atf: '🪙 ATF Miner',
         victors: "🏢 Victor's",
-        vyro: '💧 VyroDrop',
         kynex: '🌐 Kynex',
         diggo: '⛏️ DiggoMiner',
         adxearn: '💎 AdxEarn AI',
         pepegram: '🐸 PepeGram',
         chickenland: '🐔 Chicken Land',
-        all: '🌐 All 9 Pools'
+        all: '🌐 All 8 Pools'
       };
 
       container.innerHTML = accs.map((a, idx) => {

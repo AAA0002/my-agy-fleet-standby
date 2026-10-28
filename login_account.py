@@ -51,9 +51,6 @@ ATF_REFERRAL_CODE = "6727787768"
 VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 
-VYRO_BOT = "vyrodrop_bot"
-VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
-
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
 
@@ -433,44 +430,7 @@ async def bind_referrals(client, me, acc_entry):
     except Exception as e:
         print(f"  ❌ Warning binding Victor's Company referral: {e}")
 
-    # 4. VyroDrop (@vyrodrop_bot) - Referral: ref_myFjrqqE4WN_
-    print(f"  • [4/4] Connecting to @{VYRO_BOT} with referral: {VYRO_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=VYRO_BOT))
-        except Exception:
-            pass
-        b_vy = await client.get_entity(VYRO_BOT)
-        await mute_peer(client, b_vy, "vyrodrop_bot")
-        try:
-            await client.send_message(b_vy, f"/start {VYRO_REFERRAL_CODE}")
-            await asyncio.sleep(0.5)
-        except Exception:
-            pass
-        await asyncio.sleep(1.0)
-        try:
-            r_vy = await client(RequestWebViewRequest(
-                peer=b_vy,
-                bot=b_vy,
-                url="https://vyro.run.place/",
-                platform="android",
-                start_param=VYRO_REFERRAL_CODE
-            ))
-            p_vy = urllib.parse.urlparse(getattr(r_vy, 'url', None) or "")
-            vy_init = urllib.parse.parse_qs(p_vy.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_vy.query).get("tgWebAppData", [None])[0]
-            if vy_init:
-                acc_entry["vyro_init_data"] = vy_init
-                vy_h = {"Authorization": f"tma {vy_init}", "Content-Type": "application/json", "Referer": "https://vyro.run.place/"}
-                async with aiohttp.ClientSession() as vy_s:
-                    await vy_s.get("https://vyro.run.place/api/bootstrap", headers=vy_h, timeout=aiohttp.ClientTimeout(total=8))
-        except Exception:
-            pass
-        acc_entry["vyro_referral_bound"] = True
-        print(f"  ✅ [4/4] Successfully bound to VyroDrop ({VYRO_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding VyroDrop referral: {e}")
-
-    # 5. Kynex Network (@Kynex_miningbot) - Referral: 6727787768
+    # 4. Kynex Network (@Kynex_miningbot) - Referral: 6727787768
     print(f"  • [5/5] Connecting to @{KYNEX_BOT} with referral: {KYNEX_REFERRAL_CODE}...")
     try:
         try:
@@ -648,19 +608,19 @@ async def bind_referrals(client, me, acc_entry):
         print(f"  ❌ Warning binding Chicken Land referral: {e}")
 
     # Audit final referral status
-    all_9_keys = [
+    all_8_keys = [
         "mrg_referral_bound",
         "atf_referral_bound",
         "victors_referral_bound",
-        "vyro_referral_bound",
         "kynex_referral_bound",
         "diggo_referral_bound",
         "pepegram_referral_bound",
         "adxearn_referral_bound",
         "chickenland_referral_bound"
     ]
-    bound_count = sum(1 for k in all_9_keys if acc_entry.get(k))
-    if bound_count == len(all_9_keys):
+    bound_count = sum(1 for k in all_8_keys if acc_entry.get(k))
+    if bound_count == len(all_8_keys):
+        acc_entry["all_8_referrals_bound"] = True
         acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_5_referrals_bound"] = True
         acc_entry["all_4_referrals_bound"] = True

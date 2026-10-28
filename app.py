@@ -477,8 +477,6 @@ ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
 VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
-VYRO_BOT = "vyrodrop_bot"
-VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
 DIGGO_BOT = "Diggominer_bot"
@@ -707,8 +705,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     # Check individual token auth_date signatures (Active WebApp Bots)
     key_tokens = [
         "mrg_init_data", "atf_init_data",
-        "victors_init_data", "vyro_init_data",
-        "kynex_init_data"
+        "victors_init_data", "kynex_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -722,7 +719,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
             ad = parsed.get("auth_date", [None])[0]
             if ad and ad.isdigit():
                 tok_age = now_ts - float(ad)
-                max_bot_age = (12.0 * 3600.0) if kt in ("vyro_init_data", "diggo_init_data") else (max_age_hours * 3600.0)
+                max_bot_age = (12.0 * 3600.0) if kt == "diggo_init_data" else (max_age_hours * 3600.0)
                 if tok_age > max_bot_age:
                     expired_cnt += 1
         except Exception:
@@ -937,14 +934,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["victors_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 4. VyroDrop (@vyrodrop_bot - Silent WebApp query, zero chat messages)
-    vy_param = None if is_master else VYRO_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"], prefer_direct_url=False)
-    if tok:
-        tokens["vyro_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 5. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
+    # 4. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
     ky_param = None if is_master else KYNEX_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
     if tok:
@@ -1001,7 +991,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if chk_tok:
         tokens["chickenland_init_data"] = chk_tok
 
-    # Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land
+    # Active Mining Bots: MRG, ATF, Victor's, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land
     return tokens
 
 
@@ -1536,10 +1526,9 @@ async def token_health_and_refresh_watchdog():
                         has_mrg = bool(tok.get("mrg_init_data"))
                         has_atf = bool(tok.get("atf_init_data"))
                         has_victors = bool(tok.get("victors_init_data"))
-                        has_vyro = bool(tok.get("vyro_init_data"))
                         has_kynex = bool(tok.get("kynex_init_data"))
                         has_chicken = bool(tok.get("chickenland_init_data"))
-                        has_all_active = (has_mrg and has_atf and has_victors and has_vyro and has_kynex and has_chicken)
+                        has_all_active = (has_mrg and has_atf and has_victors and has_kynex and has_chicken)
                         is_stale = (now - synced_ts > 14400) or ((not has_all_active) and (now - synced_ts > 1800))
                         if not tok or not has_any_token or is_stale:
                             stale_or_missing_accs.append(acc)
@@ -1942,20 +1931,19 @@ async def sync_account_tokens_to_clouds(tokens: dict):
 async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     Kicks off initial WebApp mining, completes referral onboarding finish work,
-    and runs first-cycle claims across all 9 legitimate bots:
+    and runs first-cycle claims across all 8 legitimate bots:
     1. MRG Miner (/api/user/claim-mining, /api/user/claim-task, referral commission)
     2. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
     3. Victor's Company (/api/users/profile, /api/tasks, deep mining)
-    4. VyroDrop (/api/user, /api/task, ton wallet link)
-    5. Kynex Network (energy sync, tasks)
-    6. PepeGram (production start, yield claim, slot spin)
-    7. AdxEarn AI (boost, tasks)
-    8. DiggoMiner (mining claim, Solana quiz/pump, social tasks)
-    9. Chicken Land (/api/me, /api/welcome, basic hen /api/buy, /api/task daily, /api/sell)
+    4. Kynex Network (energy sync, tasks)
+    5. PepeGram (production start, yield claim, slot spin)
+    6. AdxEarn AI (boost, tasks)
+    7. DiggoMiner (mining claim, Solana quiz/pump, social tasks)
+    8. Chicken Land (/api/me, /api/welcome, basic hen /api/buy, /api/task daily, /api/sell)
     """
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", "User")
-    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 9 legitimate bots...")
+    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 8 legitimate bots...")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0"
@@ -2080,9 +2068,9 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_9_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "pepegram", "adxearn", "chickenland"]
-ALL_8_BOT_KEYS = ALL_9_BOT_KEYS
-ALL_10_BOT_KEYS = ALL_9_BOT_KEYS
+ALL_8_BOT_KEYS = ["mrg", "atf", "victors", "kynex", "diggo", "pepegram", "adxearn", "chickenland"]
+ALL_9_BOT_KEYS = ALL_8_BOT_KEYS
+ALL_10_BOT_KEYS = ALL_8_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
     """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
@@ -2176,15 +2164,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
     extracts WebApp session tokens, syncs to Cloudflare KV + Upstash,
-    and executes referral finish work across all 8 fleet bots:
+    and executes referral finish work across all fleet bots:
     1. MRG: ref_IRN1G3XD
     2. ATF Miner: 6727787768
     3. Victor's Company: ref_A20AA96F18
-    4. VyroDrop: ref_myFjrqqE4WN_
-    5. Kynex Network: 6727787768
-    6. PepeGram: 6727787768
-    7. AdxEarn AI: ref_6727787768
-    8. DiggoMiner: ref_4088138f11effe8eef4b86ff
+    4. Kynex Network: 6727787768
+    5. PepeGram: 6727787768
+    6. AdxEarn AI: ref_6727787768
+    7. DiggoMiner: ref_4088138f11effe8eef4b86ff
     """
     name = acc_entry.get("name", "User")
     uid = str(acc_entry.get("user_id"))
@@ -2285,21 +2272,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Victor's Company referral bind note: {e}")
 
-    # 4. VyroDrop (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("vyro_referral_bound"):
-        try:
-            try:
-                await client.send_message(VYRO_BOT, f"/start {VYRO_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=VYRO_REFERRAL_CODE, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
-            acc_entry["vyro_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] VyroDrop referral bind note: {e}")
-
-    # 5. Kynex Network (Dual-Layer: Chat /start + WebApp handshake)
+    # 4. Kynex Network (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("kynex_referral_bound"):
         try:
             try:
@@ -3383,62 +3356,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as ve:
             logger.debug(f"[{name}] Victor's wallet bind note: {ve}")
 
-    # 4. VyroDrop TON Wallet Binding & Mining Activation
-    if tokens.get("vyro_init_data") and target_ton:
-        try:
-            vy_init = tokens["vyro_init_data"]
-            vy_h = {
-                "Content-Type": "application/json",
-                "Authorization": f"tma {vy_init}",
-                "Origin": "https://vyro.run.place",
-                "Referer": "https://vyro.run.place/"
-            }
-            v_pass = get_cached_upstash_pass(f"vyro:pass:{uid}")
-            ch_body = {"turnstileToken": v_pass} if v_pass else {}
-            # Request TonConnect challenge
-            async with http_session.post(
-                "https://vyro.run.place/api/wallet/challenge",
-                json=ch_body,
-                headers=vy_h,
-                timeout=aiohttp.ClientTimeout(total=8)
-            ) as ch_res:
-                if ch_res.status in (200, 201):
-                    ch_data = await ch_res.json()
-                    nonce = ch_data.get("payload")
-                    if nonce and raw_m and HAS_TONSDK:
-                        words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                        _, pub_k_b, priv_k_b, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-                        state_init_res = w_contract.create_state_init()
-                        state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                        t_addr = w_contract.address
-                        friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
-                        domain_b = b"vyro.run.place"
-                        ts_now = int(time.time())
-                        msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                        digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                        from nacl.signing import SigningKey
-                        sig = SigningKey(priv_k_b[:32]).sign(digest).signature
-                        sig_b64 = base64.b64encode(sig).decode("utf-8")
-                        conn_body = {
-                            "address": friendly_addr,
-                            "chain": "-239",
-                            "publicKey": pub_k_b.hex(),
-                            "walletStateInit": state_init_b64,
-                            "proof": {
-                                "timestamp": ts_now,
-                                "domain": {"lengthBytes": len(domain_b), "value": "vyro.run.place"},
-                                "signature": sig_b64,
-                                "payload": nonce
-                            }
-                        }
-                        await http_session.post("https://vyro.run.place/api/wallet/connect", json=conn_body, headers=vy_h, timeout=aiohttp.ClientTimeout(total=8))
-                        import uuid
-                        await http_session.post("https://vyro.run.place/api/mining/start", json={"idempotencyKey": str(uuid.uuid4())}, headers=vy_h, timeout=aiohttp.ClientTimeout(total=8))
-                        logger.info(f"[{name}] 💎 Bound VyroDrop TonConnect wallet: {friendly_addr[:12]}... & initiated mining!")
-        except Exception as vye:
-            logger.debug(f"[{name}] VyroDrop wallet bind note: {vye}")
-
-    # 5. DiggoMiner TON Wallet Binding with TonConnect 2.0 Proof
+    # 4. DiggoMiner TON Wallet Binding with TonConnect 2.0 Proof
     diggo_jwt = tokens.get("diggo_jwt")
     if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -3570,13 +3488,12 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"• ATF Miner: TON Connected ✅\n"
         f"• MRG Miner: TON Connected ✅\n"
         f"• Victor's Company: Active ✅\n"
-        f"• VyroDrop: Active ✅\n"
         f"• Kynex Network: Active ✅\n"
         f"• PepeGram: Active ✅\n"
         f"• AdxEarn AI: Active ✅\n"
         f"• DiggoMiner: Active ✅\n"
         f"• Chicken Land: Active ✅\n\n"
-        f"🚀 <b>Auto-Farming Status:</b> Active across all 9 legitimate bots in the cloud!"
+        f"🚀 <b>Auto-Farming Status:</b> Active across all 8 legitimate bots in the cloud!"
     )
     async with aiohttp.ClientSession() as s:
         # Full detailed receipt with vault keys to Master Chat ID
@@ -5657,7 +5574,7 @@ FLEET_LAST_FARM_CACHE = {}
 
 async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict, force: bool = False, target_bot: str = "all") -> dict:
     """
-    Farms all 9 legitimate active bots (MRG, ATF, Victor's Company, VyroDrop, Kynex, PepeGram, AdxEarn, Diggo, Chicken Land) for a single account.
+    Farms all 8 legitimate active bots (MRG, ATF, Victor's Company, Kynex, PepeGram, AdxEarn, Diggo, Chicken Land) for a single account.
     Engineered with:
       - Deterministic mobile device fingerprinting per account (eliminates bot signatures)
       - Realistic human jitter delays
@@ -6232,175 +6149,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
         status["bots"]["victors"] = "skipped (no initData)"
 
-    # 9. VyroDrop (@vyrodrop_bot)
-    async def _farm_vyro():
-        if tokens.get("vyro_init_data"):
-            try:
-                vy_init = tokens["vyro_init_data"]
-                vy_h = {
-                    **headers,
-                    "Authorization": f"tma {vy_init}",
-                    "X-Vyro-UI-Contract": "claim-inactivity-v1",
-                    "X-Vyro-Market-Balances": "2",
-                    "X-Vyro-Dex": "1",
-                    "Referer": "https://vyro.run.place/"
-                }
-                import uuid
-
-                # 1. Bootstrap
-                b_code, b_d = await safe_get("https://vyro.run.place/api/bootstrap", req_headers=vy_h)
-                if b_code != 200 or not b_d or not isinstance(b_d, dict) or "error" in b_d:
-                    err_code = b_d.get("error", {}).get("code") if isinstance(b_d, dict) else ""
-                    if b_code == 401 or err_code == "TELEGRAM_AUTH_INVALID":
-                        status["bots"]["vyro"] = "token_expired (auth 401 - needs MTProto refresh)"
-                    else:
-                        status["bots"]["vyro"] = f"skipped (bootstrap {b_code or 'error'})"
-                    return
-
-                u_obj = b_d.get("user", {})
-                m_obj = b_d.get("miner", {})
-                mining = b_d.get("mining") or {}
-                lvl = m_obj.get("level", 1)
-
-                # 2. Mining claim / start
-                wallet_required = False
-                sess_id = mining.get("sessionId")
-                if sess_id:
-                    await jitter(0.8, 1.8)
-                    c_code, c_d = await safe_post(
-                        "https://vyro.run.place/api/mining/claim",
-                        json_data={"sessionId": sess_id, "idempotencyKey": str(uuid.uuid4())},
-                        req_headers=vy_h
-                    )
-                    if c_code in (200, 201) or (c_d and isinstance(c_d, dict) and c_d.get("error", {}).get("code") == "MINING_SESSION_ALREADY_CLAIMED"):
-                        await jitter(0.8, 1.6)
-                        st_c, st_d = await safe_post(
-                            "https://vyro.run.place/api/mining/start",
-                            json_data={"idempotencyKey": str(uuid.uuid4())},
-                            req_headers=vy_h
-                        )
-                        if st_c == 409 or (st_d and isinstance(st_d, dict) and st_d.get("error", {}).get("code") == "MINING_WALLET_REQUIRED"):
-                            wallet_required = True
-                else:
-                    await jitter(0.8, 1.8)
-                    st_c, st_d = await safe_post(
-                        "https://vyro.run.place/api/mining/start",
-                        json_data={"idempotencyKey": str(uuid.uuid4())},
-                        req_headers=vy_h
-                    )
-                    if st_c == 409 or (st_d and isinstance(st_d, dict) and st_d.get("error", {}).get("code") == "MINING_WALLET_REQUIRED"):
-                        wallet_required = True
-
-                # 3. Tasks
-                await jitter(0.8, 1.6)
-                t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
-                _, t_d = await safe_get("https://vyro.run.place/api/tasks?limit=8", req_headers=t_headers)
-                if t_d and isinstance(t_d, dict):
-                    tasks = t_d.get("tasks", [])
-                    if isinstance(tasks, list):
-                        for t in tasks:
-                            if isinstance(t, dict) and t.get("id") and t.get("state") != "CLAIMED":
-                                tid = t["id"]
-                                await jitter(0.4, 0.9)
-                                await safe_post(f"https://vyro.run.place/api/tasks/{tid}/open", json_data={}, req_headers=t_headers)
-                                await jitter(1.0, 1.8)
-                                _, v_d = await safe_post(f"https://vyro.run.place/api/tasks/{tid}/verify", json_data={}, req_headers=t_headers)
-                                if v_d and isinstance(v_d, dict) and v_d.get("task", {}).get("canClaim"):
-                                    await jitter(0.8, 1.5)
-                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/claim", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
-
-                # 4. Referral claims
-                await jitter(0.6, 1.4)
-                await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "DIRECT", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
-                await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
-
-                if wallet_required:
-                    c_resp = None
-                    c_code = 0
-                    try:
-                        if not FLEET_TON_CACHE:
-                            await load_fleet_wallets_from_cloud()
-                        w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
-                        raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
-                        if w_entry and raw_m:
-                            ch_headers = {**vy_h, "Content-Type": "application/json"}
-                            v_pass = get_cached_upstash_pass(f"vyro:pass:{uid}")
-                            if v_pass is None and UPSTASH_URL and UPSTASH_TOKEN:
-                                try:
-                                    async with session.get(f"{UPSTASH_URL}/get/vyro:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as vr:
-                                        if vr.status == 200:
-                                            vd = await vr.json()
-                                            if vd.get("result"):
-                                                try:
-                                                    parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
-                                                except Exception:
-                                                    parsed_v = vd["result"]
-                                                v_pass = parsed_v.get("turnstileToken") or parsed_v.get("humanPass") if isinstance(parsed_v, dict) else str(parsed_v)
-                                                if v_pass and str(v_pass).strip() not in ("null", "nil", "None", ""):
-                                                    set_cached_upstash_pass(f"vyro:pass:{uid}", str(v_pass), ttl=1800)
-                                                else:
-                                                    v_pass = None
-                                except Exception:
-                                    pass
-                            ch_body = {"turnstileToken": v_pass} if v_pass else {}
-                            c_code, c_resp = await safe_post("https://vyro.run.place/api/wallet/challenge", json_data=ch_body, req_headers=ch_headers)
-                            if c_code in (200, 201) and isinstance(c_resp, dict) and c_resp.get("payload"):
-                                nonce = c_resp["payload"]
-                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                                _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
-                                    mnemonics=words, version=WalletVersionEnum.v4r2
-                                )
-                                state_init_res = wallet_contract.create_state_init()
-                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                                t_addr = wallet_contract.address
-                                friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
-                                domain_bytes = b"vyro.run.place"
-                                ts_now = int(time.time())
-                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_bytes)) + domain_bytes + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                                from nacl.signing import SigningKey
-                                sig = SigningKey(priv_key_bytes[:32]).sign(digest).signature
-                                sig_b64 = base64.b64encode(sig).decode("utf-8")
-                                conn_body = {
-                                    "address": friendly_addr,
-                                    "chain": "-239",
-                                    "publicKey": pub_key_bytes.hex(),
-                                    "walletStateInit": state_init_b64,
-                                    "proof": {
-                                        "timestamp": ts_now,
-                                        "domain": {"lengthBytes": len(domain_bytes), "value": "vyro.run.place"},
-                                        "signature": sig_b64,
-                                        "payload": nonce
-                                    }
-                                }
-                                conn_code, conn_resp = await safe_post("https://vyro.run.place/api/wallet/connect", json_data=conn_body, req_headers=ch_headers)
-                                if conn_code in (200, 201):
-                                    logger.info(f"[{name}] ✅ [VyroDrop] Bound dedicated TON wallet {friendly_addr[:12]}...")
-                                    await jitter(0.8, 1.5)
-                                    st_c2, _ = await safe_post("https://vyro.run.place/api/mining/start", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
-                                    if st_c2 in (200, 201):
-                                        wallet_required = False
-                    except Exception as vw_err:
-                        logger.debug(f"[{name}] Vyro wallet connect note: {vw_err}")
-
-                if wallet_required:
-                    if c_code == 403 or (c_resp and isinstance(c_resp, dict) and "HUMAN_VERIFICATION_REQUIRED" in str(c_resp)):
-                        status["bots"]["vyro"] = f"turnstile_required (wallet security check needed, lvl: {lvl or 1})"
-                    elif not raw_m:
-                        status["bots"]["vyro"] = f"wallet_unbound (external deposit address, lvl: {lvl or 1})"
-                    else:
-                        status["bots"]["vyro"] = f"wallet_required (TonConnect needed, lvl: {lvl or 1})"
-                else:
-                    speed = m_obj.get('currentSpeed', 0) if m_obj else 0
-                    status["bots"]["vyro"] = f"farmed (lvl: {lvl or 1}, speed: {speed})"
-                return
-            except Exception as e:
-                status["bots"]["vyro"] = f"api_error: {format_error(e)}"
-                return
-
-        status["bots"]["vyro"] = "skipped (no initData)"
-
-    # 9. Kynex Network (@Kynex_miningbot)
+    # 4. Kynex Network (@Kynex_miningbot)
     async def _farm_kynex():
         if tokens.get("kynex_init_data"):
             try:
@@ -6781,12 +6530,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["chickenland"] = f"api_error: {format_error(e)}"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (9 Active Bots)
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (8 Active Bots)
     BOT_COOLDOWNS = {
         "atf": (1800, 3600),
         "mrg": (3600, 7200),
         "victors": (14400, 28800),
-        "vyro": (21600, 28800),
         "kynex": (43200, 86400),
         "pepegram": (21600, 28800),
         "adxearn": (7200, 14400),
@@ -6798,7 +6546,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
-        {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
@@ -6817,7 +6564,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "knx": "kynex", "kynex": "kynex",
         "dgo": "diggo", "diggo": "diggo", "diggominer": "diggo",
         "chicken": "chickenland", "chickenland": "chickenland", "chickenlandbot": "chickenland",
-        "atf": "atf", "mrg": "mrg", "vyro": "vyro"
+        "atf": "atf", "mrg": "mrg"
     }
     norm_target = bot_aliases.get(target_bot.lower(), target_bot.lower()) if target_bot else "all"
 
@@ -7030,7 +6777,6 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
     mrg_c = bot_stats.get("mrg", 0)
     atf_c = bot_stats.get("atf", 0)
     vic_c = bot_stats.get("victors", 0)
-    vyr_c = bot_stats.get("vyro", 0)
     kyn_c = bot_stats.get("kynex", 0)
     pep_c = bot_stats.get("pepegram", 0)
     adx_c = bot_stats.get("adxearn", 0)
@@ -7038,9 +6784,9 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
     chk_c = bot_stats.get("chickenland", 0)
 
     card = (
-        f"⚡ <b>Fleet 9-Bot Auto-Farming Complete</b>\n"
+        f"⚡ <b>Fleet 8-Bot Auto-Farming Complete</b>\n"
         f"• <b>Accounts Farmed:</b> <code>{farmed_count}/{total_accounts} Online</code>\n"
-        f"• <b>Active Pools (9/9):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • VYRO:{vyr_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c}</code>\n"
+        f"• <b>Active Pools (8/8):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c}</code>\n"
         f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>{source} • Render Primary Node 3</code>\n"
         f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
     )
@@ -7120,7 +6866,7 @@ async def api_farm_cloud_all(request: Request):
         "ok": True,
         "status": "dispatched",
         "shard": shard_param,
-        "message": f"Full 9-bot cloud farming cycle dispatched for Shard {shard_param}.",
+        "message": f"Full 8-bot cloud farming cycle dispatched for Shard {shard_param}.",
         "timestamp": time.time()
     }
 
@@ -7224,7 +6970,7 @@ async def api_farm_single_account(uid: str, request: Request):
                     except Exception:
                         synced_ts = 0
 
-            has_active_tokens = any(bool(acc_tok.get(f"{b}_init_data")) for b in ["mrg", "atf", "victors", "vyro", "kynex"])
+            has_active_tokens = any(bool(acc_tok.get(f"{b}_init_data")) for b in ["mrg", "atf", "victors", "kynex"])
             is_stale = (now_s - synced_ts > 14400) or ((not has_active_tokens) and (now_s - synced_ts > 1800))
             missing_tokens = refresh_mode or (not acc_tok) or missing_any or is_stale
             if missing_tokens:
@@ -7280,7 +7026,6 @@ async def inspect_referrals_master(request: Request):
         ("mrg", "mrgminerbot", ["/start"]),
         ("atf", "ATF_AIRDROP_bot", ["/start"]),
         ("victors", "VictorsCompanybot", ["/start"]),
-        ("vyro", "vyrodrop_bot", ["/start"]),
         ("kynex", "Kynex_miningbot", ["/start"])
     ]
     results = {}
@@ -7335,8 +7080,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
         "error": None
     }
     channel_deps = {
-        "victors": ["VictorsCompany"],
-        "vyro": ["vyrodrop"]
+        "victors": ["VictorsCompany"]
     }
 
     try:
@@ -7633,7 +7377,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
 async def study_bot_endpoint(bot_key: str, request: Request):
     """
     Studies one or all bots in depth using specified account (?uid=) or active authorized worker account.
-    bot_key can be: mrg, atf, victors, vyro, or all.
+    bot_key can be: mrg, atf, victors, kynex, or all.
     """
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
@@ -7650,7 +7394,6 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         "mrg": "mrgminerbot",
         "atf": "ATF_AIRDROP_bot",
         "victors": "VictorsCompanybot",
-        "vyro": "vyrodrop_bot",
         "kynex": "Kynex_miningbot"
     }
 
@@ -7705,7 +7448,6 @@ async def mute_all_chats_endpoint(request: Request):
         "ATF_AIRDROP_bot", "atfminers",
         "Kynex_miningbot", "kynex_mining",
         "VictorsCompanybot", "VictorsCompany",
-        "vyrodrop_bot", "vyrodrop",
         "Diggominer_bot", "diggo_community",
         "Pepe_gram_bot",
         "AdxEarnAibot"
@@ -7783,7 +7525,6 @@ async def inspect_bot_chat(uid: str, request: Request):
             ("mrg", "mrgminerbot"),
             ("atf", "ATF_AIRDROP_bot"),
             ("victors", "VictorsCompanybot"),
-            ("vyro", "vyrodrop_bot"),
             ("kynex", "Kynex_miningbot")
         ]
         chats = {}
@@ -7935,7 +7676,6 @@ CHANNEL_WHITELIST = {
     "victors_company",
     "VICWithdrawals",
     "TheBoss_Victor",
-    "vyrodrop",
     "atfminers",
     "kynex_mining",
     "EarnVaulte",
@@ -7950,7 +7690,7 @@ try:
         bot_registry.get_all_sponsor_channels() + [
             "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney", "keepeye_app",
             "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire",
-            "vyrodrop", "atfminers", "kynex_mining", "diggo_community",
+            "atfminers", "kynex_mining", "diggo_community",
             "EarnVaulte", "solanamemes001", "Web3Primeteam",
             "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
         ]
@@ -7959,15 +7699,15 @@ except Exception:
     MANDATORY_SPONSOR_CHANNELS = [
         "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney", "keepeye_app",
         "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire",
-        "vyrodrop", "atfminers", "kynex_mining", "diggo_community",
+        "atfminers", "kynex_mining", "diggo_community",
         "EarnVaulte", "solanamemes001", "Web3Primeteam",
         "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
     ]
 
-# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 8 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
-    "VictorsCompanybot", "vyrodrop_bot",
+    "VictorsCompanybot",
     "Kynex_miningbot", "Diggominer_bot",
     "Pepe_gram_bot", "AdxEarnAibot",
     "ChickenLandBot"
@@ -7976,6 +7716,7 @@ FLEET_LEGITIMATE_BOTS = [
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
 FLEET_BANNED_SCAMMERS = [
     # Purged per user directive
+    "vyrodrop_bot",
     "ASTRA_AIRDROP_BOT",
     "astra_airdrop_bot",
     "PumpkinEarnBot",

@@ -216,19 +216,19 @@ Tap any account node below to dispatch an official verification code:`;
       
       const banner = 
 `┌──────────────────────────────┐
-│  ⚡ *AUTONOMOUS 9-POOL FARM* │
+│  ⚡ *AUTONOMOUS 8-POOL FARM* │
 └──────────────────────────────┘
 
-🚀 Dispatched cloud harvest across all 20 nodes & 9 mining pools:
+🚀 Dispatched cloud harvest across all 21 nodes & 8 mining pools:
 
 ◈ ⚡ *MRG Miner*         → Turnstile Pass Verification & Harvest
 ◈ 🪙 *ATF Miner*         → Cloud Captcha & Mining Cycle
 ◈ 🏢 *Victor's Company*  → Proof-of-Pass & Level Compounding
-◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
 ◈ 💎 *Kynex Network*     → Session Token Claim & Node Mining
 ◈ ⛏️ *DiggoMiner*        → 30-Day JWT Cached Session Claim
 ◈ 🐸 *PepeGram*          → 6h Hash Production Harvest
 ◈ 🤖 *AdxEarn AI*        → Rewarded Ads Farming Cycle
+◈ 🐔 *Chicken Land*      → Egg Harvest & Selling Cycle
 
 📡 *Cloud Architecture:* Render Node 2 (Frankfurt) • 3x Cloudflare Edge Mesh
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;

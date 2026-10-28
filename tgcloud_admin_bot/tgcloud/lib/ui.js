@@ -16,7 +16,7 @@ export function getMainMenuKeyboard(revokedCount) {
         { text: `🔄 Session Recovery${revText}`, callback_data: "btn_relink_menu" }
       ],
       [
-        { text: "⚡ Farm 5-Bot Fleet", callback_data: "btn_farm_all" },
+        { text: "⚡ Farm 8-Bot Fleet", callback_data: "btn_farm_all" },
         { text: "📊 Telemetry Live", callback_data: "btn_system_status" }
       ],
       [
@@ -277,10 +277,11 @@ ${healthBar}
 • 👑 *Master Host:* \`#11 MD. ARIF HOSSAIN\`
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🤖 *5-BOT AUTONOMOUS MINING SUITE*
-◈ 🪙 MRG Miner      ◈ ⚡ ATF Miner
-◈ 👑 Victor's Co.   ◈ 💧 VyroDrop
-◈ 🌐 Kynex Network  ◈ ⚡ 100% Cloud
+🤖 *8-BOT AUTONOMOUS MINING SUITE*
+◈ ⚡ MRG Miner      ◈ 🪙 ATF Miner
+◈ 🏢 Victor's Co.   ◈ 🌐 Kynex Net
+◈ ⛏️ DiggoMiner     ◈ 🐸 PepeGram
+◈ 🤖 AdxEarn AI     ◈ 🐔 Chicken Land
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💼 *TREASURY:* \`TON • EVM • TRX • SOL • BTC\`

@@ -162,7 +162,7 @@ Current Live State:
 
 Past Lessons & Directives (NEVER VIOLATE THESE RULES):
 {lessons_text}
-- The fleet exclusively operates 9 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land.
+- The fleet exclusively operates 8 legitimate bots: MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land.
 - ATF Miner is strictly in 100% FARMING & ACCUMULATION MODE (NO premature withdrawals; allow hash and balance to compound).
 - Master account (6727787768) maintains maximum compound hash and acts as primary referrer.
 - Worker accounts auto-harvest and compound mining cycles according to optimal cooldown intervals.
@@ -416,7 +416,7 @@ class AutonomousAriAgent:
         # 3. Act
         if act == "harvest":
             await self.dispatch_fleet_action(session, "harvest")
-            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 9 active bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Pepe, AdxEarn, Chicken Land).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 8 active bots (MRG, ATF, Victor's, Kynex, Diggo, Pepe, AdxEarn, Chicken Land).\n_Reason:_ {thought}")
         elif act == "sweep_all":
             await self.dispatch_fleet_action(session, "sweep")
             await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep & Referral Harvest.\n_Reason:_ {thought}")

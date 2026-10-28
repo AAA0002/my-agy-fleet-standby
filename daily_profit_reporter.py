@@ -7,7 +7,7 @@ Calculates:
 - Total BNB farmed & withdrawn today
 - Real-time fiat valuation (USD $ and BDT ৳) via Binance API
 - Live On-Chain Wallet Balance from Binance Smart Chain
-- Cloudflare Edge Mini-App Yield (9 Active Mining Bots: MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land)
+- Cloudflare Edge Mini-App Yield (8 Active Mining Bots: MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land)
 Broadcasts report to Telegram Payout Channel (-1004402765950) & Admin DM (6727787768).
 """
 
@@ -163,7 +163,6 @@ async def get_fleet_mining_totals() -> dict:
         "atf": 0.0,
         "vic": 0.0,
         "knx": 0.0,
-        "vyro": 0.0,
         "diggo": 0.0,
         "pepe": 0.0,
         "adx": 0.0,
@@ -197,12 +196,7 @@ async def get_fleet_mining_totals() -> dict:
                     m = re.search(r"([\d\.]+)\s*KNX", knx_txt)
                     if m: totals["knx"] += float(m.group(1))
 
-                    # 5. VyroDrop
-                    vyro_txt = str(bots.get("4. VyroDrop", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*VYRO", vyro_txt)
-                    if m: totals["vyro"] += float(m.group(1))
-
-                    # 6. PepeGram
+                    # 5. PepeGram
                     pepe_txt = str(bots.get("6. PepeGram", {}).get("core", {}))
                     m = re.search(r"([\d\.]+)\s*PEPE", pepe_txt)
                     if m: totals["pepe"] += float(m.group(1))
@@ -362,12 +356,11 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Live On-Chain Balance:* `{wallet_bnb:.6f} BNB` (`~${wallet_usd:.2f} USD` / `~৳{wallet_bdt:.0f} BDT`)\n"
             f"• *Historical Distributions:* `{total_payouts_count} payouts` totaling `{total_payouts_bnb:.6f} BNB`\n"
             f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n\n"
-            f"💎 *2. Multi-Chain 9-Bot Autonomous Mining Treasury:*\n"
+            f"💎 *2. Multi-Chain 8-Bot Autonomous Mining Treasury:*\n"
             f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 180+, Cloud Turnstile Auto-Claim)\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
             f"• *Victor's Company:* `{fleet_totals['vic']:,.2f} VIC` mined (Hourly Shifts & Arcade Solver)\n"
             f"• *Kynex Network:* `{fleet_totals['knx']:,.2f} KNX` mined (Firebase RTDB Node Auto-Claim)\n"
-            f"• *VyroDrop:* DEX speed miner active across all fleet accounts (TonConnect 2.0 signed proof)\n"
             f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Decentralized Block Mining & JWT)\n"
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"
             f"• *AdxEarn AI:* `{fleet_totals['adx']:,.0f} Points` earned (Daily Check-in Streaks & Tasks)\n"
