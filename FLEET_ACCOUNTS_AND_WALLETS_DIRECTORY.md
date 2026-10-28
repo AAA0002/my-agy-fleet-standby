@@ -254,6 +254,20 @@
   - *Type:* Isolated Secp256k1 Wallet (Anti-Sybil Proof)
 - **Bot Referral Status:** `✅ Yes (Active Fleet Protocol)`
 
+### 21. Aaaa201 (Worker Account)
+- **Phone Number:** `+8801913962342`
+- **Telegram ID:** `8669217201`
+- **Telegram Username:** `@AAA201AAA`
+- **Account Status:** `active`
+- **Dedicated TON Wallet:** `UQDH-Fr7IrmThtwnK86JeAg3R2S-ezhA1Gs801vOVaRWn_jw`
+  - *Type:* Isolated TON v4r2 Non-Bounceable Wallet (Anti-Sybil Proof)
+- **Dedicated EVM Wallet (Arbitrum / BSC BEP-20 / ETH):** `0xc9d8b0a0b1ad64ba90d26f1e4ae6c2bc184c0e3d`
+  - *Type:* Isolated Secp256k1 Wallet (Anti-Sybil Proof)
+- **Dedicated TRON Wallet:** `TUNUQVsy3umFWPWNJzvYmNe4zRHhcYCeut`
+- **Dedicated Solana Wallet:** `4YMbFyjMxCpocfnKUvLfVF1EtmVzSvzzsJATrGjui3ai`
+- **Dedicated Bitcoin Wallet:** `1Ang9jyvFFAqwzAWcoNtjj5enHSeoDMfdt`
+- **Bot Referral Status:** `✅ Yes (Active Fleet Protocol)`
+
 ---
 
 ## 🔄 Automated Sweeper & Vault Consolidation Architecture

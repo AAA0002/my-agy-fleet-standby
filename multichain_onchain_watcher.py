@@ -74,7 +74,7 @@ CF_WORKER_URLS = [
 ]
 
 def load_fleet_ton_wallets() -> dict:
-    """Loads all fleet TON wallets dynamically from fleet_ton_wallets.json."""
+    """Loads all fleet TON wallets dynamically from fleet_ton_wallets.json or Upstash Redis."""
     wallets_path = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
     if os.path.exists(wallets_path):
         try:
@@ -83,16 +83,46 @@ def load_fleet_ton_wallets() -> dict:
                 return {k: v.get("address") for k, v in data.items() if k != "_guide" and v.get("address")}
         except Exception:
             pass
+    if UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN:
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{UPSTASH_REDIS_REST_URL}/get/fleet:wallets:ton",
+                headers={"Authorization": f"Bearer {UPSTASH_REDIS_REST_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                d = json.loads(resp.read().decode())
+                res = d.get("result")
+                if res:
+                    data = json.loads(res) if isinstance(res, str) else res
+                    return {k: v.get("address") for k, v in data.items() if k != "_guide" and v.get("address")}
+        except Exception:
+            pass
     return {}
 
 def load_fleet_evm_wallets() -> dict:
-    """Loads all fleet EVM wallets dynamically from fleet_evm_wallets.json."""
+    """Loads all fleet EVM wallets dynamically from fleet_evm_wallets.json or Upstash Redis."""
     wallets_path = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
     if os.path.exists(wallets_path):
         try:
             with open(wallets_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return {k: v.get("address") for k, v in data.items() if k != "_guide" and v.get("address")}
+        except Exception:
+            pass
+    if UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN:
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{UPSTASH_REDIS_REST_URL}/get/fleet:wallets:evm",
+                headers={"Authorization": f"Bearer {UPSTASH_REDIS_REST_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                d = json.loads(resp.read().decode())
+                res = d.get("result")
+                if res:
+                    data = json.loads(res) if isinstance(res, str) else res
+                    return {k: v.get("address") for k, v in data.items() if k != "_guide" and v.get("address")}
         except Exception:
             pass
     return {}

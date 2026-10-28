@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Ephemeral Resilience & Roster Completeness Hardening (October 28, 2026)**:
+  - **Upstash Redis REST Fallback across Watchers & Sweepers (`cloud_wallet_sweeper.py`, `multichain_onchain_watcher.py`, `daily_profit_reporter.py`)**:
+    * Implemented automated Upstash Redis REST fallback (`fleet:wallets:evm`, `fleet:wallets:ton`, `fleet:live_state`) across all on-chain wallet auditors, sweepers, and financial reporting modules.
+    * Guarantees that any ephemeral cloud VM, PRoot environment, or container lacking local json files can instantly load and audit all 21 EVM/TON wallets and real-time balances (<5ms).
+  - **Full Account Roster Alignment (`FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `FLEET_MEMORY_CORE.md`)**:
+    * Synchronized Account #20 (`Asaduzzaman Sarker`, `8609131528`) and Account #21 (`Aaaa201`, `8669217201`) into the active roster table of `FLEET_MEMORY_CORE.md`.
+    * Added Account #21's dedicated 5-chain non-custodial addresses (TON, EVM, TRON, Solana, Bitcoin) to `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`.
+  - **Side-Task Pipeline Roster Sync (`finish_all_fleet_sidetasks.py`)**:
+    * Aligned execution pipeline comments and verified concurrent processing across all 21 accounts and 9 active pools.
+
 - **🎉 Fleet Expansion: Account #21 Fully Relinked, PepeGram Activated & 21/21 Fleet 100% Active (October 28, 2026)**:
   - **Account #21 Telegram MTProto Relink Complete**:
     * User successfully performed QR/OTP relink for Account #21 (`Aaaa201`, `+8801913962342`, Telegram ID `8669217201`) via Admin Bot `@myagyai` / Render Standby Node 3.

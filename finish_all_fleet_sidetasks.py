@@ -1598,7 +1598,7 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
 
 
 # =============================================================================
-# 3. MAIN RUNNER (18-ACCOUNT PARALLEL PIPELINE)
+# 3. MAIN RUNNER (21-ACCOUNT PARALLEL PIPELINE)
 # =============================================================================
 
 async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: dict, sem: asyncio.Semaphore) -> Dict[str, Any]:

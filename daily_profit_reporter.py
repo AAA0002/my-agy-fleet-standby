@@ -247,6 +247,29 @@ async def get_fleet_mining_totals() -> dict:
                     totals["atf"] = sum(float(r.get("mined_balance", 0)) for r in atf_data.get("results", []))
             except Exception:
                 pass
+
+    # Fallback to Upstash Redis fleet:live_state if any balance is 0
+    if UPSTASH_URL and UPSTASH_TOKEN and (totals["knx"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0):
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{UPSTASH_URL}/get/fleet:live_state",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                d = json.loads(resp.read().decode())
+                res = d.get("result")
+                if res:
+                    live = json.loads(res) if isinstance(res, str) else res
+                    for a in live.get("accounts", []):
+                        if totals["knx"] == 0.0:
+                            totals["knx"] += float(a.get("kynex_coins", 0) or 0)
+                        if totals["atf"] == 0.0:
+                            totals["atf"] += float(a.get("atf_balance", 0) or 0)
+                        if totals["chicken_hens"] == 0:
+                            totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
+        except Exception:
+            pass
     return totals
 
 async def get_ai_market_briefing(session: aiohttp.ClientSession, rates: dict, total_payouts_bnb: float, wallet_bnb: float) -> str:

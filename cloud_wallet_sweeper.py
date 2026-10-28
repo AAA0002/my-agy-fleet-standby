@@ -69,6 +69,9 @@ TONAPI_KEY = os.getenv("TONAPI_KEY", "")
 TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "")
 DRPC_KEY = os.getenv("DRPC_API_KEY", "")
 
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
+
 # RPC Endpoints
 BSC_RPCS = [
     f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}",
@@ -158,16 +161,33 @@ async def audit_single_evm(session: aiohttp.ClientSession, uid: str, info: dict)
 
 async def audit_evm_worker_wallets(session: aiohttp.ClientSession) -> List[Dict[str, Any]]:
     """Audits all worker EVM wallets concurrently on BSC and Arbitrum One."""
-    if not os.path.exists(FLEET_EVM_FILE):
-        return []
-    try:
-        with open(FLEET_EVM_FILE, "r", encoding="utf-8") as f:
-            wallets = json.load(f)
-    except Exception as e:
-        logger.error(f"Error loading {FLEET_EVM_FILE}: {e}")
+    wallets = {}
+    if os.path.exists(FLEET_EVM_FILE):
+        try:
+            with open(FLEET_EVM_FILE, "r", encoding="utf-8") as f:
+                wallets = json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading {FLEET_EVM_FILE}: {e}")
+
+    if not wallets and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with session.get(
+                f"{UPSTASH_URL}/get/fleet:wallets:evm",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    res = data.get("result")
+                    if res:
+                        wallets = json.loads(res) if isinstance(res, str) else res
+        except Exception as e:
+            logger.warning(f"Upstash EVM wallets fallback error: {e}")
+
+    if not wallets:
         return []
 
-    tasks = [audit_single_evm(session, uid, info) for uid, info in wallets.items()]
+    tasks = [audit_single_evm(session, uid, info) for uid, info in wallets.items() if uid != "_guide"]
     completed = await asyncio.gather(*tasks, return_exceptions=True)
     return [r for r in completed if isinstance(r, dict)]
 
@@ -213,20 +233,37 @@ async def audit_single_ton(session: aiohttp.ClientSession, uid: str, info: dict,
 
 async def audit_ton_worker_wallets(session: aiohttp.ClientSession) -> List[Dict[str, Any]]:
     """Audits all worker TON wallets concurrently via TonAPI / Toncenter."""
-    if not os.path.exists(FLEET_TON_FILE):
-        return []
-    try:
-        with open(FLEET_TON_FILE, "r", encoding="utf-8") as f:
-            wallets = json.load(f)
-    except Exception as e:
-        logger.error(f"Error loading {FLEET_TON_FILE}: {e}")
+    wallets = {}
+    if os.path.exists(FLEET_TON_FILE):
+        try:
+            with open(FLEET_TON_FILE, "r", encoding="utf-8") as f:
+                wallets = json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading {FLEET_TON_FILE}: {e}")
+
+    if not wallets and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with session.get(
+                f"{UPSTASH_URL}/get/fleet:wallets:ton",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    res = data.get("result")
+                    if res:
+                        wallets = json.loads(res) if isinstance(res, str) else res
+        except Exception as e:
+            logger.warning(f"Upstash TON wallets fallback error: {e}")
+
+    if not wallets:
         return []
 
     headers = {"User-Agent": "Mozilla/5.0"}
     if TONAPI_KEY:
         headers["Authorization"] = f"Bearer {TONAPI_KEY}"
 
-    tasks = [audit_single_ton(session, uid, info, headers) for uid, info in wallets.items()]
+    tasks = [audit_single_ton(session, uid, info, headers) for uid, info in wallets.items() if uid != "_guide"]
     completed = await asyncio.gather(*tasks, return_exceptions=True)
     return [r for r in completed if isinstance(r, dict)]
 

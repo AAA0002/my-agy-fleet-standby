@@ -50,7 +50,7 @@
 
 ---
 
-## 2. 👥 Active Accounts Roster (19+ Accounts)
+## 2. 👥 Active Accounts Roster (21 Accounts)
 
 | Index | Name | Username | Telegram ID | Phone | Custody Type | Primary Wallet | Status |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- | :---: |
@@ -73,6 +73,8 @@
 | **17** | Kawsar Mahmud 17 | `None` | `8841038141` | `+8801879273559` | Isolated 24-Word Seed | TON: `UQDjL-9...8bZ` | 🟢 Active |
 | **18** | Mehedi Hasan 18 | `None` | `8975442879` | `+8801839716506` | Isolated 24-Word Seed | TON: `UQBcHzN...49fL` | 🟢 Active |
 | **19** | **Adil H** | `@AdilHassain` | `8937908003` | `+8801804723069` | Isolated 24-Word Seed | TON: `UQCrEZr...w8D` | 🟢 Active |
+| **20** | **Asaduzzaman Sarker** | `@Asaduzzamansarkar` | `8609131528` | `+8801312863569` | Isolated 24-Word Seed | TON: `UQCdmqN...0DE` | 🟢 Active |
+| **21** | **Aaaa201** | `@AAA201AAA` | `8669217201` | `+8801913962342` | Isolated 24-Word Seed | TON: `UQDH-Fr..._jw` | 🟢 Active |
 
 ---
 
