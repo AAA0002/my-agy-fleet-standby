@@ -2,6 +2,13 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐞 Critical Bug Fix: Chicken Land TMA Base64 Encoding for Cyrillic Names (October 28, 2026)**:
+  - **Eradicated `UnicodeEncodeError` in Python & `InvalidCharacterError` in JS (`chickenland_miner.py`, `chickenland_promo_sniper.py`, `finish_all_fleet_sidetasks.py`, `audit_bots_and_sidetasks.py`, `app.py`, `mrg_turnstile_solver.py`, `deploy_both_cf_workers.py`)**:
+    * Discovered that Chicken Land TMA token encoding previously used `.encode("latin1")` in Python and `btoa(decodeURIComponent(cInit))` in JavaScript.
+    * When processing fleet accounts with Cyrillic surnames (e.g. Account #14 Raj Thakur Козлов, Account #15 Tiffany Тарасов, Account #16 Roger Волков, Account #17 Kevin Смирнов, Account #18 Mary Каримов), the encoding threw `UnicodeEncodeError` in Python and `InvalidCharacterError` in Cloudflare Workers, causing Chicken Land mining and task sweeping to silently fail for these accounts.
+    * Fixed across all 7 Python and JavaScript files to use standard UTF-8 Base64 encoding (`.encode("utf-8")` in Python and `btoa(unescape(encodeURIComponent(decodeURIComponent(cInit))))` in JS).
+    * Re-deployed Primary Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+
 - **🤝 All 9 Bots Master Referrals Bound for Account #21 (October 28, 2026)**:
   - **Cloud Onboarding & Referral Handshake Execution (`Render Node 3`)**:
     * Triggered `/api/onboard-new-bots?uid=8669217201&force=1` on Render Standby Node 3.

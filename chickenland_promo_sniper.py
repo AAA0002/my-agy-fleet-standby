@@ -108,7 +108,7 @@ def get_b64_token(init_data: str) -> str:
         return init_data[4:].strip()
     if "%3D" in init_data or "query_id=" in init_data or "user=" in init_data:
         decoded = urllib.parse.unquote(init_data) if "%3D" in init_data else init_data
-        return base64.b64encode(decoded.encode("latin1")).decode("latin1")
+        return base64.b64encode(decoded.encode("utf-8")).decode("utf-8")
     return init_data.strip()
 
 def load_fleet_tokens() -> Dict[str, Dict[str, Any]]:

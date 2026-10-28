@@ -698,7 +698,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         b_rep = {"core": {}, "side_tasks": []}
         if c_init:
             try:
-                b64_c = c_init[4:].strip() if c_init.startswith("TMA ") else base64.b64encode((urllib.parse.unquote(c_init) if "%3D" in c_init else c_init).encode("latin1")).decode("latin1")
+                b64_c = c_init[4:].strip() if c_init.startswith("TMA ") else base64.b64encode((urllib.parse.unquote(c_init) if "%3D" in c_init else c_init).encode("utf-8")).decode("utf-8")
                 c_h = {"Content-Type": "application/json", "Authorization": f"TMA {b64_c}", "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"}
                 async with session.post("https://app8968434282.tgcloud.ai/api/rpc", json={"method": "POST", "path": "/api/me", "body": {"ref": "12668", "lang": "en"}}, headers=c_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status == 200:

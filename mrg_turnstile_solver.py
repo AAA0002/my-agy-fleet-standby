@@ -2658,7 +2658,7 @@ def check_and_farm_chickenland_rest(c_acc: dict) -> tuple[bool, int, int]:
             b64_token = c_init[4:].strip()
         elif "%3D" in c_init or "query_id=" in c_init or "user=" in c_init:
             decoded = urllib.parse.unquote(c_init) if "%3D" in c_init else c_init
-            b64_token = base64.b64encode(decoded.encode("latin1")).decode("latin1")
+            b64_token = base64.b64encode(decoded.encode("utf-8")).decode("utf-8")
         else:
             b64_token = c_init.strip()
 

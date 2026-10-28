@@ -6494,7 +6494,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["chickenland"] = "skipped (no initData)"
             return
         try:
-            b64_c = c_init[4:].strip() if c_init.startswith("TMA ") else base64.b64encode((urllib.parse.unquote(c_init) if "%3D" in c_init else c_init).encode("latin1")).decode("latin1")
+            b64_c = c_init[4:].strip() if c_init.startswith("TMA ") else base64.b64encode((urllib.parse.unquote(c_init) if "%3D" in c_init else c_init).encode("utf-8")).decode("utf-8")
             c_h = {
                 **headers,
                 "Content-Type": "application/json",

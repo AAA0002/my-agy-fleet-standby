@@ -1678,7 +1678,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     if (!accData.chickenland_init_data) return;
     try {
       const cInit = accData.chickenland_init_data;
-      const b64 = cInit.startsWith("TMA ") ? cInit.slice(4).trim() : btoa(decodeURIComponent(cInit));
+      const b64 = cInit.startsWith("TMA ") ? cInit.slice(4).trim() : btoa(unescape(encodeURIComponent(decodeURIComponent(cInit))));
       const cHeaders = {
         "Content-Type": "application/json",
         "Authorization": `TMA ${b64}`,

@@ -44,7 +44,7 @@ class ChickenLandMiner:
             else:
                 decoded = init_data
             self.raw_init_data = decoded
-            self.b64_token = base64.b64encode(decoded.encode("latin1")).decode("latin1")
+            self.b64_token = base64.b64encode(decoded.encode("utf-8")).decode("utf-8")
         else:
             # Assume already base64 encoded
             self.b64_token = init_data.strip()
