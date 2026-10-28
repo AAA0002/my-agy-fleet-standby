@@ -568,7 +568,8 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
                     res["notes"].append("master_one_time_bonus_claimed")
 
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] MRG sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -604,123 +605,125 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
         return p
 
     try:
-        # 1. Login & extract stateful session cookies (atf_tma_session, __Host-atf_fg_v1)
-        async with session.post(f"{atf_base}?action=login&t={int(time.time()*1000)}", json=payload(), headers=atf_h, timeout=aiohttp.ClientTimeout(total=10)) as r:
-            if r.status != 200:
-                err_body = {}
-                try:
-                    err_body = await r.json()
-                except Exception:
-                    pass
-                reason = err_body.get("reason", "")
-                if reason == "entry_risk_captcha_required":
-                    res["notes"].append("entry_risk_captcha_required")
-                else:
-                    res["notes"].append(f"login_{r.status}")
-                return res
-            cookies = r.headers.getall("Set-Cookie", []) if hasattr(r.headers, "getall") else []
-            if cookies:
-                atf_h["Cookie"] = "; ".join([c.split(";")[0] for c in cookies])
-            log_data = await r.json()
+        async with aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True)) as atf_session:
+            # 1. Login & extract stateful session cookies (atf_tma_session, __Host-atf_fg_v1)
+            async with atf_session.post(f"{atf_base}?action=login&t={int(time.time()*1000)}", json=payload(), headers=atf_h, timeout=aiohttp.ClientTimeout(total=10)) as r:
+                if r.status != 200:
+                    err_body = {}
+                    try:
+                        err_body = await r.json()
+                    except Exception:
+                        pass
+                    reason = err_body.get("reason", "")
+                    if reason == "entry_risk_captcha_required":
+                        res["notes"].append("entry_risk_captcha_required")
+                    else:
+                        res["notes"].append(f"login_{r.status}")
+                    return res
+                cookies = r.headers.getall("Set-Cookie", []) if hasattr(r.headers, "getall") else []
+                if cookies:
+                    atf_h["Cookie"] = "; ".join([c.split(";")[0] for c in cookies])
+                log_data = await r.json()
 
-        res["success"] = True
-        u_obj = log_data.get("user") if isinstance(log_data.get("user"), dict) else log_data
-        lvl = u_obj.get("miner_level") or 1
-        bal = float(u_obj.get("mined_balance") or 0.0)
-        res["level"] = lvl
-        res["balance"] = bal
-
-        # 2. Daily claims & boosts
-        await jitter(0.4, 0.9)
-        async with session.post(f"{atf_base}?action=claim&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
-        async with session.post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r:
-            if r.status == 200:
-                try:
-                    c_ref = await r.json()
-                    if c_ref.get("status") == "success":
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"atf_ref_reward_{c_ref.get('claimed_amount', 0)}")
-                except Exception:
-                    pass
-        async with session.post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r:
-            if r.status == 200:
-                try:
-                    c_tw = await r.json()
-                    if c_tw.get("status") == "success":
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"atf_team_wallet_{c_tw.get('claimed_amount', 0)}")
-                except Exception:
-                    pass
-        async with session.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
-        async with session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
-
-        # 3. Dedicated TON wallet sync & cryptographic proof verification
-        w_obj = acc.get("ton_wallet") or ton_wallets.get(str(uid)) or ton_wallets.get(int(uid) if str(uid).isdigit() else 0)
-        ton_addr = get_ton_wallet_address(acc, uid)
-        if ton_addr:
-            async with session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload({"wallet": ton_addr}), headers=atf_h) as r:
-                s_data = {}
-                try: s_data = await r.json()
-                except Exception: pass
-                if s_data.get("reason") == "wallet_proof_required" or log_data.get("wallet_proof_payload"):
-                    nonce = s_data.get("wallet_proof_payload") or log_data.get("wallet_proof_payload")
-                    if nonce and isinstance(w_obj, dict) and (w_obj.get("mnemonic") or w_obj.get("mnemonic_words")):
-                        proof_body = create_atf_ton_proof(w_obj, nonce)
-                        if proof_body:
-                            async with session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload(proof_body), headers=atf_h) as r_p:
-                                res["notes"].append("wallet_proof_verified")
-                else:
-                    res["notes"].append("wallet_synced")
-
-        # 4. Solve Math Challenge & Start Mining
-        try:
-            async with session.post(f"{atf_base}?action=get_math_challenge&t={int(time.time()*1000)}", json=payload({"scope": "start_mine"}), headers=atf_h, timeout=aiohttp.ClientTimeout(total=8)) as mc:
-                if mc.status == 200:
-                    chd = await mc.json()
-                    if chd.get("status") == "success" and chd.get("challenge_id"):
-                        ans = solve_atf_math(chd.get("question", ""))
-                        await jitter(1.5, 3.0)
-                        async with session.post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", json=payload({"math_challenge_id": chd["challenge_id"], "math_answer": ans}), headers=atf_h) as sm:
-                            if sm.status == 200:
-                                res["notes"].append("mining_restarted")
-        except Exception:
-            pass
-
-        # 5. Cooldown & One-Time Tasks
-        completed_tasks = set(log_data.get("user", {}).get("completed_tasks", []))
-        task_cooldowns = log_data.get("task_cooldowns", {})
-        now_sec = int(time.time())
-        atf_tasks = [
-            {"id": "telegram_join", "repeatable": False, "min_s": 10},
-            {"id": "telegram_join_fa", "repeatable": False, "min_s": 10},
-            {"id": "twitter_follow", "repeatable": False, "min_s": 10},
-            {"id": "youtube_subscribe", "repeatable": False, "min_s": 10},
-            {"id": "ig_follow", "repeatable": False, "min_s": 10},
-            {"id": "website_visit", "repeatable": True, "min_s": 10},
-            {"id": "telegram_react_latest", "repeatable": True, "min_s": 20},
-            {"id": "twitter_retweet", "repeatable": True, "min_s": 30},
-            {"id": "youtube_like_comment", "repeatable": True, "min_s": 30},
-            {"id": "ig_like_comment", "repeatable": True, "min_s": 20}
-        ]
-
-        for t in atf_tasks:
-            tid = t["id"]
-            is_rep = t["repeatable"]
-            cd = int(task_cooldowns.get(tid, 0) or 0)
-            can_do = (tid not in completed_tasks) if not is_rep else (now_sec >= cd)
-            if can_do:
-                s_at = int(time.time()) - t["min_s"] - 5
-                async with session.post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", json=payload({"task_id": tid, "client_started_at": s_at}), headers=atf_h) as st: pass
-                await asyncio.sleep(1.2)
-                async with session.post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", json=payload({"task_id": tid, "client_started_at": s_at}), headers=atf_h) as cl:
-                    if cl.status == 200:
-                        cl_res = await cl.json()
-                        if cl_res.get("status") == "success":
+            res["success"] = True
+            u_obj = log_data.get("user") if isinstance(log_data.get("user"), dict) else log_data
+            lvl = u_obj.get("miner_level") or 1
+            bal = float(u_obj.get("mined_balance") or 0.0)
+            res["level"] = lvl
+            res["balance"] = bal
+    
+            # 2. Daily claims & boosts
+            await jitter(0.4, 0.9)
+            async with atf_session.post(f"{atf_base}?action=claim&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
+            async with atf_session.post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r:
+                if r.status == 200:
+                    try:
+                        c_ref = await r.json()
+                        if c_ref.get("status") == "success":
                             res["tasks_claimed"] += 1
-                            res["notes"].append(f"task_{tid}")
-
+                            res["notes"].append(f"atf_ref_reward_{c_ref.get('claimed_amount', 0)}")
+                    except Exception:
+                        pass
+            async with atf_session.post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r:
+                if r.status == 200:
+                    try:
+                        c_tw = await r.json()
+                        if c_tw.get("status") == "success":
+                            res["tasks_claimed"] += 1
+                            res["notes"].append(f"atf_team_wallet_{c_tw.get('claimed_amount', 0)}")
+                    except Exception:
+                        pass
+            async with atf_session.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
+            async with atf_session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
+    
+            # 3. Dedicated TON wallet sync & cryptographic proof verification
+            w_obj = acc.get("ton_wallet") or ton_wallets.get(str(uid)) or ton_wallets.get(int(uid) if str(uid).isdigit() else 0)
+            ton_addr = get_ton_wallet_address(acc, uid)
+            if ton_addr:
+                async with atf_session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload({"wallet": ton_addr}), headers=atf_h) as r:
+                    s_data = {}
+                    try: s_data = await r.json()
+                    except Exception: pass
+                    if s_data.get("reason") == "wallet_proof_required" or log_data.get("wallet_proof_payload"):
+                        nonce = s_data.get("wallet_proof_payload") or log_data.get("wallet_proof_payload")
+                        if nonce and isinstance(w_obj, dict) and (w_obj.get("mnemonic") or w_obj.get("mnemonic_words")):
+                            proof_body = create_atf_ton_proof(w_obj, nonce)
+                            if proof_body:
+                                async with atf_session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload(proof_body), headers=atf_h) as r_p:
+                                    res["notes"].append("wallet_proof_verified")
+                    else:
+                        res["notes"].append("wallet_synced")
+    
+            # 4. Solve Math Challenge & Start Mining
+            try:
+                async with atf_session.post(f"{atf_base}?action=get_math_challenge&t={int(time.time()*1000)}", json=payload({"scope": "start_mine"}), headers=atf_h, timeout=aiohttp.ClientTimeout(total=8)) as mc:
+                    if mc.status == 200:
+                        chd = await mc.json()
+                        if chd.get("status") == "success" and chd.get("challenge_id"):
+                            ans = solve_atf_math(chd.get("question", ""))
+                            await jitter(1.5, 3.0)
+                            async with atf_session.post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", json=payload({"math_challenge_id": chd["challenge_id"], "math_answer": ans}), headers=atf_h) as sm:
+                                if sm.status == 200:
+                                    res["notes"].append("mining_restarted")
+            except Exception:
+                pass
+    
+            # 5. Cooldown & One-Time Tasks
+            completed_tasks = set(log_data.get("user", {}).get("completed_tasks", []))
+            task_cooldowns = log_data.get("task_cooldowns", {})
+            now_sec = int(time.time())
+            atf_tasks = [
+                {"id": "telegram_join", "repeatable": False, "min_s": 10},
+                {"id": "telegram_join_fa", "repeatable": False, "min_s": 10},
+                {"id": "twitter_follow", "repeatable": False, "min_s": 10},
+                {"id": "youtube_subscribe", "repeatable": False, "min_s": 10},
+                {"id": "ig_follow", "repeatable": False, "min_s": 10},
+                {"id": "website_visit", "repeatable": True, "min_s": 10},
+                {"id": "telegram_react_latest", "repeatable": True, "min_s": 20},
+                {"id": "twitter_retweet", "repeatable": True, "min_s": 30},
+                {"id": "youtube_like_comment", "repeatable": True, "min_s": 30},
+                {"id": "ig_like_comment", "repeatable": True, "min_s": 20}
+            ]
+    
+            for t in atf_tasks:
+                tid = t["id"]
+                is_rep = t["repeatable"]
+                cd = int(task_cooldowns.get(tid, 0) or 0)
+                can_do = (tid not in completed_tasks) if not is_rep else (now_sec >= cd)
+                if can_do:
+                    s_at = int(time.time()) - t["min_s"] - 5
+                    async with atf_session.post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", json=payload({"task_id": tid, "client_started_at": s_at}), headers=atf_h) as st: pass
+                    await asyncio.sleep(1.2)
+                    async with atf_session.post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", json=payload({"task_id": tid, "client_started_at": s_at}), headers=atf_h) as cl:
+                        if cl.status == 200:
+                            cl_res = await cl.json()
+                            if cl_res.get("status") == "success":
+                                res["tasks_claimed"] += 1
+                                res["notes"].append(f"task_{tid}")
+    
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] ATF sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -880,7 +883,8 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
             logger.debug(f"[{name}] Victor's arcade solver note: {e}")
 
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] Victor's sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -906,7 +910,8 @@ async def sweep_kynex_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         res["tasks_claimed"] = len(claimed_tasks)
         res["notes"] = notes
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] Kynex sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -1199,7 +1204,8 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             pass
 
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] Diggo sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -1284,7 +1290,8 @@ async def sweep_pepegram_tasks(session: aiohttp.ClientSession, uid: str, name: s
                                 res["notes"].append(f"task_{tk_id}")
 
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] PepeGram sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -1466,7 +1473,8 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
                 pass
 
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] AdxEarn sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
@@ -1619,7 +1627,8 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
             pass
 
     except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
+        logger.error(f"[{name}] Chicken Land sweep error: {type(e).__name__}: {e}")
+        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
 
