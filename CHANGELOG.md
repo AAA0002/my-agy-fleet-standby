@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤝 All 9 Bots Master Referrals Bound for Account #21 (October 28, 2026)**:
+  - **Cloud Onboarding & Referral Handshake Execution (`Render Node 3`)**:
+    * Triggered `/api/onboard-new-bots?uid=8669217201&force=1` on Render Standby Node 3.
+    * Executed silent Telegram MTProto referral registration and WebApp handshake across all 9 legitimate active bots to Master Account (`6727787768`):
+      1. ⚡ MRG Miner (`mrgtoken_bot` / `mrgminerbot`): `ref_IRN1G3XD`
+      2. 🪙 ATF Miner (`atfminers_bot` / `ATF_AIRDROP_bot`): `6727787768` (Confirmed by bot on Master ID: *"A referral has been confirmed and is now Active! User 8669217201"*)
+      3. 🏢 Victor's Company (`VictorsCompanybot`): `ref_A20AA96F18`
+      4. 💧 VyroDrop (`vyrodrop_bot`): `ref_myFjrqqE4WN_`
+      5. 🌐 Kynex Network (`Kynex_miningbot`): `6727787768` (Confirmed by bot on Master ID: *"New Referral: Aaaa201 just joined using your invite link! You earned +250 KNX"*)
+      6. ⛏️ DiggoMiner (`Diggominer_bot`): `ref_4088138f11effe8eef4b86ff`
+      7. 🐸 PepeGram (`Pepe_gram_bot`): `1449`
+      8. 🤖 AdxEarn AI (`AdxEarnAibot`): `ref_6727787768`
+      9. 🐔 Chicken Land (`ChickenLandBot`): `12668`
+    * Verified `/api/onboard-status` reports all 9 bots `verified` for Account #21.
+    * Dispatched verified completion alert to `AAA Admin notification` (`-1004358687850`).
+
 - **🛡️ Ephemeral Resilience & Roster Completeness Hardening (October 28, 2026)**:
   - **Upstash Redis REST Fallback across Watchers & Sweepers (`cloud_wallet_sweeper.py`, `multichain_onchain_watcher.py`, `daily_profit_reporter.py`)**:
     * Implemented automated Upstash Redis REST fallback (`fleet:wallets:evm`, `fleet:wallets:ton`, `fleet:live_state`) across all on-chain wallet auditors, sweepers, and financial reporting modules.
