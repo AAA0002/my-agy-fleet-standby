@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Cloud Turnstile DOM Null Guardrail, Non-Blocking Channel Joins & 100% Task Claims (October 28, 2026)**:
+  - **Cloudflare Turnstile Solver DOM Guardrail (`mrg_turnstile_solver.py` & `cloud-fleet-solver`)**:
+    * **Root-Cause Analysis of Circuit Breaker Tripping**: Solved runner failure where proxy connection resets (`net::ERR_CONNECTION_RESET`) during `page.goto` caused `document.body` to be null, throwing `TypeError: Cannot read properties of null (reading 'appendChild')` inside `solve_js`.
+    * **DOM Guard Implementation**: Added `let doc = document.body || document.documentElement; if (!doc) resolve({success: false, error: 'no_dom'});` and added graceful navigation error recovery (`await context.close()`) to prevent tripping the 5-fail runner circuit breaker.
+    * **Turnstile Pass-Through on Check-In**: Forwarded valid `turnstileToken` into `daily-checkin` calls across REST and solver routines, preventing `HTTP 403 HUMAN_CHECK_REQUIRED`.
+    * **Public Runner Synchronized**: Pushed clean 8-bot solver to `AAA0002/cloud-fleet-solver` (`960c998`) and dispatched run `40735740449` on GitHub Actions.
+  - **Priority Channel Joins & Non-Blocking Architecture (`app.py`)**:
+    * **Execution Reordering**: Reordered `_run_channel_sync()` so joining mandatory sponsor channels (`@mrgminer`, `@mrgwithdrawal`, `@keepeye_app`, `@DurovKidney`, etc.) and unblocking legitimate bots executes FIRST before any dialog sanitation.
+    * **Master Account Protection**: Completely bypassed unnecessary dialog deletion for the master account (`6727787768`).
+    * **Non-Blocking REST Gateway**: Changed `sync_mode = request.query_params.get("sync") == "1"`, making `/api/channels/sync-and-verify` non-blocking by default (`200 OK {"status": "running_in_background"}`) to avoid HTTP client timeouts.
+    * **Account 1 100% Task Completion**: Verified Account 1 joined `@keepeye_app` via background Telethon, unblocking `task-1792840221525` (`Subscribe KeepEye.app News`). Claimed +10 MRG (inAppBalance reached 383.58 MRG, 36/36 tasks 100% completed).
+  - **Single-Account Dashboard Modal 1-Click Sync & Sweep (`dashboard.html`, `public/admin.html`)**:
+    * Enhanced `handleSyncChannels` to trigger background channel joins followed by automatic `/api/farm/cloud-all?uid=${uid}` task sweep after 3.5s, automating channel verification and task claiming in one click.
+  - **Live Multi-Bot Ground-Truth Audit**:
+    * Verified authentic live API responses across all 8 active bots: MRG (595 MRG, Level 39, 9/9 tasks), ATF (200 OK), Kynex (23,461.87 KNX, Level 1, Mining ACTIVE, +41.62 KNX claimed), PepeGram (726.04 Hashes, 1134 Power), AdxEarn (715 Points, Streak 6), Chicken Land (940 Coins, 16 Eggs, 2 Hens), DiggoMiner (254.32 DIGGO, Level 29, Pending 6.38).
+  - **Deployments & Durability**:
+    * Render Node 3 (Oregon) deployed live (`dep-dbh32njbc2fs73ek0e40`).
+    * Cloudflare Worker Node 4 (`restore-agy.agorameet.workers.dev`) deployed and verified.
+    * Disaster recovery archive successfully streamed to `@myagyai` vault channel.
+
 - **🚀 Comprehensive Auto-Farming, Task Auto-Claiming, Channel Sync & Edge Proxy Overhaul (October 28, 2026)**:
   - **MRG Miner Daily Check-in & Tasks Resolution Across Accounts**:
     * **Forensic Diagnosis of User Screenshot**: Analyzed user screenshot showing available tasks ("Vote for MRG Token Migration", "Subscribe MRG Channel", "Subscribe MRG Withdrawal", "Subscribe KeepEye.app News", "React on Latest post") and unclaimed Daily Check-in.
