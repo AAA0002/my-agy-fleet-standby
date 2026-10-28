@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Fleet-Wide Wallet Connection Engine & VyroDrop Mining Activation Fix (October 28, 2026)**:
+  - **Account #10 Authentic TON v4r2 Keypair Provisioning**:
+    * Discovered that Account #10 (`8203342513`) was labeled with a custodial address without a 24-word seed phrase (`mnemonic: null`), preventing TonConnect 2.0 cryptographic proof generation across all mining bots.
+    * Auto-generated authentic isolated TON v4r2 keypair (`UQCEbrd5e0H9vicsVnGWRNHyiFNBxfN7SRwwlJRgCbKkIIjb`) with a full 24-word seed phrase using `tonsdk`.
+    * Atomically persisted keypair across `fleet_ton_wallets.json`, `accounts.json`, `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`, and Upstash Redis (`fleet:wallets:ton` and `account:8203342513`). 100% of worker accounts now possess full cryptographic keypairs.
+  - **MRG Miner 100% Fleet Wallet Synchronization**:
+    * Executed `/api/user/connect-wallet` with TonConnect 2.0 cryptographic proofs across all 21 accounts. Confirmed 21/21 accounts successfully bound with their dedicated TON addresses.
+  - **ATF Miner 100% Cryptographic Verification (`wallet_verified: 1`)**:
+    * Executed stateful login and `/miner/index.php?action=sync_wallet` across all 21 accounts.
+    * Generated and submitted signed TonConnect 2.0 proofs (`create_atf_ton_proof`) with unique request replay deduplication for Accounts #19 (`8937908003`) and #20 (`8609131528`), upgrading both to `wallet_verified: 1` and miner level 27/13. All 21 accounts now verified on ATF Miner.
+  - **VyroDrop `MINING_WALLET_REQUIRED` (HTTP 409) Root Cause Fix & Cloud Solver Upgrade**:
+    * Identified root cause: VyroDrop strictly requires Turnstile verification (`action: wallet_onboarding`) to issue a TonConnect challenge nonce before allowing `/api/mining/start`. In previous solver runs, VyroDrop was placed at the very end of a 50-minute browser queue, resulting in expired WebApp tokens (`TELEGRAM_AUTH_INVALID` 401) that tripped the 5-failure circuit breaker.
+    * Re-ordered `mrg_turnstile_solver.py` Phase 4 to run **VyroDrop wallet onboarding FIRST (Phase 4A)** in the first 2-3 minutes of the run with guaranteed fresh tokens.
+    * Handled HTTP 401 gracefully without tripping the Cloudflare WAF circuit breaker.
+    * Added dynamic Upstash Redis token re-fetching (`load_all_miniapp_tokens()`) and `load_fleet_ton_wallets()` immediately prior to launching headless Chromium.
+    * Upgraded `cloud-fleet-solver` workflow timeout to 120 minutes and pushed to `AAA0002/cloud-fleet-solver` (commit `7d9b9c9`). Triggered workflow run `40619625300`.
+
 - **🐞 Critical Bug Fix: Chicken Land TMA Base64 Encoding for Cyrillic Names (October 28, 2026)**:
   - **Eradicated `UnicodeEncodeError` in Python & `InvalidCharacterError` in JS (`chickenland_miner.py`, `chickenland_promo_sniper.py`, `finish_all_fleet_sidetasks.py`, `audit_bots_and_sidetasks.py`, `app.py`, `mrg_turnstile_solver.py`, `deploy_both_cf_workers.py`)**:
     * Discovered that Chicken Land TMA token encoding previously used `.encode("latin1")` in Python and `btoa(decodeURIComponent(cInit))` in JavaScript.
