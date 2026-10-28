@@ -16064,7 +16064,7 @@ Reply to Arif naturally:`;
           const rawSynced = tData.synced_at;
           const syncedMs = typeof rawSynced === "number" ? (rawSynced > 1e11 ? rawSynced : rawSynced * 1000) : new Date(rawSynced || 0).getTime();
           const ageHours = (nowMs - syncedMs) / 3600000;
-          if (ageHours >= 14) { // 24h - 14h = 10 hours safety buffer before expiry
+          if (ageHours >= 3.0) { // Keep short-lived WebApp sessions (Victor's Company 1h, ATF, MRG) continuously refreshed
             needBatchRefresh = true;
             break;
           }

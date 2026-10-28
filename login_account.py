@@ -826,10 +826,70 @@ async def interactive_login():
     save_accounts(accounts)
     print(f"\n✅ Account successfully saved to {ACCOUNTS_FILE}!")
     print(f"Total active accounts: {len(accounts)}")
+
+    # Autonomous Cloud Synchronization: Upstash Redis & Cloudflare Mesh
+    sync_account_to_clouds_sync(acc_entry)
+
     print("The 24/7 background worker will now automatically farm for this account.")
     print("=" * 55 + "\n")
 
     await client.disconnect()
+
+
+def sync_account_to_clouds_sync(acc_entry: dict):
+    """Synchronizes added/updated account to Upstash Redis fleet:accounts for cloud workers."""
+    env = {}
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    env[k.strip()] = v.strip().strip('"').strip("'")
+    
+    up_url = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL")
+    up_tok = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN")
+    if not (up_url and up_tok):
+        return
+    
+    uid = str(acc_entry.get("user_id"))
+    try:
+        req = urllib.request.Request(f"{up_url}/get/fleet:accounts", headers={"Authorization": f"Bearer {up_tok}"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            cur_accs = json.loads(data["result"]) if isinstance(data.get("result"), str) else (data.get("result") or [])
+        
+        acc_found = False
+        for i, a in enumerate(cur_accs):
+            if str(a.get("user_id")) == uid or str(a.get("phone")) == str(acc_entry.get("phone")):
+                cur_accs[i] = acc_entry
+                acc_found = True
+                break
+        if not acc_found:
+            cur_accs.append(acc_entry)
+        
+        for i, a in enumerate(cur_accs):
+            a["index"] = i + 1
+        
+        pipe_cmds = [
+            ["SET", f"account:{uid}", json.dumps(acc_entry)],
+            ["SADD", "fleet_accounts_set", uid],
+            ["SADD", "fleet:healthy_sessions", uid],
+            ["SREM", "fleet:revoked_sessions", uid],
+            ["SET", "fleet:accounts", json.dumps(cur_accs)]
+        ]
+        pipe_req = urllib.request.Request(
+            f"{up_url}/pipeline",
+            headers={"Authorization": f"Bearer {up_tok}", "Content-Type": "application/json"},
+            data=json.dumps(pipe_cmds).encode(),
+            method="POST"
+        )
+        with urllib.request.urlopen(pipe_req, timeout=10) as p_resp:
+            pass
+        print(f"☁️ Successfully synchronized Account #{acc_entry.get('index', len(cur_accs))} ({acc_entry.get('name')}) to Upstash Redis fleet:accounts ({len(cur_accs)} total)!")
+    except Exception as e:
+        print(f"⚠️ Cloud sync note: {e}")
 
 
 

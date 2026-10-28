@@ -1204,7 +1204,7 @@ function App() {
         { id: "users", label: "Miners", icon: "users", count: adminUsers.length },
         { id: "wallets", label: "Wallets", icon: "wallet", count: communityWallets.length },
         { id: "broadcast", label: "Broadcast", icon: "bell" },
-        { id: "pools", label: "9 Pools", icon: "zap", count: 9 },
+        { id: "pools", label: "8 Pools", icon: "zap", count: 8 },
         { id: "economy", label: "Economy", icon: "crown" }
       ].map(tab => {
         const isActive = activeNavTab === tab.id;
@@ -1421,7 +1421,7 @@ function App() {
           React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono mb-2.5 px-0.5 text-slate-400" },
             React.createElement("div", { className: "flex items-center gap-1.5" },
               React.createElement("span", { className: "font-sans font-bold" }, `📱 ${accs.length} Connected`),
-              accs.length > 0 && React.createElement("span", { className: "text-emerald-400 font-bold" }, "(9 Pools 24/7)")
+              accs.length > 0 && React.createElement("span", { className: "text-emerald-400 font-bold" }, "(8 Pools 24/7)")
             ),
             (tonW || customW) && React.createElement("div", { className: "flex items-center gap-1 text-[9px]" },
               tonW && React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30" }, "TON"),
@@ -1827,7 +1827,7 @@ function App() {
           { id: "users", label: "Miners", icon: "users", count: adminUsers.length },
           { id: "wallets", label: "Wallets", icon: "wallet", count: communityWallets.length },
           { id: "broadcast", label: "Broadcast", icon: "bell" },
-          { id: "pools", label: "9 Pools", icon: "zap" },
+          { id: "pools", label: "8 Pools", icon: "zap" },
           { id: "economy", label: "Economy", icon: "crown" }
         ].map(tab => {
           const isActive = activeNavTab === tab.id;
