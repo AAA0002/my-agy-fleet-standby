@@ -695,10 +695,12 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
             {"id": "telegram_join_fa", "repeatable": False, "min_s": 10},
             {"id": "twitter_follow", "repeatable": False, "min_s": 10},
             {"id": "youtube_subscribe", "repeatable": False, "min_s": 10},
+            {"id": "ig_follow", "repeatable": False, "min_s": 10},
             {"id": "website_visit", "repeatable": True, "min_s": 10},
             {"id": "telegram_react_latest", "repeatable": True, "min_s": 20},
             {"id": "twitter_retweet", "repeatable": True, "min_s": 30},
-            {"id": "youtube_like_comment", "repeatable": True, "min_s": 30}
+            {"id": "youtube_like_comment", "repeatable": True, "min_s": 30},
+            {"id": "ig_like_comment", "repeatable": True, "min_s": 20}
         ]
 
         for t in atf_tasks:
