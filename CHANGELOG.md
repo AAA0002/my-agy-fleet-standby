@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Cloud Turnstile Proxy Elimination, Direct Fallback & 8-Bot Fleet Harvest Stabilization (October 28, 2026)**:
+  - **Forensic Diagnosis of Cloud Turnstile Runner Failure (`mrg_turnstile_solver.py` & `cloud-fleet-solver`)**:
+    * **Root Cause: Webshare HTTP 402 & Poisoned Free Proxy Fallback**: Discovered that when Webshare proxy bandwidth exhausted (`HTTP 402 Payment Required`), the solver fell back to scraping free proxies from `proxyscrape.com`. Free public proxies choke on Cloudflare Turnstile's WebSocket handshakes (`wss://challenges.cloudflare.com/`), causing `net::ERR_TIMED_OUT`, `net::ERR_CONNECTION_RESET`, and `Page.goto: Timeout 18000ms exceeded`. This repeatedly triggered the 5-failure circuit breaker and aborted Turnstile solving across the fleet.
+    * **Solution**: Completely removed the insecure, flaky `proxyscrape.com` fallback. Webshare keys are now strictly validated against `challenges.cloudflare.com/turnstile/v0/api.js`; if unavailable or quota exhausted, the engine cleanly returns `None` and leverages high-speed direct gigabit Azure cloud runner connections (`USE_BROWSER_PROXY=0`).
+    * **Resilient Navigation & Auto-Direct Fallback**: Enhanced circuit breaker logic in `mrg_turnstile_solver.py` so that if 3 consecutive browser challenges fail, the proxy pool is automatically cleared and remaining solves execute directly via runner IP without aborting the queue.
+    * **Synchronized to Public Runner**: Pushed commit `09f458ae` (`mrg_turnstile_solver.py`) and `a19acd81` (`.github/workflows/mrg_turnstile_solver.yml`) to `AAA0002/cloud-fleet-solver`. Canceled stalled run `40735740449` and dispatched clean run `40741813817`.
+  - **Live Multi-Bot Ground-Truth Verification Across Accounts**:
+    * **MRG Miner (`@mrgtoken_bot`)**: Verified live API (`https://mrg.up.railway.app/api/user/me`). Master Account has active human pass until `2026-10-28T21:53:01Z` and claimed +2.55 MRG (in-app balance: 386.13 MRG, 36/36 tasks claimed, level 163).
+    * **ATF Miner (`@atfminers_bot`)**: 100% operational via REST! Account 1 claimed +0.1077 ATF (balance: 6,115.36 ATF); Account 20 claimed +0.0657 ATF (balance: 148.07 ATF).
+    * **Kynex Network (`@Kynex_miningbot`)**: 100% operational via Firebase Cloud Functions! Account 1 authenticated via custom token exchange, claimed +88.23 KNX (balance: 101,116.99 KNX, level 2, mining active).
+    * **PepeGram (`@Pepe_gram_bot`)**: 100% operational via REST! Account 1 claimed +60.93 PEPE; Account 20 claimed +2.75 PEPE.
+    * **AdxEarn AI (`@AdxEarnAibot`)**: 100% operational via `/api/user/session`! Account 1 claimed +200 pts; Account 20 claimed +200 pts.
+    * **DiggoMiner (`@Diggominer_bot`)**: 100% operational via `/api/state` with 30-day JWT! Both accounts verified and farming actively.
+    * **Chicken Land (`@ChickenLandBot`)**: 100% operational via `/api/rpc` with `Authorization: TMA {b64_token}`! Account 1 sold 51 eggs; Account 20 sold 6 eggs.
+  - **Automated Standby & Cloud Synchronization Pipeline (`push_to_standby_repo.py`)**:
+    * Wired automated dual-push: running `push_to_standby_repo.py` now automatically pushes solver updates to both `AAA0002/my-agy-fleet-standby` and `AAA0002/cloud-fleet-solver`.
+    * Render Node 3 Oregon deployed live (`dep-dbh3iju7bikc73els900`).
+    * Full disaster recovery archive streamed to Telegram vault `@myagyai` (`-1004453515167`).
+
 - **🛡️ Cloud Turnstile DOM Null Guardrail, Non-Blocking Channel Joins & 100% Task Claims (October 28, 2026)**:
   - **Cloudflare Turnstile Solver DOM Guardrail (`mrg_turnstile_solver.py` & `cloud-fleet-solver`)**:
     * **Root-Cause Analysis of Circuit Breaker Tripping**: Solved runner failure where proxy connection resets (`net::ERR_CONNECTION_RESET`) during `page.goto` caused `document.body` to be null, throwing `TypeError: Cannot read properties of null (reading 'appendChild')` inside `solve_js`.
