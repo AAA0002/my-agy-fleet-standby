@@ -7819,7 +7819,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
     if target_uid:
         accounts = [a for a in accounts if str(a.get("user_id")) == str(target_uid)]
 
-    sync_mode = request.query_params.get("sync") == "1" or bool(target_uid)
+    sync_mode = request.query_params.get("sync") == "1"
 
     async def _run_channel_sync():
         LAST_CHANNEL_SYNC_STATUS["status"] = "running"
@@ -7849,91 +7849,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     LAST_CHANNEL_SYNC_STATUS["results"].append(acc_res)
                     continue
 
-                # 1-TIME SANITATION: Only block, erase history, and leave discontinued bots once per account
-                if not already_purged:
-                    # 1. Dialog-based multi-pass sanitation: Erase history completely & leave channels
-                    try:
-                        d_list = await cl.get_dialogs(limit=100)
-                        for d in d_list:
-                            u_low = (getattr(d.entity, 'username', '') or '').lower()
-                            t_low = (getattr(d.entity, 'title', '') or getattr(d.entity, 'first_name', '') or '').lower()
-                            is_chan = hasattr(d.entity, "broadcast") and getattr(d.entity, "broadcast", False)
-                            is_bot = getattr(d.entity, "bot", False)
-
-                            # Strict protection: NEVER treat active legitimate fleet bots as scammers
-                            if u_low in [b.lower() for b in FLEET_LEGITIMATE_BOTS]:
-                                continue
-
-                            matches = any(b.lower() == u_low for b in FLEET_BANNED_SCAMMERS) or \
-                                      any(c.lower() == u_low for c in SCAM_CHANNELS_TO_LEAVE) or \
-                                      any(k in t_low for k in ["finvora", "turbo gram", "turbogram", "ai lab", "ailab", "stones white", "ultra wallet", "ultrawallet", "trx power", "gold keepers", "earncraft", "art 🚀", "live withdraw"])
-                            if matches:
-                                if is_bot:
-                                    try: await cl(functions.contacts.BlockRequest(id=d.entity))
-                                    except Exception: pass
-                                if is_chan:
-                                    try: await cl(functions.channels.LeaveChannelRequest(d.entity))
-                                    except Exception: pass
-                                else:
-                                    try:
-                                        await cl(functions.messages.ReadHistoryRequest(peer=d.entity, max_id=0))
-                                        for _ in range(25):
-                                            r_del = await cl(functions.messages.DeleteHistoryRequest(peer=d.entity, max_id=0, just_clear=False, revoke=True))
-                                            if getattr(r_del, 'offset', 0) <= 0: break
-                                            await asyncio.sleep(0.2)
-                                    except Exception: pass
-                                try: await cl.delete_dialog(d.entity)
-                                except Exception: pass
-                                acc_res["deleted_dialogs"].append(u_low or t_low)
-                    except Exception as pe:
-                        logger.warning(f"[{name}] Dialog purge note: {pe}")
-
-                    # Direct entity fallback purge
-                    for sb in FLEET_BANNED_SCAMMERS:
-                        try:
-                            b_ent = await cl.get_entity(sb)
-                            await cl(functions.contacts.BlockRequest(id=b_ent))
-                            for _ in range(25):
-                                r_del = await cl(functions.messages.DeleteHistoryRequest(peer=b_ent, max_id=0, just_clear=False, revoke=True))
-                                if getattr(r_del, 'offset', 0) <= 0: break
-                                await asyncio.sleep(0.2)
-                            await cl.delete_dialog(b_ent)
-                            acc_res["blocked_scammers"].append(sb)
-                        except Exception: pass
-
-                    for sc in SCAM_CHANNELS_TO_LEAVE:
-                        try:
-                            ch_ent = await cl.get_entity(sc)
-                            try: await cl(functions.channels.LeaveChannelRequest(ch_ent))
-                            except Exception: pass
-                            await cl.delete_dialog(ch_ent)
-                            acc_res["left_scam_channels"].append(sc)
-                        except Exception: pass
-
-                    acc["dead_bots_purged_v2"] = True
-                    FLEET_ACCOUNTS_CACHE[uid] = acc
-                    if UPSTASH_URL and UPSTASH_TOKEN:
-                        try:
-                            async with aiohttp.ClientSession() as sup:
-                                await sup.post(f"{UPSTASH_URL}/set/fleet:purged_v2:{uid}", data="1", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3))
-                        except Exception:
-                            pass
-                    try:
-                        asyncio.create_task(sync_new_account_to_clouds(acc))
-                    except Exception:
-                        pass
-                else:
-                    logger.info(f"[{name}] Dead bots & scam channels already purged previously. Skipping dialog deletion.")
-
-                # 3. Unblock all 9 legitimate fleet bots
-                for b in FLEET_LEGITIMATE_BOTS:
-                    try:
-                        await cl(functions.contacts.UnblockRequest(id=b))
-                        acc_res["unblocked"].append(b)
-                    except Exception:
-                        pass
-
-                # 4. Join mandatory legitimate sponsor channels (Idempotent per channel with human delays)
+                # 1. Join mandatory legitimate sponsor channels (Idempotent per channel with human delays) - PRIORITY 1
                 joined_set = set()
                 if UPSTASH_URL and UPSTASH_TOKEN:
                     try:
@@ -7958,7 +7874,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                         await cl(JoinChannelRequest(ch))
                         acc_res["joined"].append(ch)
                         joined_set.add(ch)
-                        await asyncio.sleep(random.uniform(5.0, 10.0))
+                        await asyncio.sleep(random.uniform(2.0, 4.0))
                     except FloodWaitError as fwe:
                         logger.warning(f"[{name}] Flood wait {fwe.seconds}s encountered on @{ch}. Halting joins to protect account.")
                         acc_res["joined"].append(f"flood_wait_{fwe.seconds}s")
@@ -7976,6 +7892,66 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     try:
                         async with aiohttp.ClientSession() as up_s:
                             await up_s.post(f"{UPSTASH_URL}/set/fleet:channels_joined_set:{uid}", data=json.dumps(list(joined_set)), headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                    except Exception:
+                        pass
+
+                # 2. Unblock all 8 legitimate fleet bots - PRIORITY 2
+                for b in FLEET_LEGITIMATE_BOTS:
+                    try:
+                        await cl(functions.contacts.UnblockRequest(id=b))
+                        acc_res["unblocked"].append(b)
+                    except Exception:
+                        pass
+
+                # 3. 1-TIME SANITATION: Only block, erase history, and leave discontinued bots once per account (Worker accounts only)
+                if not already_purged and uid != "6727787768":
+                    # Dialog-based sanitation: Erase history & leave scam channels
+                    try:
+                        d_list = await cl.get_dialogs(limit=50)
+                        for d in d_list:
+                            u_low = (getattr(d.entity, 'username', '') or '').lower()
+                            t_low = (getattr(d.entity, 'title', '') or getattr(d.entity, 'first_name', '') or '').lower()
+                            is_chan = hasattr(d.entity, "broadcast") and getattr(d.entity, "broadcast", False)
+                            is_bot = getattr(d.entity, "bot", False)
+
+                            # Strict protection: NEVER treat active legitimate fleet bots as scammers
+                            if u_low in [b.lower() for b in FLEET_LEGITIMATE_BOTS]:
+                                continue
+
+                            matches = any(b.lower() == u_low for b in FLEET_BANNED_SCAMMERS) or \
+                                      any(c.lower() == u_low for c in SCAM_CHANNELS_TO_LEAVE) or \
+                                      any(k in t_low for k in ["finvora", "turbo gram", "turbogram", "ai lab", "ailab", "stones white", "ultra wallet", "ultrawallet", "trx power", "gold keepers", "earncraft", "art 🚀", "live withdraw"])
+                            if matches:
+                                if is_bot:
+                                    try: await cl(functions.contacts.BlockRequest(id=d.entity))
+                                    except Exception: pass
+                                if is_chan:
+                                    try: await cl(functions.channels.LeaveChannelRequest(d.entity))
+                                    except Exception: pass
+                                else:
+                                    try:
+                                        await cl(functions.messages.ReadHistoryRequest(peer=d.entity, max_id=0))
+                                        for _ in range(5):
+                                            r_del = await cl(functions.messages.DeleteHistoryRequest(peer=d.entity, max_id=0, just_clear=False, revoke=True))
+                                            if getattr(r_del, 'offset', 0) <= 0: break
+                                            await asyncio.sleep(0.1)
+                                    except Exception: pass
+                                try: await cl.delete_dialog(d.entity)
+                                except Exception: pass
+                                acc_res["deleted_dialogs"].append(u_low or t_low)
+                    except Exception as pe:
+                        logger.warning(f"[{name}] Dialog purge note: {pe}")
+
+                    acc["dead_bots_purged_v2"] = True
+                    FLEET_ACCOUNTS_CACHE[uid] = acc
+                    if UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with aiohttp.ClientSession() as sup:
+                                await sup.post(f"{UPSTASH_URL}/set/fleet:purged_v2:{uid}", data="1", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3))
+                        except Exception:
+                            pass
+                    try:
+                        asyncio.create_task(sync_new_account_to_clouds(acc))
                     except Exception:
                         pass
 
