@@ -2361,8 +2361,9 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_9_BOT_KEYS):
         acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_10_referrals_bound"] = True
+        acc_entry["all_8_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 9 active fleet bots successfully bound to Master ID 6727787768!")
+    logger.info(f"[{name}] ✅ All 8 active fleet bots successfully bound to Master ID 6727787768!")
 
     # Wait 1.0s for Telegram bot backends to complete registration
     await asyncio.sleep(1.0)
@@ -4474,7 +4475,7 @@ async def verify_login_code(request: Request):
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (9/9 Active Bots)...",
+            "referrals": "Binding to Master Fleet (8/8 Active Bots)...",
             "message": f"Account #{target_idx} connected successfully! Restored to active cloud fleet."
         }
 
