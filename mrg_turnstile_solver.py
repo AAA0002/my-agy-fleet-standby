@@ -179,36 +179,7 @@ def get_webshare_proxy() -> dict | None:
     if _VERIFIED_MRG_PROXIES:
         return _VERIFIED_MRG_PROXIES[0]
 
-    # Resilient Fallback: If Webshare bandwidth is exhausted (HTTP 402), discover live proxies verified against Cloudflare Turnstile
-    try:
-        url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=3000&country=US,GB,DE,FR,CA&ssl=yes&anonymity=elite"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
-        with urllib.request.urlopen(req, timeout=6) as r:
-            lines = [l.strip() for l in r.read().decode().splitlines() if l.strip()]
-        random.shuffle(lines)
-        for p in lines[:25]:
-            proxy_str = f"http://{p}"
-            ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
-            opener = urllib.request.build_opener(ph)
-            test_req = urllib.request.Request(
-                "https://app.mrgtoken.xyz",
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"}
-            )
-            try:
-                with opener.open(test_req, timeout=3.5) as tr:
-                    if tr.status == 200:
-                        verified = {"server": proxy_str}
-                        _VERIFIED_MRG_PROXIES.append(verified)
-                        logger.info(f"🌐 Verified live fallback proxy: {p} (MRG App HTTP 200 OK)")
-                        if len(_VERIFIED_MRG_PROXIES) >= 3:
-                            break
-            except Exception:
-                continue
-    except Exception as fe:
-        logger.debug(f"Fallback proxy fetch note: {fe}")
-
-    if _VERIFIED_MRG_PROXIES:
-        return _VERIFIED_MRG_PROXIES[0]
+    logger.info("🌐 Webshare proxies unavailable or quota exhausted. Using direct high-speed cloud connection.")
     return None
 
 
@@ -2580,10 +2551,14 @@ async def run_mrg_auto_solver():
         async with async_playwright() as p:
             browser = await p.chromium.launch(**launch_kwargs)
 
-            # A. Solve Victor's Company passes & unlock Level 1 Miner (Protected by 5-fail circuit breaker)
+            # A. Solve Victor's Company passes & unlock Level 1 Miner (Protected by circuit breaker & auto direct-fallback)
             vic_fails = 0
             for v_acc in victors_needing_solver:
-                if vic_fails >= 5:
+                if vic_fails >= 3 and _VERIFIED_MRG_PROXIES:
+                    logger.warning("⚠️ 3 consecutive Victor's solve failures. Clearing proxy pool and switching to DIRECT connection.")
+                    _VERIFIED_MRG_PROXIES.clear()
+                    vic_fails = 0
+                elif vic_fails >= 6:
                     logger.warning("⚠️ Victor's Turnstile consecutive failure circuit breaker tripped. Skipping remaining Victor's browser solves.")
                     break
                 v_uid = v_acc["uid"]
@@ -2607,10 +2582,14 @@ async def run_mrg_auto_solver():
                     vic_fails += 1
                 await asyncio.sleep(0.5)
 
-            # C. Solve MRG passes (Protected by 5-fail circuit breaker)
+            # C. Solve MRG passes (Protected by circuit breaker & auto direct-fallback)
             mrg_fails = 0
             for acc in accounts_needing_solver:
-                if mrg_fails >= 5:
+                if mrg_fails >= 3 and _VERIFIED_MRG_PROXIES:
+                    logger.warning("⚠️ 3 consecutive MRG solve failures. Clearing proxy pool and switching to DIRECT connection.")
+                    _VERIFIED_MRG_PROXIES.clear()
+                    mrg_fails = 0
+                elif mrg_fails >= 6:
                     logger.warning("⚠️ MRG Turnstile consecutive failure circuit breaker tripped (runner IP rate-limited). Skipping remaining MRG browser solves.")
                     break
                 uid = acc["uid"]

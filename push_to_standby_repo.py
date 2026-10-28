@@ -115,6 +115,41 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
         except Exception as pe:
             print(f"❌ Error pushing {repo_path} to {repo}: {pe}")
 
+def push_to_solver_repo(local_path: str, repo_path: str, commit_msg: str):
+    if not os.path.exists(local_path) or not PAT:
+        return
+    with open(local_path, "rb") as f:
+        content_bytes = f.read()
+    b64_content = base64.b64encode(content_bytes).decode("utf-8")
+    repo = "AAA0002/cloud-fleet-solver"
+    get_url = f"https://api.github.com/repos/{repo}/contents/{repo_path}"
+    headers = {
+        "Authorization": f"Bearer {PAT}",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    current_sha = None
+    try:
+        req = urllib.request.Request(get_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode())
+            current_sha = data.get("sha")
+    except Exception:
+        pass
+    local_blob_sha = hashlib.sha1(b"blob " + str(len(content_bytes)).encode() + b"\0" + content_bytes).hexdigest()
+    if current_sha and current_sha == local_blob_sha:
+        return
+    put_data = {"message": commit_msg, "content": b64_content}
+    if current_sha:
+        put_data["sha"] = current_sha
+    try:
+        req_put = urllib.request.Request(get_url, data=json.dumps(put_data).encode("utf-8"), headers=headers, method="PUT")
+        with urllib.request.urlopen(req_put, timeout=30) as put_resp:
+            res = json.loads(put_resp.read().decode())
+            print(f"✅ Pushed {repo_path} to {repo} (Commit: {res.get('commit', {}).get('sha', '')[:8]})!")
+    except Exception as e:
+        print(f"Note pushing {repo_path} to {repo}: {e}")
+
 def push_app():
     push_file(STANDBY_SRC, "app.py", "feat: 8-bot fleet auto-farming (MRG, ATF, Victors, Kynex, Diggo, Pepe, Adx, Chicken)")
     kynex_file = os.path.join(BASE_DIR, "kynex_miner.py")
@@ -132,6 +167,10 @@ def push_app():
     mrg_solver = os.path.join(BASE_DIR, "mrg_turnstile_solver.py")
     if os.path.exists(mrg_solver):
         push_file(mrg_solver, "mrg_turnstile_solver.py", "feat: MRG total holding level qualification and solver")
+        push_to_solver_repo(mrg_solver, "mrg_turnstile_solver.py", "fix(solver): eliminate flaky proxyscrape free proxies, auto direct fallback & align 8-bot policy")
+    solver_wf = os.path.join(BASE_DIR, ".github", "workflows", "mrg_turnstile_solver.yml")
+    if os.path.exists(solver_wf):
+        push_to_solver_repo(solver_wf, ".github/workflows/mrg_turnstile_solver.yml", "ci(workflow): set USE_BROWSER_PROXY to 0 for high-speed direct cloud execution")
     login_acc = os.path.join(BASE_DIR, "login_account.py")
     if os.path.exists(login_acc):
         push_file(login_acc, "login_account.py", "feat: Dual-layer Telegram /start and WebApp start_param referral binding")
