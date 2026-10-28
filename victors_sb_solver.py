@@ -156,21 +156,23 @@ def get_webshare_proxy() -> str | None:
 
 
 def send_tg_alert(text: str):
-    """Sends notification to Owner Telegram."""
-    if not ALERT_BOT_TOKEN or not OWNER_ID:
+    """Sends notification to Owner Telegram & Admin Notification Channel."""
+    if not ALERT_BOT_TOKEN:
         return
-    try:
-        url = f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/sendMessage"
-        payload = json.dumps({
-            "chat_id": OWNER_ID,
-            "text": text,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
-        }).encode("utf-8")
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=10)
-    except Exception as e:
-        logger.warning(f"Failed to send Telegram alert: {e}")
+    targets = list(set([t for t in [OWNER_ID, os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")] if t]))
+    for chat_id in targets:
+        try:
+            url = f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/sendMessage"
+            payload = json.dumps({
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }).encode("utf-8")
+            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=10)
+        except Exception as e:
+            logger.warning(f"Failed to send Telegram alert to {chat_id}: {e}")
 
 
 def load_fleet_ton_wallets() -> dict:

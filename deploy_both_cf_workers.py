@@ -6276,15 +6276,12 @@ fi
               `💡 *To re-link an account:*\n` +
               `Tap the button below to request a fresh Telegram login code!`;
 
-            let curRow = [];
             for (const rev of revokedList) {
-              curRow.push({ text: `🔑 Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
-              if (curRow.length >= 2) {
-                relinkBtns.push(curRow);
-                curRow = [];
-              }
+              relinkBtns.push([
+                { text: `⚡ 1-Tap OTP Code #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` },
+                { text: `📱 1-Tap QR Login #${rev.idx}`, callback_data: `btn_qr_login_${rev.idx}` }
+              ]);
             }
-            if (curRow.length > 0) relinkBtns.push(curRow);
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
@@ -7056,15 +7053,16 @@ fi
               const accounts = await getFleetAccounts();
               let relinkIdx = 1;
               let phoneToRelink = "";
+              let targetAcc = null;
 
               if (cbData.startsWith("btn_req_code_ph_")) {
                 const rawP = cbData.replace("btn_req_code_ph_", "");
                 phoneToRelink = rawP.startsWith("+") ? rawP : "+" + rawP;
-                const foundAcc = accounts.find(a => (a.phone && a.phone.replace(/\D/g, '') === phoneToRelink.replace(/\D/g, '')));
-                relinkIdx = foundAcc ? foundAcc.index : (accounts.length + 1);
+                targetAcc = accounts.find(a => (a.phone && a.phone.replace(/\D/g, '') === phoneToRelink.replace(/\D/g, '')));
+                relinkIdx = targetAcc ? targetAcc.index : (accounts.length + 1);
               } else {
                 relinkIdx = parseInt(cbData.replace("btn_relink_", "").replace("btn_request_code_", ""), 10) || 1;
-                const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
+                targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
                 phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
                   ? targetAcc.phone
                   : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");

@@ -41,6 +41,7 @@ UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN") or ""
 OWNER_ID = os.getenv("OWNER_ID") or "6727787768"
+BACKUP_CHANNEL = os.getenv("BACKUP_CHANNEL") or os.getenv("REPORT_CHAT_ID") or "-1004453515167"
 CAPSOLVER_KEY = os.getenv("CAPSOLVER_KEY") or ""
 TWOCAPTCHA_KEY = os.getenv("TWOCAPTCHA_KEY") or ""
 
