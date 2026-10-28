@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 28, 2026*
+> *Last Updated: October 28, 2026 (Autonomous Cloud Auto-Farming Direct Wallet Connection, Concurrent Edge Cron Batching & Notification Boundary Hardening)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*

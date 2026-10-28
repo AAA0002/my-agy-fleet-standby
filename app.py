@@ -3201,11 +3201,17 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", uid)
     
-    target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
-    target_evm = (acc_entry.get("evm_wallet") or {}).get("address")
-    target_tron = (acc_entry.get("tron_wallet") or {}).get("address")
-    raw_m = (acc_entry.get("ton_wallet") or {}).get("mnemonic")
+    target_ton = (acc_entry.get("ton_wallet") or {}).get("address") or acc_entry.get("ton") or acc_entry.get("ton_address")
+    target_evm = (acc_entry.get("evm_wallet") or {}).get("address") or acc_entry.get("evm") or acc_entry.get("evm_address")
+    target_tron = (acc_entry.get("tron_wallet") or {}).get("address") or acc_entry.get("tron") or acc_entry.get("tron_address")
+    raw_m = (acc_entry.get("ton_wallet") or {}).get("mnemonic") or acc_entry.get("ton_mnemonic")
     
+    if not target_ton or not raw_m:
+        if FLEET_TON_CACHE and str(uid) in FLEET_TON_CACHE:
+            t_cache = FLEET_TON_CACHE[str(uid)]
+            if not target_ton: target_ton = t_cache.get("address")
+            if not raw_m: raw_m = t_cache.get("mnemonic")
+
     if not target_ton:
         try:
             if os.path.exists(os.path.join(BASE_DIR, "fleet_ton_wallets.json")):
@@ -7217,6 +7223,12 @@ async def api_farm_single_account(uid: str, request: Request):
 
             if not acc_tok:
                 return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
+
+            # Ensure dedicated wallets are connected across active WebApp bots
+            try:
+                await bind_wallets_to_bots(session, target_acc, acc_tok)
+            except Exception as bwe:
+                logger.debug(f"[{target_acc.get('name', uid)}] Pre-farm wallet bind note: {bwe}")
 
             res = await farm_single_account_bots(session, target_acc, acc_tok, force=force_mode)
             if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower()) for v in res.get("bots", {}).values()):

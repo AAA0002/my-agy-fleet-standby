@@ -577,10 +577,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         meD = await meResp.json().catch(() => ({}));
         const targetTonW = getDynamicTonWallet(uid, accData);
         if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
-          fetchRenderWithFailover("/api/farm/account/" + uid, {
-            method: "POST",
-            headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "8167732110:AAE...") }
-          }, 15000, ctx).catch(() => {});
+          await fetchWithRetry("https://mrg.up.railway.app/api/user/connect-wallet", {
+            method: "POST", headers: mrgHeaders, body: JSON.stringify({
+              initData: mrgInit, address: targetTonW, balance: 0
+            })
+          }, 2, 800).catch(() => {});
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
+              method: "POST",
+              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || env.CF_SECRET_KEY || "") }
+            }, 15000).catch(() => {}));
+          }
         }
 
         // Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
@@ -754,9 +761,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       if (targetTonW) {
         await fetchWithRetry(`${atfBase}?action=sync_wallet&t=${Date.now()}`, {
           method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-            tg_id: parseInt(uid), wallet_address: targetTonW
+            tg_id: parseInt(uid), wallet: targetTonW, wallet_address: targetTonW, address: targetTonW
           }))
-        }, 1, 600).catch(() => {});
+        }, 2, 600).catch(() => {});
       }
 
       // Math challenge
@@ -872,19 +879,19 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
         // Connect TON wallet if not yet connected
         const vTonWallet = getDynamicTonWallet(uid, accData);
-        if (vTonWallet && me && (!me.walletAddress || !me.walletOwned)) {
+        if (vTonWallet && (!me?.walletAddress || !me?.walletOwned)) {
           await fetchWithRetry("https://server.victors.company/api/wallet/connect", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ address: vTonWallet })
-          }, 1, 600).catch(() => {});
-          await humanDelay(600, 1200);
+          }, 2, 600).catch(() => {});
+          await humanDelay(400, 800);
           await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: "connect-wallet" })
           }, 1, 500).catch(() => {});
           // If TonConnect proof is required on Victor's, trigger failover to Render node
-          if (!me.walletOwned && ctx && ctx.waitUntil) {
+          if (!me?.walletOwned && ctx && ctx.waitUntil) {
             ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
               method: "POST",
-              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "") }
+              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || env.CF_SECRET_KEY || "") }
             }, 15000).catch(() => {}));
           }
         }
@@ -1109,7 +1116,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
                 method: "POST",
-                headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "") }
+                headers: { "Authorization": "Bearer " + (env.SECRET_KEY || env.CF_SECRET_KEY || "") }
               }, 15000).catch(() => {}));
             }
           } else {
@@ -1690,7 +1697,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           if (ctx && ctx.waitUntil) {
             ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
               method: "POST",
-              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "") }
+              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || env.CF_SECRET_KEY || "") }
             }, 15000).catch(() => {}));
           }
         }
@@ -4878,16 +4885,6 @@ fi
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: "@myagyai", text: bMsg, parse_mode: "Markdown" })
             }).catch(() => {}));
-
-            const notifChannel = env.ADMIN_NOTIFICATION_CHANNEL_ID || "-1004358687850";
-            if (notifChannel) {
-              const shortBackup = `📦 <b>Edge Backup Ready</b>\n• Node: <code>__SUBDOMAIN__.workers.dev</code>\n• Vault: @myagyai\n• Status: 🟢 100% Secure`;
-              ctx.waitUntil(fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: notifChannel, text: shortBackup, parse_mode: "HTML" })
-              }).catch(() => {}));
-            }
           }
         }
 
@@ -16205,10 +16202,11 @@ Reply to Arif naturally:`;
         }
 
         const tokenEntries = Object.entries(tokens);
-        // Farm ALL fleet and user accounts so 100% of accounts are farmed every cycle!
-        for (let idx = 0; idx < tokenEntries.length; idx++) {
-          const [uid, accData] = tokenEntries[idx];
-          await farmSingleAccountAllBots(uid, accData, env, ctx);
+        // Farm ALL 21 accounts concurrently in non-blocking batches of 5 so 100% finish within limits
+        const BATCH_SIZE = 5;
+        for (let i = 0; i < tokenEntries.length; i += BATCH_SIZE) {
+          const batch = tokenEntries.slice(i, i + BATCH_SIZE);
+          await Promise.allSettled(batch.map(([uid, accData]) => farmSingleAccountAllBots(uid, accData, env, ctx)));
         }
 
 
