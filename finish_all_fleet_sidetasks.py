@@ -427,7 +427,26 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
 
         # 1.5. MRG Daily Check-in (+5 to +15 MRG daily streak)
         try:
-            async with session.post("https://mrg.up.railway.app/api/user/daily-checkin", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as dcr:
+            mrg_tok = None
+            if UPSTASH_URL and UPSTASH_TOKEN:
+                try:
+                    async with session.get(f"{UPSTASH_URL}/get/mrg:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as mpr:
+                        if mpr.status == 200:
+                            mpd = await mpr.json()
+                            if mpd.get("result"):
+                                try:
+                                    parsed = json.loads(mpd["result"]) if isinstance(mpd["result"], str) else mpd["result"]
+                                except Exception:
+                                    parsed = mpd["result"]
+                                mrg_tok = parsed.get("turnstileToken") if isinstance(parsed, dict) else str(parsed)
+                except Exception:
+                    pass
+
+            checkin_payload = {"initData": m_init}
+            if mrg_tok and str(mrg_tok).strip() not in ("null", "nil", "None", ""):
+                checkin_payload["turnstileToken"] = str(mrg_tok).strip()
+
+            async with session.post("https://mrg.up.railway.app/api/user/daily-checkin", json=checkin_payload, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as dcr:
                 if dcr.status == 200:
                     dcd = await dcr.json()
                     if dcd.get("success"):
@@ -484,27 +503,35 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
                                 res["tasks_claimed"] += 1
                                 res["notes"].append(f"claimed_wait_{tid}")
 
-        # 3.5. Instant REST Claim if human pass is active
+        # 3.5. Instant REST Claim if human pass is active or Turnstile pass cached
         unclaimed_mined = float(u_obj.get("unclaimedMiningBalance", 0) or 0)
         human_until = u_obj.get("humanVerifiedUntil")
-        if unclaimed_mined > 0.05 and human_until:
+        pass_active = False
+        if human_until:
             try:
                 from datetime import datetime, timezone
                 dt = datetime.fromisoformat(human_until.replace("Z", "+00:00"))
-                if (dt - datetime.now(timezone.utc)).total_seconds() > 300:
-                    claim_payload = {
-                        "initData": m_init,
-                        "deviceInfo": {
-                            "model": "SM-S928B", "ram": 12, "screen": "1080x2340",
-                            "vendor": "Google Inc. (Qualcomm)", "renderer": "ANGLE (Qualcomm, Adreno (TM) 750, OpenGL ES 3.2)",
-                            "cores": 8
-                        }
+                pass_active = (dt - datetime.now(timezone.utc)).total_seconds() > 300
+            except Exception:
+                pass
+
+        if unclaimed_mined > 0.05 and (pass_active or mrg_tok):
+            try:
+                claim_payload = {
+                    "initData": m_init,
+                    "deviceInfo": {
+                        "model": "SM-S928B", "ram": 12, "screen": "1080x2340",
+                        "vendor": "Google Inc. (Qualcomm)", "renderer": "ANGLE (Qualcomm, Adreno (TM) 750, OpenGL ES 3.2)",
+                        "cores": 8
                     }
-                    async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json=claim_payload, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
-                        if clr.status == 200:
-                            res["notes"].append(f"claimed_mined_{unclaimed_mined:.2f}")
-                            in_bal += unclaimed_mined
-                            res["balance"] = in_bal
+                }
+                if mrg_tok:
+                    claim_payload["turnstileToken"] = str(mrg_tok).strip()
+                async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json=claim_payload, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
+                    if clr.status == 200:
+                        res["notes"].append(f"claimed_mined_{unclaimed_mined:.2f}")
+                        in_bal += unclaimed_mined
+                        res["balance"] = in_bal
             except Exception:
                 pass
 
