@@ -1019,7 +1019,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         if (humanRequired && !me) {
           result.bots.victors = "human_pass_required (Turnstile needed)";
         } else {
-          result.bots.victors = me ? `farmed (lvl: ${me.level || 1}, bal: ${me.miningBalance || 0})` : (loginOk ? "ok" : "auth_failed");
+          result.bots.victors = me ? `farmed (lvl: ${me.level || 1}, bal: ${me.miningBalance || 0})` : (humanRequired ? "human_pass_required" : "auth_failed");
         }
       } else {
         result.bots.victors = "skipped (no initData)";
