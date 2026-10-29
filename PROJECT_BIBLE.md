@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 8-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 29, 2026 (Fleet-Wide Callback Query Race Condition Fix, Solver Throughput Optimization & 21-Account 8-Bot Audit)*
+> *Last Updated: October 29, 2026 (Complete Decommissioned Bot Code Purge, 8-Bot Command Optimization & Edge Sync)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*

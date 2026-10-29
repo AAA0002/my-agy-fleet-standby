@@ -3,14 +3,15 @@
 refresh_fleet_tokens.py
 Automated Multi-Account Telegram MiniApp Token Refresher
 - Connects to Fleet Accounts via Telethon (MTProto)
-- Acquires fresh tgWebAppData (initData) for all 7 fleet MiniApps:
-  1. Stones Miners (@stoneswithestand_bot)
-  2. MRG Miner (@mrgminerbot)
-  3. AI Lab Robot (@AiLab_robot)
-  4. UltraWallet (@UltrawalletTrade_Bot)
-  5. ATF Miner (@ATF_AIRDROP_bot)
-  6. FINVORA Web3 (@FINVORAWeb3bot)
-  7. TurboGram V1 (@TurboGramV1_bot)
+- Acquires fresh tgWebAppData (initData) for the 8 active legitimate fleet MiniApps:
+  1. MRG Miner (@mrgminerbot)
+  2. ATF Miner (@ATF_AIRDROP_bot)
+  3. Victor's Company (@VictorsCompanybot)
+  4. Kynex Network (@Kynex_miningbot)
+  5. DiggoMiner (@Diggominer_bot)
+  6. PepeGram (@Pepe_gram_bot)
+  7. AdxEarn AI (@AdxEarnAibot)
+  8. Chicken Land (@ChickenLandBot)
 - Preserves BNB Galaxy static webhooks
 - Saves refreshed tokens to fleet_miniapp_tokens.json
 - Syncs tokens to all 5 Cloudflare Edge Workers via /api/miniapp/tokens/sync

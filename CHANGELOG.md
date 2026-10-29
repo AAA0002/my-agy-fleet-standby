@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 Complete Decommissioned Bot Code Purge, 8-Bot Command Optimization & Edge Sync (October 29, 2026)**:
+  - **Complete Decommissioned & Defunct Bot Code Eradication (`deploy_both_cf_workers.py`)**:
+    * **Purged Section 4.5 Legacy Commands**: Completely eradicated lines 10210 through 10484 containing legacy handlers for 15 defunct/scam bots: `/ainovum`, `/ailab`, `/art`, `/vyro`, `/ultra`, `/apex`, `/trxpower`, `/btc`, `/tensor`, `/tontrader`, `/finvora`, `/turbogram`, `/turbo`, `/ominix`, `/usdtquad`, and `/tac`. Also removed redundant duplicate checks for MRG, ATF, Victor's, and Kynex.
+    * **Purged Dead Callback Query Handlers**: Removed dead callback handlers in the Admin Bot router (`btn_ainovum`, `btn_ailab`, `btn_stones`, `btn_art`, `btn_ultra`, `btn_vyro`, `btn_apx`, `btn_bnb`), ensuring zero dead button routes.
+    * **Purged Standalone Dead Bot Commands**: Eradicated `/stones`, `/bnb`, `/vyro`, and natural language `stones` checks.
+    * **Code Slimming**: Removed 429 lines of dead code ballast, reducing memory overhead, minimizing bundle size, and ensuring 100% clean adherence to the 8-bot policy.
+  - **8 Authentic Active Bot Command Centers Augmented (`deploy_both_cf_workers.py`)**:
+    * Enhanced the 8 dedicated command centers (`/mrg`, `/atf`, `/victors`, `/kynex`, `/diggo`, `/pepe`, `/adx`, `/chicken`) to accept human-friendly reply button labels directly:
+      - `⛏️ MRG Miner` / `⚡ MRG Miner` -> `/mrg`
+      - `🪙 ATF Miner` -> `/atf`
+      - `🏢 Victor's Company` -> `/victors`
+      - `⚡ Kynex Network` / `💎 Kynex Network` / `/knx` -> `/kynex`
+      - `⛏️ DiggoMiner` -> `/diggo`
+      - `🐸 PepeGram` -> `/pepe`
+      - `🤖 AdxEarn AI` -> `/adx`
+      - `🐔 Chicken Land` -> `/chicken` / `/chickenland`
+  - **Header Cleanup (`refresh_fleet_tokens.py`)**:
+    * Aligned module docstring and comments to the 8 authentic active mining pools (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), removing all historical references to Stones Miners, AI Lab, UltraWallet, FINVORA, and TurboGram.
+  - **Edge Deployment & Bot Menu Synchronization**:
+    * Re-verified syntax with `node --check` (0 errors).
+    * Deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) with cron `*/15 * * * *`.
+    * Synchronized both Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) webhooks, descriptions, menu buttons, and command lists.
+    * Tested and confirmed HTTP 200 on `/health`, `/admin`, `/user-admin`, and `/miner`.
+
 - **🚀 Fleet-Wide Callback Query Race Condition Fix, Solver Throughput Optimization & 21-Account 8-Bot Audit (October 29, 2026)**:
   - **User Bot & Admin Bot Callback Query Alert Architecture (`deploy_both_cf_workers.py`)**:
     * **Eliminated Premature `answerCallbackQuery` Sabotage**: Resolved issue where premature unparameterized `answerCq()` execution at the top of the handler caused subsequent Telegram modal alerts (`answerCq(alertTxt, true)`, including channel gate warnings, cooldown alerts, and moderation messages) to fail with Telegram API error `query is too old or query id is invalid`.

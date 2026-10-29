@@ -502,11 +502,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
 
-  // 1. Stones Miners permanently decommissioned & purged per operator directive
-
-
-
-  // 2. MRG Miner
+  // 1. MRG Miner
   const farmMrg = async () => {
     if (!accData.mrg_init_data) return;
     try {
@@ -698,10 +694,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       result.bots.mrg = `error: ${e.message}`;
     }
   };
-  // Purged Legacy Bots: AI Lab & UltraWallet permanently removed.
-
-
-  // 5. ATF Miner
+  // 2. ATF Miner
   const farmAtf = async () => {
     if (!accData.atf_init_data) return;
     try {
@@ -839,9 +832,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // Legacy Decommissioned Bots: Stones, AI Lab, UltraWallet, FINVORA permanently purged per operator directive
-
-  // 8. Victor's Company (@VictorsCompanybot)
+  // 3. Victor's Company (@VictorsCompanybot)
   const farmVictors = async () => {
     try {
       if (accData.victors_init_data) {
@@ -7570,46 +7561,6 @@ fi
                 }
                 await harvestPromise;
               })());
-            } else if (cbData === "btn_ainovum") {
-              const rep = `🚫 *AINOVUM CLOUD NODE DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* Ainovum Network (@ainovum_bot)\n` +
-                `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-                `• *Action Taken:* All fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
-                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_ailab") {
-              const rep = `🚫 *AI LAB ROBOT DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
-                `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
-                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_stones") {
-              const rep = `🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
-                `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All fleet accounts permanently blocked @stoneswithestand_bot, left @stoneswithestand channel, and deleted dialog history.\n` +
-                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_art") {
-              const rep = `🚫 *ART AIRDROP DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* ART Airdrop Mining (@ART_AIRDROP_BOT)\n` +
-                `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
-                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_mrg") {
               const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7621,17 +7572,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_ultra") {
-              const rep = `🚫 *ULTRAWALLET DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* UltraWallet (@UltraWalletBot)\n` +
-                `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-                `• *Action Taken:* All fleet accounts permanently blocked @UltraWalletBot, wiped task loops, and deleted dialog history.\n` +
-                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_kynex" || cbData === "btn_kynex_mine" || cbData === "btn_kynex_claim") {
+} else if (cbData === "btn_kynex" || cbData === "btn_kynex_mine" || cbData === "btn_kynex_claim") {
               const health = await getSessionHealthState();
               const activeCount = health.healthy.size;
               const revokedCount = health.revoked.size;
@@ -7663,39 +7604,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_vyro") {
-              const health = await getSessionHealthState();
-              const activeCount = health.healthy.size;
-              const revokedCount = health.revoked.size;
-              const rep = `🚫 *VYRODROP DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-                `• *Status:* 🚫 Permanently Purged per Operator Directive\n` +
-                `• *Action Taken:* Removed from 24/7 cloud auto-farming cycles, background tasks, and dashboards.\n` +
-                `• *Active Fleet Focus:* 100% active on the 8 legitimate bots (MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land).\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_apx") {
-              const rep = `🚫 *APEX MINER DECOMMISSIONED & PURGED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* Apex Miner Platform (@ApxMinerBot)\n` +
-                `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-                `• *Action Taken:* All fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
-                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_bnb" || cbData === "btn_bnb_claim" || cbData === "btn_bnb_withdraw") {
-              const rep = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
-                `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-                `• *Active Bots:* Focus is 100% placed on our 8 legitimate mining bots (MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land).\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_chicken" || cbData === "btn_chickenland") {
+} else if (cbData === "btn_chicken" || cbData === "btn_chickenland") {
               const health = await getSessionHealthState();
               const activeCount = health.healthy.size;
               const rep = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
@@ -8717,37 +8626,8 @@ fi
           return new Response("OK");
         }
 
-        // 1.4 Dedicated Stones Miners Notice (/stones)
-        if (text === "/stones" || text.startsWith("/stones")) {
-          ctx.waitUntil((async () => {
-            const stonesMsg = `🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
-              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n` +
-              `• *Active Fleet Focus:* 100% focused on 8 legitimate bots (MRG, ATF, Victor's, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(stonesMsg, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        // 1.41 Legacy BNB Command (/bnb)
-        if (text === "/bnb" || text.startsWith("/bnb")) {
-          ctx.waitUntil((async () => {
-            const bnbMsg = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
-              `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-              `• *Active Bots:* Focus is 100% placed on our 8 legitimate mining bots (MRG, ATF, Victor's, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(bnbMsg, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
         // 1.42 Dedicated Kynex Network Command (/kynex)
-        if (text === "/kynex" || text.startsWith("/kynex")) {
+        if (text === "/kynex" || text.startsWith("/kynex") || text.startsWith("/knx") || text === "⚡ Kynex Network" || text === "💎 Kynex Network") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -8782,7 +8662,7 @@ fi
         }
 
         // 1.43 Dedicated Victor's Company Command (/victors)
-        if (text === "/victors" || text.startsWith("/victors")) {
+        if (text === "/victors" || text.startsWith("/victors") || text.startsWith("/victor") || text === "🏢 Victor's Company") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -8815,23 +8695,8 @@ fi
           return new Response("OK");
         }
 
-        // 1.44 Purged VyroDrop Command (/vyro)
-        if (text === "/vyro" || text.startsWith("/vyro")) {
-          ctx.waitUntil((async () => {
-            const vyroMsg = `🚫 *VYRODROP DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-              `• *Status:* 🚫 Permanently Purged per Operator Directive\n` +
-              `• *Action Taken:* All automated cycles, background routines, and tokens have been completely removed.\n` +
-              `• *Active Fleet Focus:* 100% active on the 8 legitimate bots (MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land).\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(vyroMsg, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
         // 1.445 Dedicated MRG Miner Command (/mrg)
-        if (text === "/mrg" || text.startsWith("/mrg")) {
+        if (text === "/mrg" || text.startsWith("/mrg") || text === "⛏️ MRG Miner" || text === "⚡ MRG Miner") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -8863,7 +8728,7 @@ fi
         }
 
         // 1.45 Dedicated ATF Miner Cloud Command (/atf)
-        if (text === "/atf" || text.startsWith("/atf")) {
+        if (text === "/atf" || text.startsWith("/atf") || text === "🪙 ATF Miner") {
           ctx.waitUntil((async () => {
             let atfData = {};
             try {
@@ -8908,7 +8773,7 @@ fi
         }
 
         // 1.455 Dedicated DiggoMiner Command (/diggo)
-        if (text === "/diggo" || text.startsWith("/diggo")) {
+        if (text === "/diggo" || text.startsWith("/diggo") || text === "⛏️ DiggoMiner") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -8941,7 +8806,7 @@ fi
         }
 
         // 1.457 Dedicated PepeGram Command (/pepe)
-        if (text === "/pepe" || text.startsWith("/pepe")) {
+        if (text === "/pepe" || text.startsWith("/pepe") || text === "🐸 PepeGram") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -8973,7 +8838,7 @@ fi
         }
 
         // 1.458 Dedicated AdxEarn AI Command (/adx)
-        if (text === "/adx" || text.startsWith("/adx")) {
+        if (text === "/adx" || text.startsWith("/adx") || text === "🤖 AdxEarn AI") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -9005,7 +8870,7 @@ fi
         }
 
         // 1.4585 Dedicated Chicken Land Command (/chicken or /chickenland)
-        if (text === "/chicken" || text.startsWith("/chicken") || text === "/chickenland" || text.startsWith("/chickenland")) {
+        if (text === "/chicken" || text.startsWith("/chicken") || text === "/chickenland" || text.startsWith("/chickenland") || text === "🐔 Chicken Land") {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
@@ -10207,281 +10072,6 @@ fi
           return new Response("OK");
         }
 
-        // 4.5 Sub-Bot Commands (AI Lab, MRG, UltraWallet, ATF, Stones, Finvora, TurboGram + Decommissioned Notices)
-        if (text === "🤖 Ainovum" || text.startsWith("/ainovum")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *AINOVUM DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Ainovum Network (@ainovum_bot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🧪 AI Lab" || text.startsWith("/ailab")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *AI LAB ROBOT DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
-              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land (8 Verified Protocols).\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🚀 ART Airdrop" || text.startsWith("/art")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *ART AIRDROP DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* ART Airdrop Mining (@ART_AIRDROP_BOT)\n` +
-              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "⛏️ MRG Miner" || text.startsWith("/mrg")) {
-          ctx.waitUntil((async () => {
-            const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* MRG Cloud Miner (@mrgminerbot)\n` +
-              `• *Status:* Active & Auto-Mining\n` +
-              `• *Yield:* ~0.06 MRG per claim cycle per account\n` +
-              `• *Payout Network:* TON Blockchain (The Open Network)\n` +
-              `• *Anti-Bot Defense:* Cryptographic User-Agent Isolation ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🪙 ATF Miner" || text.startsWith("/atf")) {
-          ctx.waitUntil((async () => {
-            const health = await getSessionHealthState();
-            const rep = `🪙 *ATF MINER COMMAND CENTER*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* ATF Miner (@ATF_AIRDROP_bot)\n` +
-              `• *Status:* Active & Auto-Mining ✅\n` +
-              `• *Automation:* Auto Math Challenge Solver, Hashrate Boost, Cooldown Tasks\n` +
-              `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🏢 Victor's Company" || text.startsWith("/victors") || text.startsWith("/victor")) {
-          ctx.waitUntil((async () => {
-            const health = await getSessionHealthState();
-            const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-              `• *Status:* Active & Auto-Mining ✅\n` +
-              `• *Automation:* Cloud Turnstile Solvers, Arcade Mining, Daily Check-in, Level Upgrades\n` +
-              `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "💧 VyroDrop" || text.startsWith("/vyro")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *VYRODROP DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-              `• *Status:* 🚫 Permanently Purged per Operator Directive\n` +
-              `• *Action Taken:* All automated cycles, background routines, and tokens have been completely removed.\n` +
-              `• *Active Fleet Focus:* 100% active on the 8 legitimate bots (MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land).\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "⚡ Kynex Network" || text.startsWith("/kynex") || text.startsWith("/knx")) {
-          ctx.waitUntil((async () => {
-            const health = await getSessionHealthState();
-            const rep = `⚡ *KYNEX NETWORK COMMAND CENTER*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Kynex Network (@Kynex_miningbot)\n` +
-              `• *Status:* Active & Auto-Mining ✅\n` +
-              `• *Automation:* Firebase RTDB Auth, Energy Management, Daily Checkin, Ads Rewards\n` +
-              `• *Payout Network:* Firebase Cloud / KNX\n` +
-              `• *Accounts:* \`${health.healthy.size}/${health.total} Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "💳 UltraWallet" || text.startsWith("/ultra") || text.startsWith("/ultrawallet")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *ULTRAWALLET DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* UltraWallet (@UltrawalletTrade_Bot)\n` +
-              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @UltrawalletTrade_Bot, purged keys, and deleted dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "⚡ Apex Miner" || text.startsWith("/apx") || text.startsWith("/apex")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *APEX MINER DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Apex Miner Platform (@ApxMinerBot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scheme\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🔴 TRX Power" || text.startsWith("/trxpower") || text.startsWith("/trx")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *TRX POWER MINING DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* TRX Power Mining (@trxpowermining_bot)\n` +
-              `• *Status:* 🚫 Banned & Purged per User Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @trxpowermining_bot, left sponsor channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🟡 Bitcoin Cloud" || text.startsWith("/btc") || text.startsWith("/bitcoincloud")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *BITCOIN CLOUD MINERS DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Bitcoin Cloud Miners (@BitcoinCloudMinersBot)\n` +
-              `• *Status:* 🚫 Banned & Purged per User Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @BitcoinCloudMinersBot and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "⚡ Tensor Mining" || text.startsWith("/tensor") || text.startsWith("/tensormining")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *TENSOR MINING ROBOT DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Tensor Mining Robot (@TensorMiningRobot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @TensorMiningRobot, left @TensorCoinNews, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "📈 Ton Trader AI" || text.startsWith("/tontrader") || text.startsWith("/ttai")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *TON TRADER AI DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Ton Trader AI (@TonTraderAIBot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @TonTraderAIBot, left scam channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🌐 FINVORA Web3" || text.startsWith("/finvora")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *FINVORA WEB3 DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* FINVORA Web3 (@FINVORAWeb3bot)\n` +
-              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @FINVORAWeb3bot, purged keys, and deleted dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🚀 TurboGram" || text.startsWith("/turbogram") || text.startsWith("/turbo")) {
-          ctx.waitUntil((async () => {
-            const rep = `🛑 *TURBOGRAM V1 PURGED & DECOMMISSIONED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* TurboGram V1 (@TurboGramV1_bot)\n` +
-              `• *Status:* 🚫 Permanently removed and blacklisted from fleet per user directive\n` +
-              `• *Action Taken:* Purged from cloud farm routines, unsubscribed channels, and sessions isolated.\n` +
-              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land (8 Verified Protocols).\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🤖 Ominix AI Trade" || text.startsWith("/ominix")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚨 *OMINIX AI TRADE DECOMMISSIONED & REPORTED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Ominix AI Trade (@OminixAiBot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scam\n` +
-              `• *Action Taken:* All 18 fleet accounts reported @OminixAiBot and scam channels (@ominiai, @ominiaipayout) to Telegram Anti-Scam, blocked the bot, and deleted chat histories.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "💵 USDT QUAD" || text.startsWith("/usdtquad") || text.startsWith("/usdt")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *USDT QUAD DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* USDT QUAD (@ustdquad_bot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @ustdquad_bot, left scam channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
-        if (text === "🪂 TAC Airdrop" || text.startsWith("/tac") || text.startsWith("/tacairdrop")) {
-          ctx.waitUntil((async () => {
-            const rep = `🚫 *TAC AIRDROP DECOMMISSIONED & PURGED*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* TAC Airdrop (@tacairdrop_bot)\n` +
-              `• *Status:* 🚫 Banned & Purged as Fraudulent Scammer\n` +
-              `• *Action Taken:* All fleet accounts permanently blocked @tacairdrop_bot, left scam channels, and deleted all Telegram dialog history.\n` +
-              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
-            await sendReply(rep, statusInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
-
         // 5. Wallet Portfolio Command (/wallet or /wallets [index])
         if (text === "💼 Multi-Chain Wallets" || text === "💼 Treasury & Wallets" || text === "💼 Wallet" || text === "/wallet" || text === "/wallets" || text.startsWith("/wallet") || text.startsWith("/wallets")) {
           ctx.waitUntil((async () => {
@@ -11471,12 +11061,6 @@ fi
             await sendReply(`📦 *1-Click Cloud Backup Ready*\n\n• *Direct Download:* ${bUrl}\n• *Mesh:* Triple Cloudflare Edge Shards\n• *Vault:* @myagyai channel archive\n\n🛡️ _Complete disaster recovery archive ready._`, statusInlineKeyboard);
             return;
           }
-
-          if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 8 legitimate bots (MRG, ATF, Victor's, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land).`, statusInlineKeyboard);
-            return;
-          }
-
           if (userLower.includes("atf") && (userLower.includes("policy") || userLower.includes("withdraw") || userLower.includes("status"))) {
             await sendReply(`🪙 *ATF Miner Telemetry & Policy*\n\n• *Operational Mode:* 100% Farming & Pool Accumulation\n• *Auto-Withdrawals:* Permanently Disabled (Per Admin Directive)\n• *Network:* TON Blockchain\n• *Status:* All accounts compounding tokens safely in the cloud.`, statusInlineKeyboard);
             return;
