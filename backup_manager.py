@@ -28,6 +28,7 @@ BACKUP_CHANNEL = "@myagyai"
 
 # Bot Fleet core files
 CORE_BOT_FILES = [
+    "app.py",
     "accounts.json",
     ".env",
     "clean_up_system.py",
@@ -140,6 +141,17 @@ def create_backup_zip() -> str:
             fpath = os.path.join(BASE_DIR, fname)
             if os.path.exists(fpath):
                 zipf.write(fpath, arcname=fname)
+
+        # 1.1 Add scripts directory recursively
+        scripts_dir = os.path.join(BASE_DIR, "scripts")
+        if os.path.exists(scripts_dir):
+            for root, dirs, files in os.walk(scripts_dir):
+                dirs[:] = [d for d in dirs if d != "__pycache__"]
+                for f in files:
+                    if f.endswith((".py", ".sh", ".json", ".md", ".js")):
+                        full_f = os.path.join(root, f)
+                        rel_f = os.path.relpath(full_f, BASE_DIR)
+                        zipf.write(full_f, arcname=rel_f)
 
         # 2. Add Antigravity session files into 'antigravity_session/'
         if os.path.exists(AGY_CLI_DIR):

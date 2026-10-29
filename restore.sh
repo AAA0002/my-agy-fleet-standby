@@ -78,7 +78,8 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # 7. Make all scripts executable
-chmod +x bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh restore_fleet.sh cloudflared_tunnel.sh autonomous_cloud_agent.py refresh_cloud_tokens.py render_failover_manager.py deploy_both_cf_workers.py clean_up_system.py daily_profit_reporter.py kynex_miner.py mrg_turnstile_solver.py victors_arcade_solver.py finish_all_fleet_sidetasks.py chickenland_miner.py chickenland_promo_sniper.py fleet_wallet_provisioner.py extract_all_missing_fleet_tokens.py 2>/dev/null || true
+chmod +x app.py bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh restore_fleet.sh cloudflared_tunnel.sh autonomous_cloud_agent.py refresh_cloud_tokens.py render_failover_manager.py deploy_both_cf_workers.py clean_up_system.py daily_profit_reporter.py kynex_miner.py mrg_turnstile_solver.py victors_arcade_solver.py finish_all_fleet_sidetasks.py chickenland_miner.py chickenland_promo_sniper.py fleet_wallet_provisioner.py extract_all_missing_fleet_tokens.py 2>/dev/null || true
+find scripts/ -type f \( -name "*.py" -o -name "*.sh" \) -exec chmod +x {} + 2>/dev/null || true
 
 # 8. Start 24/7 background supervisor daemon (Linux VPS only; Mobile/Termux/PRoot is 100% cloud-first)
 if [ "$IS_MOBILE" = true ]; then

@@ -33,6 +33,7 @@ load_dotenv()
 BASE_URL = "https://api.render.com/v1"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
+ADMIN_NOTIFICATION_CHANNEL_ID = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 
@@ -87,24 +88,25 @@ def assert_safe_service(service_id: str, service_name: str = ""):
         raise PermissionError(f"CRITICAL SAFETY ABORT: Service {service_id} ({service_name}) is protected and cannot be modified or rotated!")
 
 async def send_telegram_alert(text: str):
-    """Sends an administrative alert to @myagyai via Telegram Bot API."""
-    if not (REPORT_BOT_TOKEN and REPORT_CHAT_ID):
+    """Sends an administrative alert to Admin DM and Admin Notification Channel via Telegram Bot API."""
+    if not REPORT_BOT_TOKEN:
         print(f"[Alert] {text}")
         return
-    try:
-        url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": REPORT_CHAT_ID,
-            "text": text,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=8)) as resp:
-                if resp.status != 200:
-                    print(f"[Telegram Alert] Failed HTTP {resp.status}")
-    except Exception as e:
-        print(f"[Telegram Alert] Error: {e}")
+    targets = [t for t in [REPORT_CHAT_ID, ADMIN_NOTIFICATION_CHANNEL_ID] if t]
+    async with aiohttp.ClientSession() as session:
+        for target in targets:
+            try:
+                url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+                payload = {
+                    "chat_id": target,
+                    "text": text,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True
+                }
+                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                    pass
+            except Exception as e:
+                print(f"[Telegram Alert] Error for {target}: {e}")
 
 async def set_maintenance_mode(enabled: bool, duration_seconds: int = 300, reason: str = ""):
     """Sets or clears the distributed Maintenance Mode in Upstash Redis."""

@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Disaster Recovery Core Engine Archival, Recursive Scripts Preservation & Failover Alerts (October 29, 2026)**:
+  - **Disaster Recovery Core Engine Completeness (`backup_manager.py`)**:
+    * Added canonical FastAPI cloud farming engine `app.py` to `CORE_BOT_FILES` in `backup_manager.py`. Previously, `app.py` was absent from the archive list, meaning a disaster recovery restore would restore proxy entrypoints (`render_standby_app.py`, `render_app_latest.py`) that crashed on missing `app.py`.
+    * Implemented recursive directory traversal in `create_backup_zip` to automatically bundle all scripts in `scripts/` (runners, onboarding, maintenance, scratch) while strictly pruning `__pycache__`.
+  - **Restorer Permissions Alignment (`restore.sh`)**:
+    * Updated `restore.sh` to automatically grant execution permissions (`chmod +x`) to `app.py` and recursively to all restored `.py` and `.sh` scripts in `scripts/`.
+  - **Render Failover Operational Visibility (`render_failover_manager.py`)**:
+    * Added `ADMIN_NOTIFICATION_CHANNEL_ID` (`-1004358687850`) to `send_telegram_alert` in `render_failover_manager.py`, ensuring node rotation events, maintenance mode windows, and container state transitions are delivered to the administrative alert channel.
+
+
 - **🐛 Critical NameError Watcher Bug Fixes, Sweeper Alerts & Universal Upstash Token Sync (October 29, 2026)**:
   - **On-Chain Watcher NameError Fixes (`bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`)**:
     * Fixed critical `NameError: name 'amount' is not defined` in `broadcast_deposit` and `broadcast_deposit_alert`. When a deposit was detected, unhandled undefined references (`amount`, `new_balance`, `tx_hash`) outside a try/except block prevented admin alert delivery and crashed watcher reporting.

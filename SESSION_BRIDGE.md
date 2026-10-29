@@ -367,6 +367,23 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Cloudflare Edge Worker Cache Hardening**: Fixed edge worker isolate RAM cache TTL expiry in `deploy_both_cf_workers.py`. Deployed to Primary Node 4 (`restore-agy.agorameet.workers.dev`), achieving verified `21/21 Active, 0 Revoked` telemetry.
     - **Cloud Runner Bug Fix**: Fixed `BACKUP_CHANNEL` NameError in `mrg_turnstile_solver.py` and `victors_sb_solver.py` on `AAA0002/cloud-fleet-solver`. Run #40612417876 verified running smoothly.
 
+47. **Chicken Land Per-Account Promo Sniper Isolation, Victor's Company Fallback & Multi-Repo Sanitation (October 29, 2026)**:
+    - **Per-Account Promo Code Isolation Across All Engines**: Fixed critical bug where calling `mark_code_claimed(code)` globally in Redis caused the first claiming account to block the other 20 accounts from redeeming. Re-architected across `chickenland_miner.py`, `finish_all_fleet_sidetasks.py`, and `app.py` to use isolated per-user sets (`chickenland:claimed:{uid}`).
+    - **8-Bot Live Yield Telemetry & Redis Synchronization**: Attached verified yields to `acc` dictionary and added end-of-cycle synchronization to Upstash Redis `fleet:live_state` in `app.py`.
+    - **Victor's Company Reporting Fallback**: Formatted status in `daily_profit_reporter.py` to report `Cloud Turnstile Active` rather than placeholder zeroes when passes await renewal.
+    - **Multi-Repo Sanitation**: Added `AAA0002/my-agy-fleet-standby` to `clean_up_system.py` automated pruning.
+
+48. **Critical Watcher NameError Fix, Universal Upstash MiniApp Tokens Sync & Cloud Sweeper Alerts (October 29, 2026)**:
+    - **Resolved Fatal On-Chain Watcher NameError**: Fixed unhandled `NameError: name 'amount' is not defined` in `bep20_onchain_watcher.py` and `multichain_onchain_watcher.py`, wrapping alerts safely in dedicated try/except blocks.
+    - **Universal Monolithic MiniApp Tokens Sync**: Extended `refresh_cloud_tokens.py` to update both `fleet:tokens:{uid}` and monolithic `miniapp_tokens` in Upstash Redis, plus 30-day `fleet:diggo:jwt:{uid}` caching.
+    - **Admin Notification Integration**: Added `ADMIN_NOTIFICATION_CHANNEL_ID` (`-1004358687850`) to `cloud_wallet_sweeper.py` receipts and `render_failover_manager.py` alerts.
+    - **Onboarding Sponsor Channels Fallback Completeness**: Updated `login_account.py` to include Chicken Land channels and missing sponsor channels.
+
+49. **Disaster Recovery Core Completeness & Recursive Scripts Archiving (October 29, 2026)**:
+    - **Archival of Canonical Engine `app.py`**: Added `app.py` into `CORE_BOT_FILES` in `backup_manager.py`, closing a major disaster recovery vulnerability where restores lacked the primary cloud farming application.
+    - **Recursive `scripts/` Archiving**: Added automated recursive directory walker in `create_backup_zip` to bundle all maintenance, runner, and onboarding scripts into every disaster recovery archive.
+    - **Permissions & Restorer Alignment**: Updated `restore.sh` to ensure `app.py` and all restored scripts receive executable permissions.
+
 ---
 
 ## 📂 7. Key File Index
