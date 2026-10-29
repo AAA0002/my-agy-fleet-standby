@@ -11496,12 +11496,6 @@ Reply to Arif naturally:`;
       is_persistent: true
     };
 
-    // 13.6 Multi-Network Ad Portal Route (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST 3.0, A-Ads)
-    if (path === "/ads" || path === "/app/ad" || path === "/ad" || path === "/adsgram") {
-      const redirectTarget = "https://agy-henna.vercel.app/" + (url.search || "");
-      return Response.redirect(redirectTarget, 302);
-    }
-
     // 13.7 User Status & Multi-Network Ad Data API
     if (path === "/api/adsgram/status" || path === "/api/user/data" || path === "/api/user/stats") {
       let uid = url.searchParams.get("user_id") || url.searchParams.get("userid") || url.searchParams.get("uid");
@@ -13353,22 +13347,23 @@ Reply to Arif naturally:`;
             }
           }
 
-          // Live Channel Gate Enforcement for Interactive Callbacks
-          const chGateCheck = await checkUserChannels(cqChatId);
-          const profGateCheck = await getUserProfile(cqChatId, cq.from);
-          const hasGateAd = (profGateCheck.ads_watched || 0) >= 1;
-          if (!chGateCheck.ok || !hasGateAd) {
-            profGateCheck.joined_channels = false;
-            await saveUserProfile(cqChatId, profGateCheck);
-            const gate = renderGate(profGateCheck, chGateCheck, cqChatId);
-            const missingNames = chGateCheck.missing.map(m => m.username || m.name).join(", ");
-            const alertMsg = !chGateCheck.ok ? `⚠️ Please join ${missingNames} to continue!` : `⚠️ Please watch 1 ad to unlock the bot!`;
-            await answerCq(alertMsg, true);
-            await sendCqReply(gate.text, gate.markup);
-            return new Response("OK");
+          // Live Channel Gate Enforcement for Interactive Callbacks (Owner Admin exempted)
+          const isOwnerCq = (String(cqChatId) === "6727787768" || String(cqChatId) === (env.OWNER_ID || "6727787768"));
+          if (!isOwnerCq) {
+            const chGateCheck = await checkUserChannels(cqChatId);
+            const profGateCheck = await getUserProfile(cqChatId, cq.from);
+            const hasGateAd = (profGateCheck.ads_watched || 0) >= 1;
+            if (!chGateCheck.ok || !hasGateAd) {
+              profGateCheck.joined_channels = false;
+              await saveUserProfile(cqChatId, profGateCheck);
+              const gate = renderGate(profGateCheck, chGateCheck, cqChatId);
+              const missingNames = chGateCheck.missing.map(m => m.username || m.name).join(", ");
+              const alertMsg = !chGateCheck.ok ? `⚠️ Please join ${missingNames} to continue!` : `⚠️ Please watch 1 ad to unlock the bot!`;
+              await answerCq(alertMsg, true);
+              await sendCqReply(gate.text, gate.markup);
+              return new Response("OK");
+            }
           }
-
-          await answerCq();
 
           // C3.28 Direct QR Code Login Callback
           if (cqData === "ub_login_qr" || cqData.startsWith("ub_login_qr_") || cqData.startsWith("ub_bind_id_")) {
@@ -14969,7 +14964,7 @@ Reply to Arif naturally:`;
           const isOwnerAdmin = (String(chatId) === "6727787768" || String(chatId) === (env.OWNER_ID || "6727787768"));
           const isAdminCmd = isOwnerAdmin && (text === "👑 User Admin Dashboard" || text === "👑 User Admin Console" || text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin ") || text === "/users_admin" || text.startsWith("/broadcast") || text.startsWith("/announce"));
 
-          if (!isAdminCmd) {
+          if (!isAdminCmd && !isOwnerAdmin) {
             const chCheck = await checkUserChannels(chatId);
             const hasAd = (profile.ads_watched || 0) >= 1;
             const gate = renderGate(profile, chCheck, chatId);

@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Fleet-Wide Bug Squashing, Premature Callback Race Condition & Token Fallbacks (October 29, 2026)**:
+  - **User Bot Premature Callback Acknowledgment Elimination (`deploy_both_cf_workers.py`)**:
+    * **Eliminated Callback Query Pre-empting**: Removed an unconditional, premature `await answerCq()` at line 13371 that was executing before individual button handlers, which caused subsequent toasts (e.g. `await answerCq("Generating QR Code...", false)`) and native modal alerts (e.g. `await answerCq(..., true)`) to be rejected by Telegram with `400 Bad Request: query is too old or query id is invalid`.
+    * **Owner Admin Exemption from User Gate**: Exempted owner/admin (`6727787768` or `env.OWNER_ID`) from the mandatory channel membership and video ad gate on the User Bot across both text commands and interactive callback buttons, eliminating accidental admin lockouts during testing and administration.
+    * **Removed Shadowed Dead Route**: Removed duplicate, unreachable redirect route for `/ads` at line 11500 that was shadowed by the embedded ad portal route at line 5209.
+  - **Side-Task Multi-Token Fallback Resiliency (`finish_all_fleet_sidetasks.py`)**:
+    * Added key fallbacks for PepeGram (`pepegram_init_data` or `pepe_init_data`), AdxEarn AI (`adxearn_init_data` or `adx_init_data`), and Chicken Land (`chickenland_init_data` or `chicken_init_data`), ensuring side-task sweeps never skip accounts storing alternative token key formats.
+  - **Cloudflare Edge Deployment & Verification**:
+    * Verified with `node --check` (0 errors) and deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized both bots' webhooks, menu buttons, descriptions, and commands.
+
 - **🌐 Public Dashboards 8-Pool Alignment, Live Cloud Farm Verification Across Fleet (October 29, 2026)**:
   - **Public MiniApp UI Alignment (`public/miner/index.html`, `public/index.html`, `public/app/index.html`)**:
     * Corrected legacy `<span>9 Bots Automated</span>` to `<span>8 Bots Automated</span>` in connection status pills across all public web app variants.
