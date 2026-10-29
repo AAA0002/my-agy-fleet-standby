@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Full 4-Dashboard Roster Restoration, Ads Portal Decoupling & Cloudflare Edge Sync (October 29, 2026)**:
+  - **Dedicated Ads Portal Decoupling & Restoration (`public_ads/index.html`)**:
+    * Identified and resolved critical regression where `public_ads/index.html` had been overwritten by the miner app (161 KB), causing both `https://agy-henna.vercel.app/` (User Bot menu button) and Cloudflare `/ads` route to serve the mining dashboard instead of the ad watcher.
+    * Restored canonical Dedicated Ads Portal (123 KB) with multi-network waterfall mediation (HilltopAds VAST, Clickadu, GigaPub, Monetag) to `public_ads/index.html` and its mirrors.
+  - **14-Mirror Complete Ground-Truth Synchronization**:
+    * Synchronized all 14 dashboard mirrors across `public/`, `public_ads/`, and `public_admin/`:
+      - *Miner Mini App*: `public_ads/miner/index.html` == `public/index.html` == `public/app/index.html` == `public/miner/index.html` (harmonized to 8 protocols with live bot URLs).
+      - *User Bot Admin Console*: `public_admin/user-admin.html` == `public_admin/user-admin/index.html` == `public_admin/users/index.html` == `public/user-admin.html` (harmonized to `poolsCount: 8`).
+      - *Executive Fleet Console*: `public_admin/admin.html` == `public_admin/admin/index.html` == `public_admin/index.html` == `public/admin.html` == `dashboard.html`.
+      - *Dedicated Ads Portal*: `public_ads/index.html` == `public/ad/index.html` == `public/app/ad/index.html` == `public_ads/ad/index.html` == `public_ads/app/ad/index.html`.
+  - **Cloudflare Edge Deployment & Telegram Command Roster (`deploy_both_cf_workers.py`)**:
+    * Deployed updated bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`), restoring distinct `/ads` and `/miner` routes.
+    * Registered missing `/chicken` command in Admin Bot command list (`admin_commands_payload`).
+    * Verified User Bot Menu Button `🎬 Watch Ads` (`https://agy-henna.vercel.app/`) and Admin Bot Menu Button `👑 Fleet Dashboard` (`https://restore-agy.agorameet.workers.dev/admin`).
+
+
 - **🛡️ Comprehensive System Bug Sweep, Token Fallback & Multi-Chain Sweeper Resilience (October 29, 2026)**:
   - **Universal Bot Token Fallback (`cloud_wallet_sweeper.py`, `multichain_onchain_watcher.py`)**:
     * Standardized token loading across on-chain watchers and vault sweepers to `REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""`, ensuring notifications dispatch reliably even if environment variable names vary between Render nodes, Cloudflare Workers, and GitHub Actions runners.

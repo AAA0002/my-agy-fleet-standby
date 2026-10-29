@@ -391,6 +391,16 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Multi-Repo Synchronization & Deployment**: Updated `push_to_standby_repo.py` to push `chickenland_promo_sniper.py` and `daily_profit_reporter.py` to `AAA0002/cloud-fleet-solver` and `AAA0002/my-agy-fleet-standby`, triggering Render Node 3 deployment (`dep-dbhhk0c9v7es73avs9b0`).
     - **Zero Error Multi-Engine Validation**: Verified AST scope analysis, Node.js syntax across 37 JS scripts and 19 HTML `<script>` blocks with 0 errors, bash syntax on 12 `.sh` files with 0 errors, and JSON parsing on 27 `.json` files with 0 errors.
 
+51. **Full 4-Dashboard Roster Restoration, Ads Portal Decoupling & Cloudflare Edge Sync (October 29, 2026)**:
+    - **Dedicated Ads Portal Restoration**: Resolved critical misconfiguration where `public_ads/index.html` had been overwritten by the miner app (161 KB), causing both `https://agy-henna.vercel.app/` (User Bot menu button) and Cloudflare Worker `/ads` to serve the mining dashboard instead of the ad player. Restored canonical Dedicated Ads Portal (123 KB) with multi-network waterfall mediation (HilltopAds VAST, Clickadu, GigaPub, Monetag).
+    - **14-Mirror Comprehensive Synchronization**: Synchronized all 14 mirror files across `public/`, `public_ads/`, and `public_admin/`:
+      * Miner Mini App: `public_ads/miner/index.html` == `public/index.html` == `public/app/index.html` == `public/miner/index.html`.
+      * User Bot Admin: `public_admin/user-admin.html` == `public_admin/user-admin/index.html` == `public_admin/users/index.html` == `public/user-admin.html` (harmonized to `poolsCount: 8`).
+      * Executive Fleet Console: `public_admin/admin.html` == `public_admin/admin/index.html` == `public_admin/index.html` == `public/admin.html` == `dashboard.html`.
+      * Dedicated Ads Portal: `public_ads/index.html` == `public/ad/index.html` == `public/app/ad/index.html` == `public_ads/ad/index.html` == `public_ads/app/ad/index.html`.
+    - **Cloudflare Edge Node 4 Live Deployment**: Deployed updated bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`), restoring distinct `/ads` (Ads Player) and `/miner` (Mining App) routes. Added `chicken` to `admin_commands_payload`.
+    - **Verified Telegram Menu Buttons**: Confirmed `@AAAPREMIUMAPPSbot` Menu Button is `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`, and `@myagyai` is `👑 Fleet Dashboard` pointing to `https://restore-agy.agorameet.workers.dev/admin`.
+
 ---
 
 ## 📂 7. Key File Index

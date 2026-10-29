@@ -16611,6 +16611,7 @@ async def main():
                     {"command": "diggo", "description": "⛏️ DiggoMiner Cloud Mining Center"},
                     {"command": "pepe", "description": "🐸 PepeGram 6h Cloud Mining Center"},
                     {"command": "adx", "description": "🤖 AdxEarn AI Cloud Mining Center"},
+                    {"command": "chicken", "description": "🐔 Chicken Land Egg Harvest & Hens"},
                     {"command": "models", "description": "🧠 Serverless AI Mesh (DeepSeek, Llama, SDXL)"},
                     {"command": "deepseek", "description": "🔮 DeepSeek R1 AI Reasoning & Logic"},
                     {"command": "llama", "description": "🦙 Meta Llama Fast Intelligence"},
