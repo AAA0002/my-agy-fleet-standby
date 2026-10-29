@@ -176,46 +176,50 @@ async def get_fleet_mining_totals() -> dict:
                 data = json.load(f)
                 for uid, info in data.items():
                     bots = info.get("bots", {})
-                    # 1. MRG
-                    mrg_txt = str(bots.get("1. MRG Miner", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*MRG", mrg_txt)
-                    if m: totals["mrg"] += float(m.group(1))
-                    
-                    # 2. ATF
-                    atf_txt = str(bots.get("2. ATF Miner", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*ATF", atf_txt)
-                    if m: totals["atf"] += float(m.group(1))
+                    for b_name, b_data in bots.items():
+                        core = b_data.get("core", {})
+                        core_str = str(core)
 
-                    # 3. Victor's Company
-                    vic_txt = str(bots.get("3. Victor's Company", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*VIC", vic_txt)
-                    if m: totals["vic"] += float(m.group(1))
-                    
-                    # 4. Kynex Network
-                    knx_txt = str(bots.get("5. Kynex Network", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*KNX", knx_txt)
-                    if m: totals["knx"] += float(m.group(1))
+                        # 1. MRG Miner
+                        if "MRG" in b_name:
+                            m = re.search(r"([\d\.]+)\s*MRG", core_str)
+                            if m: totals["mrg"] += float(m.group(1))
 
-                    # 5. PepeGram
-                    pepe_txt = str(bots.get("6. PepeGram", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*PEPE", pepe_txt)
-                    if m: totals["pepe"] += float(m.group(1))
+                        # 2. ATF Miner
+                        elif "ATF" in b_name:
+                            m = re.search(r"([\d\.]+)\s*ATF", core_str)
+                            if m: totals["atf"] += float(m.group(1))
 
-                    # 7. AdxEarn AI
-                    adx_txt = str(bots.get("7. AdxEarn AI", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*Points", adx_txt)
-                    if m: totals["adx"] += float(m.group(1))
+                        # 3. Victor's Company
+                        elif "Victor" in b_name:
+                            m = re.search(r"([\d\.]+)\s*VIC", core_str)
+                            if m: totals["vic"] += float(m.group(1))
 
-                    # 8. DiggoMiner
-                    diggo_txt = str(bots.get("8. DiggoMiner", {}).get("core", {}))
-                    m = re.search(r"([\d\.]+)\s*DIGGO", diggo_txt)
-                    if m: totals["diggo"] += float(m.group(1))
+                        # 4. Kynex Network
+                        elif "Kynex" in b_name:
+                            m = re.search(r"([\d\.]+)\s*KNX", core_str)
+                            if m: totals["knx"] += float(m.group(1))
 
-                    # 9. Chicken Land
-                    chk_core = bots.get("9. Chicken Land", {}).get("core", {})
-                    if isinstance(chk_core, dict) and chk_core.get("hens"):
-                        totals["chicken_hens"] += int(chk_core.get("hens", 0) or 0)
-                        totals["chicken_eggs"] += int(chk_core.get("eggs", 0) or 0) + int(chk_core.get("egg_bal", 0) or 0)
+                        # 5. PepeGram
+                        elif "Pepe" in b_name:
+                            m = re.search(r"([\d\.]+)\s*PEPE", core_str)
+                            if m: totals["pepe"] += float(m.group(1))
+
+                        # 6. AdxEarn AI
+                        elif "Adx" in b_name:
+                            m = re.search(r"([\d\.]+)\s*Points", core_str)
+                            if m: totals["adx"] += float(m.group(1))
+
+                        # 7. DiggoMiner
+                        elif "Diggo" in b_name:
+                            m = re.search(r"([\d\.]+)\s*DIGGO", core_str)
+                            if m: totals["diggo"] += float(m.group(1))
+
+                        # 8. Chicken Land
+                        elif "Chicken" in b_name:
+                            if isinstance(core, dict):
+                                totals["chicken_hens"] += int(core.get("hens", 0) or 0)
+                                totals["chicken_eggs"] += int(core.get("eggs", 0) or 0) + int(core.get("egg_bal", 0) or 0)
         except Exception:
             pass
 

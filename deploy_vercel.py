@@ -23,8 +23,6 @@ ADMIN_FILES = [
     ('users.html', 'public_admin/user-admin.html'),
     ('admin.html', 'public_admin/admin.html'),
     ('admin/index.html', 'public_admin/admin/index.html'),
-    ('login.html', 'public_admin/login.html'),
-    ('login/index.html', 'public_admin/login/index.html'),
     ('user-admin/index.html', 'public_admin/user-admin/index.html'),
     ('users/index.html', 'public_admin/users/index.html'),
     ('assets/banner.jpg', 'public_admin/assets/banner.jpg'),

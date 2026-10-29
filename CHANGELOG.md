@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Daily Profit Reporter Dynamic Bot Matching & Vercel Manifest Alignment (October 29, 2026)**:
+  - **Dynamic Bot Name Aggregation Fix (`daily_profit_reporter.py`)**:
+    * Fixed bug where `get_fleet_mining_totals()` queried hardcoded legacy key strings (`"5. Kynex Network"`, `"6. PepeGram"`, `"7. AdxEarn AI"`, `"8. DiggoMiner"`, `"9. Chicken Land"`), resulting in 0 balances for 5 out of 8 bots.
+    * Re-architected parser to iterate over `bots.items()` dynamically matching bot names (`Kynex`, `Pepe`, `Adx`, `Diggo`, `Chicken`, `MRG`, `ATF`, `Victor`), restoring 100% accurate reporting across all 8 bots:
+      - KNX: 1,946,832.70
+      - DIGGO: 10,304.08
+      - PEPE: 45,065.94
+      - ADX: 17,300.00
+      - Chicken Land: 70 hens, 22,975 eggs
+  - **Vercel Manifest Alignment (`deploy_vercel.py`)**:
+    * Removed stale missing file references (`public_admin/login.html`, `public_admin/login/index.html`) from `ADMIN_FILES` deployment manifest.
+
 - **🚀 Fleet Architecture Hardening, Concurrency Lock & Autonomous Asset Analytics (October 29, 2026)**:
   - **Batch Extraction Concurrency Guard (`app.py`)**:
     * Added active status and 10-minute cooldown lock (`LAST_BATCH_RUN["status"] == "running"`) to `/collect-tokens` to prevent overlapping batch collections from colliding over MTProto StringSessions.
