@@ -2,6 +2,15 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Chicken Land Pre-Flight Cache Optimization & Daily Ledger Notification Card (October 29, 2026)**:
+  - **Chicken Land Promo Sniper Pre-Flight Check (`chickenland_promo_sniper.py`)**:
+    * Added instant `SISMEMBER` check on `chickenland:claimed:{uid}` before sending network requests, returning `ALREADY_CLAIMED_CACHED` in 0ms and preventing redundant API load.
+    * Added auto-caching into `chickenland:claimed:{uid}` whenever an account returns an "already claimed" response.
+  - **Daily Ledger Admin Notification & Formatting (`daily_profit_reporter.py`)**:
+    * Formatted egg production numbers with thousands separators (`{fleet_totals['chicken_eggs']:,} Eggs`).
+    * Added short summary card broadcast to `ADMIN_NOTIFICATION_CHANNEL_ID` (`-1004358687850`) for daily high-level financial overview.
+
+
 - **🛡️ Disaster Recovery Core Engine Archival, Recursive Scripts Preservation & Failover Alerts (October 29, 2026)**:
   - **Disaster Recovery Core Engine Completeness (`backup_manager.py`)**:
     * Added canonical FastAPI cloud farming engine `app.py` to `CORE_BOT_FILES` in `backup_manager.py`. Previously, `app.py` was absent from the archive list, meaning a disaster recovery restore would restore proxy entrypoints (`render_standby_app.py`, `render_app_latest.py`) that crashed on missing `app.py`.

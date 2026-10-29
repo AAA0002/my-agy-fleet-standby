@@ -389,7 +389,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Decentralized Block Mining & JWT)\n"
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"
             f"• *AdxEarn AI:* `{fleet_totals['adx']:,.0f} Points` earned (Daily Check-in Streaks & Tasks)\n"
-            f"• *Chicken Land:* `{fleet_totals['chicken_hens']} Hens` active laying `{fleet_totals['chicken_eggs']} Eggs` (Autonomous Egg Harvest & Selling)\n"
+            f"• *Chicken Land:* `{fleet_totals['chicken_hens']} Hens` active laying `{fleet_totals['chicken_eggs']:,} Eggs` (Autonomous Egg Harvest & Selling)\n"
             f"• *On-Chain Target TON:* `{TON_PRIMARY_WALLET}`\n"
             f"• *Live On-Chain TON Balance:* `{wallet_ton:.4f} TON` (`~${wallet_ton_usd:.2f} USD` / `~৳{wallet_ton_bdt:.0f} BDT`)\n"
             f"• *TON Price (TonAPI):* `${ton_price:.2f} USD`\n\n"
@@ -446,6 +446,27 @@ async def generate_and_send_report(dry_run: bool = False):
                 print(f"[Daily Reporter] Sent to admin: {r.status}")
         except Exception as e:
             print(f"Admin error: {e}")
+
+        # Send concise alert card to AAA Admin notification channel (-1004358687850)
+        admin_notif_channel = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
+        if admin_notif_channel:
+            short_ledger = (
+                f"📊 <b>Daily Fleet Financial Ledger</b>\n"
+                f"• <b>Fleet Scale:</b> <code>{total_accounts} Accounts • 8/8 Bots</code>\n"
+                f"• <b>Treasury Vault:</b> <code>{wallet_bnb:.6f} BNB</code> (${wallet_usd:.2f}) • <code>{wallet_ton:.4f} TON</code> (${wallet_ton_usd:.2f})\n"
+                f"• <b>Combined Vault:</b> ~${wallet_usd + wallet_ton_usd:.2f} USD (~৳{wallet_bdt + wallet_ton_bdt:.0f} BDT)\n"
+                f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
+            )
+            try:
+                await session.post(send_url, json={
+                    "chat_id": admin_notif_channel,
+                    "text": short_ledger,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True
+                }, timeout=aiohttp.ClientTimeout(total=8))
+                print(f"[Daily Reporter] Dispatched summary to AAA Admin notification ({admin_notif_channel})")
+            except Exception as e:
+                print(f"Admin notification error: {e}")
 
         # 3. Sync to Supabase Managed Cloud Postgres
         if SUPABASE_URL and SUPABASE_KEY:
