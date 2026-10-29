@@ -202,6 +202,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
     is_owner = (str(uid) == MASTER_UID)
     report = {
         "account": f"{name} (UID: {uid})",
+        "name": name,
+        "uid": str(uid),
         "is_master": is_owner,
         "bots": {}
     }
@@ -770,7 +772,67 @@ async def main():
     with open(os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json"), "w") as rf:
         json.dump(fleet_reports, rf, indent=2)
 
+    # Calculate Fleet-Wide Accumulated Asset Totals
+    totals = {
+        "mrg": 0.0,
+        "atf": 0.0,
+        "knx": 0.0,
+        "pepe": 0.0,
+        "adx": 0,
+        "diggo": 0.0,
+        "chicken_coins": 0,
+        "chicken_eggs": 0,
+        "chicken_hens": 0
+    }
+    for rep in fleet_reports.values():
+        bots = rep.get("bots", {})
+        # MRG
+        mrg_bal = bots.get("1. MRG Miner", {}).get("core", {}).get("balance", "")
+        if "MRG" in mrg_bal:
+            try: totals["mrg"] += float(mrg_bal.split("MRG")[0].strip())
+            except Exception: pass
+        # ATF
+        atf_st = bots.get("2. ATF Miner", {}).get("core", {}).get("status", "")
+        if "ATF" in atf_st:
+            try: totals["atf"] += float(atf_st.split("ATF")[0].split(":")[-1].strip())
+            except Exception: pass
+        # Kynex
+        knx_bal = bots.get("4. Kynex Network", {}).get("core", {}).get("balance", "")
+        if "KNX" in knx_bal:
+            try: totals["knx"] += float(knx_bal.split("KNX")[0].strip())
+            except Exception: pass
+        # PepeGram
+        pepe_st = bots.get("5. PepeGram", {}).get("core", {}).get("status", "")
+        if "PEPE" in pepe_st:
+            try: totals["pepe"] += float(pepe_st.split("PEPE")[0].split(":")[-1].strip())
+            except Exception: pass
+        # AdxEarn
+        adx_st = bots.get("6. AdxEarn AI", {}).get("core", {}).get("status", "")
+        if "Points" in adx_st:
+            try: totals["adx"] += int(adx_st.split("Points")[0].split(":")[-1].strip())
+            except Exception: pass
+        # Diggo
+        diggo_st = bots.get("7. DiggoMiner", {}).get("core", {}).get("status", "")
+        if "DIGGO" in diggo_st:
+            try: totals["diggo"] += float(diggo_st.split("DIGGO")[0].split(":")[-1].strip())
+            except Exception: pass
+        # Chicken Land
+        chk = bots.get("8. Chicken Land", {}).get("core", {})
+        totals["chicken_coins"] += int(chk.get("coins", 0) or 0)
+        totals["chicken_eggs"] += int(chk.get("egg_bal", 0) or 0)
+        totals["chicken_hens"] += int(chk.get("hens", 0) or 0)
+
     print("\n" + "="*80)
+    print("💎 FLEET-WIDE 21-ACCOUNT ACCUMULATED ASSET TOTALS:")
+    print("="*80)
+    print(f"  • ⚡ MRG Miner:       {totals['mrg']:,.2f} MRG")
+    print(f"  • 🪙 ATF Miner:       {totals['atf']:,.2f} ATF")
+    print(f"  • 🌐 Kynex Network:   {totals['knx']:,.2f} KNX")
+    print(f"  • 🐸 PepeGram:        {totals['pepe']:,.2f} PEPE")
+    print(f"  • 🤖 AdxEarn AI:      {totals['adx']:,} Points")
+    print(f"  • ⛏️ DiggoMiner:      {totals['diggo']:,.2f} DIGGO")
+    print(f"  • 🐔 Chicken Land:    {totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs • {totals['chicken_coins']:,} Coins")
+    print("="*80)
     print(f"✅ Fleet-Wide Audit Complete! All {len(fleet_reports)} accounts saved to live_farming_and_sidetasks_report.json")
     print("="*80)
 
@@ -784,6 +846,11 @@ async def main():
             f"• <b>Accounts Audited:</b> <code>{len(fleet_reports)}/{len(fleet_reports)} Checked</code>\n"
             f"• <b>Operational Nodes:</b> <code>{healthy_accounts}/{len(fleet_reports)} Healthy</code>\n"
             f"• <b>Active Protocols:</b> <code>8/8 Legitimate Mining Pools</code>\n"
+            f"• <b>Accumulated Yields:</b>\n"
+            f"  ⚡ <code>{totals['mrg']:,.1f} MRG</code> • 🪙 <code>{totals['atf']:,.1f} ATF</code>\n"
+            f"  🌐 <code>{totals['knx']:,.0f} KNX</code> • 🐸 <code>{totals['pepe']:,.0f} PEPE</code>\n"
+            f"  🤖 <code>{totals['adx']:,} ADX</code> • ⛏️ <code>{totals['diggo']:,.1f} DIGGO</code>\n"
+            f"  🐔 <code>{totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs</code>\n"
             f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
         )
         try:

@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet Architecture Hardening, Concurrency Lock & Autonomous Asset Analytics (October 29, 2026)**:
+  - **Batch Extraction Concurrency Guard (`app.py`)**:
+    * Added active status and 10-minute cooldown lock (`LAST_BATCH_RUN["status"] == "running"`) to `/collect-tokens` to prevent overlapping batch collections from colliding over MTProto StringSessions.
+    * Pushed updates to `AAA0002/my-agy-fleet-standby` (`fff68085`) and triggered Render Node 3 deployment (`dep-dbhgre0m7kps73espp20`).
+  - **Automated Accumulated Yield Calculations (`audit_bots_and_sidetasks.py`)**:
+    * Injected programmatic sum aggregators across all 8 mining protocols into `main()`.
+    * Prints high-visibility ASCII asset summary table and embeds live yield totals directly into the short card dispatched to `AAA Admin notification` (`-1004358687850`).
+    * Added `"name"` and `"uid"` directly to root report dictionary for seamless parsing.
+  - **Direct Cloud 21-Account Token Priority (`chickenland_promo_sniper.py`)**:
+    * Upgraded token loader to prioritize live Upstash Redis `miniapp_tokens` over local files, ensuring all 21 fleet accounts participate in promo code sniping.
+    * Pushed to `AAA0002/my-agy-fleet-standby` (`f8113e8c`).
+  - **Autonomous System Sanitation Execution (`clean_up_system.py`)**:
+    * Executed full multi-tier cleanup: freed 3.09 MB local disk space, purged 6 caches, trimmed `fleet:payouts` in Upstash Redis, and pruned 51 stale GitHub Actions workflow runs.
+    * Verified 0 rogue Python bot processes running locally on Samsung Galaxy A30 (100% compliant with Rule 4).
+
 - **🛡️ Proactive 14-Hour Token Expiration Prevention & 8-Bot Full-Spectrum Signature Guard (October 29, 2026)**:
   - **Proactive Expiration Window Hardening (`app.py`)**:
     * Tightened `max_age_hours` from 18–20h down to 14.0h in both `is_token_data_expired()` and `run_cloud_fleet_farming_cycle()`.

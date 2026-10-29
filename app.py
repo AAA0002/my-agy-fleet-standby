@@ -1116,6 +1116,17 @@ async def collect_tokens(request: Request):
     if not accounts:
         return {"ok": True, "message": "No accounts with sessions found in backup archive or body", "collected": 0}
 
+    # Concurrency Lock: Prevent multiple concurrent batch extractions from clashing over MTProto sessions
+    now_ts = time.time()
+    if LAST_BATCH_RUN.get("status") == "running" and (now_ts - LAST_BATCH_RUN.get("timestamp", 0)) < 600:
+        return {
+            "ok": True,
+            "status": "ALREADY_IN_PROGRESS",
+            "message": "MTProto batch token collection is already running on this node.",
+            "collected_so_far": LAST_BATCH_RUN.get("collected", 0),
+            "total_accounts": LAST_BATCH_RUN.get("total", len(accounts))
+        }
+
     sync_mode = request.query_params.get("sync") == "1" or len(accounts) <= 2
 
     async def _run_batch_collection(target_accounts):
