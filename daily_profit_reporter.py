@@ -247,7 +247,7 @@ async def get_fleet_mining_totals() -> dict:
                 pass
 
     # Fallback to Upstash Redis fleet:live_state if any balance is 0
-    if UPSTASH_URL and UPSTASH_TOKEN and (totals["knx"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0):
+    if UPSTASH_URL and UPSTASH_TOKEN and (totals["knx"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0 or totals["vic"] == 0.0):
         try:
             import urllib.request
             req = urllib.request.Request(
@@ -266,8 +266,27 @@ async def get_fleet_mining_totals() -> dict:
                             totals["atf"] += float(a.get("atf_balance", 0) or 0)
                         if totals["chicken_hens"] == 0:
                             totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
+                        if totals["vic"] == 0.0:
+                            totals["vic"] += float(a.get("victors_balance", 0) or 0)
         except Exception:
             pass
+
+    # Fallback to accounts.json if still 0
+    if totals["vic"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0:
+        accs_file = os.path.join(BASE_DIR, "accounts.json")
+        if os.path.exists(accs_file):
+            try:
+                with open(accs_file, "r", encoding="utf-8") as f:
+                    accs = json.load(f)
+                    for a in accs:
+                        if totals["vic"] == 0.0:
+                            totals["vic"] += float(a.get("victors_balance", 0) or 0)
+                        if totals["atf"] == 0.0:
+                            totals["atf"] += float(a.get("atf_balance", 0) or 0)
+                        if totals["chicken_hens"] == 0:
+                            totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
+            except Exception:
+                pass
     return totals
 
 async def get_ai_market_briefing(session: aiohttp.ClientSession, rates: dict, total_payouts_bnb: float, wallet_bnb: float) -> str:
@@ -351,6 +370,8 @@ async def generate_and_send_report(dry_run: bool = False):
 
         ai_briefing = await get_ai_market_briefing(session, rates, total_payouts_bnb, wallet_bnb)
 
+        vic_str = f"`{fleet_totals['vic']:,.2f} VIC` mined (Hourly Shifts & Arcade Solver)" if fleet_totals['vic'] > 0 else "`Cloud Turnstile Active` (Hourly Shifts & Arcade Minigame Expeditions)"
+
         report = (
             f"📊 *[MY AGY AI — Daily Financial & Fleet Ledger]*\n"
             f"📅 *Timestamp:* `{now_str}`\n\n"
@@ -363,7 +384,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"💎 *2. Multi-Chain 8-Bot Autonomous Mining Treasury:*\n"
             f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 180+, Cloud Turnstile Auto-Claim)\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
-            f"• *Victor's Company:* `{fleet_totals['vic']:,.2f} VIC` mined (Hourly Shifts & Arcade Solver)\n"
+            f"• *Victor's Company:* {vic_str}\n"
             f"• *Kynex Network:* `{fleet_totals['knx']:,.2f} KNX` mined (Firebase RTDB Node Auto-Claim)\n"
             f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Decentralized Block Mining & JWT)\n"
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"

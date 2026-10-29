@@ -143,18 +143,33 @@ class ChickenLandMiner:
         return self.rpc("/api/promo", {"code": code.strip()})
 
     def auto_redeem_channel_promos(self) -> List[str]:
-        """Automatically scrapes https://t.me/ChickenLandCodes and redeems active codes."""
+        """Automatically scrapes https://t.me/ChickenLandCodes and redeems active codes for this account."""
         claimed = []
         try:
-            from chickenland_promo_sniper import fetch_channel_codes, is_code_claimed, mark_code_claimed
+            from chickenland_promo_sniper import fetch_channel_codes, redis_command
             channel_codes = fetch_channel_codes()
             for it in channel_codes:
                 code = it.get("code")
-                if code and not it.get("is_exhausted") and not is_code_claimed(code):
-                    r = self.redeem_promo(code)
-                    if r.get("ok"):
-                        claimed.append(code)
-                        mark_code_claimed(code)
+                if not code or it.get("is_exhausted"):
+                    continue
+                # Check if this specific account already claimed this code
+                if self.user_id:
+                    already = redis_command("SISMEMBER", f"chickenland:claimed:{self.user_id}", code)
+                    if already == 1:
+                        continue
+                r = self.redeem_promo(code)
+                desc = str(r.get("description", "")).lower()
+                if r.get("ok"):
+                    claimed.append(code)
+                    if self.user_id:
+                        redis_command("SADD", f"chickenland:claimed:{self.user_id}", code)
+                elif "already" in desc or "claimed" in desc:
+                    # User already claimed this code in previous run
+                    if self.user_id:
+                        redis_command("SADD", f"chickenland:claimed:{self.user_id}", code)
+                elif "expired" in desc or "limit" in desc or "exhausted" in desc:
+                    # Globally exhausted code
+                    redis_command("SADD", "chickenland:seen_codes", code)
         except Exception:
             pass
         return claimed
@@ -333,18 +348,150 @@ class ChickenLandMiner:
         
         return cycle_report
 
-if __name__ == "__main__":
-    tokens_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fleet_miniapp_tokens.json")
-    if os.path.exists(tokens_file):
-        tokens_data = json.load(open(tokens_file))
-        # Test on first account with chickenland token
-        for uid, toks in tokens_data.items():
-            tok = toks.get("chickenland_init_data")
-            if tok:
-                print(f"Running test cycle on account {uid}...")
-                miner = ChickenLandMiner(tok, user_id=uid)
-                report = miner.run_farming_cycle()
-                print(json.dumps(report, indent=2))
+def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
+    """Loads Chicken Land tokens across all fleet accounts, prioritizing Upstash Redis."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    accs_file = os.path.join(base_dir, "accounts.json")
+    names = {}
+    if os.path.exists(accs_file):
+        try:
+            with open(accs_file, "r", encoding="utf-8") as f:
+                for a in json.load(f):
+                    uid = str(a.get("user_id", ""))
+                    if uid:
+                        names[uid] = a.get("name", f"Account {uid}")
+        except Exception:
+            pass
+
+    tokens_map = {}
+    upstash_url = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL")
+    upstash_token = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN")
+    if not upstash_token and os.path.exists(os.path.join(base_dir, ".env")):
+        with open(os.path.join(base_dir, ".env"), "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("UPSTASH_TOKEN=") or line.startswith("UPSTASH_REDIS_REST_TOKEN="):
+                    upstash_token = line.split("=", 1)[1].strip().strip("\"'")
+                elif line.startswith("UPSTASH_URL=") or line.startswith("UPSTASH_REDIS_REST_URL="):
+                    upstash_url = line.split("=", 1)[1].strip().strip("\"'")
+
+    if upstash_url and upstash_token:
+        try:
+            req = urllib.request.Request(
+                f"{upstash_url}/get/miniapp_tokens",
+                headers={"Authorization": f"Bearer {upstash_token}"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                res = data.get("result")
+                if res:
+                    raw_toks = json.loads(res) if isinstance(res, str) else res
+                    for uid, toks in raw_toks.items():
+                        c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                        if c_tok:
+                            tokens_map[str(uid)] = {
+                                "user_id": str(uid),
+                                "name": names.get(str(uid), f"Account {uid}"),
+                                "token": c_tok
+                            }
+        except Exception:
+            pass
+
+    # Fallback to local tokens files
+    if not tokens_map:
+        for fpath in ["fleet_miniapp_tokens.json", "miniapp_tokens.json"]:
+            full_p = os.path.join(base_dir, fpath)
+            if os.path.exists(full_p):
+                try:
+                    with open(full_p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        for uid, toks in data.items():
+                            c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                            if c_tok and str(uid) not in tokens_map:
+                                tokens_map[str(uid)] = {
+                                    "user_id": str(uid),
+                                    "name": names.get(str(uid), f"Account {uid}"),
+                                    "token": c_tok
+                                }
+                except Exception:
+                    pass
+
+    return tokens_map
+
+
+def update_accounts_json_chickenland(uid: str, hens: int, rate: int, coins: int):
+    """Updates Chicken Land stats for an account in accounts.json."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    accs_file = os.path.join(base_dir, "accounts.json")
+    if not os.path.exists(accs_file):
+        return
+    try:
+        with open(accs_file, "r", encoding="utf-8") as f:
+            accs = json.load(f)
+        modified = False
+        for a in accs:
+            if str(a.get("user_id")) == str(uid):
+                a["chickenland_hens"] = hens
+                a["chickenland_rate"] = rate
+                a["chickenland_coins"] = coins
+                modified = True
                 break
+        if modified:
+            with open(accs_file, "w", encoding="utf-8") as f:
+                json.dump(accs, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Chicken Land Autonomous Mining & Farming Engine")
+    parser.add_argument("--all", action="store_true", help="Farm all available fleet accounts sequentially")
+    parser.add_argument("--uid", type=str, default=None, help="Farm a specific account user ID")
+    args = parser.parse_args()
+
+    fleet_tokens = load_fleet_chickenland_tokens()
+    if not fleet_tokens:
+        print("❌ No Chicken Land tokens found in Redis or local token files.")
+        sys.exit(1)
+
+    print(f"🐔 Chicken Land Engine: Loaded {len(fleet_tokens)} fleet accounts.")
+
+    if args.uid:
+        item = fleet_tokens.get(str(args.uid))
+        if not item:
+            print(f"❌ User ID {args.uid} not found in available Chicken Land tokens.")
+            sys.exit(1)
+        print(f"▶️ Farming Account {item['name']} ({args.uid})...")
+        miner = ChickenLandMiner(item["token"], user_id=args.uid)
+        rep = miner.run_farming_cycle()
+        update_accounts_json_chickenland(args.uid, rep.get("final_hens", 0), rep.get("final_rate", 0), rep.get("final_coins", 0))
+        print(json.dumps(rep, indent=2))
+
+    elif args.all:
+        print(f"🚀 Running autonomous farming cycle across all {len(fleet_tokens)} fleet accounts...")
+        totals = {"hens": 0, "eggs": 0, "coins": 0, "promos": 0}
+        for idx, (uid, item) in enumerate(fleet_tokens.items(), 1):
+            name = item["name"]
+            print(f"[{idx}/{len(fleet_tokens)}] 🐣 Farming {name} ({uid})...", end=" ", flush=True)
+            miner = ChickenLandMiner(item["token"], user_id=uid)
+            rep = miner.run_farming_cycle()
+            h = rep.get("final_hens", 0)
+            c = rep.get("final_coins", 0)
+            r = rep.get("final_rate", 0)
+            p = len(rep.get("promos_claimed", []))
+            totals["hens"] += h
+            totals["coins"] += c
+            totals["promos"] += p
+            update_accounts_json_chickenland(uid, h, r, c)
+            print(f"✅ Hens: {h} | Coins: {c} | Rate: {r}/h | Promos: {p}")
+            time.sleep(1.2)
+        print(f"\n🎉 Fleet Cycle Complete: Total Hens: {totals['hens']} | Total Coins: {totals['coins']:,} | Promos Claimed: {totals['promos']}")
+
     else:
-        print("No tokens file found to test.")
+        # Test on first account
+        first_uid, first_item = next(iter(fleet_tokens.items()))
+        print(f"▶️ Test run on Account {first_item['name']} ({first_uid})...")
+        miner = ChickenLandMiner(first_item["token"], user_id=first_uid)
+        rep = miner.run_farming_cycle()
+        update_accounts_json_chickenland(first_uid, rep.get("final_hens", 0), rep.get("final_rate", 0), rep.get("final_coins", 0))
+        print(json.dumps(rep, indent=2))

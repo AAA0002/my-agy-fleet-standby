@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Chicken Land Per-Account Promo Sniper Isolation, Victor's Company Solver Fallback & Multi-Repo Sanitation (October 29, 2026)**:
+  - **Per-Account Promo Code Isolation (`chickenland_miner.py`)**:
+    * Fixed critical bug in `auto_redeem_channel_promos` where calling `mark_code_claimed(code)` globally in Redis caused the first claiming account to block all subsequent 20 fleet accounts from redeeming active promo codes.
+    * Re-architected redemption tracking to use isolated per-user sets (`chickenland:claimed:{uid}`), guaranteeing all 21 accounts redeem every active promo code independently.
+    * Upgraded `chickenland_miner.py` with dynamic `load_fleet_chickenland_tokens()` prioritizing Upstash Redis (`miniapp_tokens`, `fleet:tokens:{uid}`) over local files.
+    * Added CLI flags (`--all`, `--uid`) and automatic updates to `accounts.json` for live hens, egg production rate, and coins.
+  - **Account 21 State Parity (`accounts.json`)**:
+    * Synchronized Account #21 (`8669217201`) with its live Chicken Land stats (2 hens, 20 egg rate, 790 coins) and linked WebApp tokens.
+  - **Victor's Company Reporting Fallback (`daily_profit_reporter.py`)**:
+    * Implemented Upstash Redis `fleet:live_state` and `accounts.json` fallbacks for Victor's Company to prevent `0.00 VIC` from displaying when Turnstile passes are in transit or awaiting renewal.
+    * Formatted Victor's Company status to accurately report `Cloud Turnstile Active` (Hourly Shifts & Arcade Minigame Expeditions) instead of placeholder zeroes.
+  - **Multi-Repo CI/CD Sanitation (`clean_up_system.py`)**:
+    * Added `AAA0002/my-agy-fleet-standby` to `GH_REPOS` for automated workflow run cleanup alongside `AAA0002/ATL` and `AAA0002/cloud-fleet-solver`.
+  - **Audit Aggregator Total Fix (`audit_bots_and_sidetasks.py`)**:
+    * Included both barn (`egg_bal`) and basket (`eggs`) counts in the total fleet egg aggregator for 100% ground-truth inventory.
+
 - **🐛 Daily Profit Reporter Dynamic Bot Matching & Vercel Manifest Alignment (October 29, 2026)**:
   - **Dynamic Bot Name Aggregation Fix (`daily_profit_reporter.py`)**:
     * Fixed bug where `get_fleet_mining_totals()` queried hardcoded legacy key strings (`"5. Kynex Network"`, `"6. PepeGram"`, `"7. AdxEarn AI"`, `"8. DiggoMiner"`, `"9. Chicken Land"`), resulting in 0 balances for 5 out of 8 bots.

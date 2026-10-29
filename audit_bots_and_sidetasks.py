@@ -819,7 +819,7 @@ async def main():
         # Chicken Land
         chk = bots.get("8. Chicken Land", {}).get("core", {})
         totals["chicken_coins"] += int(chk.get("coins", 0) or 0)
-        totals["chicken_eggs"] += int(chk.get("egg_bal", 0) or 0)
+        totals["chicken_eggs"] += int(chk.get("egg_bal", 0) or 0) + int(chk.get("eggs", 0) or 0)
         totals["chicken_hens"] += int(chk.get("hens", 0) or 0)
 
     print("\n" + "="*80)

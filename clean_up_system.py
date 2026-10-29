@@ -66,7 +66,7 @@ GH_PAT = (
     or os.environ.get("GH_TOKEN")
     or os.environ.get("GITHUB_TOKEN")
 )
-GH_REPOS = ["AAA0002/ATL", "AAA0002/cloud-fleet-solver"]
+GH_REPOS = ["AAA0002/ATL", "AAA0002/cloud-fleet-solver", "AAA0002/my-agy-fleet-standby"]
 
 # -----------------------------------------------------------------------------
 # 1. Local Workspace & Disk Sanitation
