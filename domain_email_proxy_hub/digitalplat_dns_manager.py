@@ -11,7 +11,12 @@ import requests
 from dotenv import load_dotenv
 
 # Load root environment
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+local_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+parent_env = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(local_env):
+    load_dotenv(local_env)
+if os.path.exists(parent_env):
+    load_dotenv(parent_env)
 
 API_BASE = "https://domain-api.digitalplat.org/api/v1"
 API_KEY = os.getenv("DIGITALPLAT_API_KEY")

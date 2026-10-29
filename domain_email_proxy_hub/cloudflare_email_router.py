@@ -12,7 +12,12 @@ import email
 import requests
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+local_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+parent_env = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(local_env):
+    load_dotenv(local_env)
+if os.path.exists(parent_env):
+    load_dotenv(parent_env)
 
 CF_TOKEN = os.getenv("CF_ZONE_EMAIL_TOKEN") or os.getenv("CF_API_TOKEN_USERBOT")
 ZONE_ID = "f668c3573777bb05a95eba5dc01ada32"  # agy.dpdns.org
@@ -80,26 +85,13 @@ def get_routing_rules():
     return r.json().get("result", [])
 
 def enable_catch_all_rule():
-    rules = get_routing_rules()
-    catch_all = None
-    for rule in rules:
-        for m in rule.get("matchers", []):
-            if m.get("type") == "all":
-                catch_all = rule
-                break
-    if not catch_all:
-        print("No catch-all rule found.")
-        return False
-        
-    rule_id = catch_all.get("id")
+    url = f"https://api.cloudflare.com/client/v4/zones/{ZONE_ID}/email/routing/rules/catch_all"
     payload = {
         "name": "Catch-all forward to Gmail",
         "matchers": [{"type": "all"}],
         "actions": [{"type": "forward", "value": [DESTINATION_EMAIL]}],
-        "enabled": True,
-        "priority": 0
+        "enabled": True
     }
-    url = f"https://api.cloudflare.com/client/v4/zones/{ZONE_ID}/email/routing/rules/{rule_id}"
     r = requests.put(url, headers=get_cf_headers(), json=payload)
     print(f"Update Catch-all Rule status: {r.status_code}")
     if r.status_code == 200:

@@ -14,7 +14,12 @@ import string
 import requests
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+local_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+parent_env = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(local_env):
+    load_dotenv(local_env)
+if os.path.exists(parent_env):
+    load_dotenv(parent_env)
 
 DOMAIN = "agy.dpdns.org"
 GMAIL_USER = os.getenv("GMAIL_ADDRESS", "aaa.support.a@gmail.com")
