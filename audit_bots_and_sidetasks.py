@@ -440,11 +440,11 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["auth"] = f"HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["5. Kynex Network"] = b_rep
+            report["bots"]["4. Kynex Network"] = b_rep
         else:
-            report["bots"]["5. Kynex Network"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+            report["bots"]["4. Kynex Network"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
-        # 6. PepeGram
+        # 5. PepeGram
         pepe_init = tokens.get("pepegram_init_data") or tokens.get("pepe_init_data")
         if pepe_init:
             pepe_h = {
@@ -489,11 +489,11 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["6. PepeGram"] = b_rep
+            report["bots"]["5. PepeGram"] = b_rep
         else:
-            report["bots"]["6. PepeGram"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+            report["bots"]["5. PepeGram"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
-        # 7. AdxEarn AI
+        # 6. AdxEarn AI
         adx_init = tokens.get("adxearn_init_data") or tokens.get("adx_init_data")
         if adx_init:
             adx_h = {
@@ -546,11 +546,11 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["7. AdxEarn AI"] = b_rep
+            report["bots"]["6. AdxEarn AI"] = b_rep
         else:
-            report["bots"]["7. AdxEarn AI"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+            report["bots"]["6. AdxEarn AI"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
-        # 8. DiggoMiner
+        # 7. DiggoMiner
         diggo_jwt = tokens.get("diggo_jwt")
         diggo_init = tokens.get("diggo_init_data")
         if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
@@ -666,7 +666,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["status"] = f"JWT HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["8. DiggoMiner"] = b_rep
+            report["bots"]["7. DiggoMiner"] = b_rep
         elif diggo_init:
             d_h = {**headers, "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
             try:
@@ -683,12 +683,12 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["8. DiggoMiner"] = b_rep
+            report["bots"]["7. DiggoMiner"] = b_rep
         else:
-            report["bots"]["8. DiggoMiner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+            report["bots"]["7. DiggoMiner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # -------------------------------------------------------------
-        # 9. Chicken Land (@ChickenLandBot)
+        # 8. Chicken Land (@ChickenLandBot)
         # -------------------------------------------------------------
         c_init = tokens.get("chickenland_init_data") or tokens.get("chicken_init_data")
         b_rep = {"core": {}, "side_tasks": []}
@@ -718,9 +718,9 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["status"] = f"HTTP {r.status} ⚠️"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["9. Chicken Land"] = b_rep
+            report["bots"]["8. Chicken Land"] = b_rep
         else:
-            report["bots"]["9. Chicken Land"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+            report["bots"]["8. Chicken Land"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
     return report
 

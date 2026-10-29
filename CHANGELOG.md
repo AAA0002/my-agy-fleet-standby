@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔍 Fleet-Wide 8-Bot Ground-Truth Audit & Alignment Across 21 Accounts (October 29, 2026)**:
+  - **Audit Engine Numbering Harmonized (`audit_bots_and_sidetasks.py`)**:
+    * Cleanly aligned the audit probes strictly to the 8 authentic mining pools: 1. MRG Miner, 2. ATF Miner, 3. Victor's Company, 4. Kynex Network, 5. PepeGram, 6. AdxEarn AI, 7. DiggoMiner, 8. Chicken Land.
+  - **Comprehensive Multi-Account Live Verification**:
+    * Executed live asynchronous REST audit across all 21 accounts in Upstash Redis (Master `6727787768` + 20 Worker accounts `8881914294` ... `8669217201`).
+    * **Result**: 21/21 accounts verified 100% active/responsive (8/8 bots per account).
+    * **Live Fleet Yield Aggregated**:
+      - ⚡ MRG: 67,878.00 MRG
+      - 🪙 ATF: 14,176.76 ATF
+      - 🌐 KNX: 1,946,832.70 KNX
+      - 🐸 PEPE: 45,065.94 PEPE hashes
+      - 🤖 ADX: 17,300 Points
+      - ⛏️ DIGGO: 10,304.08 DIGGO
+      - 🐔 Chicken Land: 70 Hens, 20,649 Eggs, 8,080 Coins
+    * Ground-truth audit alert dispatched to `AAA Admin notification` (`-1004358687850`).
+
 - **🛡️ Authentic 8-Bot Handle Standardization, Public Edge Badge Sync & Dead Script Purge (October 29, 2026)**:
   - **Standardized Onboarding Pipeline & Step Counters (`login_account.py`)**:
     * Corrected legacy scattered step counters (`[1/4]`, `[2/7]`, `[5/5]`, `[9/9]`) to sequential `[1/8]` through `[8/8]` corresponding to the 8 authentic bots.
