@@ -277,6 +277,10 @@ async def snipe_promo_fleet(
     mark_code_seen(code)
     if successful:
         mark_code_claimed(code)
+        for r in successful:
+            s_uid = r.get("uid")
+            if s_uid:
+                redis_command("SADD", f"chickenland:claimed:{s_uid}", code)
         
         # Per user directive: Completely silent operation - do not send promo code broadcast alerts to Telegram
         if False and send_alert:
