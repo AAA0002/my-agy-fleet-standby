@@ -673,10 +673,11 @@ def format_error(e: Exception) -> str:
     msg = str(e).strip()
     return f"{type(e).__name__}: {msg}" if msg else type(e).__name__
 
-def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
+def is_token_data_expired(t_dict: dict, max_age_hours: float = 14.0) -> bool:
     """
     Checks whether token data is missing, incomplete, or any key bot token is older than max_age_hours.
     Inspects internal auth_date from WebApp initData query strings for true expiration detection.
+    Proactively flags tokens reaching 14h (well before 24h hard expiry) to guarantee zero 401 dropouts.
     """
     if not t_dict or not isinstance(t_dict, dict):
         return True
@@ -702,10 +703,10 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     except Exception:
         return True
 
-    # Check individual token auth_date signatures (Active WebApp Bots)
+    # Check individual token auth_date signatures across all 8 active WebApp Bots
     key_tokens = [
-        "mrg_init_data", "atf_init_data",
-        "victors_init_data", "kynex_init_data"
+        "mrg_init_data", "atf_init_data", "victors_init_data", "kynex_init_data",
+        "pepegram_init_data", "adxearn_init_data", "diggo_init_data", "chickenland_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -719,7 +720,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
             ad = parsed.get("auth_date", [None])[0]
             if ad and ad.isdigit():
                 tok_age = now_ts - float(ad)
-                max_bot_age = (12.0 * 3600.0) if kt == "diggo_init_data" else (max_age_hours * 3600.0)
+                max_bot_age = (10.0 * 3600.0) if kt == "diggo_init_data" else (max_age_hours * 3600.0)
                 if tok_age > max_bot_age:
                     expired_cnt += 1
         except Exception:
@@ -6784,7 +6785,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                             synced_ts = 0
 
                 has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
-                needs_refresh = (not has_any_token) or is_token_data_expired(t_dict, max_age_hours=18.0)
+                needs_refresh = (not has_any_token) or is_token_data_expired(t_dict, max_age_hours=14.0)
 
                 if needs_refresh and (a_dict.get("session_string") or a_dict.get("session")):
                     try:

@@ -2,6 +2,13 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Proactive 14-Hour Token Expiration Prevention & 8-Bot Full-Spectrum Signature Guard (October 29, 2026)**:
+  - **Proactive Expiration Window Hardening (`app.py`)**:
+    * Tightened `max_age_hours` from 18–20h down to 14.0h in both `is_token_data_expired()` and `run_cloud_fleet_farming_cycle()`.
+    * Expanded `key_tokens` to inspect the internal `auth_date` query parameter across **all 8 active WebApp bots** (`mrg`, `atf`, `victors`, `kynex`, `pepegram`, `adxearn`, `diggo`, `chickenland`) instead of just 4.
+    * Enforced 10.0h max age for Diggo tokens to guarantee continuous validity before JWT renewal.
+    * Pushed to `AAA0002/my-agy-fleet-standby` (`5f89238a`) and triggered Render Node 3 deployment (`dep-dbhgpbg8v5cc738f03l0`).
+
 - **🐛 Comprehensive Codebase Bug Sweep, Path Sanitization & 8-Bot Standard Harmonization (October 29, 2026)**:
   - **Eliminated Hardcoded Workspace Path Bugs (`scripts/onboarding/run_onboard_runner.py`)**:
     * Replaced hardcoded `ACCOUNTS_FILE = "/root/projects/AAA_AUTO/accounts.json"` (which triggered `FileNotFoundError` in non-root environments) with dynamic `PROJECT_ROOT` path detection.
