@@ -1669,11 +1669,13 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         account_report["results"]["kynex"] = kynex_res
 
         # 5. PepeGram
-        pepe_res = await sweep_pepegram_tasks(session, uid, name, acc_toks.get("pepegram_init_data", ""), acc)
+        pepe_init = acc_toks.get("pepegram_init_data") or acc_toks.get("pepe_init_data", "")
+        pepe_res = await sweep_pepegram_tasks(session, uid, name, pepe_init, acc)
         account_report["results"]["pepegram"] = pepe_res
 
         # 6. AdxEarn AI
-        adx_res = await sweep_adxearn_tasks(session, uid, name, acc_toks.get("adxearn_init_data", ""), acc)
+        adx_init = acc_toks.get("adxearn_init_data") or acc_toks.get("adx_init_data", "")
+        adx_res = await sweep_adxearn_tasks(session, uid, name, adx_init, acc)
         account_report["results"]["adxearn"] = adx_res
 
         # 7. DiggoMiner
@@ -1681,7 +1683,8 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         account_report["results"]["diggo"] = diggo_res
 
         # 8. Chicken Land
-        chicken_res = await sweep_chickenland_tasks(session, uid, name, acc_toks.get("chickenland_init_data", ""), acc)
+        chk_init = acc_toks.get("chickenland_init_data") or acc_toks.get("chicken_init_data", "")
+        chicken_res = await sweep_chickenland_tasks(session, uid, name, chk_init, acc)
         account_report["results"]["chickenland"] = chicken_res
 
         # Sync tokens to Cloudflare Workers if newly refreshed
