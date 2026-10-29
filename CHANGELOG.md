@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Comprehensive Codebase Bug Sweep, Path Sanitization & 8-Bot Standard Harmonization (October 29, 2026)**:
+  - **Eliminated Hardcoded Workspace Path Bugs (`scripts/onboarding/run_onboard_runner.py`)**:
+    * Replaced hardcoded `ACCOUNTS_FILE = "/root/projects/AAA_AUTO/accounts.json"` (which triggered `FileNotFoundError` in non-root environments) with dynamic `PROJECT_ROOT` path detection.
+  - **Fixed Path & Logic Errors in Batch Onboarding (`scripts/onboarding/batch_referral_onboard.py`, `scripts/onboarding/onboard_new_4_accounts.py`)**:
+    * Resolved `ACCOUNTS_FILE` path lookup from local `scripts/onboarding/` to project root `accounts.json`.
+    * Upgraded legacy `all_4_referrals_bound` and `all_7_referrals_bound` checks to the strict `all_8_referrals_bound` standard.
+  - **Removed Hardcoded Fallbacks in `app.py` & `fleet_wallet_provisioner.py`**:
+    * Purged obsolete hardcoded candidate `"/root/projects/AAA_AUTO/public_admin/fleet_wallets_data.json"`.
+    * Sequentially renumbered token extraction and referral binding steps `[1/8]` through `[8/8]` in `app.py`.
+  - **Harmonized Official Mini App Referral Links (`public_ads/miner/index.html`, `public_ads/index.html`, `public/miner/index.html`, `public/index.html`)**:
+    * Corrected Victor's Company button link from raw bot query to official WebApp referral link `https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18`.
+    * Attached referral parameter to Kynex Network link (`https://t.me/Kynex_miningbot?start=6727787768`).
+  - **Harmonized AI Prompt References (`deploy_both_cf_workers.py`, `autonomous_cloud_agent.py`)**:
+    * Corrected residual `9 Telegram crypto bots` prompt text to strict `8 Telegram crypto bots` standard.
+    * Synchronized all 8 referral deep-links in `userSystemPrompt`.
+  - **Live Deployments & Checkpoints**:
+    * Re-deployed updated worker to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized `app.py` to `AAA0002/my-agy-fleet-standby` (`2460c504`) and triggered Render Node 3 deployment (`dep-dbhga1ifngtc73bje8og`).
+
 - **🔍 Fleet-Wide 8-Bot Ground-Truth Audit & Alignment Across 21 Accounts (October 29, 2026)**:
   - **Audit Engine Numbering Harmonized (`audit_bots_and_sidetasks.py`)**:
     * Cleanly aligned the audit probes strictly to the 8 authentic mining pools: 1. MRG Miner, 2. ATF Miner, 3. Victor's Company, 4. Kynex Network, 5. PepeGram, 6. AdxEarn AI, 7. DiggoMiner, 8. Chicken Land.

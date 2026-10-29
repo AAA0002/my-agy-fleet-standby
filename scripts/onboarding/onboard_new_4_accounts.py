@@ -42,16 +42,22 @@ def sync_account_to_upstash(acc):
     except Exception as e:
         print(f"  ⚠️ Upstash sync error for {uid}: {e}")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
+ACCOUNTS_FILE = os.getenv("ACCOUNTS_FILE") or os.path.join(PROJECT_ROOT, "accounts.json")
+if not os.path.exists(ACCOUNTS_FILE):
+    ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+
 async def run_onboard():
-    if not os.path.exists("accounts.json"):
-        print("❌ accounts.json not found!")
+    if not os.path.exists(ACCOUNTS_FILE):
+        print(f"❌ {ACCOUNTS_FILE} not found!")
         return
 
-    with open("accounts.json", "r", encoding="utf-8") as f:
+    with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
         accounts = json.load(f)
 
     target_accs = [a for a in accounts if str(a.get("user_id")) in NEW_ACCOUNT_IDS]
-    print(f"\n🚀 Starting full 7-bot referral onboarding for {len(target_accs)} target accounts...\n")
+    print(f"\n🚀 Starting full 8-bot referral onboarding for {len(target_accs)} target accounts...\n")
 
     for idx, acc in enumerate(target_accs, start=1):
         uid = str(acc.get("user_id"))

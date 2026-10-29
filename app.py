@@ -913,14 +913,14 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
 
-    # 1. MRG Miner (@mrgminerbot)
+    # 1. MRG Miner (@mrgtoken_bot)
     mrg_param = None if is_master else MRG_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
     if tok:
         tokens["mrg_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 2. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
+    # 2. ATF Miner (@atfminers_bot - Silent WebApp query, zero chat messages)
     atf_param = None if is_master else ATF_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
     if tok:
@@ -941,20 +941,20 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 6. PepeGram (@Pepe_gram_bot - Silent WebApp query)
+    # 5. PepeGram (@Pepe_gram_bot - Silent WebApp query)
     pepe_tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
     if pepe_tok:
         tokens["pepegram_init_data"] = pepe_tok
     await asyncio.sleep(random.uniform(0.3, 0.8))
 
-    # 7. AdxEarn AI (@AdxEarnAibot - Silent WebApp query)
+    # 6. AdxEarn AI (@AdxEarnAibot - Silent WebApp query)
     adx_param = None if is_master else ADXEARN_REFERRAL_CODE
     adx_tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
     if adx_tok:
         tokens["adxearn_init_data"] = adx_tok
     await asyncio.sleep(random.uniform(0.3, 0.8))
 
-    # 8. DiggoMiner (@Diggominer_bot - Silent WebApp query with immediate 30-day JWT exchange)
+    # 7. DiggoMiner (@Diggominer_bot - Silent WebApp query with immediate 30-day JWT exchange)
     dig_param = None if is_master else DIGGO_REFERRAL_CODE
     try:
         from telethon.tl.functions.bots import AllowSendMessageRequest
@@ -985,7 +985,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         except Exception as de:
             logger.debug(f"Diggo immediate JWT exchange note: {de}")
 
-    # 9. Chicken Land (@ChickenLandBot - Silent WebApp query)
+    # 8. Chicken Land (@ChickenLandBot - Silent WebApp query)
     chk_param = None if is_master else CHICKENLAND_REFERRAL_CODE
     chk_tok = await extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"])
     if chk_tok:
@@ -2297,7 +2297,35 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    # 6. DiggoMiner (Dual-Layer: Chat /start + WebApp handshake)
+    # 5. PepeGram (Dual-Layer: Chat /start + WebApp handshake)
+    if force or not acc_entry.get("pepegram_referral_bound"):
+        try:
+            try:
+                await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
+            acc_entry["pepegram_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
+
+    # 6. AdxEarn AI (Dual-Layer: Chat /start + WebApp handshake)
+    if force or not acc_entry.get("adxearn_referral_bound"):
+        try:
+            try:
+                await client.send_message(ADXEARN_BOT, f"/start {ADXEARN_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
+            acc_entry["adxearn_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] AdxEarn referral bind note: {e}")
+
+    # 7. DiggoMiner (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("diggo_referral_bound"):
         try:
             try:
@@ -2316,35 +2344,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Diggo referral bind note: {e}")
 
-    # 7. PepeGram (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("pepegram_referral_bound"):
-        try:
-            try:
-                await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
-            acc_entry["pepegram_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
-
-    # 8. AdxEarn AI (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("adxearn_referral_bound"):
-        try:
-            try:
-                await client.send_message(ADXEARN_BOT, f"/start {ADXEARN_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
-            acc_entry["adxearn_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] AdxEarn referral bind note: {e}")
-
-    # 9. Chicken Land (Dual-Layer: Chat /start + WebApp handshake)
+    # 8. Chicken Land (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("chickenland_referral_bound"):
         try:
             try:
@@ -2494,8 +2494,7 @@ BIP39_SAMPLE_WORDS = [
 def load_fleet_static_registry() -> list:
     candidates = [
         os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json"),
-        os.path.join(BASE_DIR, "fleet_wallets_data.json"),
-        "/root/projects/AAA_AUTO/public_admin/fleet_wallets_data.json"
+        os.path.join(BASE_DIR, "fleet_wallets_data.json")
     ]
     data = []
     for c in candidates:

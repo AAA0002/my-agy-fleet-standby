@@ -14,7 +14,12 @@ import urllib.error
 
 RENDER_URL = os.getenv("RENDER_URL", "https://my-agy-fleet-standby-node3.onrender.com/api/onboard-new-bots")
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
-ACCOUNTS_FILE = "/root/projects/AAA_AUTO/accounts.json"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
+ACCOUNTS_FILE = os.getenv("ACCOUNTS_FILE") or os.path.join(PROJECT_ROOT, "accounts.json")
+if not os.path.exists(ACCOUNTS_FILE):
+    ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
 PENDING_UIDS = [
     8450010161,  # Nadim (@Asssssggj)

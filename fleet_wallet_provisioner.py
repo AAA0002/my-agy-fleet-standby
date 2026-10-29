@@ -138,8 +138,7 @@ def load_fleet_static_registry() -> list:
     import json
     candidates = [
         os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json"),
-        os.path.join(BASE_DIR, "fleet_wallets_data.json"),
-        "/root/projects/AAA_AUTO/public_admin/fleet_wallets_data.json"
+        os.path.join(BASE_DIR, "fleet_wallets_data.json")
     ]
     for c in candidates:
         if os.path.exists(c):

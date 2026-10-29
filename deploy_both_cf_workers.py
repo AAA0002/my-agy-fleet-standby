@@ -3238,10 +3238,10 @@ export default {
         "  1. ⚡ [MRG Miner](https://t.me/mrgtoken_bot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n" +
         "  2. 🪙 [ATF Miner](https://t.me/atfminers_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n" +
         "  3. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade yield (8h cycle)\n" +
-        "  4. 🌐 [Kynex Network](https://t.me/Kynex_miningbot) — Decentralized TON edge node mining (12h cycle)\n" +
-        "  5. ⛏️ [DiggoMiner](https://t.me/Diggominer_bot) — High-hashrate block mining (3h cycle)\n" +
-        "  6. 🐸 [PepeGram](https://t.me/Pepe_gram_bot) — Meme token cloud mining (3h cycle)\n" +
-        "  7. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot) — AI computational mining node (3h cycle)\n" +
+        "  4. 🌐 [Kynex Network](https://t.me/Kynex_miningbot?start=6727787768) — Decentralized TON edge node mining (12h cycle)\n" +
+        "  5. ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — High-hashrate block mining (3h cycle)\n" +
+        "  6. 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — Meme token cloud mining (3h cycle)\n" +
+        "  7. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — AI computational mining node (3h cycle)\n" +
         "  8. 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling (8h cycle)\n" +
         "- Explain that the bot automatically farms and claims all 8 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
@@ -3250,7 +3250,7 @@ export default {
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
         "• Creator: Created and engineered by AAA.\n" +
-        "• What the bot does: Automatically farms 9 Telegram crypto bots 24/7 in the cloud.\n" +
+        "• What the bot does: Automatically farms 8 Telegram crypto bots 24/7 in the cloud.\n" +
         "• How to connect: Tap '➕ Connect Account' -> '⚡ 1-Tap Link My Account' to connect instantly, or connect via phone or numeric Telegram ID.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
