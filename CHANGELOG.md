@@ -3,6 +3,12 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🛡️ Authentic 8-Bot Handle Standardization, Public Edge Badge Sync & Dead Script Purge (October 29, 2026)**:
+  - **Standardized Onboarding Pipeline & Step Counters (`login_account.py`)**:
+    * Corrected legacy scattered step counters (`[1/4]`, `[2/7]`, `[5/5]`, `[9/9]`) to sequential `[1/8]` through `[8/8]` corresponding to the 8 authentic bots.
+    * Aligned bot entities to primary handles `@mrgtoken_bot` and `@atfminers_bot`.
+  - **Standardized Cloud App Loop & Watchdog (`app.py`)**:
+    * Standardized challenge solver docstrings, referral checks, and side-task sweepers strictly to `ALL_8_BOT_KEYS` and 8-Bot standards.
+    * Pushed updates to `AAA0002/my-agy-fleet-standby` (`f2842aa0`, `26aef33d`) and deployed to Render Node 3.
   - **Standardized Authentic Bot Handles & Referral URLs (`deploy_both_cf_workers.py`)**:
     * **Eliminated Mismatched Bot Handles**: Replaced legacy and unofficial aliases with the authentic 8 bots:
       - MRG Miner: Replaced `@mrgminerbot` and `@MRG_miner_bot` with `@mrgtoken_bot` (`https://t.me/mrgtoken_bot?start=ref_IRN1G3XD`).
