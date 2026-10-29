@@ -1325,7 +1325,7 @@ async def fetch_accounts_from_cloud():
     return merged
 
 async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
-    """Universal 9-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
+    """Universal 8-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
     # 1. First, solve deterministically in 0.001ms with zero network requests
     det_ans = solve_challenge_deterministic(question_text)
     if det_ans != "0" or not any(c.isalpha() for c in question_text):
@@ -2190,10 +2190,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
             await sync_account_tokens_to_clouds(tokens)
         return
 
-    # Check if all 10 bots already bound
-    unbound_bots = [b for b in ALL_10_BOT_KEYS if not acc_entry.get(f"{b}_referral_bound")]
+    # Check if all 8 bots already bound
+    unbound_bots = [b for b in ALL_8_BOT_KEYS if not acc_entry.get(f"{b}_referral_bound")]
     if not unbound_bots and not force:
-        logger.info(f"[{name}] Existing fleet account ({uid}) has all 10 bots bound. Extracting latest tokens...")
+        logger.info(f"[{name}] Existing fleet account ({uid}) has all 8 bots bound. Extracting latest tokens...")
         tokens = {}
         try:
             if not client.is_connected():
@@ -2358,7 +2358,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Chicken Land referral bind note: {e}")
 
-    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_9_BOT_KEYS):
+    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_8_BOT_KEYS):
         acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_10_referrals_bound"] = True
         acc_entry["all_8_referrals_bound"] = True
@@ -8484,10 +8484,10 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
-                    # 4. Autonomous 9-Bot Side-Tasks Sweeper (Runs every 3 hours)
+                    # 4. Autonomous 8-Bot Side-Tasks Sweeper (Runs every 3 hours)
                     if (now_ts - LAST_SIDE_TASKS_SWEEP_TS) > 10800:
                         try:
-                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 9-bot side-task sweep in cloud...")
+                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 8-bot side-task sweep in cloud...")
                             asyncio.create_task(asyncio.create_subprocess_exec(
                                 sys.executable, "finish_all_fleet_sidetasks.py",
                                 stdout=asyncio.subprocess.DEVNULL,
