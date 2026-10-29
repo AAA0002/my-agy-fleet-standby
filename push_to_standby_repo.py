@@ -201,6 +201,11 @@ def push_app():
     chk_sniper = os.path.join(BASE_DIR, "chickenland_promo_sniper.py")
     if os.path.exists(chk_sniper):
         push_file(chk_sniper, "chickenland_promo_sniper.py", "feat: Chicken Land promo code sniper")
+        push_to_solver_repo(chk_sniper, "chickenland_promo_sniper.py", "feat: Chicken Land promo code sniper")
+    dpr_f = os.path.join(BASE_DIR, "daily_profit_reporter.py")
+    if os.path.exists(dpr_f):
+        push_file(dpr_f, "daily_profit_reporter.py", "feat: 8-bot daily profit ledger & alert card engine")
+        push_to_solver_repo(dpr_f, "daily_profit_reporter.py", "feat: 8-bot daily profit ledger & alert card engine")
     
     # Dynamic Render Deployment: Detect active node from Upstash Redis or default to Node 3
     active_node = "node3"

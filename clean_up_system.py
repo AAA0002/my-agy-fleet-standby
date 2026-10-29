@@ -58,14 +58,28 @@ UPSTASH_TOKEN = (
     or os.environ.get("UPSTASH_REDIS_REST_TOKEN")
     or os.environ.get("UPSTASH_TOKEN")
 )
-GH_PAT = (
-    env_config.get("GITHUB_USERBOT_PAT")
-    or env_config.get("GITHUB_FINE_GRAINED_PAT")
-    or os.environ.get("GITHUB_USERBOT_PAT")
-    or os.environ.get("GITHUB_FINE_GRAINED_PAT")
-    or os.environ.get("GH_TOKEN")
-    or os.environ.get("GITHUB_TOKEN")
-)
+def _resolve_gh_pat() -> str:
+    cred_path = os.path.expanduser("~/.git-credentials")
+    if os.path.exists(cred_path):
+        try:
+            with open(cred_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if "@github.com" in line:
+                        auth_part = line.strip().split("@github.com")[0].replace("https://", "")
+                        return auth_part.split(":")[1] if ":" in auth_part else auth_part
+        except Exception:
+            pass
+    return (
+        env_config.get("GITHUB_USERBOT_PAT")
+        or env_config.get("GITHUB_FINE_GRAINED_PAT")
+        or os.environ.get("GITHUB_USERBOT_PAT")
+        or os.environ.get("GITHUB_FINE_GRAINED_PAT")
+        or os.environ.get("GH_TOKEN")
+        or os.environ.get("GITHUB_TOKEN")
+        or ""
+    )
+
+GH_PAT = _resolve_gh_pat()
 GH_REPOS = ["AAA0002/ATL", "AAA0002/cloud-fleet-solver", "AAA0002/my-agy-fleet-standby"]
 
 # -----------------------------------------------------------------------------

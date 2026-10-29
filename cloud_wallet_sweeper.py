@@ -60,7 +60,7 @@ MASTER_EVM_VAULT = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 MASTER_TON_VAULT = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 BSC_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"
 
-REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
+REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 ADMIN_NOTIFICATION_CHANNEL_ID = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
@@ -549,15 +549,23 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
         # Broadcast receipts if funds swept, or if balances found, or notify requested
         if swept_txs:
             lines = []
+            has_evm = any(s.get("chain") in ("BSC", "Arbitrum One") for s in swept_txs)
+            has_ton = any(s.get("chain") == "TON" for s in swept_txs)
             for s in swept_txs:
                 lines.append(f"• <b>{s['name']} ({s['chain']}):</b> Swept <code>{s['amount']:.4f} {s['coin']}</code> → <a href=\"{s['url']}\">View Tx</a>")
+            vault_lines = []
+            if has_evm:
+                vault_lines.append(f"🎯 <b>EVM Master Vault:</b> <code>{MASTER_EVM_VAULT}</code>")
+            if has_ton:
+                vault_lines.append(f"🎯 <b>TON Master Vault:</b> <code>{MASTER_TON_VAULT}</code>")
+            vaults_str = "\n".join(vault_lines) if vault_lines else f"🎯 <b>Master Vault:</b> <code>{MASTER_EVM_VAULT}</code>"
             receipt_msg = (
                 f"⚡ <b>ON-CHAIN VAULT CONSOLIDATION SWEEP EXECUTED</b>\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 + "\n".join(lines) +
                 f"\n━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🎯 <b>Master Vault (Binance Web3):</b> <code>{MASTER_EVM_VAULT}</code>\n"
-                f"📡 <i>Status: CONFIRMED ON-CHAIN • Automated Sweeper</i>"
+                + vaults_str +
+                f"\n📡 <i>Status: CONFIRMED ON-CHAIN • Automated Sweeper</i>"
             )
             await send_telegram_receipt(session, receipt_msg)
         elif funded_evm or funded_ton:

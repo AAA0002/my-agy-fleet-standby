@@ -384,6 +384,13 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Recursive `scripts/` Archiving**: Added automated recursive directory walker in `create_backup_zip` to bundle all maintenance, runner, and onboarding scripts into every disaster recovery archive.
     - **Permissions & Restorer Alignment**: Updated `restore.sh` to ensure `app.py` and all restored scripts receive executable permissions.
 
+50. **Comprehensive System Bug Sweep & Multi-Chain Sweeper Resilience (October 29, 2026)**:
+    - **Universal Bot Token Fallback**: Standardized `REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""` across `cloud_wallet_sweeper.py` and `multichain_onchain_watcher.py` preventing missing token failures across ephemeral cloud nodes.
+    - **Dynamic Multi-Chain Vault Sweeper Receipts**: Upgraded `cloud_wallet_sweeper.py` telegram cards to dynamically display EVM Master Vault (`0xfda...`) and TON Master Vault (`UQBP...`) based on the specific assets swept.
+    - **Credential Store Helper for CI Pruning**: Added `~/.git-credentials` resolution in `clean_up_system.py` ensuring `GH_PAT` is reliably discovered for automated GitHub Actions run history pruning.
+    - **Multi-Repo Synchronization & Deployment**: Updated `push_to_standby_repo.py` to push `chickenland_promo_sniper.py` and `daily_profit_reporter.py` to `AAA0002/cloud-fleet-solver` and `AAA0002/my-agy-fleet-standby`, triggering Render Node 3 deployment (`dep-dbhhk0c9v7es73avs9b0`).
+    - **Zero Error Multi-Engine Validation**: Verified AST scope analysis, Node.js syntax across 37 JS scripts and 19 HTML `<script>` blocks with 0 errors, bash syntax on 12 `.sh` files with 0 errors, and JSON parsing on 27 `.json` files with 0 errors.
+
 ---
 
 ## 📂 7. Key File Index

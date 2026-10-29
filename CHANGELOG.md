@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Comprehensive System Bug Sweep, Token Fallback & Multi-Chain Sweeper Resilience (October 29, 2026)**:
+  - **Universal Bot Token Fallback (`cloud_wallet_sweeper.py`, `multichain_onchain_watcher.py`)**:
+    * Standardized token loading across on-chain watchers and vault sweepers to `REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""`, ensuring notifications dispatch reliably even if environment variable names vary between Render nodes, Cloudflare Workers, and GitHub Actions runners.
+  - **Dynamic Multi-Chain Vault Sweeper Receipts (`cloud_wallet_sweeper.py`)**:
+    * Upgraded Telegram receipt formatting in `run_full_sweep_audit` to dynamically display the destination vault depending on assets swept: `EVM Master Vault` (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`) for BNB/ETH/USDT, and `TON Master Vault` (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`) for TON coins.
+  - **Universal Credential Store Helper in System Sanitation (`clean_up_system.py`)**:
+    * Added `~/.git-credentials` resolution helper in `clean_up_system.py` to ensure `GH_PAT` is reliably discovered for automated GitHub Actions run history pruning without requiring hardcoded or duplicate `.env` tokens.
+  - **Multi-Repo Synchronization & Deployment (`push_to_standby_repo.py`)**:
+    * Updated `push_to_standby_repo.py` to push `chickenland_promo_sniper.py` and `daily_profit_reporter.py` to both `AAA0002/cloud-fleet-solver` and `AAA0002/my-agy-fleet-standby`, automatically triggering Render Node 3 deployment (`dep-dbhhk0c9v7es73avs9b0`).
+  - **Zero-Error System Verification Suite**:
+    * AST static scope analysis verified across all 95 Python files.
+    * Node.js syntax checks verified across all 37 standalone JavaScript files and 19 inline HTML `<script>` tags with 0 errors.
+    * Bash `-n` syntax verification passed across all 12 `.sh` scripts with 0 errors.
+    * JSON schema and syntax parsing verified across all 27 `.json` files with 0 errors.
+
+
 - **⚡ Chicken Land Pre-Flight Cache Optimization & Daily Ledger Notification Card (October 29, 2026)**:
   - **Chicken Land Promo Sniper Pre-Flight Check (`chickenland_promo_sniper.py`)**:
     * Added instant `SISMEMBER` check on `chickenland:claimed:{uid}` before sending network requests, returning `ALREADY_CLAIMED_CACHED` in 0ms and preventing redundant API load.

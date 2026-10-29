@@ -46,7 +46,7 @@ EVM_WALLETS = [
     "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 ]
 TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
-REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
+REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 STATE_FILE = os.path.join(BASE_DIR, "multichain_watcher_state.json")
