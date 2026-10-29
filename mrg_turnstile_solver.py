@@ -2030,11 +2030,12 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
                     cd_rem = net_info.get("cooldownRemainingSec", 0)
                     if (cap == 0 or watched < cap) and cd_rem == 0:
                         safe_post(f"{ADX_API}/rewards/ad-verify-start", {"network": net_slug}, extra_headers=adx_h)
-                        wait_s = 6 if net_slug == "adsgram" else 16
+                        wait_s = 6 if net_slug == "adsgram" else 10
                         time.sleep(wait_s)
                         ac_code, ac_d = safe_post(f"{ADX_API}/rewards/ad-claim", {"network": net_slug}, extra_headers=adx_h)
                         if ac_code == 200 and isinstance(ac_d, dict):
                             claimed_pts += int(ac_d.get("reward") or 100)
+                        break
     except Exception:
         pass
 
@@ -2046,10 +2047,11 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
                 oid = off.get("id")
                 if oid:
                     safe_post(f"{ADX_API}/cpa-offers/start", {"offerId": oid}, extra_headers=adx_h)
-                    time.sleep(16)
+                    time.sleep(8)
                     co_cl_code, co_cl_d = safe_post(f"{ADX_API}/cpa-offers/claim", {"offerId": oid}, extra_headers=adx_h)
                     if co_cl_code == 200 and isinstance(co_cl_d, dict):
                         claimed_pts += int(co_cl_d.get("reward") or 300)
+                    break
     except Exception:
         pass
 
@@ -2464,22 +2466,30 @@ async def run_mrg_auto_solver():
         try:
             from kynex_miner import farm_kynex_account
             async with aiohttp.ClientSession() as kyn_session:
-                for k_acc in kynex_accounts:
+                sem = asyncio.Semaphore(4)
+                async def farm_single_kynex(k_acc):
                     kuid = k_acc["uid"]
                     kinit = k_acc["init_data"]
-                    try:
-                        k_res = await farm_kynex_account(
-                            kyn_session,
-                            kinit,
-                            {"user_id": kuid, "account_id": kuid},
-                            is_master=(str(kuid) == "6727787768")
-                        )
+                    async with sem:
+                        try:
+                            k_res = await farm_kynex_account(
+                                kyn_session,
+                                kinit,
+                                {"user_id": kuid, "account_id": kuid},
+                                is_master=(str(kuid) == "6727787768")
+                            )
+                            c_knx = float(k_res.get("claimed_knx") or 0.0)
+                            logger.info(f"✅ [Kynex] UID {kuid}: {k_res.get('status')}")
+                            return (True, c_knx)
+                        except Exception as ke:
+                            logger.warning(f"⚠️ [Kynex] UID {kuid} farm error: {ke}")
+                            return (False, 0.0)
+
+                results = await asyncio.gather(*(farm_single_kynex(a) for a in kynex_accounts))
+                for ok, knx in results:
+                    if ok:
                         kynex_farmed += 1
-                        c_knx = k_res.get("claimed_knx") or 0.0
-                        total_claimed_knx += float(c_knx)
-                        logger.info(f"✅ [Kynex] UID {kuid}: {k_res.get('status')}")
-                    except Exception as ke:
-                        logger.warning(f"⚠️ [Kynex] UID {kuid} farm error: {ke}")
+                        total_claimed_knx += knx
         except Exception as kerr:
             logger.warning(f"⚠️ Kynex fleet farm exception: {kerr}")
 

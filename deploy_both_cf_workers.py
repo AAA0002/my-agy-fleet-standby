@@ -6827,20 +6827,23 @@ fi
             return new Response("OK");
           }
 
-          await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ callback_query_id: cbId, text: "Processing..." })
-          }).catch(() => {});
+          let cbAnswered = false;
+          const answerAdminCb = async (text = null, showAlert = false) => {
+            if (cbAnswered) return;
+            cbAnswered = true;
+            const body = { callback_query_id: cbId };
+            if (text) { body.text = text; body.show_alert = showAlert; }
+            await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            }).catch(() => {});
+          };
 
           if (chatId) {
             if (cbData.startsWith("pin_digit_") || cbData === "pin_backspace" || cbData === "pin_submit" || cbData === "pin_clear" || cbData === "pin_ignore") {
               if (cbData === "pin_ignore") {
-                await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ callback_query_id: cbId, text: "Tap digits 0-9 below to enter verification code" })
-                }).catch(() => {});
+                await answerAdminCb("Tap digits 0-9 below to enter verification code", false);
                 return new Response("OK");
               }
 
@@ -6853,11 +6856,7 @@ fi
               }
 
               if (!flowData || flowData.step !== "waiting_code") {
-                await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ callback_query_id: cbId, text: "No active verification session. Tap Re-link to start.", show_alert: true })
-                }).catch(() => {});
+                await answerAdminCb("No active verification session. Tap Re-link to start.", true);
                 return new Response("OK");
               }
 
@@ -7024,7 +7023,13 @@ fi
                 `🔑 *Code:* \`[  ${slots}  ]\``;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, buildPinPadKeyboard(currentDigits, targetIdx));
               return new Response("OK");
-            } else if (cbData === "btn_back_main" || cbData === "btn_refresh_menu") {
+            }
+
+            if (!cbAnswered) {
+              ctx.waitUntil(answerAdminCb());
+            }
+
+            if (cbData === "btn_back_main" || cbData === "btn_refresh_menu") {
               const dhakaTime = getDhakaTimestamp();
               const rep = await renderMainMenuText(dhakaTime);
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -13615,9 +13620,12 @@ Reply to Arif naturally:`;
           const cqSenderName = cq.from?.first_name || cq.from?.username || "Miner";
           const cqData = cq.data || "";
 
-          const answerCq = async (alertTxt = null) => {
+          let cqAnswered = false;
+          const answerCq = async (alertTxt = null, isAlert = false) => {
+            if (cqAnswered && !alertTxt) return;
+            cqAnswered = true;
             const body = { callback_query_id: cq.id };
-            if (alertTxt) { body.text = alertTxt; body.show_alert = true; }
+            if (alertTxt) { body.text = alertTxt; body.show_alert = isAlert; }
             await fetch(`https://api.telegram.org/bot${userBotToken}/answerCallbackQuery`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -13626,6 +13634,9 @@ Reply to Arif naturally:`;
           };
 
           const sendCqReply = async (txt, markup = null, parseMode = "Markdown") => {
+            if (!cqAnswered) {
+              await answerCq();
+            }
             const payload = { chat_id: cqChatId, text: txt, disable_web_page_preview: true };
             if (parseMode) payload.parse_mode = parseMode;
             if (markup) {
@@ -13651,9 +13662,6 @@ Reply to Arif naturally:`;
           const sendCqPhoto = async (_photoUrl, caption, markup = null) => {
             await sendCqReply(caption, markup);
           };
-
-          // Immediately dismiss spinning loader on Telegram mobile client
-          ctx.waitUntil(answerCq());
 
           // Anti-Sybil Gate: Check if user is suspended/banned
           if (String(cqChatId) !== (env.OWNER_ID || "6727787768")) {
@@ -14614,13 +14622,16 @@ Reply to Arif naturally:`;
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
             inlineBtns.push(
-              [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+              [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
               [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             );
             ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
             return new Response("OK");
           }
 
+          if (!cqAnswered) {
+            ctx.waitUntil(answerCq());
+          }
           return new Response("OK");
         }
 
@@ -15031,7 +15042,7 @@ Reply to Arif naturally:`;
               const bindKb = {
                 inline_keyboard: [
                   [{ text: "💎 View My Wallets", callback_data: "ub_wallets" }],
-                  [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }]
+                  [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }]
                 ]
               };
               await sendUserReply(succBindMsg, bindKb);
@@ -15639,7 +15650,7 @@ Reply to Arif naturally:`;
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
             inlineBtns.push(
-              [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+              [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
               [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             );
             await sendUserReply(accMsg, { inline_keyboard: inlineBtns });

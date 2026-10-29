@@ -309,7 +309,7 @@ async def farm_kynex_account(
             await jitter(1.0, 2.0)
             res_adv = await call_kynex_function(session, id_token, "claimAdReward", {"tier": "advanced"})
             if res_adv and ("wait a moment" in str(res_adv.get("_error", "")).lower() or res_adv.get("_status") == 429):
-                await asyncio.sleep(10.0)
+                await asyncio.sleep(2.0)
                 res_adv = await call_kynex_function(session, id_token, "claimAdReward", {"tier": "advanced"})
             if res_adv and not res_adv.get("_error"):
                 energy_sec = float(res_adv.get("newEnergySeconds", energy_sec) or energy_sec)
@@ -439,7 +439,7 @@ async def farm_kynex_account(
                     if idx < len(user_ads) and isinstance(user_ads[idx], dict):
                         if user_ads[idx].get("date") == today_utc:
                             cur_count = int(user_ads[idx].get("count", 0) or 0)
-                    needed = max(0, limit - cur_count)
+                    needed = min(2, max(0, limit - cur_count))
                     for ad_i in range(needed):
                         await jitter(0.4, 0.8)
                         ad_res = await call_kynex_function(session, id_token, "claimTasksAdReward", {"networkIndex": idx})
