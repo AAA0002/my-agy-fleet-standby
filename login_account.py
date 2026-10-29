@@ -617,7 +617,8 @@ async def bind_referrals(client, me, acc_entry):
             "mrgminer", "mrgwithdrawal", "keepeye_app", "AI_TRADING_FOREX",
             "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
             "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
-            "PaperHouseNFT", "pepe_grammmm", "BTCMAKERR", "AdxearnAi"
+            "PaperHouseNFT", "pepe_grammmm", "BTCMAKERR", "AdxearnAi",
+            "LandChickenNews", "ChickenLandPay", "ChickenLandCodes", "DurovKidney", "PickaxeEmpire"
         ]
     for ch in s_channels:
         try:
