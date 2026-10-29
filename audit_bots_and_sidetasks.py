@@ -219,8 +219,22 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             m_h = {**headers, "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
             b_rep = {"core": {}, "side_tasks": []}
             try:
-                # Core: claim mining
-                async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": mrg_init}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                # Core: claim mining (with cached turnstile pass from Redis)
+                mrg_pass = None
+                if UPSTASH_URL and UPSTASH_TOKEN:
+                    try:
+                        async with session.get(f"{UPSTASH_URL}/get/mrg:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as pr:
+                            if pr.status == 200:
+                                pd = await pr.json()
+                                if pd.get("result"):
+                                    parsed_p = json.loads(pd["result"]) if isinstance(pd["result"], str) and pd["result"].startswith("{") else pd["result"]
+                                    mrg_pass = parsed_p.get("turnstileToken") if isinstance(parsed_p, dict) else parsed_p
+                    except Exception:
+                        pass
+                claim_body = {"initData": mrg_init}
+                if mrg_pass:
+                    claim_body["turnstileToken"] = mrg_pass
+                async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json=claim_body, headers=m_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     cld = {}
                     try:
                         cld = await r.json()
@@ -412,7 +426,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             report["bots"]["5. Kynex Network"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 6. PepeGram
-        pepe_init = tokens.get("pepegram_init_data")
+        pepe_init = tokens.get("pepegram_init_data") or tokens.get("pepe_init_data")
         if pepe_init:
             pepe_h = {
                 **headers,
@@ -461,7 +475,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             report["bots"]["6. PepeGram"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
         # 7. AdxEarn AI
-        adx_init = tokens.get("adxearn_init_data")
+        adx_init = tokens.get("adxearn_init_data") or tokens.get("adx_init_data")
         if adx_init:
             adx_h = {
                 **headers,
@@ -657,7 +671,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         # -------------------------------------------------------------
         # 9. Chicken Land (@ChickenLandBot)
         # -------------------------------------------------------------
-        c_init = tokens.get("chickenland_init_data")
+        c_init = tokens.get("chickenland_init_data") or tokens.get("chicken_init_data")
         b_rep = {"core": {}, "side_tasks": []}
         if c_init:
             try:
@@ -742,8 +756,8 @@ async def main():
     print("="*80)
 
     # Dispatch concise ground-truth audit alert to AAA Admin notification channel (-1004358687850)
-    bot_token = env.get("ADMIN_BOT_TOKEN") or env.get("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or os.getenv("REPORT_BOT_TOKEN") or ""
-    notif_channel = env.get("ADMIN_NOTIFICATION_CHANNEL_ID") or os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID") or "-1004358687850"
+    bot_token = os.getenv("ADMIN_BOT_TOKEN") or os.getenv("REPORT_BOT_TOKEN") or ""
+    notif_channel = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID") or "-1004358687850"
     if bot_token and notif_channel:
         healthy_accounts = sum(1 for r in fleet_reports.values() if sum(1 for b, v in r.get("bots", {}).items() if not v.get("error")) >= 5)
         short_card = (

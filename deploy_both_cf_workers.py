@@ -543,8 +543,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
       await humanDelay(1200, 2600);
       let claimMiningRes = null;
+      let mrgTurnstileToken = null;
       try {
-        let mrgTurnstileToken = null;
         try {
           const mrgPassRaw = await upstashGet(`mrg:pass:${uid}`);
           if (mrgPassRaw) {
@@ -809,7 +809,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         { id: "website_visit", repeatable: true, minSeconds: 10 },
         { id: "telegram_react_latest", repeatable: true, minSeconds: 20 },
         { id: "twitter_retweet", repeatable: true, minSeconds: 30 },
-        { id: "youtube_like_comment", repeatable: true, minSeconds: 30 }
+        { id: "youtube_like_comment", repeatable: true, minSeconds: 30 },
+        { id: "ig_follow", repeatable: false, minSeconds: 10 },
+        { id: "ig_like_comment", repeatable: true, minSeconds: 20 }
       ];
       for (const t of atfTasks) {
         const canDo = !t.repeatable ? !completedTasks.has(t.id) : (nowSec >= (taskCooldowns[t.id] || 0));
@@ -1238,9 +1240,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   // 6. PepeGram (@Pepe_gram_bot)
   const farmPepegram = async () => {
-    if (!accData.pepegram_init_data) return;
+    const pInit = accData.pepegram_init_data || accData.pepe_init_data;
+    if (!pInit) return;
     try {
-      const pInit = accData.pepegram_init_data;
       const pHeaders = {
         "Content-Type": "application/json",
         "Origin": "https://app.miniempire.app",
@@ -1303,9 +1305,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   // 7. AdxEarn AI (@AdxEarnAibot)
   const farmAdxearn = async () => {
-    if (!accData.adxearn_init_data) return;
+    const aInit = accData.adxearn_init_data || accData.adx_init_data;
+    if (!aInit) return;
     try {
-      const aInit = accData.adxearn_init_data;
       const aHeaders = {
         "Content-Type": "application/json",
         "Origin": "https://app.adxearnai.xyz",
@@ -1621,9 +1623,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   // 9. Chicken Land (@ChickenLandBot)
   const farmChickenland = async () => {
-    if (!accData.chickenland_init_data) return;
+    const cInit = accData.chickenland_init_data || accData.chicken_init_data;
+    if (!cInit) return;
     try {
-      const cInit = accData.chickenland_init_data;
       const b64 = cInit.startsWith("TMA ") ? cInit.slice(4).trim() : btoa(unescape(encodeURIComponent(decodeURIComponent(cInit))));
       const cHeaders = {
         "Content-Type": "application/json",
@@ -1729,11 +1731,47 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }
         } catch (_) {}
 
+        // Dynamic / Custom tasks from /api/tasks
+        try {
+          const tasksResp = await rpc("/api/tasks");
+          if (tasksResp.ok && tasksResp.result?.custom) {
+            for (const c of tasksResp.result.custom) {
+              const cid = c.id;
+              if (cid && !completedTasks.has(cid)) {
+                await rpc("/api/task/open", { id: cid });
+                await humanDelay(400, 800);
+                const cClaim = await rpc("/api/task", { id: cid });
+                if (cClaim.ok && cClaim.result?.user) {
+                  currentCoins = cClaim.result.user.coins || currentCoins;
+                }
+              }
+            }
+          }
+        } catch (_) {}
+
         // Ref claim
         const refRes = await rpc("/api/ref/claim", {});
         if (refRes.ok && refRes.result?.user) {
           currentCoins = refRes.result.user.coins || currentCoins;
         }
+
+        // Basket storage capacity upgrade if affordable
+        try {
+          const cfgResp = await rpc("/api/config");
+          if (cfgResp.ok && cfgResp.result?.basket) {
+            const bLvl = usr.basketLevel || 0;
+            const bCfg = cfgResp.result.basket;
+            if (bLvl + 1 < bCfg.length) {
+              const nextCost = bCfg[bLvl + 1].cost || 999999;
+              if (currentCoins >= nextCost) {
+                const upRes = await rpc("/api/upgrade", {});
+                if (upRes.ok && upRes.result?.user) {
+                  currentCoins = upRes.result.user.coins || (currentCoins - nextCost);
+                }
+              }
+            }
+          }
+        } catch (_) {}
 
         // Buy hens if affordable
         if (currentCoins >= 1000) {
@@ -1772,10 +1810,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
-    { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
-    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) },
+    { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data || accData.pepe_init_data) },
+    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data || accData.adx_init_data) },
     { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) },
-    { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data) }
+    { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data || accData.chicken_init_data) }
   ];
 
   const BOT_KEY_ALIASES = {
@@ -3433,6 +3471,12 @@ fi
           }
         } catch (_) {}
 
+        try {
+          if (!memTokens || Object.keys(memTokens).length === 0) {
+            await getFleetTokens(env);
+          }
+        } catch (_) {}
+
         const ensureFullFleet = (stateObj) => {
           if (!stateObj) stateObj = { ok: true, accounts: [] };
           let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts.slice() : [];
@@ -3450,7 +3494,22 @@ fi
           accs.forEach((a, idx) => {
             a.index = idx + 1;
             const uidStr = String(a.user_id || "");
-            const hasTokens = Boolean((memTokens && uidStr && memTokens[uidStr]) || a.miniapp_tokens_synced);
+            const hasTokens = Boolean(
+              (memTokens && uidStr && memTokens[uidStr]) ||
+              a.miniapp_tokens_synced ||
+              a.mrg_init_data ||
+              a.atf_init_data ||
+              a.chickenland_init_data ||
+              a.chicken_init_data ||
+              a.diggo_jwt ||
+              a.diggo_init_data ||
+              a.kynex_init_data ||
+              a.pepegram_init_data ||
+              a.pepe_init_data ||
+              a.adxearn_init_data ||
+              a.adx_init_data
+            );
+            a.miniapp_tokens_synced = hasTokens;
             let hasSession = !!(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 10);
             if (!hasSession && Array.isArray(memFleetAccounts)) {
               const match = memFleetAccounts.find(m => (uidStr && String(m.user_id) === uidStr) || m.index === a.index);
@@ -3459,7 +3518,7 @@ fi
                 hasSession = true;
               }
             }
-            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || !hasSession;
+            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || Boolean(a.session_revoked);
             a.session_revoked = isRev;
             a.status = isRev ? "Needs Re-link" : "Active";
             a.mining_active = hasTokens;
@@ -4116,7 +4175,7 @@ fi
             dailyBurnRate,
             totalAds,
             totalRefs,
-            poolsCount: 9
+            poolsCount: 8
           },
           users
         };
@@ -5424,9 +5483,9 @@ fi
           try {
             const tokens = await getFleetTokens(env);
             if (!tokens) return;
-            for (const uid of targetUids.slice(0, 4)) {
-              const accData = tokens[String(uid)] || {};
-              await farmSingleAccountAllBots(uid, accData, env, ctx, reqBotMatch);
+            for (let i = 0; i < targetUids.length; i += 5) {
+              const batch = targetUids.slice(i, i + 5);
+              await Promise.allSettled(batch.map(uid => farmSingleAccountAllBots(uid, tokens[String(uid)] || {}, env, ctx, reqBotMatch)));
             }
           } catch (_) {}
         })());
@@ -5860,9 +5919,8 @@ fi
           const targetAccs = (accs && accs.length > 0) ? accs : DEFAULT_FLEET_ACCOUNTS;
 
           targetAccs.forEach((acc) => {
-            const hasSession = !!(acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 10);
-            const isExplicitRevoked = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id));
-            const isRev = isExplicitRevoked || !hasSession;
+            const isExplicitRevoked = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id)) || Boolean(acc.session_revoked);
+            const isRev = isExplicitRevoked;
             if (isRev) {
               revokedIndices.add(acc.index);
               revokedDetails.push({
@@ -5870,7 +5928,7 @@ fi
                 user_id: acc.user_id,
                 name: acc.name,
                 phone: acc.phone,
-                reason: !hasSession ? "Missing MTProto Session (Needs QR/OTP Link)" : "Session Invalidation (AUTH_KEY_DUPLICATED)"
+                reason: "Session Invalidation (AUTH_KEY_DUPLICATED or Revoked)"
               });
             } else {
               healthyIndices.add(acc.index);
@@ -6069,10 +6127,10 @@ fi
                 const t = tokens[String(a.user_id)] || {};
                 if (t.atf_init_data) atfCount++;
                 if (t.kynex_init_data) kynexCount++;
-                if (t.diggo_init_data) diggoCount++;
-                if (t.pepegram_init_data) pepeCount++;
-                if (t.adxearn_init_data) adxCount++;
-                if (t.chickenland_init_data) chkCount++;
+                if (t.diggo_init_data || t.diggo_jwt) diggoCount++;
+                if (t.pepegram_init_data || t.pepe_init_data) pepeCount++;
+                if (t.adxearn_init_data || t.adx_init_data) adxCount++;
+                if (t.chickenland_init_data || t.chicken_init_data) chkCount++;
               }
             }
             const vicPasses = await upstashMget(accounts.map(a => `victors:pass:${a.user_id}`));

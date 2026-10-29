@@ -2185,7 +2185,7 @@ def check_and_farm_diggo_rest(d_acc: dict) -> tuple[bool, float]:
 def check_and_farm_chickenland_rest(c_acc: dict) -> tuple[bool, int, int]:
     """
     Fast REST handler for Chicken Land (@ChickenLandBot).
-    Sells accumulated eggs, completes daily & social tasks, claims referral rewards, and auto-buys hens.
+    Sells accumulated eggs, completes daily & social tasks, auto-redeems promos, claims referral rewards, and auto-buys hens.
     Returns: (is_success, eggs_sold, hens_bought)
     """
     c_uid = c_acc["uid"]
@@ -2194,73 +2194,86 @@ def check_and_farm_chickenland_rest(c_acc: dict) -> tuple[bool, int, int]:
         return False, 0, 0
 
     try:
-        import base64
-        if c_init.startswith("TMA "):
-            b64_token = c_init[4:].strip()
-        elif "%3D" in c_init or "query_id=" in c_init or "user=" in c_init:
-            decoded = urllib.parse.unquote(c_init) if "%3D" in c_init else c_init
-            b64_token = base64.b64encode(decoded.encode("utf-8")).decode("utf-8")
-        else:
-            b64_token = c_init.strip()
+        try:
+            from chickenland_miner import ChickenLandMiner
+            miner = ChickenLandMiner(c_init, user_id=c_uid)
+            rep = miner.run_farming_cycle()
+            if rep.get("status") == "success":
+                eggs_sold = int(rep.get("eggs_collected", 0) or 0)
+                hens_bought = int(rep.get("hens_bought", 0) or 0)
+                logger.info(f"🐔 [ChickenLand] UID {c_uid}: Successfully farmed via ChickenLandMiner (eggs sold: {eggs_sold}, hens bought: {hens_bought}).")
+                return True, eggs_sold, hens_bought
+            else:
+                logger.debug(f"[ChickenLand] UID {c_uid} rest farm note: {rep.get('error')}")
+                return False, 0, 0
+        except ImportError:
+            import base64
+            if c_init.startswith("TMA "):
+                b64_token = c_init[4:].strip()
+            elif "%3D" in c_init or "query_id=" in c_init or "user=" in c_init:
+                decoded = urllib.parse.unquote(c_init) if "%3D" in c_init else c_init
+                b64_token = base64.b64encode(decoded.encode("utf-8")).decode("utf-8")
+            else:
+                b64_token = c_init.strip()
 
-        c_headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"TMA {b64_token}",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"
-        }
-        rpc_url = "https://app8968434282.tgcloud.ai/api/rpc"
+            c_headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"TMA {b64_token}",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"
+            }
+            rpc_url = "https://app8968434282.tgcloud.ai/api/rpc"
 
-        def c_rpc(path: str, body: dict = None):
-            payload = {"method": "POST" if body is not None else "GET", "path": path, "body": body if body is not None else {}}
-            return safe_post(rpc_url, payload, extra_headers=c_headers)
+            def c_rpc(path: str, body: dict = None):
+                payload = {"method": "POST" if body is not None else "GET", "path": path, "body": body if body is not None else {}}
+                return safe_post(rpc_url, payload, extra_headers=c_headers)
 
-        code, me_data = c_rpc("/api/me", {"ref": "12668", "lang": "en"})
-        if code != 200 or not isinstance(me_data, dict) or not me_data.get("ok"):
-            return False, 0, 0
+            code, me_data = c_rpc("/api/me", {"ref": "12668", "lang": "en"})
+            if code != 200 or not isinstance(me_data, dict) or not me_data.get("ok"):
+                return False, 0, 0
 
-        u = me_data.get("result", {}).get("user", {})
-        current_coins = float(u.get("coins", 0) or 0)
-        eggs_sold = 0
-        hens_bought = 0
+            u = me_data.get("result", {}).get("user", {})
+            current_coins = float(u.get("coins", 0) or 0)
+            eggs_sold = 0
+            hens_bought = 0
 
-        # 1. Welcome bonus
-        if not u.get("welcome"):
-            c_rpc("/api/welcome", {})
+            # 1. Welcome bonus
+            if not u.get("welcome"):
+                c_rpc("/api/welcome", {})
 
-        # 2. Daily check-in
-        c_rpc("/api/task", {"id": "daily"})
+            # 2. Daily check-in
+            c_rpc("/api/task", {"id": "daily"})
 
-        # 3. Sell eggs if accumulated
-        if int(u.get("eggs", 0) or 0) > 0:
-            s_code, s_data = c_rpc("/api/sell", {})
-            if s_code == 200 and isinstance(s_data, dict) and s_data.get("ok"):
-                res_obj = s_data.get("result", {})
-                eggs_sold = int(res_obj.get("eggs", 0) or 0)
-                current_coins = float(res_obj.get("user", {}).get("coins", current_coins))
+            # 3. Sell eggs if accumulated
+            if int(u.get("eggs", 0) or 0) > 0:
+                s_code, s_data = c_rpc("/api/sell", {})
+                if s_code == 200 and isinstance(s_data, dict) and s_data.get("ok"):
+                    res_obj = s_data.get("result", {})
+                    eggs_sold = int(res_obj.get("eggs", 0) or 0)
+                    current_coins = float(res_obj.get("user", {}).get("coins", current_coins))
 
-        # 4. Uncompleted tasks
-        completed = set((u.get("tasks") or []) + (u.get("dayTasks") or []))
-        for tid in ["channel", "payments", "dnews", "dpay", "dpromo"]:
-            if tid not in completed:
-                c_rpc("/api/task/open", {"id": tid})
-                time.sleep(0.5)
-                t_c, t_d = c_rpc("/api/task", {"id": tid})
-                if t_c == 200 and isinstance(t_d, dict) and t_d.get("ok"):
-                    if t_d.get("result", {}).get("user"):
-                        current_coins = float(t_d["result"]["user"].get("coins", current_coins))
+            # 4. Uncompleted tasks
+            completed = set((u.get("tasks") or []) + (u.get("dayTasks") or []))
+            for tid in ["channel", "payments", "dnews", "dpay", "dpromo"]:
+                if tid not in completed:
+                    c_rpc("/api/task/open", {"id": tid})
+                    time.sleep(0.5)
+                    t_c, t_d = c_rpc("/api/task", {"id": tid})
+                    if t_c == 200 and isinstance(t_d, dict) and t_d.get("ok"):
+                        if t_d.get("result", {}).get("user"):
+                            current_coins = float(t_d["result"]["user"].get("coins", current_coins))
 
-        # 5. Referral claim
-        c_rpc("/api/ref/claim", {})
+            # 5. Referral claim
+            c_rpc("/api/ref/claim", {})
 
-        # 6. Auto-buy basic hens with accumulated coins
-        if current_coins >= 1000:
-            n_buy = int(current_coins // 1000)
-            b_code, b_data = c_rpc("/api/buy", {"breed": "basic", "n": n_buy})
-            if b_code == 200 and isinstance(b_data, dict) and b_data.get("ok"):
-                hens_bought = n_buy
+            # 6. Auto-buy basic hens with accumulated coins
+            if current_coins >= 1000:
+                n_buy = int(current_coins // 1000)
+                b_code, b_data = c_rpc("/api/buy", {"breed": "basic", "n": n_buy})
+                if b_code == 200 and isinstance(b_data, dict) and b_data.get("ok"):
+                    hens_bought = n_buy
 
-        logger.info(f"🐔 [ChickenLand] UID {c_uid}: Successfully farmed via REST (eggs sold: {eggs_sold}, hens bought: {hens_bought}).")
-        return True, eggs_sold, hens_bought
+            logger.info(f"🐔 [ChickenLand] UID {c_uid}: Successfully farmed via built-in REST fallback (eggs sold: {eggs_sold}, hens bought: {hens_bought}).")
+            return True, eggs_sold, hens_bought
     except Exception as ce:
         logger.debug(f"[ChickenLand] UID {c_uid} rest farm note: {ce}")
         return False, 0, 0
@@ -2356,7 +2369,7 @@ async def run_mrg_auto_solver():
                 total_claimed_diggo += d_claimed
 
         # Chicken Land Fast REST Check
-        chicken_init = tok_dict.get("chickenland_init_data")
+        chicken_init = tok_dict.get("chickenland_init_data") or tok_dict.get("chicken_init_data")
         if chicken_init:
             c_handled, c_eggs, c_hens = check_and_farm_chickenland_rest({"uid": uid, "init_data": chicken_init})
             if c_handled:

@@ -306,10 +306,10 @@ async def farm_kynex_account(
         if adv_watched < 1:
             url_adv = f"{DATABASE_URL}/users/{uid}/boostAdProgress/advanced.json?auth={id_token}"
             await session.put(url_adv, json={"date": today_utc, "count": 10}, timeout=aiohttp.ClientTimeout(total=8))
-            await asyncio.sleep(12.0)  # Wait 12s to avoid 429 rate limit after prime ad
+            await jitter(1.0, 2.0)
             res_adv = await call_kynex_function(session, id_token, "claimAdReward", {"tier": "advanced"})
             if res_adv and ("wait a moment" in str(res_adv.get("_error", "")).lower() or res_adv.get("_status") == 429):
-                await asyncio.sleep(15.0)
+                await asyncio.sleep(10.0)
                 res_adv = await call_kynex_function(session, id_token, "claimAdReward", {"tier": "advanced"})
             if res_adv and not res_adv.get("_error"):
                 energy_sec = float(res_adv.get("newEnergySeconds", energy_sec) or energy_sec)

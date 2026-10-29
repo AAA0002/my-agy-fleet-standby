@@ -196,6 +196,7 @@ def push_app():
     chk_f = os.path.join(BASE_DIR, "chickenland_miner.py")
     if os.path.exists(chk_f):
         push_file(chk_f, "chickenland_miner.py", "feat: Chicken Land autonomous cloud farming engine")
+        push_to_solver_repo(chk_f, "chickenland_miner.py", "feat: Chicken Land autonomous cloud farming engine")
     chk_sniper = os.path.join(BASE_DIR, "chickenland_promo_sniper.py")
     if os.path.exists(chk_sniper):
         push_file(chk_sniper, "chickenland_promo_sniper.py", "feat: Chicken Land promo code sniper")

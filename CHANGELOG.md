@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet-Wide 8-Bot Harvest Optimization, Cloudflare Worker Scoping Fix & 21-Account Active Sync (October 29, 2026)**:
+  - **Cloudflare Edge Worker Scoping & ReferenceError Elimination (`deploy_both_cf_workers.py`)**:
+    * **Root Cause: Scoped `mrgTurnstileToken` Definition**: Discovered that `let mrgTurnstileToken = null;` was defined inside an inner `try` block (line 547). When accessed at line 598 for daily check-in, it threw `ReferenceError: mrgTurnstileToken is not defined`, aborting `farmMrg` immediately for every account and preventing Level 203 upgrades, daily streaks (+5 to +15 MRG), and task claims.
+    * **Outer Function Scope Resolution**: Declared `let mrgTurnstileToken = null;` in outer function scope before the try block, ensuring seamless MRG daily check-ins, auto-upgrades, and side-task harvesting.
+  - **Full Fleet Batching on Edge Farming Trigger (`deploy_both_cf_workers.py`)**:
+    * **Eliminated 4-Account Artificial Cap**: Removed `targetUids.slice(0, 4)` in `isFarmPath` (`/api/farm/:bot`, `/api/fleet/claim-all`), replacing it with concurrent non-blocking batch execution (`Promise.allSettled` in batches of 5) across all 21 accounts.
+  - **Account 21 Telemetry Synchronization (`deploy_both_cf_workers.py` & Upstash Redis)**:
+    * Pre-fetched `memTokens` via `getFleetTokens(env)` before evaluating `ensureFullFleet` on `/api/status`, and expanded token check to test all 8 bot keys (`a.mrg_init_data`, `a.atf_init_data`, `a.chickenland_init_data`, etc.).
+    * Synchronized `fleet:live_state` in Upstash Redis so Account 21 reports `miniapp_tokens_synced: true`, `mining_active: true`, and `status: "Active"`.
+  - **Admin Bot (`@myagyai`) & Dashboard Bot Coverage Realignment**:
+    * Expanded `buildFleetLiveStatusText` token inspections to support all token aliases (`pepegram_init_data` / `pepe_init_data`, `adxearn_init_data` / `adx_init_data`, `chickenland_init_data` / `chicken_init_data`, `diggo_init_data` / `diggo_jwt`).
+    * Aligned `poolsCount` to 8 across `public_admin/user-admin.html` and `public/user-admin.html`.
+  - **Headless Cloud Runner (`AAA0002/cloud-fleet-solver`) Synchronization**:
+    * Pushed `chickenland_miner.py` and updated `mrg_turnstile_solver.py` with built-in REST fallbacks to public runner `AAA0002/cloud-fleet-solver`.
+    * Dispatched workflow run `40808904939` for 100% cloud Patchright Chromium solving of Cloudflare Turnstile challenges for MRG, ATF, and Victor's Company.
+  - **Chicken Land Compounding Optimization (`app.py`, `chickenland_miner.py`, `mrg_turnstile_solver.py`)**:
+    * Auto-redeems latest promo codes from `@ChickenLandCodes`, claims partner/custom tasks from `/api/tasks`, upgrades basket storage capacity (`/api/upgrade`), and compounds basic hens.
+  - **Zero Phone Load & Disaster Recovery**:
+    * 100% cloud execution maintained on Samsung Galaxy A30; zero background Python bots locally.
+    * Streamed encrypted disaster recovery backup directly to Telegram vault `@myagyai` (`-1004453515167`) via `backup_manager.py`.
+
+
 - **🛡️ Deep Fleet-Wide Bug Audit, ATF Session Isolation, Multi-Bot Auto-Farming Hardening & Maintenance Path Resolution (October 28, 2026)**:
   - **ATF Miner Cookie Isolation in Master Server Engine (`app.py`)**:
     * **Root Cause: Cross-Account Cookie Jar Contamination**: Discovered that `_farm_atf` in `app.py` previously utilized the shared `aiohttp.ClientSession` across concurrent accounts in `farm_with_sem(4)`. As a result, the ATF Miner backend set session cookies (`atf_tma_session` and `__Host-atf_fg_v1`) tied to one `tg_id`, which leaked into concurrent requests for other accounts, triggering intermittent `401 Unauthorized` responses and session invalidation.

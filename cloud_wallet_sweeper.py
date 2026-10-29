@@ -91,8 +91,8 @@ FLEET_TON_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 
 
 async def send_telegram_receipt(session: aiohttp.ClientSession, message: str):
-    """Broadcasts verified receipt to Payout Channel, Admin DM, and AAA Admin notification channel."""
-    targets = [t for t in [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID, ADMIN_NOTIFICATION_CHANNEL_ID] if t]
+    """Broadcasts verified receipt to Payout Channel (-1004402765950) and Admin DM (6727787768)."""
+    targets = [t for t in [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID] if t]
     for target in targets:
         try:
             url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"

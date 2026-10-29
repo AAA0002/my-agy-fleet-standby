@@ -5949,7 +5949,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     {"id": "website_visit", "repeatable": True, "min_s": 10},
                     {"id": "telegram_react_latest", "repeatable": True, "min_s": 20},
                     {"id": "twitter_retweet", "repeatable": True, "min_s": 30},
-                    {"id": "youtube_like_comment", "repeatable": True, "min_s": 30}
+                    {"id": "youtube_like_comment", "repeatable": True, "min_s": 30},
+                    {"id": "ig_follow", "repeatable": False, "min_s": 10},
+                    {"id": "ig_like_comment", "repeatable": True, "min_s": 20}
                 ]
                 for t in atf_tasks:
                     try:
@@ -6553,10 +6555,54 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         if isinstance(t_res, dict) and t_res.get("ok") and t_res.get("result", {}).get("user"):
                             coins = t_res["result"]["user"].get("coins", coins)
 
+                # 5b. Custom / Partner tasks from /api/tasks
+                try:
+                    _, tasks_resp = await rpc("/api/tasks")
+                    if isinstance(tasks_resp, dict) and tasks_resp.get("ok"):
+                        for c in tasks_resp.get("result", {}).get("custom", []):
+                            cid = c.get("id")
+                            if cid and cid not in completed_tasks:
+                                await rpc("/api/task/open", {"id": cid})
+                                await asyncio.sleep(0.5)
+                                _, c_res = await rpc("/api/task", {"id": cid})
+                                if isinstance(c_res, dict) and c_res.get("ok") and c_res.get("result", {}).get("user"):
+                                    coins = c_res["result"]["user"].get("coins", coins)
+                except Exception:
+                    pass
+
+                # 5c. Autonomous Promo Code Redemption from @ChickenLandCodes
+                try:
+                    from chickenland_promo_sniper import fetch_channel_codes, is_code_claimed, mark_code_claimed
+                    for it in fetch_channel_codes():
+                        c_code_val = it.get("code")
+                        if c_code_val and not it.get("is_exhausted") and not is_code_claimed(c_code_val):
+                            _, pr_res = await rpc("/api/promo", {"code": c_code_val.strip()})
+                            if isinstance(pr_res, dict) and pr_res.get("ok"):
+                                mark_code_claimed(c_code_val)
+                                if pr_res.get("result", {}).get("user"):
+                                    coins = pr_res["result"]["user"].get("coins", coins)
+                except Exception:
+                    pass
+
                 # 6. Referral claim
                 await rpc("/api/ref/claim", {})
 
-                # 7. Buy hens if affordable
+                # 7. Basket storage capacity upgrade if affordable
+                try:
+                    _, cfg_resp = await rpc("/api/config")
+                    if isinstance(cfg_resp, dict) and cfg_resp.get("ok"):
+                        b_lvl = usr.get("basketLevel", 0)
+                        b_cfg = cfg_resp.get("result", {}).get("basket", [])
+                        if b_lvl + 1 < len(b_cfg):
+                            next_cost = b_cfg[b_lvl + 1].get("cost", 999999)
+                            if coins >= next_cost:
+                                _, up_res = await rpc("/api/upgrade", {})
+                                if isinstance(up_res, dict) and up_res.get("ok") and up_res.get("result", {}).get("user"):
+                                    coins = up_res["result"]["user"].get("coins", coins - next_cost)
+                except Exception:
+                    pass
+
+                # 8. Buy hens if affordable
                 if coins >= 1000:
                     buy_n = int(coins // 1000)
                     _, buy_res = await rpc("/api/buy", {"breed": "basic", "n": buy_n})
