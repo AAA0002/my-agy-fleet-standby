@@ -2,6 +2,32 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Authentic 8-Bot Handle Standardization, Public Edge Badge Sync & Dead Script Purge (October 29, 2026)**:
+  - **Standardized Authentic Bot Handles & Referral URLs (`deploy_both_cf_workers.py`)**:
+    * **Eliminated Mismatched Bot Handles**: Replaced legacy and unofficial aliases with the authentic 8 bots:
+      - MRG Miner: Replaced `@mrgminerbot` and `@MRG_miner_bot` with `@mrgtoken_bot` (`https://t.me/mrgtoken_bot?start=ref_IRN1G3XD`).
+      - ATF Miner: Replaced `@ATF_AIRDROP_bot` and `@atf_miner_bot` with `@atfminers_bot` (`https://t.me/atfminers_bot?start=6727787768`).
+      - Kynex Network: Replaced `@kynexnetworkbot` with `@Kynex_miningbot` (`https://t.me/Kynex_miningbot?start=6727787768`).
+      - PepeGram: Replaced `@pepe_mine_bot` with `@Pepe_gram_bot` (`https://t.me/Pepe_gram_bot?start=6727787768`).
+    * **Harmonized User Bot & Admin Bot Telemetry**: Synchronized `MINING_POOLS`, `renderMiningPoolsMenu`, `userSystemPrompt`, `fallbackAns`, `helpMsg`, `supported_bots`, `hubMsg`, `mrgMsg`, and `pepeMsg` across the edge worker.
+  - **Harmonized 9-Bot Remnants to Strict 8-Bot Standard (`deploy_both_cf_workers.py`)**:
+    * Updated all remaining navigation buttons from `🤖 9-Bot Mining Hub` to `🤖 8-Bot Mining Hub` across 12 menus.
+    * Updated `⚡ 9-Bot Harvest` to `⚡ 8-Bot Harvest` on reply keyboards and inline keyboards.
+    * Corrected yield breakdown headers to `🤖 *3. 8-Bot Cloud Mining Accumulated Yield:*`.
+  - **Admin Navigation & Keyboard Retention Bug Fixes (`deploy_both_cf_workers.py`)**:
+    * **Chicken Land Back Button Fix**: Fixed `btn_chicken` back button callback which previously routed to `btn_status` instead of `btn_back_main`. Added direct `🤖 8-Bot Mining Hub` jump button.
+    * **Promo Sniper Menu Retention**: Fixed `btn_chicken_promo_auto` so that completing a promo code scan returns the contextual `chickenKeyboard` instead of resetting the view to `statusInlineKeyboard`.
+    * **ATF Wallets Navigation Fix**: Added complete inline navigation markup (`atfWalletsKeyboard`) to `btn_atf_wallets` so admins can navigate back to ATF, the Bots Hub, or Main Menu instead of getting stranded.
+  - **Edge Injected Dashboard Badges Aligned (`public_ads/index.html`, `public_ads/miner/index.html`)**:
+    * Corrected `<span>9 Bots Automated</span>` to `<span>8 Bots Automated</span>` in both `public_ads/miner/index.html` and `public_ads/index.html` (the source templates directly injected into Cloudflare Edge deployments).
+  - **Purged Obsolete Defunct Bot Onboarding Scripts**:
+    * Removed dead standalone onboarding scripts `scripts/onboarding/batch_ailab_mrg.py` and `scripts/onboarding/onboard_fleet_ailab_ultrawallet.py` for defunct bots (`AiLab` and `UltraWallet`).
+  - **Token Refresher Handle Fallbacks (`refresh_fleet_tokens.py`)**:
+    * Upgraded `refresh_fleet_tokens.py` to target primary official bot entities (`mrgtoken_bot`, `atfminers_bot`) with safe graceful fallback to legacy aliases.
+  - **Live Cloudflare Edge Deployment & Verification**:
+    * Deployed updated 16,000-line worker to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Verified HTTP 200 on `/health`, `/miner` (`8 Bots Automated`), and `/ads` (`8 Bots Automated`).
+
 - **🐛 Fleet-Wide Bug Squashing, Premature Callback Race Condition & Token Fallbacks (October 29, 2026)**:
   - **User Bot Premature Callback Acknowledgment Elimination (`deploy_both_cf_workers.py`)**:
     * **Eliminated Callback Query Pre-empting**: Removed an unconditional, premature `await answerCq()` at line 13371 that was executing before individual button handlers, which caused subsequent toasts (e.g. `await answerCq("Generating QR Code...", false)`) and native modal alerts (e.g. `await answerCq(..., true)`) to be rejected by Telegram with `400 Bad Request: query is too old or query id is invalid`.

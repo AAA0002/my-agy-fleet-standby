@@ -331,7 +331,7 @@ const solveChallengeDeterministic = (questionText) => {
   return nums.length > 0 ? String(nums[0]) : "0";
 };
 
-// Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
+// Universal 8-Bot Challenge & Math Solver with 0 AI Dependency Protection
 const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic", env = null) => {
   if (!questionText || typeof questionText !== "string") return "0";
   const detAns = solveChallengeDeterministic(questionText);
@@ -3235,10 +3235,10 @@ export default {
         "CRITICAL RULES:\n" +
         "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE.\n" +
         "- When asked what this bot can do, how it works, or what bots are supported, showcase the 8 verified mining pools with their names and links:\n" +
-        "  1. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n" +
-        "  2. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n" +
+        "  1. ⚡ [MRG Miner](https://t.me/mrgtoken_bot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n" +
+        "  2. 🪙 [ATF Miner](https://t.me/atfminers_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n" +
         "  3. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade yield (8h cycle)\n" +
-        "  4. 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining (12h cycle)\n" +
+        "  4. 🌐 [Kynex Network](https://t.me/Kynex_miningbot) — Decentralized TON edge node mining (12h cycle)\n" +
         "  5. ⛏️ [DiggoMiner](https://t.me/Diggominer_bot) — High-hashrate block mining (3h cycle)\n" +
         "  6. 🐸 [PepeGram](https://t.me/Pepe_gram_bot) — Meme token cloud mining (3h cycle)\n" +
         "  7. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot) — AI computational mining node (3h cycle)\n" +
@@ -3317,8 +3317,8 @@ export default {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
           `This bot **automatically mines 8 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
           `🤖 *The 8 Automated Mining Pools & Links:*\n` +
-          `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-          `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+          `1️⃣ ⚡ [MRG Miner](https://t.me/mrgtoken_bot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+          `2️⃣ 🪙 [ATF Miner](https://t.me/atfminers_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
           `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
           `4️⃣ 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n` +
           `5️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — Decentralized automated block mining\n` +
@@ -5519,7 +5519,7 @@ fi
       });
     }
 
-    // 11.04 9-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
+    // 11.04 8-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
     if (path === "/api/ai/solve" || path === "/api/bot-solve") {
       let q = "";
       let bot = "generic";
@@ -5830,12 +5830,12 @@ fi
           fleet_size: memFleetAccounts?.length || DEFAULT_FLEET_ACCOUNTS.length,
           active_bots: 8,
           supported_bots: [
-            "MRG Miner (@mrgminerbot)",
-            "ATF Miner (@atf_miner_bot)",
-            "Victor's Company (@victorscompany_bot)",
-            "Kynex Network (@kynexnetworkbot)",
-            "DiggoMiner (@diggominer_bot)",
-            "PepeGram (@pepe_mine_bot)",
+            "MRG Miner (@mrgtoken_bot)",
+            "ATF Miner (@atfminers_bot)",
+            "Victor's Company (@VictorsCompanybot)",
+            "Kynex Network (@Kynex_miningbot)",
+            "DiggoMiner (@Diggominer_bot)",
+            "PepeGram (@Pepe_gram_bot)",
             "AdxEarn AI (@AdxEarnAibot)",
             "Chicken Land (@ChickenLandBot)"
           ]
@@ -6341,10 +6341,10 @@ fi
             ],
             [
               { text: "📊 Fleet Live Status", callback_data: "btn_status" },
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
@@ -6372,8 +6372,8 @@ fi
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "🐔 Chicken Land", callback_data: "btn_chicken" },
@@ -6397,11 +6397,11 @@ fi
           inline_keyboard: [
             [
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -6609,7 +6609,7 @@ fi
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
@@ -6684,7 +6684,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 9-Bot Harvest" },
+              { text: "⚡ 8-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -7564,7 +7564,7 @@ fi
             } else if (cbData === "btn_mrg") {
               const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
+                `• *Platform:* MRG Cloud Miner (@mrgtoken_bot)\n` +
                 `• *Status:* Active & Auto-Mining\n` +
                 `• *Yield:* ~0.06 MRG per claim cycle per account\n` +
                 `• *Payout Network:* TON Blockchain (The Open Network)\n` +
@@ -7623,7 +7623,8 @@ fi
                     { text: "🎟️ Check & Auto-Snipe Promo", callback_data: "btn_chicken_promo_auto" }
                   ],
                   [
-                    { text: "🔙 Main Menu", callback_data: "btn_status" }
+                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                   ]
                 ]
               };
@@ -7683,7 +7684,7 @@ fi
                 } catch (_) {}
               }
               const reportMsg = `ℹ️ *CHICKEN LAND PROMO CODE AUDIT*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Source:* https://t.me/ChickenLandCodes\n• *Latest Drop:* \`${lastCode}\` (❌ ALL CLAIMED)\n• *Status:* 100% of historical codes have reached player capacity limits.\n• *Continuous Sniper:* 🟢 Active 24/7 on Render Node 2 (8s loop) & Cloudflare Edge — the moment the channel posts a new code, the fleet will auto-redeem it within sub-seconds!`;
-              await editOrSendResilientMessage(chatId, cbMsgId, reportMsg, statusInlineKeyboard);
+              await editOrSendResilientMessage(chatId, cbMsgId, reportMsg, chickenKeyboard);
             } else if (cbData === "btn_treasury" || cbData === "btn_payouts") {
               const dhakaTime = getDhakaTimestamp();
               let liveBnb = 0.003474;
@@ -7707,7 +7708,7 @@ fi
                 `• *Address:* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
                 `• *Live Balance:* \`2.4555 TON\` (~$2.98 USD / ~৳365 BDT)\n` +
                 `• *Mandatory Memo:* \`103525143\`\n\n` +
-                `🤖 *3. 9-Bot Cloud Mining Accumulated Yield:*\n` +
+                `🤖 *3. 8-Bot Cloud Mining Accumulated Yield:*\n` +
                 `• ⚡ MRG: \`62,578.97 MRG\` (Cloud Turnstile Auto-Claim)\n` +
                 `• 🪙 ATF: \`30,374.55 ATF\` (Math Solver Engine)\n` +
                 `• 🌐 Kynex: \`1,825,352.00 KNX\` (Energy Sweep Node)\n` +
@@ -7750,12 +7751,12 @@ fi
               const hubMsg = `🤖 *8-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
-                `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
-                `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
+                `1. ⚡ *MRG Miner* (@mrgtoken_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
+                `2. 🪙 *ATF Miner* (@atfminers_bot) — Cryptographic Math Solver\n` +
                 `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
                 `4. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
                 `5. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
-                `6. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
+                `6. 🐸 *PepeGram* (@Pepe_gram_bot) — 6h Hash Production Loop\n` +
                 `7. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
                 `8. 🐔 *Chicken Land* (@ChickenLandBot) — Passive Egg Laying & Sub-Second Promo Sniper\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7798,7 +7799,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -7808,7 +7809,7 @@ fi
               };
               const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
+                `• *Platform:* PepeGram (@Pepe_gram_bot / MiniEmpire)\n` +
                 `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
                 `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
@@ -7825,7 +7826,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -7874,7 +7875,7 @@ fi
                       { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                     ],
                     [
-                      { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                      { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
                       { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
@@ -7965,7 +7966,18 @@ fi
                 `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
                 `• *Accounts #2–${accounts.length} (Workers):* ${accounts.length - 1} Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
                 `_All wallets isolated to prevent multi-account Sybil flags._`;
-              await sendResilientMessage(chatId, rep, null, "Markdown");
+              const atfWalletsKeyboard = {
+                inline_keyboard: [
+                  [
+                    { text: "🪙 Back to ATF", callback_data: "btn_atf" },
+                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  ],
+                  [
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                  ]
+                ]
+              };
+              await sendResilientMessage(chatId, rep, atfWalletsKeyboard, "Markdown");
             } else if (cbData === "btn_status") {
               ctx.waitUntil((async () => {
                 const dhakaTime = getDhakaTimestamp();
@@ -8715,7 +8727,7 @@ fi
             };
             const mrgMsg = `⛏️ *MRG MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
+              `• *Platform:* MRG Cloud Miner (@mrgtoken_bot)\n` +
               `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Level Upgrader:* Level 95+ Auto-Unlocked\n` +
               `• *Cryptographic TON Connect 2.0 Proof:* \`${health.total}/${health.total} Connected\`\n` +
@@ -8782,7 +8794,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -8815,7 +8827,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -8825,7 +8837,7 @@ fi
             };
             const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
+              `• *Platform:* PepeGram (@Pepe_gram_bot / MiniEmpire)\n` +
               `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
               `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
@@ -8847,7 +8859,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -8881,7 +8893,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -8933,7 +8945,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -8955,7 +8967,7 @@ fi
           return new Response("OK");
         }
 
-        // 1.4595 9-Bot Hub Command (/bots or /hub)
+        // 1.4595 8-Bot Hub Command (/bots or /hub)
         if (text === "/bots" || text.startsWith("/bots") || text === "/hub" || text.startsWith("/hub")) {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
@@ -8973,12 +8985,12 @@ fi
             const hubMsg = `🤖 *8-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
-              `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
-              `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
+              `1. ⚡ *MRG Miner* (@mrgtoken_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
+              `2. 🪙 *ATF Miner* (@atfminers_bot) — Cryptographic Math Solver\n` +
               `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
               `4. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
               `5. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
-              `6. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
+              `6. 🐸 *PepeGram* (@Pepe_gram_bot) — 6h Hash Production Loop\n` +
               `7. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
               `8. 🐔 *Chicken Land* (@ChickenLandBot) — Passive Egg Laying & Sub-Second Promo Sniper\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -10016,7 +10028,7 @@ fi
               `• *Address:* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• *Live Balance:* \`2.4555 TON\` (~$2.98 USD / ~৳365 BDT)\n` +
               `• *Mandatory Memo:* \`103525143\`\n\n` +
-              `🤖 *3. 9-Bot Cloud Mining Accumulated Yield:*\n` +
+              `🤖 *3. 8-Bot Cloud Mining Accumulated Yield:*\n` +
               `• ⚡ MRG: \`62,578.97 MRG\` (Cloud Turnstile Auto-Claim)\n` +
               `• 🪙 ATF: \`30,374.55 ATF\` (Math Solver Engine)\n` +
               `• 🌐 Kynex: \`1,825,352.00 KNX\` (Energy Sweep Node)\n` +
@@ -11872,8 +11884,8 @@ Reply to Arif naturally:`;
         id: "mrg",
         name: "MRG Miner",
         icon: "⚡",
-        username: "mrgminerbot",
-        ref_url: "https://t.me/mrgminerbot?start=ref_IRN1G3XD",
+        username: "mrgtoken_bot",
+        ref_url: "https://t.me/mrgtoken_bot?start=ref_IRN1G3XD",
         description: "Peak tier hashrate & TON auto-mining",
         cycle: "4 hours"
       },
@@ -11881,8 +11893,8 @@ Reply to Arif naturally:`;
         id: "atf",
         name: "ATF Miner",
         icon: "🪙",
-        username: "ATF_AIRDROP_bot",
-        ref_url: "https://t.me/ATF_AIRDROP_bot?start=6727787768",
+        username: "atfminers_bot",
+        ref_url: "https://t.me/atfminers_bot?start=6727787768",
         description: "Auto 24h mining & daily task claiming",
         cycle: "24 hours"
       },
@@ -11899,8 +11911,8 @@ Reply to Arif naturally:`;
         id: "kynex",
         name: "Kynex Network",
         icon: "🌐",
-        username: "kynexnetworkbot",
-        ref_url: "https://t.me/kynexnetworkbot",
+        username: "Kynex_miningbot",
+        ref_url: "https://t.me/Kynex_miningbot?start=6727787768",
         description: "Decentralized TON edge mining",
         cycle: "12 hours"
       },
@@ -11964,10 +11976,10 @@ Reply to Arif naturally:`;
         detectedPoolName = "⛏️ DiggoMiner (@Diggominer_bot)";
       } else if (lower.includes("mrgtoken") || lower.includes("mrgminer") || lower.includes("mrg_miner")) {
         detectedPool = "mrg";
-        detectedPoolName = "⚡ MRG Miner (@mrgminerbot)";
-      } else if (lower.includes("atf") || lower.includes("atfairdrop")) {
+        detectedPoolName = "⚡ MRG Miner (@mrgtoken_bot)";
+      } else if (lower.includes("atf") || lower.includes("atfairdrop") || lower.includes("atfminers")) {
         detectedPool = "atf";
-        detectedPoolName = "🪙 ATF Miner (@ATF_AIRDROP_bot)";
+        detectedPoolName = "🪙 ATF Miner (@atfminers_bot)";
       } else if (lower.includes("victors") || lower.includes("victor")) {
         detectedPool = "victors";
         detectedPoolName = "🏢 Victor's Company (@VictorsCompanybot)";
@@ -12740,8 +12752,8 @@ Reply to Arif naturally:`;
             id: "mrg",
             name: "MRG Miner",
             icon: "⚡",
-            username: "mrgminerbot",
-            ref_url: "https://t.me/mrgminerbot?start=ref_IRN1G3XD",
+            username: "mrgtoken_bot",
+            ref_url: "https://t.me/mrgtoken_bot?start=ref_IRN1G3XD",
             description: "Peak tier hashrate & TON auto-mining",
             cycle: "4 hours"
           },
@@ -12749,8 +12761,8 @@ Reply to Arif naturally:`;
             id: "atf",
             name: "ATF Miner",
             icon: "🪙",
-            username: "ATF_AIRDROP_bot",
-            ref_url: "https://t.me/ATF_AIRDROP_bot?start=6727787768",
+            username: "atfminers_bot",
+            ref_url: "https://t.me/atfminers_bot?start=6727787768",
             description: "Auto 24h mining & daily task claiming",
             cycle: "24 hours"
           },
@@ -12767,8 +12779,8 @@ Reply to Arif naturally:`;
             id: "kynex",
             name: "Kynex Network",
             icon: "🌐",
-            username: "kynexnetworkbot",
-            ref_url: "https://t.me/kynexnetworkbot",
+            username: "Kynex_miningbot",
+            ref_url: "https://t.me/Kynex_miningbot?start=6727787768",
             description: "Decentralized TON edge mining",
             cycle: "12 hours"
           },
@@ -12832,10 +12844,10 @@ Reply to Arif naturally:`;
             detectedPoolName = "⛏️ DiggoMiner (@Diggominer_bot)";
           } else if (lower.includes("mrgtoken") || lower.includes("mrgminer") || lower.includes("mrg_miner")) {
             detectedPool = "mrg";
-            detectedPoolName = "⚡ MRG Miner (@mrgminerbot)";
-          } else if (lower.includes("atf") || lower.includes("atfairdrop")) {
+            detectedPoolName = "⚡ MRG Miner (@mrgtoken_bot)";
+          } else if (lower.includes("atf") || lower.includes("atfairdrop") || lower.includes("atfminers")) {
             detectedPool = "atf";
-            detectedPoolName = "🪙 ATF Miner (@ATF_AIRDROP_bot)";
+            detectedPoolName = "🪙 ATF Miner (@atfminers_bot)";
           } else if (lower.includes("victors") || lower.includes("victor")) {
             detectedPool = "victors";
             detectedPoolName = "🏢 Victor's Company (@VictorsCompanybot)";
@@ -13003,10 +13015,10 @@ Reply to Arif naturally:`;
           const chickenlandAccs = accs.filter(a => a.pool === "chickenland" || a.pool === "all" || !a.pool).length;
 
           const txt = `⛏️ *Cloud Mining Pools (8/8)*\n\n` +
-            `1. ⚡ MRG (4h) • @mrgminerbot\n` +
-            `2. 🪙 ATF (24h) • @ATF_AIRDROP_bot\n` +
+            `1. ⚡ MRG (4h) • @mrgtoken_bot\n` +
+            `2. 🪙 ATF (24h) • @atfminers_bot\n` +
             `3. 🏢 Victor's (8h) • @VictorsCompanybot\n` +
-            `4. 🌐 Kynex (12h) • @kynexnetworkbot\n` +
+            `4. 🌐 Kynex (12h) • @Kynex_miningbot\n` +
             `5. ⛏️ Diggo (3h) • @Diggominer_bot\n` +
             `6. 🐸 PepeGram (3h) • @Pepe_gram_bot\n` +
             `7. 💎 AdxEarn (3h) • @AdxEarnAibot\n` +
@@ -13932,7 +13944,7 @@ Reply to Arif naturally:`;
           // C3.25 Per-Pool Connection Guide
           if (cqData.startsWith("ub_guide_pool_")) {
             const poolKey = cqData.replace("ub_guide_pool_", "").trim();
-            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgminerbot", ref_url: "https://t.me/mrgminerbot" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgtoken_bot", ref_url: "https://t.me/mrgtoken_bot?start=ref_IRN1G3XD" };
             const guideMsg = `📖 *HOW TO CONNECT ${poolInfo.name.toUpperCase()} (10 SECONDS)* 🚀\n\n` +
               `Connecting ${poolInfo.name} to 24/7 cloud auto-mining is fast and frictionless:\n\n` +
               `1️⃣ *1-Tap QR Login:* Tap *📱 1-Tap QR Login* below to link your account safely!\n` +
@@ -13986,7 +13998,7 @@ Reply to Arif naturally:`;
           // C3.3 Add Per-Pool Account Prompt
           if (cqData.startsWith("ub_add_pool_")) {
             const poolKey = cqData.replace("ub_add_pool_", "").trim();
-            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgminerbot" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgtoken_bot" };
             const profile = await getUserProfile(cqChatId, cq.from);
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             if (profile.accounts.length >= totalSlots) {
@@ -14886,7 +14898,7 @@ Reply to Arif naturally:`;
           return new Response("OK");
         }
 
-        // 0.3 Telegram Mini App or Referral Link Guidance (e.g. user pasted https://t.me/mrgminerbot or https://t.me/VictorsCompanybot/app...)
+        // 0.3 Telegram Mini App or Referral Link Guidance (e.g. user pasted https://t.me/mrgtoken_bot or https://t.me/VictorsCompanybot/app...)
         const isTmeBotLink = (text.includes("t.me/") && (text.includes("bot") || text.includes("/app") || text.includes("start="))) && !hasWebAppData && !isCommandOrMenu;
         if (isTmeBotLink) {
           ctx.waitUntil((async () => {
@@ -15051,10 +15063,10 @@ Reply to Arif naturally:`;
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
               `🤖 *8 Automated Mining Pools & Links:*\n` +
-              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n` +
-              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgtoken_bot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/atfminers_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n` +
               `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level solar & arcade yield (8h cycle)\n` +
-              `4️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining (12h cycle)\n` +
+              `4️⃣ 🌐 [Kynex Network](https://t.me/Kynex_miningbot?start=6727787768) — Decentralized TON edge node mining (12h cycle)\n` +
               `5️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot) — High-hashrate block mining (3h cycle)\n` +
               `6️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot) — Meme token cloud mining (3h cycle)\n` +
               `7️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot) — AI computational mining node (3h cycle)\n` +

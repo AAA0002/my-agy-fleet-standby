@@ -4,8 +4,8 @@ refresh_fleet_tokens.py
 Automated Multi-Account Telegram MiniApp Token Refresher
 - Connects to Fleet Accounts via Telethon (MTProto)
 - Acquires fresh tgWebAppData (initData) for the 8 active legitimate fleet MiniApps:
-  1. MRG Miner (@mrgminerbot)
-  2. ATF Miner (@ATF_AIRDROP_bot)
+  1. MRG Miner (@mrgtoken_bot)
+  2. ATF Miner (@atfminers_bot)
   3. Victor's Company (@VictorsCompanybot)
   4. Kynex Network (@Kynex_miningbot)
   5. DiggoMiner (@Diggominer_bot)
@@ -108,9 +108,12 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
             print(f"    ❌ Unauthorized session for {name}")
             return {}
 
-        # 1. MRG Miner (@mrgminerbot)
+        # 1. MRG Miner (@mrgtoken_bot)
         try:
-            bot_mrg = await client.get_input_entity("mrgminerbot")
+            try:
+                bot_mrg = await client.get_input_entity("mrgtoken_bot")
+            except Exception:
+                bot_mrg = await client.get_input_entity("mrgminerbot")
             res_mrg = await client(functions.messages.RequestAppWebViewRequest(
                 peer=bot_mrg,
                 app=InputBotAppShortName(bot_id=bot_mrg, short_name="app"),
@@ -124,9 +127,12 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ MRG note: {e}")
 
-        # 2. ATF Miner (@ATF_AIRDROP_bot)
+        # 2. ATF Miner (@atfminers_bot)
         try:
-            bot_atf = await client.get_entity("ATF_AIRDROP_bot")
+            try:
+                bot_atf = await client.get_entity("atfminers_bot")
+            except Exception:
+                bot_atf = await client.get_entity("ATF_AIRDROP_bot")
             res_atf = await client(functions.messages.RequestWebViewRequest(
                 peer=bot_atf,
                 bot=bot_atf,
