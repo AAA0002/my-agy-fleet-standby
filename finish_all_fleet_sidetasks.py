@@ -1585,21 +1585,33 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
 
         # 6.5. Autonomous Promo Code Discovery & Redemption (@ChickenLandCodes)
         try:
-            from chickenland_promo_sniper import fetch_channel_codes, is_code_claimed, mark_code_claimed
+            from chickenland_promo_sniper import fetch_channel_codes, redis_command
             c_codes = await asyncio.to_thread(fetch_channel_codes)
             for it in c_codes:
                 p_code = it.get("code")
-                if p_code and not it.get("is_exhausted") and not is_code_claimed(p_code):
-                    p_res = await rpc("/api/promo", {"code": p_code})
-                    if p_res.get("ok"):
-                        p_coins = p_res.get("result", {}).get("coins", 0)
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"promo_{p_code}_+{p_coins}")
-                        mark_code_claimed(p_code)
-                        if p_res.get("result", {}).get("user"):
-                            current_coins = float(p_res["result"]["user"].get("coins", current_coins))
-                    elif p_res.get("parameters", {}).get("code") == "PROMO_FULL":
-                        pass
+                if not p_code or it.get("is_exhausted"):
+                    continue
+                # Check if this specific account already claimed this code
+                if uid:
+                    already = redis_command("SISMEMBER", f"chickenland:claimed:{uid}", p_code)
+                    if already == 1:
+                        continue
+                p_res = await rpc("/api/promo", {"code": p_code})
+                desc = str(p_res.get("description", "")).lower()
+                param_code = p_res.get("parameters", {}).get("code", "")
+                if p_res.get("ok"):
+                    p_coins = p_res.get("result", {}).get("coins", 0)
+                    res["tasks_claimed"] += 1
+                    res["notes"].append(f"promo_{p_code}_+{p_coins}")
+                    if uid:
+                        redis_command("SADD", f"chickenland:claimed:{uid}", p_code)
+                    if p_res.get("result", {}).get("user"):
+                        current_coins = float(p_res["result"]["user"].get("coins", current_coins))
+                elif "already" in desc or "claimed" in desc or param_code == "ALREADY_CLAIMED":
+                    if uid:
+                        redis_command("SADD", f"chickenland:claimed:{uid}", p_code)
+                elif "expired" in desc or "limit" in desc or param_code == "PROMO_FULL":
+                    redis_command("SADD", "chickenland:seen_codes", p_code)
         except Exception as pe:
             logger.debug(f"[{name}] Promo auto-apply note: {pe}")
 

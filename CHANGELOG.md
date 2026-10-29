@@ -3,9 +3,9 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🛡️ Chicken Land Per-Account Promo Sniper Isolation, Victor's Company Solver Fallback & Multi-Repo Sanitation (October 29, 2026)**:
-  - **Per-Account Promo Code Isolation (`chickenland_miner.py`)**:
-    * Fixed critical bug in `auto_redeem_channel_promos` where calling `mark_code_claimed(code)` globally in Redis caused the first claiming account to block all subsequent 20 fleet accounts from redeeming active promo codes.
-    * Re-architected redemption tracking to use isolated per-user sets (`chickenland:claimed:{uid}`), guaranteeing all 21 accounts redeem every active promo code independently.
+  - **Per-Account Promo Code Isolation Across All Engines (`chickenland_miner.py`, `finish_all_fleet_sidetasks.py`, `app.py`)**:
+    * Fixed critical bug in `auto_redeem_channel_promos`, `sweep_chickenland_tasks`, and `_farm_chickenland` where calling `mark_code_claimed(code)` globally in Redis caused the first claiming account to block all subsequent 20 fleet accounts from redeeming active promo codes.
+    * Re-architected redemption tracking across all three engines to use isolated per-user sets (`chickenland:claimed:{uid}`), guaranteeing all 21 accounts redeem every active promo code independently.
     * Upgraded `chickenland_miner.py` with dynamic `load_fleet_chickenland_tokens()` prioritizing Upstash Redis (`miniapp_tokens`, `fleet:tokens:{uid}`) over local files.
     * Added CLI flags (`--all`, `--uid`) and automatic updates to `accounts.json` for live hens, egg production rate, and coins.
   - **Account 21 State Parity (`accounts.json`)**:
