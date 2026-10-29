@@ -145,17 +145,19 @@ async def broadcast_deposit(session: aiohttp.ClientSession, diff: float, total_b
     # Send short card to AAA Admin notification channel (-1004358687850)
     admin_notif_channel = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
     if admin_notif_channel:
-        short_bep20 = (
-            f"💰 <b>BEP-20 Vault Deposit</b>\n"
-            f"• <b>Amount:</b> <code>+{amount:.6f} BNB</code> (${usd_val:.2f})\n"
-            f"• <b>New Balance:</b> <code>{new_balance:.6f} BNB</code>\n"
-            f"• <b>Tx:</b> <code>{tx_hash[:10]}...{tx_hash[-6:]}</code>"
-        )
         try:
+            short_bep20 = (
+                f"💰 <b>BEP-20 Vault Deposit</b>\n"
+                f"• <b>Amount:</b> <code>+{diff:.6f} BNB</code> (${usd_val:.2f})\n"
+                f"• <b>New Balance:</b> <code>{total_bal:.6f} BNB</code>\n"
+                f"• <b>Wallet:</b> <code>{wallet[:10]}...{wallet[-6:]}</code>\n"
+                f"• <b>Explorer:</b> <a href=\"{explorer_url}\">View on BscScan</a>"
+            )
             await session.post(send_url, json={
                 "chat_id": admin_notif_channel,
                 "text": short_bep20,
-                "parse_mode": "HTML"
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
             }, timeout=aiohttp.ClientTimeout(total=8))
         except Exception:
             pass

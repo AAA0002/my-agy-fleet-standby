@@ -6,7 +6,7 @@ refresh_cloud_tokens.py
 =============================================================================
 Runs on GitHub Actions, Render, Deno, or ephemeral cloud runners.
 Connects briefly via MTProto to extract fresh 24h WebApp initData session tokens
-across all 9 legitimate active bots and auto-joins required sponsor channels.
+across all 8 legitimate active bots and auto-joins required sponsor channels.
 
 Pushes extracted tokens to both:
   1. 5x Cloudflare Edge Workers & KV
@@ -150,6 +150,39 @@ async def sync_tokens_to_edge_and_upstash(session: aiohttp.ClientSession, uid: s
                 timeout=aiohttp.ClientTimeout(total=5)
             )
             print(f"  ✅ Synced to Upstash Redis (fleet:tokens:{uid})")
+
+            # Also sync into monolithic miniapp_tokens dictionary for runner compatibility
+            try:
+                async with session.get(
+                    f"{UPSTASH_URL}/get/miniapp_tokens",
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                    timeout=aiohttp.ClientTimeout(total=4)
+                ) as r_all:
+                    if r_all.status == 200:
+                        all_d = await r_all.json()
+                        raw_all = all_d.get("result")
+                        master_dict = json.loads(raw_all) if isinstance(raw_all, str) else raw_all or {}
+                        master_dict[str(uid)] = payload
+                        await session.post(
+                            f"{UPSTASH_URL}/set/miniapp_tokens",
+                            data=json.dumps(master_dict),
+                            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+                            timeout=aiohttp.ClientTimeout(total=5)
+                        )
+            except Exception:
+                pass
+
+            # Sync Diggo JWT if present
+            if tokens.get("diggo_jwt"):
+                try:
+                    await session.post(
+                        f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000",
+                        data=tokens["diggo_jwt"],
+                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    )
+                except Exception:
+                    pass
         except Exception as ue:
             print(f"  ⚠️ Upstash sync note: {ue}")
 
@@ -275,7 +308,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
 
 async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
-    """Connects MTProto for a single account and extracts all 9 bot session links."""
+    """Connects MTProto for a single account and extracts all 8 bot session links."""
     acc_name = acc.get("name", "Account")
     acc_uid = str(acc.get("user_id"))
     acc_sess = acc.get("session_string") or acc.get("session")

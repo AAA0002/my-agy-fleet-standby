@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Critical NameError Watcher Bug Fixes, Sweeper Alerts & Universal Upstash Token Sync (October 29, 2026)**:
+  - **On-Chain Watcher NameError Fixes (`bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`)**:
+    * Fixed critical `NameError: name 'amount' is not defined` in `broadcast_deposit` and `broadcast_deposit_alert`. When a deposit was detected, unhandled undefined references (`amount`, `new_balance`, `tx_hash`) outside a try/except block prevented admin alert delivery and crashed watcher reporting.
+    * Re-mapped `amount` -> `diff`, `new_balance` -> `total_bal`, `{chain.upper()}` -> `{symbol}`, and inserted verified wallet and explorer URLs wrapped inside try/except blocks with `disable_web_page_preview: True`.
+  - **Admin Notification Receipt Expansion (`cloud_wallet_sweeper.py`)**:
+    * Added `ADMIN_NOTIFICATION_CHANNEL_ID` (`-1004358687850`) into `send_telegram_receipt` targets, ensuring automated vault consolidation receipts flow to the short notification channel alongside the payout channel and admin DM.
+  - **Universal Monolithic MiniApp Token Sync (`refresh_cloud_tokens.py`)**:
+    * Extended `sync_tokens_to_edge_and_upstash` to update monolithic `miniapp_tokens` alongside `fleet:tokens:{uid}` in Upstash Redis, satisfying Rule 6 and preventing cold-start delays across legacy runners and cloud solvers.
+    * Added immediate caching of `fleet:diggo:jwt:{uid}` with 30-day TTL in Upstash Redis.
+    * Synchronized docstrings and inline logs to reflect the exact 8-bot standard.
+  - **Onboarding Sponsor Channels Fallback Completeness (`login_account.py`)**:
+    * Added missing Chicken Land channels (`LandChickenNews`, `ChickenLandPay`, `ChickenLandCodes`), `DurovKidney`, and `PickaxeEmpire` to the fallback list in `login_account.py` to guarantee new worker accounts immediately qualify for side-tasks even if dynamic registry import fails.
+
+
 - **🛡️ Chicken Land Per-Account Promo Sniper Isolation, Victor's Company Solver Fallback & Multi-Repo Sanitation (October 29, 2026)**:
   - **Per-Account Promo Code Isolation Across All Engines (`chickenland_miner.py`, `finish_all_fleet_sidetasks.py`, `app.py`, `chickenland_promo_sniper.py`)**:
     * Fixed critical bug where calling `mark_code_claimed(code)` globally in Redis caused the first claiming account to block all subsequent 20 fleet accounts from redeeming active promo codes.

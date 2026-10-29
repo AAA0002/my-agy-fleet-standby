@@ -279,7 +279,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * GitHub account `AAA2743` was suspended by GitHub. All production dependencies have been migrated to `AAA0002` and `koramshah2`. Render services were updated via API to point to active repos.
   - **100% Cloud MTProto Token Refresher & Auto-Farming Pipeline**:
     * Workflow File: `.github/workflows/cloud_token_refresher.yml` (Runs every 2 hours: `0 */2 * * *`).
-    * Script: `refresh_cloud_tokens.py` (Connects MTProto in cloud, harvests fresh 24h WebApp `initData`, syncs to 5x Cloudflare Nodes and Upstash Redis).
+    * Script: `refresh_cloud_tokens.py` (Connects MTProto in cloud, harvests fresh 24h WebApp `initData`, syncs to 5x Cloudflare Nodes, Upstash Redis `fleet:tokens:{uid}`, and monolithic `miniapp_tokens`).
     * Auto-Dispatch Pipeline: Automatically triggers `.github/workflows/mrg_turnstile_solver.yml` and Render Standby multi-node farming upon completion.
   - **100% Cloud Multi-Bot Turnstile Solver & Auto-Farming Workflow**:
     * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs on schedule: `0 */8 * * *`, ensuring Victor's Company and MRG human passes stay perpetually fresh before expiration).
