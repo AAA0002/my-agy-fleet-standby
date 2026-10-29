@@ -155,6 +155,7 @@ def push_app():
     kynex_file = os.path.join(BASE_DIR, "kynex_miner.py")
     if os.path.exists(kynex_file):
         push_file(kynex_file, "kynex_miner.py", "feat: Kynex Network cloud mining engine")
+        push_to_solver_repo(kynex_file, "kynex_miner.py", "feat: Kynex Network cloud mining engine")
     reg_file = os.path.join(BASE_DIR, "bot_registry.py")
     if os.path.exists(reg_file):
         push_file(reg_file, "bot_registry.py", "feat: 8-bot fleet registry single source of truth")

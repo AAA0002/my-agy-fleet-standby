@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet-Wide Callback Query Race Condition Fix, Solver Throughput Optimization & 21-Account 8-Bot Audit (October 29, 2026)**:
+  - **User Bot & Admin Bot Callback Query Alert Architecture (`deploy_both_cf_workers.py`)**:
+    * **Eliminated Premature `answerCallbackQuery` Sabotage**: Resolved issue where premature unparameterized `answerCq()` execution at the top of the handler caused subsequent Telegram modal alerts (`answerCq(alertTxt, true)`, including channel gate warnings, cooldown alerts, and moderation messages) to fail with Telegram API error `query is too old or query id is invalid`.
+    * **Intelligent Deferred Callback Acknowledgment**: Implemented `cqAnswered` tracking. Modal alerts and toasts are delivered first; for standard queries, `sendCqReply` automatically acknowledges the callback query, completely eliminating spinning loader states while preserving 100% of native Telegram pop-up dialogs.
+    * **Admin Bot PIN Pad & Menu Responsiveness**: Integrated deferred `answerAdminCb()` into Admin Bot callback router, ensuring PIN keypad interactions do not show premature "Processing..." tooltips over digits and all standard operations immediately dismiss the loader.
+    * **8-Pool Menu & Button Standardization**: Updated all lingering `⛏️ View 9 Mining Pools` button labels and prompts to `⛏️ View 8 Mining Pools` across all bot menus and account onboarding flows.
+  - **Cloud Solver Throughput & Concurrency Optimization (`mrg_turnstile_solver.py`, `kynex_miner.py`)**:
+    * **Eliminated 60-Minute Workflow Timeout**: Discovered that sequential execution of AdxEarn ad networks (simulated sleeps) and Kynex Network ad tasks consumed ~54 minutes across 21 accounts, causing GitHub Actions run `#40808904939` to get canceled before reaching Chromium Turnstile solving for MRG and Victor's Company.
+    * **AdxEarn Fast-Cycle Capping**: Capped AdxEarn ad network and CPA offers to 1 per cycle per account (with reduced 6-10s timers), cutting AdxEarn runtime from 28 minutes to under 3 minutes across 21 accounts.
+    * **Kynex Concurrent Batch Execution**: Upgraded Kynex Network auto-farming loop to run concurrently via `asyncio.gather` with `asyncio.Semaphore(4)`, reducing execution from 26 minutes to under 3 minutes.
+    * **Total Pipeline Optimization**: Slashed Phase 1 & 2 pre-flight from 55 minutes to under 7 minutes, leaving 53+ minutes of unobstructed runner headroom for headless Chromium Turnstile solving.
+    * **Multi-Repo Synchronization**: Synchronized updated solver engines to `AAA0002/cloud-fleet-solver` (Commit: `c17ed8ea`) and `AAA0002/my-agy-fleet-standby` (Commit: `65e33593`).
+  - **Comprehensive Live Audit Across All 21 Accounts (`audit_bots_and_sidetasks.py`)**:
+    * Conducted full live audit across all 21 accounts (Master `6727787768` to Account #21 `8669217201`).
+    * Confirmed **8/8 active bots responsive across 100% of accounts** (21/21 accounts operational across MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, and Chicken Land).
+    * Dispatched audit card to AAA Admin Notification channel (`-1004358687850`).
+  - **Cloudflare Edge Deployment & Bot Webhook Synchronization**:
+    * Deployed updated coordinator to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized Telegram webhooks, menu buttons, descriptions, and commands for both Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`).
+  - **Disaster Recovery Durability**:
+    * Successfully generated and streamed fresh disaster recovery backup archive to Telegram vault `@myagyai` (`-1004453515167`) via `backup_manager.py`.
+
 - **🚀 Fleet-Wide Scoping Resolution, Module-Level Hoisting & 21-Account Live Task Verification (October 29, 2026)**:
   - **Module-Level Variable Hoisting (`deploy_both_cf_workers.py`)**:
     * **Eliminated Scoping Boundary Errors**: Hoisted `DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`, `STATIC_FLEET_WALLETS`, `cleanName`, `resolveAccountPhone`, `getFleetAccounts`, `supabaseSyncMiner`, `getUserProfile`, `saveUserProfile`, `SIBLING_URLS`, `CURRENT_SUBDOMAIN`, and `NODE_SHARD_INDEX` from inner telegram-webhook handlers to shared module scope above `export default`.
