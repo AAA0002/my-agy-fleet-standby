@@ -299,17 +299,17 @@ async def bind_referrals(client, me, acc_entry):
         acc_entry["is_referral_host"] = True
         return
 
-    print(f"\n🔗 Automatically binding account to all 4 verified fleet bots with wallet isolation...")
+    print(f"\n🔗 Automatically binding account to all 8 verified fleet bots with wallet isolation...")
 
-    # 1. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD
-    print(f"  • [1/4] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
+    # 1. MRG Miner (@mrgtoken_bot) - Referral: ref_IRN1G3XD
+    print(f"  • [1/8] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=MRG_BOT))
         except Exception:
             pass
         b_mrg = await client.get_entity(MRG_BOT)
-        await mute_peer(client, b_mrg, "mrgminerbot")
+        await mute_peer(client, b_mrg, "mrgtoken_bot")
         try:
             await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
             await asyncio.sleep(0.5)
@@ -346,19 +346,19 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["mrg_referral_bound"] = True
-        print(f"  ✅ [2/7] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE})!")
+        print(f"  ✅ [1/8] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding MRG Miner referral: {e}")
 
-    # 2. ATF Miner (@ATF_AIRDROP_bot) - Referral: 6727787768
-    print(f"  • [2/4] Connecting to @{ATF_BOT} with referral: {ATF_REFERRAL_CODE}...")
+    # 2. ATF Miner (@atfminers_bot) - Referral: 6727787768
+    print(f"  • [2/8] Connecting to @{ATF_BOT} with referral: {ATF_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=ATF_BOT))
         except Exception:
             pass
         bot_atf = await client.get_entity(ATF_BOT)
-        await mute_peer(client, bot_atf, "ATF_AIRDROP_bot")
+        await mute_peer(client, bot_atf, "atfminers_bot")
         try:
             await client.send_message(bot_atf, f"/start {ATF_REFERRAL_CODE}")
             await asyncio.sleep(0.5)
@@ -389,12 +389,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["atf_referral_bound"] = True
-        print(f"  ✅ [2/4] Successfully bound to ATF Miner ({ATF_REFERRAL_CODE})!")
+        print(f"  ✅ [2/8] Successfully bound to ATF Miner ({ATF_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding ATF referral: {e}")
 
     # 3. Victor's Company (@VictorsCompanybot) - Referral: ref_A20AA96F18
-    print(f"  • [3/4] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
+    print(f"  • [3/8] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=VICTORS_BOT))
@@ -426,12 +426,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["victors_referral_bound"] = True
-        print(f"  ✅ [3/4] Successfully bound to Victor's Company ({VICTORS_REFERRAL_CODE})!")
+        print(f"  ✅ [3/8] Successfully bound to Victor's Company ({VICTORS_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Victor's Company referral: {e}")
 
     # 4. Kynex Network (@Kynex_miningbot) - Referral: 6727787768
-    print(f"  • [5/5] Connecting to @{KYNEX_BOT} with referral: {KYNEX_REFERRAL_CODE}...")
+    print(f"  • [4/8] Connecting to @{KYNEX_BOT} with referral: {KYNEX_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=KYNEX_BOT))
@@ -467,12 +467,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception as ke:
             pass
         acc_entry["kynex_referral_bound"] = True
-        print(f"  ✅ [5/9] Successfully bound to Kynex Network ({KYNEX_REFERRAL_CODE})!")
+        print(f"  ✅ [4/8] Successfully bound to Kynex Network ({KYNEX_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Kynex Network referral: {e}")
 
-    # 6. DiggoMiner (@Diggominer_bot) - Referral: ref_4088138f11effe8eef4b86ff
-    print(f"  • [6/9] Connecting to @{DIGGO_BOT} with referral: {DIGGO_REFERRAL_CODE}...")
+    # 5. DiggoMiner (@Diggominer_bot) - Referral: ref_4088138f11effe8eef4b86ff
+    print(f"  • [5/8] Connecting to @{DIGGO_BOT} with referral: {DIGGO_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=DIGGO_BOT))
@@ -501,12 +501,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["diggo_referral_bound"] = True
-        print(f"  ✅ [6/9] Successfully bound to DiggoMiner ({DIGGO_REFERRAL_CODE})!")
+        print(f"  ✅ [5/8] Successfully bound to DiggoMiner ({DIGGO_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding DiggoMiner referral: {e}")
 
-    # 7. PepeGram (@Pepe_gram_bot) - Referral: 1449
-    print(f"  • [7/9] Connecting to @{PEPE_BOT} with referral: {PEPE_REFERRAL_CODE}...")
+    # 6. PepeGram (@Pepe_gram_bot) - Referral: 1449
+    print(f"  • [6/8] Connecting to @{PEPE_BOT} with referral: {PEPE_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=PEPE_BOT))
@@ -535,12 +535,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["pepegram_referral_bound"] = True
-        print(f"  ✅ [7/9] Successfully bound to PepeGram ({PEPE_REFERRAL_CODE})!")
+        print(f"  ✅ [6/8] Successfully bound to PepeGram ({PEPE_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding PepeGram referral: {e}")
 
-    # 8. AdxEarn AI (@AdxEarnAibot) - Referral: 6727787768
-    print(f"  • [8/9] Connecting to @{ADX_BOT} with referral: {ADX_REFERRAL_CODE}...")
+    # 7. AdxEarn AI (@AdxEarnAibot) - Referral: 6727787768
+    print(f"  • [7/8] Connecting to @{ADX_BOT} with referral: {ADX_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=ADX_BOT))
@@ -569,12 +569,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["adxearn_referral_bound"] = True
-        print(f"  ✅ [8/9] Successfully bound to AdxEarn AI ({ADX_REFERRAL_CODE})!")
+        print(f"  ✅ [7/8] Successfully bound to AdxEarn AI ({ADX_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding AdxEarn AI referral: {e}")
 
-    # 9. Chicken Land (@ChickenLandBot) - Referral: 12668
-    print(f"  • [9/9] Connecting to @{CHICKEN_BOT} with referral: {CHICKEN_REFERRAL_CODE}...")
+    # 8. Chicken Land (@ChickenLandBot) - Referral: 12668
+    print(f"  • [8/8] Connecting to @{CHICKEN_BOT} with referral: {CHICKEN_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=CHICKEN_BOT))
@@ -603,7 +603,7 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["chickenland_referral_bound"] = True
-        print(f"  ✅ [9/9] Successfully bound to Chicken Land ({CHICKEN_REFERRAL_CODE})!")
+        print(f"  ✅ [8/8] Successfully bound to Chicken Land ({CHICKEN_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Chicken Land referral: {e}")
 
