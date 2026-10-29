@@ -45,5 +45,7 @@ jobs:
           ALERT_BOT_TOKEN: ${{ secrets.ALERT_BOT_TOKEN }}
           OWNER_ID: "6727787768"
           WEBSHARE_KEY: ${{ secrets.WEBSHARE_KEY }}
+          WEBSHARE_KEY_2: ${{ secrets.WEBSHARE_KEY_2 }}
+          WEBSHARE_KEY_3: ${{ secrets.WEBSHARE_KEY_3 }}
         run: |
           python victors_sb_solver.py

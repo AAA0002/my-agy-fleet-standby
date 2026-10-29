@@ -123,6 +123,7 @@ def get_webshare_proxy() -> dict | None:
             pass
 
     webshare_keys = [
+        os.getenv("WEBSHARE_KEY_3") or "",
         os.getenv("WEBSHARE_KEY_2") or "",
         os.getenv("WEBSHARE_KEY") or "",
         os.getenv("WEBSHARE_KEY_1") or "",

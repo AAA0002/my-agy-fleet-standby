@@ -65,7 +65,7 @@ def fetch_latest_webshare_verification_email():
 
 def check_existing_webshare_keys():
     print("Checking active Webshare keys in .env:")
-    for k in ["WEBSHARE_KEY_1", "WEBSHARE_KEY_2"]:
+    for k in ["WEBSHARE_KEY_3", "WEBSHARE_KEY_2", "WEBSHARE_KEY_1", "WEBSHARE_KEY"]:
         val = os.getenv(k)
         if not val:
             continue

@@ -114,10 +114,26 @@ FLEET_UIDS = load_all_fleet_uids()
 
 def get_webshare_proxy() -> str | None:
     """Fetches active, pre-tested proxy string from Webshare in user:pass@host:port format."""
+    env_keys = []
+    env_file = os.path.join(BASE_DIR, ".env")
+    if os.path.exists(env_file):
+        try:
+            with open(env_file, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if "=" in line and "WEBSHARE_KEY" in line:
+                        _, v = line.strip().split("=", 1)
+                        clean_v = v.strip("\"' ")
+                        if clean_v:
+                            env_keys.append(clean_v)
+        except Exception:
+            pass
+
     webshare_keys = [
+        os.getenv("WEBSHARE_KEY_3") or "",
         os.getenv("WEBSHARE_KEY_2") or "",
         os.getenv("WEBSHARE_KEY") or "",
         os.getenv("WEBSHARE_KEY_1") or "",
+        *env_keys
     ]
     seen_keys = set()
     for key in webshare_keys:
