@@ -5818,6 +5818,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 u_m = me_d["user"]
                 b_val = float(u_m.get("inAppBalance", 0) or 0)
                 l_val = u_m.get("manualUnlockedLevel") or u_m.get("peakLevel") or 1
+                acc["mrg_balance"] = b_val
+                acc["mrg_level"] = l_val
                 unclaimed_val = float(u_m.get("unclaimedMiningBalance", 0) or 0)
                 bal_str = f" (lvl: {l_val}, bal: {b_val:.1f} MRG)"
             claim_stat = "farmed"
@@ -5990,6 +5992,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         bal = float(u_obj.get("mined_balance") or log_data.get("mined_balance") or 0)
                     except (ValueError, TypeError):
                         bal = 0.0
+                    acc["atf_balance"] = bal
+                    acc["atf_level"] = lvl
                     bal_str = f" (lvl: {lvl}, bal: {bal:.1f} ATF)"
                 status["bots"]["atf"] = f"farmed{bal_str}"
         except Exception as e:
@@ -6175,6 +6179,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 except Exception as arc_e:
                     logger.debug(f"[{name}] [Victors Arcade] note: {arc_e}")
 
+                acc["victors_balance"] = in_app_bal
+                acc["victors_level"] = lvl
                 bal_str = f" (lvl: {lvl}, bal: {in_app_bal} VIC)"
                 status["bots"]["victors"] = f"farmed{bal_str}"
                 return
@@ -6190,6 +6196,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             try:
                 import kynex_miner
                 res = await kynex_miner.farm_kynex_account(session, tokens["kynex_init_data"], acc, is_master=is_owner)
+                if isinstance(res, dict) and res.get("balance") is not None:
+                    acc["kynex_coins"] = float(res.get("balance", 0.0) or 0.0)
                 status["bots"]["kynex"] = res.get("status", "farmed")
                 return
             except Exception as e:
@@ -6223,6 +6231,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await safe_post("https://app.miniempire.app/miniapp/tasks/slot-spin?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/tasks/ad-roll?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/tasks/ad-roll2?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    acc["pepe_hashes"] = hashes
+                    acc["pepe_power"] = power
                     status["bots"]["pepegram"] = f"farmed (power: {power}, hashes: {hashes:.2f})"
                 else:
                     status["bots"]["pepegram"] = f"auth_failed ({c_auth})"
@@ -6319,6 +6329,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         except Exception:
                             pass
 
+                    acc["adx_points"] = pts
                     status["bots"]["adxearn"] = f"farmed (points: {pts}, streak: {streak}d)"
                 else:
                     status["bots"]["adxearn"] = f"sess_failed ({c_sess})"
@@ -6490,6 +6501,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     except Exception:
                         pass
 
+                    acc["diggo_balance"] = bal
+                    acc["diggo_level"] = lvl
                     status["bots"]["diggo"] = f"farmed (lvl: {lvl}, bal: {bal:.2f})"
                 else:
                     status["bots"]["diggo"] = f"state_failed ({c_st})"
@@ -6636,6 +6649,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         rate = buy_res.get("result", {}).get("user", {}).get("rate", rate)
                         coins = buy_res.get("result", {}).get("user", {}).get("coins", coins - buy_n * 1000)
 
+                acc["chickenland_hens"] = hens
+                acc["chickenland_rate"] = rate
+                acc["chickenland_coins"] = coins
                 status["bots"]["chickenland"] = f"farmed (hens: {hens}, rate: {rate}/h, coins: {coins})"
             else:
                 status["bots"]["chickenland"] = f"auth_failed ({st_code})"
@@ -6845,6 +6861,15 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
 
         results = await asyncio.gather(*farm_tasks, return_exceptions=True)
         valid_res = [r for r in results if isinstance(r, dict)]
+
+        # Synchronize updated live account state to Upstash Redis
+        if UPSTASH_URL and UPSTASH_TOKEN and accounts:
+            try:
+                live_payload = json.dumps({"accounts": accounts, "timestamp": time.time(), "updated_by": "render_cloud_cycle"})
+                async with session.post(f"{UPSTASH_URL}/set/fleet:live_state", data=live_payload, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)):
+                    pass
+            except Exception:
+                pass
 
         return {
             "ok": True,
