@@ -174,6 +174,22 @@ async def redeem_single_account(
     b64 = account["b64_token"]
     uid = account["user_id"]
     name = account["name"]
+
+    # Pre-check: skip immediately if this account already claimed this code
+    if uid:
+        try:
+            if redis_command("SISMEMBER", f"chickenland:claimed:{uid}", code) == 1:
+                return {
+                    "uid": uid,
+                    "name": name,
+                    "ok": False,
+                    "coins": 0,
+                    "code_status": "ALREADY_CLAIMED_CACHED",
+                    "latency_ms": 0,
+                    "hen_bought": False
+                }
+        except Exception:
+            pass
     
     headers = {
         "Authorization": f"TMA {b64}",
@@ -281,6 +297,13 @@ async def snipe_promo_fleet(
             s_uid = r.get("uid")
             if s_uid:
                 redis_command("SADD", f"chickenland:claimed:{s_uid}", code)
+
+    # Also record accounts that returned 'already claimed' so they skip on future cycles
+    for r in results:
+        s_uid = r.get("uid")
+        stat_desc = str(r.get("code_status", "")).lower()
+        if s_uid and ("already" in stat_desc or "claimed" in stat_desc):
+            redis_command("SADD", f"chickenland:claimed:{s_uid}", code)
         
         # Per user directive: Completely silent operation - do not send promo code broadcast alerts to Telegram
         if False and send_alert:
