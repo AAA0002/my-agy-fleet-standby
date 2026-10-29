@@ -2552,11 +2552,332 @@ let memSessionHealth = {
   lastCheck: 0
 };
 
+let globalEnv = null;
+let globalCtx = null;
+
+const SIBLING_URLS = __SIBLING_URLS_JSON__;
+const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
+const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
+const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
+
+const DEFAULT_FLEET_ACCOUNTS = [
+  { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
+  { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617" },
+  { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+  { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+  { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
+  { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
+  { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+  { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+  { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
+  { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
+  { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
+  { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+  { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+  { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
+  { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
+  { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
+  { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
+  { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
+  { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
+  { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
+  { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" }
+];
+
+const KNOWN_PHONES = {
+  "6727787768": "+8801317342850",
+  "8881914294": "+8801943805617",
+  "7648254021": "+8801790208077",
+  "8826375659": "+8801575842094",
+  "8450010161": "+14302084365",
+  "8782429452": "+8801867539837",
+  "7734849205": "+8801718056423",
+  "8025472383": "+8801797795624",
+  "8851426148": "+8801727651288",
+  "8203342513": "+8801729892810",
+  "8190649727": "+8801571089931",
+  "7487048946": "+8801774578536",
+  "8741547543": "+8801838268380",
+  "8727040932": "+918930504750",
+  "7749125802": "+8801906045479",
+  "7954290138": "+8801304151082",
+  "8841038141": "+8801879273559",
+  "8975442879": "+8801839716506",
+  "8937908003": "+8801804723069",
+  "8609131528": "+8801312863569",
+  "8669217201": "+8801913962342"
+};
+
+const KNOWN_PHONES_BY_INDEX = {
+  1: "+8801317342850",
+  2: "+8801943805617",
+  3: "+8801790208077",
+  4: "+8801575842094",
+  5: "+14302084365",
+  6: "+8801867539837",
+  7: "+8801718056423",
+  8: "+8801797795624",
+  9: "+8801727651288",
+  10: "+8801729892810",
+  11: "+8801571089931",
+  12: "+8801774578536",
+  13: "+8801838268380",
+  14: "+918930504750",
+  15: "+8801906045479",
+  16: "+8801304151082",
+  17: "+8801879273559",
+  18: "+8801839716506",
+  19: "+8801804723069",
+  20: "+8801312863569",
+  21: "+8801913962342"
+};
+
+const cleanName = (acc, idx) => {
+  let n = (acc.name || "").trim();
+  if (n.includes("Никитин")) return "Nathan Miller 5";
+  if (n.includes("Морозов")) return "Kaitlyn Ross 6";
+  if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman 9";
+  if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10")) return "Tanvir Ahmed 10";
+  if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
+  if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
+  if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
+  if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
+  if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
+  return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
+};
+
+const resolveAccountPhone = (targetIdx, targetUid, accList) => {
+  if (accList && Array.isArray(accList)) {
+    const found = accList.find(a => (targetIdx && Number(a.index) === Number(targetIdx)) || (targetUid && String(a.user_id) === String(targetUid)));
+    if (found && found.phone && found.phone !== "N/A" && found.phone !== "Hidden") return found.phone;
+  }
+  if (targetIdx && KNOWN_PHONES_BY_INDEX[targetIdx]) return KNOWN_PHONES_BY_INDEX[targetIdx];
+  if (targetUid && KNOWN_PHONES[String(targetUid)]) return KNOWN_PHONES[String(targetUid)];
+  return "";
+};
+
+const getFleetAccounts = async (forceFresh = false, customEnv = null) => {
+  const e = customEnv || globalEnv;
+  let accounts = null;
+
+  if (!forceFresh && memFleetAccounts && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0 && (Date.now() - memFleetAccountsTs < 15000)) {
+    return memFleetAccounts.map(a => Object.assign({}, a));
+  }
+
+  try {
+    const upAccs = await upstashGet("fleet:accounts", 0);
+    if (upAccs) {
+      const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+      if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
+        accounts = parsedAccs.map(a => Object.assign({}, a));
+      }
+    }
+  } catch (_) {}
+
+  if (!accounts || accounts.length === 0) {
+    try {
+      const upstashRaw = await upstashGet("fleet:live_state", 0);
+      if (upstashRaw) {
+        const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
+        if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
+          accounts = parsed.accounts.map(a => Object.assign({}, a));
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!accounts || accounts.length === 0) {
+    try {
+      if (e && e.BACKUP_KV) {
+        const raw = await e.BACKUP_KV.get("fleet_live_state");
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
+            accounts = s.accounts.map(a => Object.assign({}, a));
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!accounts || accounts.length === 0) {
+    accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
+  }
+
+  let deletedSet = new Set();
+  let delArr = null;
+
+  if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
+    delArr = memDeletedAccounts;
+  }
+
+  if (!delArr) {
+    try {
+      const upDel = await upstashGet("fleet:deleted_accounts", 0);
+      if (upDel) {
+        const parsed = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
+        if (Array.isArray(parsed)) {
+          delArr = parsed;
+          memDeletedAccounts = delArr;
+          memDeletedAccountsTs = Date.now();
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!delArr && e && e.BACKUP_KV) {
+    try {
+      const rawDel = await e.BACKUP_KV.get("fleet_deleted_accounts");
+      if (rawDel) {
+        const parsedDel = JSON.parse(rawDel);
+        if (Array.isArray(parsedDel)) {
+          delArr = parsedDel;
+          memDeletedAccounts = delArr;
+          memDeletedAccountsTs = Date.now();
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (Array.isArray(delArr)) {
+    delArr.forEach(d => {
+      if (d) {
+        const s = String(d).trim();
+        deletedSet.add(s);
+        deletedSet.add(s.replace("+", ""));
+        deletedSet.add(s.replace(/\D/g, ""));
+      }
+    });
+  }
+
+  if (deletedSet.size > 0) {
+    accounts = accounts.filter(a => {
+      const uid = String(a.user_id || "").trim();
+      const ph = String(a.phone || "").trim();
+      const phClean = ph.replace(/\D/g, "");
+      if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace(/\D/g, "")))) return false;
+      if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
+      return true;
+    });
+  }
+
+  const uniqueAccounts = [];
+  const seenUids = new Set();
+  const seenPhones = new Set();
+  for (const a of accounts) {
+    const uid = String(a.user_id || "").trim();
+    const ph = String(a.phone || "").replace(/\D/g, "");
+    if (uid && seenUids.has(uid)) continue;
+    if (ph && seenPhones.has(ph)) continue;
+    if (uid) seenUids.add(uid);
+    if (ph) seenPhones.add(ph);
+    uniqueAccounts.push(a);
+  }
+
+  uniqueAccounts.forEach((a, idx) => {
+    a.index = idx + 1;
+  });
+
+  memFleetAccounts = uniqueAccounts;
+  memFleetAccountsTs = Date.now();
+
+  return uniqueAccounts;
+};
+
+const supabaseSyncMiner = async (uid, prof) => {
+  try {
+    const payload = {
+      id: String(uid),
+      username: prof.username || "",
+      first_name: prof.first_name || "",
+      points: Number(prof.points || 0),
+      slots: Number(prof.slots || 1),
+      temp_slots: Number(prof.temp_slots || 0),
+      farming_active: Boolean(prof.farming_active !== false),
+      daily_streak: Number(prof.daily_streak || 0),
+      ad_count: Number(prof.ads_watched || prof.ad_count || 0),
+      accounts: prof.accounts || [],
+      profile_data: prof,
+      updated_at: new Date().toISOString()
+    };
+    await fetch(`${SUPABASE_URL}/rest/v1/community_miners`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (_) {}
+};
+
+const getUserProfile = async (uid, fromObj = null, ctx = null) => {
+  const c = ctx || globalCtx;
+  const key = `ub_user:${uid}`;
+  let prof = null;
+  try {
+    const raw = await upstashGet(key);
+    if (raw) prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch (_) {}
+
+  if (!prof) {
+    prof = {
+      user_id: uid,
+      first_name: fromObj?.first_name || "Miner",
+      username: fromObj?.username || "",
+      points: 100,
+      slots: 1,
+      temp_slots: 0,
+      ads_watched: 0,
+      last_ad_claim: 0,
+      referral_count: 0,
+      referred_by: null,
+      accounts: [],
+      joined_channels: false,
+      farming_active: true,
+      subscription_tier: null,
+      subscription_expiry: 0,
+      last_deduction_date: new Date().toISOString().slice(0, 10),
+      created_at: Date.now()
+    };
+    await upstashSet(key, prof);
+  } else if (fromObj) {
+    let updated = false;
+    if (fromObj.first_name && prof.first_name !== fromObj.first_name) {
+      prof.first_name = fromObj.first_name;
+      updated = true;
+    }
+    if (fromObj.username !== undefined && prof.username !== (fromObj.username || "")) {
+      prof.username = fromObj.username || "";
+      updated = true;
+    }
+    if (updated) {
+      if (c && c.waitUntil) {
+        c.waitUntil(upstashSet(key, prof));
+      } else {
+        await upstashSet(key, prof);
+      }
+    }
+  }
+  return prof;
+};
+
+const saveUserProfile = async (uid, prof, ctx = null) => {
+  const c = ctx || globalCtx;
+  await upstashSet(`ub_user:${uid}`, prof);
+  if (c && c.waitUntil) {
+    c.waitUntil(supabaseSyncMiner(uid, prof).catch(() => {}));
+  } else {
+    await supabaseSyncMiner(uid, prof).catch(() => {});
+  }
+};
+
 export default {
   async fetch(request, env, ctx) {
-    const SIBLING_URLS = __SIBLING_URLS_JSON__;
-    const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
-    const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
+    globalEnv = env;
+    globalCtx = ctx;
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -6710,6 +7031,7 @@ fi
               await editOrSendResilientMessage(chatId, cbMsgId, rep, mainInlineKeyboard);
             } else if (cbData === "btn_wallets") {
               const dhakaTime = getDhakaTimestamp();
+              const accounts = await getFleetAccounts();
               const rep = `💼 *Multi-Chain Verified Destination Wallets*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `👑 *Binance Main Vault (Account #1 - Arif Hossain):*\n` +
@@ -6774,7 +7096,11 @@ fi
               await editOrSendResilientMessage(chatId, cbMsgId, rep, meshMarkup);
             } else if (cbData === "btn_render_switch_2" || cbData === "btn_render_switch_3") {
               const targetNode = cbData.endsWith("2") ? 2 : 3;
-              await answerCallbackQuery(cb.id, `Handover Initiated: Stopping current node first!`);
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ callback_query_id: cb.id, text: "Handover Initiated: Stopping current node first!" })
+              }).catch(() => {});
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, `⏳ *Initiating Render Node Handover to Node #${targetNode}...*\n\n1. Suspending active node first to freeze free tier hours.\n2. Cooling down Telegram DC sockets.\n3. Resuming Node #${targetNode}.\n\nPlease wait ~15s...`);
               const res = await switchRenderNode(targetNode, env);
@@ -6787,6 +7113,7 @@ fi
               const health = await getSessionHealthState();
               const dhakaTime = getDhakaTimestamp();
               const rep = buildAccountsListText(accounts, health, dhakaTime);
+              const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, accountsInlineKeyboard);
             } else if (cbData === "btn_session_audit" || cbData === "btn_audit_refresh") {
               const dhakaTime = getDhakaTimestamp();
@@ -7435,7 +7762,7 @@ fi
                   if (res && res.ok) {
                     const data = await res.json();
                     const rep = data.report || {};
-                    const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || health.total} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
+                    const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 21} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
                     await editOrSendResilientMessage(chatId, cbMsgId, msg, statusInlineKeyboard);
                     return;
                   }
@@ -7719,6 +8046,7 @@ fi
                 await resPromise;
               })());
             } else if (cbData === "btn_atf_wallets") {
+              const accounts = await getFleetAccounts();
               const rep = `💎 *ATF Miner Dedicated TON Wallets*\n\n` +
                 `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
                 `• *Accounts #2–${accounts.length} (Workers):* ${accounts.length - 1} Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
@@ -9167,7 +9495,7 @@ fi
           ctx.waitUntil((async () => {
             if (msg && msg.message_id) {
               try {
-                await fetch(`https://api.telegram.org/bot${alertBotToken}/deleteMessage`, {
+                await fetch(`https://api.telegram.org/bot${botToken}/deleteMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ chat_id: chatId, message_id: msg.message_id })
@@ -9284,7 +9612,7 @@ fi
             // Secret Hygiene: Auto-delete password message immediately from chat!
             if (msg && msg.message_id) {
               try {
-                await fetch(`https://api.telegram.org/bot${alertBotToken}/deleteMessage`, {
+                await fetch(`https://api.telegram.org/bot${botToken}/deleteMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ chat_id: chatId, message_id: msg.message_id })
@@ -10923,6 +11251,7 @@ fi
                 const dCost = (prof.subscription_expiry && prof.subscription_expiry > Date.now()) ? 0 : (accs.length * 100);
                 const runwayDays = (prof.subscription_expiry && prof.subscription_expiry > Date.now()) ? "∞ Unlimited (VIP Pass)" : (dCost > 0 ? `${Math.floor((prof.points || 0) / dCost)} Days` : "0 Accounts");
                 const farmStatus = (prof.subscription_expiry && prof.subscription_expiry > Date.now()) ? "🟢 Active 24/7 (Covered by VIP Pass)" : (prof.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)");
+                const accList = accs.length > 0 ? accs.map((a, i) => `  ${i + 1}. \`${a.phone || a.phone_number || a.user_id || "Account"}\` (${a.status || "Active"})`).join("\n") : "  _No connected accounts_";
 
                 const userCard = `👤 *USER AUDIT & MODERATION REPORT*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -13568,7 +13897,7 @@ Reply to Arif naturally:`;
               inline_keyboard: [
                 [{ text: "🔑 Show Private Keys & Mnemonic", callback_data: "ub_show_keys" }],
                 [{ text: customWallet ? "🔌 Change Personal Wallet" : "🔌 Disconnect & Add Custom Wallet", callback_data: "ub_custom_wallet" }],
-                [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: WEBAPP_URL } }]
+                [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/miner?v=6.0" } }]
               ]
             };
             ctx.waitUntil(sendCqReply(walletMsg, walletKb));
@@ -14196,7 +14525,7 @@ Reply to Arif naturally:`;
               `Tap *📱 1-Tap QR Login* below to link your device directly in Telegram!\n\n` +
               `2️⃣ *📱 Phone Cloud Login (Full Automated Session)*:\n` +
               `Tap *📱 Login via Phone Number* or send your phone number (e.g. \`+8801...\`) to connect via cloud MTProto session.\n\n` +
-              `💎 *Dedicated Wallets:* Automatically provisions an isolated 5-chain non-custodial wallet suite with full private key ownership.`;
+              `💎 *Dedicated Wallets:* Automatically provisions an isolated 5-chain non-custodial wallet suite with full private key ownership.\n\n` +
               `Reply with any numeric Telegram ID (numbers only) to link directly.\n\n` +
               `🔒 *100% Cloud Execution:* 0% battery drain, 24/7 automatic claiming!`;
             ctx.waitUntil(sendCqReply(promptMsg, connectKeyboard));
@@ -15449,7 +15778,7 @@ Reply to Arif naturally:`;
 
             for (const tu of targetUids) {
               try {
-                const resp = await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                const resp = await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -15566,7 +15895,7 @@ Reply to Arif naturally:`;
               inline_keyboard: [
                 [{ text: "🔑 Show Private Keys & Mnemonic", callback_data: "ub_show_keys" }],
                 [{ text: customWallet ? "🔌 Change Personal Wallet" : "🔌 Disconnect & Add Custom Wallet", callback_data: "ub_custom_wallet" }],
-                [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: WEBAPP_URL } }]
+                [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/miner?v=6.0" } }]
               ]
             };
             await sendUserReply(walletMsg, walletKb);
@@ -15961,6 +16290,8 @@ Reply to Arif naturally:`;
   },
 
   async scheduled(event, env, ctx) {
+    globalEnv = env;
+    globalCtx = ctx;
     const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
     if (CURRENT_SUBDOMAIN !== "aaaai2" && CURRENT_SUBDOMAIN !== "agorameet") {
       // Passive standby failover node: immediately abort with 0 operations / 0 KV writes
