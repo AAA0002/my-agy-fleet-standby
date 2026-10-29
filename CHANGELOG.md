@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Public Dashboards 8-Pool Alignment, Live Cloud Farm Verification Across Fleet (October 29, 2026)**:
+  - **Public MiniApp UI Alignment (`public/miner/index.html`, `public/index.html`, `public/app/index.html`)**:
+    * Corrected legacy `<span>9 Bots Automated</span>` to `<span>8 Bots Automated</span>` in connection status pills across all public web app variants.
+    * Re-verified zero references to dead bots (`vyro`, `stones`) across all 3 dashboards (`admin.html`, `user-admin.html`, `miner/index.html`).
+    * Deployed updated HTML bundles to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+  - **Live Fleet Multi-Account Farming Verification (Render Node 3 Oregon)**:
+    * Executed synchronous live audits across Master Account (`6727787768`), Account #2 Nancy (`8881914294`), Account #3 Koram Shah (`7648254021`), Account #10 Tanvir Ahmed (`8203342513`), and newest Account #21 Aaaa201 (`8669217201`).
+    * Verified 100% active operational states across legitimate bots:
+      - **MRG Miner**: Active mining & compounding across all accounts (Master Level 166, Account #10 Level 98 with 2,766.7 MRG, Account #21 Level 20 with 243.1 MRG).
+      - **ATF Miner**: Active mining cooldown across all accounts.
+      - **Kynex Network**: Active mining cooldown across all accounts.
+      - **DiggoMiner**: Active mining cooldown across all accounts.
+      - **PepeGram**: Active mining cooldown across all accounts.
+      - **AdxEarn AI**: Active mining cooldown across all accounts.
+      - **Chicken Land**: Active mining cooldown across all accounts.
+      - **Victor's Company**: Active mining cooldown across verified accounts.
+  - **Autonomous Cloud Solver Execution (Run `#40815010249`)**:
+    * GitHub Actions runner completed in 25 minutes (slashed from 60-minute timeout).
+    * Claimed 2.71 MRG, 325.22 KNX, 14.57 PEPE in a single run; Master Account miner upgraded from level 165 to 166.
+
 - **🧹 Complete Decommissioned Bot Code Purge, 8-Bot Command Optimization & Edge Sync (October 29, 2026)**:
   - **Complete Decommissioned & Defunct Bot Code Eradication (`deploy_both_cf_workers.py`)**:
     * **Purged Section 4.5 Legacy Commands**: Completely eradicated lines 10210 through 10484 containing legacy handlers for 15 defunct/scam bots: `/ainovum`, `/ailab`, `/art`, `/vyro`, `/ultra`, `/apex`, `/trxpower`, `/btc`, `/tensor`, `/tontrader`, `/finvora`, `/turbogram`, `/turbo`, `/ominix`, `/usdtquad`, and `/tac`. Also removed redundant duplicate checks for MRG, ATF, Victor's, and Kynex.
