@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 DigitalPlat FreeDomain Integration & Cloudflare Catch-All Email Routing Automation (October 29, 2026)**:
+  - **DigitalPlat FreeDomain API Integration (`agy.dpdns.org`)**:
+    * Integrated official DigitalPlat production API (`https://domain-api.digitalplat.org/api/v1`) using active production token `dp_live_...`.
+    * Inspected domain `agy.dpdns.org` (registered by MD. ARIF HOSSAIN on 2026-10-29, valid through 2027-10-29).
+    * Programmatically published Cloudflare Email Routing MX records (`50 route1.mx.cloudflare.net.`, `44 route2.mx.cloudflare.net.`, `95 route3.mx.cloudflare.net.`) and SPF TXT record directly into DigitalPlat authoritative DNS (`dns1.digitalplat.org`, `dns2.digitalplat.org`).
+    * Verified with `GET /dns/records` that all 6 records are live and actively broadcasting globally.
+  - **Cloudflare Edge Zone Provisioning & Token Management**:
+    * Programmatically created scoped API token `fleet-full-zone-email-routing` with Zone Read/Write, DNS Read/Write, and Email Routing Rules/Addresses Read/Write permissions.
+    * Added domain `agy.dpdns.org` to Cloudflare (Zone ID `f668c3573777bb05a95eba5dc01ada32`, Free Plan).
+    * Pre-configured all MX and SPF records in Cloudflare zone settings.
+    * Registered destination address `aaa.support.a@gmail.com` via Cloudflare Email Routing API.
+  - **Gmail IMAP Interception & Verification Workflow**:
+    * Authenticated via IMAP to `aaa.support.a@gmail.com` using app password and monitored incoming Cloudflare verification messages.
+    * Extracted verification token from email `[Action required] Verify your Email Routing address`.
+    * Pre-configured Catch-All rule ID `4a97aad77b1a409e945a62ff7d12b34f` targeting `aaa.support.a@gmail.com`.
+  - **Persistent Memory Synchronization**:
+    * Stored entities, relations, and credentials in persistent Walrus Memory for DigitalPlat FreeDomain, Cloudflare Email Routing, and Gmail IMAP.
+
 - **🎬 Cloudflare Pages Ads Portal Migration (`atf-miner-app.pages.dev`) & Edge Sync (October 29, 2026)**:
   - **Cloudflare Pages Ads Portal Domain Migration (`https://atf-miner-app.pages.dev/`)**:
     * Migrated all 31 references to the Rewarded Video Ads Portal in `deploy_both_cf_workers.py` from legacy Vercel domain to the dedicated Cloudflare Pages domain `https://atf-miner-app.pages.dev/`.

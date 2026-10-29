@@ -202,6 +202,17 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * D1 Database: `aaa-d1` (`e2db1db3-eaaf-49b3-86e5-95aee66772ef`)
     * R2 (S3) Bucket: `aaa-r2`
     * KV Namespace: `atf-miner-kv` (`c5eadf91...`)
+- **DigitalPlat FreeDomain & Cloudflare Email Routing Mesh (`agy.dpdns.org`)**:
+  - **DigitalPlat FreeDomain Domain Management**:
+    * Domain: `agy.dpdns.org` (Registrant: MD. ARIF HOSSAIN, Creation: 2026-10-29, Expiry: 2027-10-29).
+    * Official Production API: `https://domain-api.digitalplat.org/api/v1` authenticated via `DIGITALPLAT_API_KEY` (`dp_live_...`).
+    * Direct Authoritative DNS Record Injection: Published Cloudflare Email Routing MX records (`50 route1.mx.cloudflare.net.`, `44 route2.mx.cloudflare.net.`, `95 route3.mx.cloudflare.net.`) and SPF TXT record directly into DigitalPlat Cloud DNS (`dns1.digitalplat.org`, `dns2.digitalplat.org`).
+  - **Cloudflare Edge Email Routing Zone**:
+    * Zone ID: `f668c3573777bb05a95eba5dc01ada32` (`agy.dpdns.org`, Free Website Plan).
+    * Scoped API Token: `CF_ZONE_EMAIL_TOKEN` provisioned with Zone Read/Write, DNS Read/Write, and Email Routing Rules/Addresses Read/Write permissions.
+    * Destination Address: `aaa.support.a@gmail.com` registered and auto-intercepted via Gmail IMAP.
+    * Catch-All Forwarding Rule: ID `4a97aad77b1a409e945a62ff7d12b34f` routing all `*@agy.dpdns.org` traffic directly to `aaa.support.a@gmail.com` for unlimited Webshare proxy registrations.
+
   - **Active-Passive / Failover Edge Architecture (Zero Daily KV Write Quota Exhaustion)**:
     * **Node 1 (Primary: `aaaai2.workers.dev`)**: The ONLY node provisioned with the 15-minute Edge Cron trigger (`*/15 * * * *`). Handles primary cron farming cycles, D1 logs, and periodic state updates.
     * **Nodes 2, 3, 4, 5 (Passive Standby / Failover)**: Crons disabled (`[]` empty list). Early exit in `scheduled()` (`if (CURRENT_SUBDOMAIN !== "aaaai2") return;`). Generates 0 scheduled operations and 0 KV writes. If Node 1 is ever offline, any standby can be promoted to primary instantly.
