@@ -3,6 +3,11 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🌐 DigitalPlat FreeDomain Integration & Cloudflare Catch-All Email Routing Automation (October 29, 2026)**:
+  - **Remote VM Transfer & Standalone Antigravity Agent Deployment**:
+    * Provisioned full standalone Antigravity (`agy` v1.4.10) environment on remote Instabox VM (`ssh -p 2222 ibssh_rltxv5fpjnjj66b3uzdknyesqy@ssh.instabox.sh`).
+    * Linked `/usr/local/bin/agy` globally and synchronized authenticated OAuth credentials.
+    * Created dedicated, isolated workspace `/data/workspace/domain_email_proxy_hub` with verified scripts (`digitalplat_dns_manager.py`, `cloudflare_email_router.py`, `webshare_proxy_harvester.py`).
+    * Enforced strict zero-interference boundary: isolated from all main fleet farming routines, MTProto account sessions, and private wallet mnemonics.
   - **DigitalPlat FreeDomain API Integration (`agy.dpdns.org`)**:
     * Integrated official DigitalPlat production API (`https://domain-api.digitalplat.org/api/v1`) using active production token `dp_live_...`.
     * Inspected domain `agy.dpdns.org` (registered by MD. ARIF HOSSAIN on 2026-10-29, valid through 2027-10-29).
