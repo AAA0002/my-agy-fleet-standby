@@ -127,22 +127,8 @@ def load_fleet_tokens() -> Dict[str, Dict[str, Any]]:
         except Exception:
             pass
 
-    if os.path.exists(tokens_path):
-        try:
-            with open(tokens_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                for uid, toks in data.items():
-                    tok = toks.get("chickenland_init_data")
-                    if tok:
-                        fleet[str(uid)] = {
-                            "user_id": str(uid),
-                            "name": names.get(str(uid), f"User {uid}"),
-                            "b64_token": get_b64_token(tok)
-                        }
-        except Exception:
-            pass
-
-    if not fleet and UPSTASH_URL and UPSTASH_TOKEN:
+    # Always prioritize Upstash Redis for ground-truth 21-account fleet tokens
+    if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(f"{UPSTASH_URL}/get/miniapp_tokens", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
             with urllib.request.urlopen(req, timeout=5) as resp:
@@ -158,6 +144,22 @@ def load_fleet_tokens() -> Dict[str, Dict[str, Any]]:
                                 "name": names.get(str(uid), f"User {uid}"),
                                 "b64_token": get_b64_token(tok)
                             }
+        except Exception:
+            pass
+
+    # Local fallback if Upstash unavailable
+    if not fleet and os.path.exists(tokens_path):
+        try:
+            with open(tokens_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for uid, toks in data.items():
+                    tok = toks.get("chickenland_init_data")
+                    if tok and str(uid) not in fleet:
+                        fleet[str(uid)] = {
+                            "user_id": str(uid),
+                            "name": names.get(str(uid), f"User {uid}"),
+                            "b64_token": get_b64_token(tok)
+                        }
         except Exception:
             pass
             
