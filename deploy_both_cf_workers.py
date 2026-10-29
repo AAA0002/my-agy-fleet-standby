@@ -10225,7 +10225,7 @@ fi
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
               `• *Action Taken:* All fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
               `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
-              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, and Kynex Network.\n` +
+              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land (8 Verified Protocols).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -10428,7 +10428,7 @@ fi
               `• *Platform:* TurboGram V1 (@TurboGramV1_bot)\n` +
               `• *Status:* 🚫 Permanently removed and blacklisted from fleet per user directive\n` +
               `• *Action Taken:* Purged from cloud farm routines, unsubscribed channels, and sessions isolated.\n` +
-              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, and Kynex Network.\n` +
+              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land (8 Verified Protocols).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());

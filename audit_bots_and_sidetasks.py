@@ -348,15 +348,24 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
 
                 # Me
                 async with session.get("https://server.victors.company/api/me", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    b_rep["core"]["login"] = f"HTTP {r.status} (humanPass: {bool(vic_pass)})"
+                    cld = {}
+                    try:
+                        cld = await r.json()
+                    except Exception:
+                        pass
                     if r.status == 200:
-                        me = await r.json()
+                        me = cld
                         st = me.get("state", {}) if isinstance(me, dict) else {}
                         u = st.get("user", {}) if st else (me.get("user") or me)
                         m = st.get("mining", {}) if st else {}
                         lvl = m.get("level") or u.get("peakLevel") or u.get("manualUnlockedLevel") or 1
                         bal = float(u.get("inAppBalance") or 0.0)
+                        b_rep["core"]["login"] = "Authenticated ✅"
                         b_rep["core"]["balance"] = f"Level {lvl}, Bal: {bal:.2f} VIC"
+                    elif r.status in (401, 403) or cld.get("code") == "HUMAN_REQUIRED" or "human" in json.dumps(cld).lower():
+                        b_rep["core"]["login"] = "Turnstile Required (Headless Cloud Solver Active) 🛡️"
+                    else:
+                        b_rep["core"]["login"] = f"HTTP {r.status} - {cld.get('error', 'error')}"
 
                 # Checkin
                 async with session.post("https://server.victors.company/api/checkin", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
@@ -364,7 +373,17 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
 
                 # Mining claim
                 async with session.post("https://server.victors.company/api/mining/claim", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    b_rep["core"]["claim"] = f"HTTP {r.status}"
+                    cld = {}
+                    try:
+                        cld = await r.json()
+                    except Exception:
+                        pass
+                    if r.status == 200:
+                        b_rep["core"]["claim"] = "Yield Claimed ✅"
+                    elif r.status in (401, 403) or cld.get("code") == "HUMAN_REQUIRED" or "human" in json.dumps(cld).lower():
+                        b_rep["core"]["claim"] = "Accumulating (Headless Cloud Turnstile Active) 🛡️"
+                    else:
+                        b_rep["core"]["claim"] = f"HTTP {r.status}"
 
             except Exception as e:
                 b_rep["error"] = str(e)
