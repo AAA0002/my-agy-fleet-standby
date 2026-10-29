@@ -41,7 +41,7 @@ The architecture is divided into two 100% strictly isolated ecosystems (Rule 1 &
 |---|---|---|---|---|---|
 | **Dashboard 1** | **User Mining Mini App**<br>Autonomous cloud mining interface, points, slots, 9 pools, non-custodial wallets. | [`public_ads/miner/index.html`](./public_ads/miner/index.html)<br>*(Mirrors: `public/index.html`, `public/app/index.html`)* | `https://restore-agy.agorameet.workers.dev/miner`<br>`https://agy-henna.vercel.app/miner` | Opened via `/start`, `/miner`, or chat buttons (NOT persistent menu) | Public End-Users |
 | **Dashboard 2** | **User Bot Admin Console**<br>Management console for Commander Arif to manage community miners, points & ad metrics. | [`public_admin/user-admin.html`](./public_admin/user-admin.html)<br>*(Mirror: `public/user-admin.html`)* | `https://restore-agy.agorameet.workers.dev/user-admin`<br>`https://agy-aaa000.vercel.app/user-admin` | Admin PIN Gate (PIN: `2743` or `ADMIN_PIN`) | System Administrator (Commander Arif) |
-| **Dashboard 3** | **Dedicated Ads Portal**<br>Rewarded video ad player with multi-network waterfall (HilltopAds, Clickadu, GigaPub). | [`public_ads/index.html`](./public_ads/index.html)<br>*(Mirrors: `public/ad/index.html`, `public/app/ad/index.html`)* | `https://agy-henna.vercel.app/`<br>`https://restore-agy.agorameet.workers.dev/ads` | **`🎬 Watch Ads`**<br>*(Bound as primary User Bot Chat Menu Button)* | Public End-Users (Monetization) |
+| **Dashboard 3** | **Dedicated Ads Portal**<br>Rewarded video ad player with multi-network waterfall (HilltopAds, Clickadu, GigaPub). | [`public_ads/index.html`](./public_ads/index.html)<br>*(Mirrors: `public/ad/index.html`, `public/app/ad/index.html`)* | `https://atf-miner-app.pages.dev/`<br>`https://restore-agy.agorameet.workers.dev/ads` | **`🎬 Watch Ads`**<br>*(Bound as primary User Bot Chat Menu Button)* | Public End-Users (Monetization) |
 | **Dashboard 4** | **Executive Fleet Dashboard**<br>Full fleet control: 20 MTProto accounts, 9 farming bots, multi-cloud node health. | [`public_admin/admin.html`](./public_admin/admin.html)<br>*(Mirror: `public/admin.html`)* | `https://agy-aaa000.vercel.app/admin`<br>`https://restore-agy.agorameet.workers.dev/admin` | **`👑 Fleet Dashboard`**<br>*(Bound as primary Admin Bot Chat Menu Button)* | Executive Fleet Operators |
 
 ---
@@ -134,7 +134,7 @@ To ensure complete production integrity, the following patterns are **STRICTLY P
    - ✅ **Required**: Display authentic connected account counts and verified pool protocol statuses.
 3. **NO Menu Button Hijacking**:
    - ❌ **Prohibited**: Overwriting the User Bot's `🎬 Watch Ads` menu button to point to `/miner` on `/start`.
-   - ✅ **Required**: The User Bot chat menu button MUST remain permanently set to `🎬 Watch Ads` (`https://agy-henna.vercel.app/`).
+   - ✅ **Required**: The User Bot chat menu button MUST remain permanently set to `🎬 Watch Ads` (`https://atf-miner-app.pages.dev/`).
 4. **NO Ecosystem Cross-Contamination**:
    - ❌ **Prohibited**: Displaying fleet MTProto sessions, private keys, or admin commands inside User Bot dashboards.
    - ✅ **Required**: Keep `fleet:*` and `ub_*` completely separated in both code and storage.
@@ -156,7 +156,7 @@ r = requests.get(f'https://api.telegram.org/bot{u_tok}/getChatMenuButton')
 data = r.json()
 print('ChatMenuButton:', data)
 assert data.get('result', {}).get('text') == '🎬 Watch Ads'
-assert 'agy-henna.vercel.app' in data.get('result', {}).get('web_app', {}).get('url', '')
+assert 'atf-miner-app.pages.dev' in data.get('result', {}).get('web_app', {}).get('url', '')
 print('✅ Menu Button verified pointing to Ads Portal!')
 "
 ```

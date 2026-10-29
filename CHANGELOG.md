@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎬 Cloudflare Pages Ads Portal Migration (`atf-miner-app.pages.dev`) & Edge Sync (October 29, 2026)**:
+  - **Cloudflare Pages Ads Portal Domain Migration (`https://atf-miner-app.pages.dev/`)**:
+    * Migrated all 31 references to the Rewarded Video Ads Portal in `deploy_both_cf_workers.py` from legacy Vercel domain to the dedicated Cloudflare Pages domain `https://atf-miner-app.pages.dev/`.
+    * Updated both global and owner-scoped (`6727787768`) Telegram Chat Menu Buttons for User Bot (`@AAAPREMIUMAPPSbot`) to launch `🎬 Watch Ads` directly at `https://atf-miner-app.pages.dev/`.
+    * Upgraded `deploy_both_cf_workers.py` deployment routine to automatically synchronize both global and owner-specific Chat Menu Buttons on every edge deploy.
+  - **Frontend Mirror Synchronization**:
+    * Updated `Open Ads Portal ↗` in `public_admin/user-admin.html` and all 3 mirrors (`public_admin/user-admin/index.html`, `public_admin/users/index.html`, `public/user-admin.html`) to `https://atf-miner-app.pages.dev/`.
+    * Updated `🎬 Ads Portal` in `public_ads/miner/index.html` and all 3 mirrors (`public/index.html`, `public/app/index.html`, `public/miner/index.html`) to `https://atf-miner-app.pages.dev/`.
+    * Verified 100% byte-for-byte equality across all 4 Miner Dashboard mirrors and all 4 User Admin Console mirrors via automated `filecmp` assertions.
+  - **Cloudflare Edge Deployment & Verification**:
+    * Successfully deployed updated Edge Worker bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Verified via Telegram Bot API (`getChatMenuButton`) that `@AAAPREMIUMAPPSbot` Global and Owner Menu Buttons return `🎬 Watch Ads` -> `https://atf-miner-app.pages.dev/`.
+
 - **🌐 Full 4-Dashboard Roster Restoration, Ads Portal Decoupling & Cloudflare Edge Sync (October 29, 2026)**:
   - **Dedicated Ads Portal Decoupling & Restoration (`public_ads/index.html`)**:
     * Identified and resolved critical regression where `public_ads/index.html` had been overwritten by the miner app (161 KB), causing both `https://agy-henna.vercel.app/` (User Bot menu button) and Cloudflare `/ads` route to serve the mining dashboard instead of the ad watcher.

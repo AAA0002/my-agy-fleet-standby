@@ -399,7 +399,19 @@ Certain farming bots require a connected wallet before mining will unlock or pro
       * Executive Fleet Console: `public_admin/admin.html` == `public_admin/admin/index.html` == `public_admin/index.html` == `public/admin.html` == `dashboard.html`.
       * Dedicated Ads Portal: `public_ads/index.html` == `public/ad/index.html` == `public/app/ad/index.html` == `public_ads/ad/index.html` == `public_ads/app/ad/index.html`.
     - **Cloudflare Edge Node 4 Live Deployment**: Deployed updated bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`), restoring distinct `/ads` (Ads Player) and `/miner` (Mining App) routes. Added `chicken` to `admin_commands_payload`.
-    - **Verified Telegram Menu Buttons**: Confirmed `@AAAPREMIUMAPPSbot` Menu Button is `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`, and `@myagyai` is `👑 Fleet Dashboard` pointing to `https://restore-agy.agorameet.workers.dev/admin`.
+    - **Verified Telegram Menu Buttons**: Confirmed `@AAAPREMIUMAPPSbot` Menu Button is `🎬 Watch Ads` pointing to `https://atf-miner-app.pages.dev/`, and `@myagyai` is `👑 Fleet Dashboard` pointing to `https://restore-agy.agorameet.workers.dev/admin`.
+
+52. **Cloudflare Pages Ads Portal Migration (`atf-miner-app.pages.dev`) & Full Edge Synchronization (October 29, 2026)**:
+    - **Cloudflare Pages Domain Migration (`https://atf-miner-app.pages.dev/`)**:
+      * Migrated all 31 references to the Rewarded Video Ads Portal in `deploy_both_cf_workers.py` from legacy Vercel domain to the dedicated Cloudflare Pages domain `https://atf-miner-app.pages.dev/`.
+      * Updated both global and owner-scoped (`6727787768`) Telegram Chat Menu Buttons for User Bot (`@AAAPREMIUMAPPSbot`) to launch `🎬 Watch Ads` directly at `https://atf-miner-app.pages.dev/`.
+    - **Frontend Mirror Synchronization**:
+      * Updated `Open Ads Portal ↗` in `public_admin/user-admin.html` and all 3 mirrors (`public_admin/user-admin/index.html`, `public_admin/users/index.html`, `public/user-admin.html`) to `https://atf-miner-app.pages.dev/`.
+      * Updated `🎬 Ads Portal` in `public_ads/miner/index.html` and all 3 mirrors (`public/index.html`, `public/app/index.html`, `public/miner/index.html`) to `https://atf-miner-app.pages.dev/`.
+      * Verified 100% byte-for-byte equality across all 4 Miner Dashboard mirrors and all 4 User Admin Console mirrors.
+    - **Cloudflare Edge Deployment & Verification**:
+      * Successfully deployed updated Edge Worker to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+      * Verified via Telegram Bot API (`getChatMenuButton`) that `@AAAPREMIUMAPPSbot` Global and Owner Menu Buttons return `🎬 Watch Ads` -> `https://atf-miner-app.pages.dev/`.
 
 ---
 

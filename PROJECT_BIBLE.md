@@ -363,7 +363,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 | **Serverless Edge Web** | **Vercel Cloud** | `https://agy-aaa000.vercel.app` | 🟢 **HTTP 200 OK** — Edge deployment (`team_C2l6j4UJ0x8Cwu7xvYtxBn02`) |
 | **Serverless Edge Web** | **Deno Deploy (Node 1)** | `https://my-agy-fleet-deno.aaa222.deno.net` | 🟢 **HTTP 200 OK** — TypeScript Edge serverless runner |
 | **Serverless Edge Web** | **Deno Deploy (Node 2)** | `https://my-agy-fleet-deno2.aaasupporta.deno.net` | 🟢 **HTTP 200 OK** — Secondary TypeScript Edge runner |
-| **Cloudflare Pages** | **ATF WebApp** | `https://atf-miner-app.pages.dev` | 🟢 **HTTP 200 OK** — Global static and edge WebApp frontend |
+| **Cloudflare Pages** | **Dedicated Ads Portal** | `https://atf-miner-app.pages.dev` | 🟢 **HTTP 200 OK** — Dedicated Rewarded Ads Portal (User Bot Menu Button & Waterfall Ad Mediation) |
 | **Decentralized Storage** | **Pinata IPFS** | `api.pinata.cloud` | 🟢 **AUTHENTICATED** — Latest CID: `QmUSX7XHwMcq3muCnZBaDzvk3D9ohXnJpe9iiQikbms8mn` |
 | **Serverless Database** | **Upstash Redis** | `rich-emu-106119.upstash.io` | 🟢 **HTTP 200 OK** — Brand new active database (10k fresh commands/day) |
 | **Serverless Database** | **Turso LibSQL** | `my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io` | 🟢 **HTTP 200 OK** — Distributed SQLite edge database |
