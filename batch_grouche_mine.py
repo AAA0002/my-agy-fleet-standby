@@ -11,8 +11,8 @@ Bot: @GRC_AirdrooBot | MiniApp: https://grouchemine.world/
 4. Links dedicated account TON wallet (/api/users/wallet/connect).
 5. Claims daily reward (/api/users/daily-claim).
 6. Executes all social tasks (/api/tasks/open -> wait -> /api/tasks/complete).
-7. Auto-compounds LNX balance into mining rigs (/api/users/buy-package).
-8. Claims accumulated mining yield (/api/mining/claim).
+7. Claims accumulated mining yield (/api/mining/claim).
+8. Strict Zero-Spend Policy: Accumulate 100% of raw GRC/LNX balance (Never buy packages).
 =============================================================================
 """
 
@@ -204,18 +204,10 @@ async def process_account(account: dict, index: int, total: int):
             if claim_res.get("success"):
                 logger.info(f"  ⛏️ Claimed Mined Yield: +{sess_mined} LNX")
 
-        # 8. Auto-compound / Buy highest available miner package
-        # Available: pkg-3 (800 LNX), pkg-2 (300 LNX), pkg-1 (100 LNX)
-        packages_to_check = [("pkg-3", 800), ("pkg-2", 300), ("pkg-1", 100)]
-        for pkg_id, cost in packages_to_check:
-            if curr_bal >= cost:
-                buy_res = api_call("/users/buy-package", method="POST", data={"packageId": pkg_id}, init_data=init_data)
-                if buy_res.get("success"):
-                    logger.info(f"  🚀 Auto-Purchased Miner {pkg_id} for {cost} LNX!")
-                    curr_bal -= cost
-                    # Toggle mining
-                    api_call("/mining/toggle", method="POST", data={}, init_data=init_data)
-                    break
+        # 8. Strict Zero-Spend Policy: NEVER buy packages; accumulate 100% of GRC/LNX balance
+        # If account has existing packages but mining is paused, ensure toggle is ON to harvest yield
+        if m_data.get("packageCount", 0) > 0 and not m_data.get("isMining", False):
+            api_call("/mining/toggle", method="POST", data={}, init_data=init_data)
 
         # 9. Final status check
         final_status = api_call("/mining/status", method="GET", init_data=init_data)
