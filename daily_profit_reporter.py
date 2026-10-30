@@ -167,7 +167,8 @@ async def get_fleet_mining_totals() -> dict:
         "pepe": 0.0,
         "adx": 0.0,
         "chicken_hens": 0,
-        "chicken_eggs": 0
+        "chicken_eggs": 0,
+        "grc": 0.0
     }
     rep_file = os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json")
     if os.path.exists(rep_file):
@@ -220,6 +221,15 @@ async def get_fleet_mining_totals() -> dict:
                             if isinstance(core, dict):
                                 totals["chicken_hens"] += int(core.get("hens", 0) or 0)
                                 totals["chicken_eggs"] += int(core.get("eggs", 0) or 0) + int(core.get("egg_bal", 0) or 0)
+
+                        # 9. Grouche Mine
+                        elif "Grouche" in b_name or "GRC" in b_name:
+                            if isinstance(core, dict) and "balance" in core:
+                                try: totals["grc"] += float(core["balance"])
+                                except Exception: pass
+                            else:
+                                m = re.search(r"([\d\.]+)\s*GRC", core_str)
+                                if m: totals["grc"] += float(m.group(1))
         except Exception:
             pass
 
@@ -381,7 +391,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Live On-Chain Balance:* `{wallet_bnb:.6f} BNB` (`~${wallet_usd:.2f} USD` / `~৳{wallet_bdt:.0f} BDT`)\n"
             f"• *Historical Distributions:* `{total_payouts_count} payouts` totaling `{total_payouts_bnb:.6f} BNB`\n"
             f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n\n"
-            f"💎 *2. Multi-Chain 8-Bot Autonomous Mining Treasury:*\n"
+            f"💎 *2. Multi-Chain 9-Bot Autonomous Mining Treasury:*\n"
             f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 180+, Cloud Turnstile Auto-Claim)\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
             f"• *Victor's Company:* {vic_str}\n"
@@ -390,6 +400,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"
             f"• *AdxEarn AI:* `{fleet_totals['adx']:,.0f} Points` earned (Daily Check-in Streaks & Tasks)\n"
             f"• *Chicken Land:* `{fleet_totals['chicken_hens']} Hens` active laying `{fleet_totals['chicken_eggs']:,} Eggs` (Autonomous Egg Harvest & Selling)\n"
+            f"• *Grouche Mine:* `{fleet_totals['grc']:,.2f} GRC` mined (Cloud Miner Yield, Adsgram Quests & Tasks)\n"
             f"• *On-Chain Target TON:* `{TON_PRIMARY_WALLET}`\n"
             f"• *Live On-Chain TON Balance:* `{wallet_ton:.4f} TON` (`~${wallet_ton_usd:.2f} USD` / `~৳{wallet_ton_bdt:.0f} BDT`)\n"
             f"• *TON Price (TonAPI):* `${ton_price:.2f} USD`\n\n"

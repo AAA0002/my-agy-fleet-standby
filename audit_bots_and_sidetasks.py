@@ -73,24 +73,25 @@ def load_tokens_db():
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
                 keys = data.get("result", [])
-                pipeline_cmds = [["GET", k] for k in keys]
-                p_req = urllib.request.Request(
-                    f"{UPSTASH_URL}/pipeline",
-                    data=json.dumps(pipeline_cmds).encode(),
-                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
-                )
-                with urllib.request.urlopen(p_req, timeout=8) as presp:
-                    pipeline_res = json.loads(presp.read().decode())
-                    for k, item in zip(keys, pipeline_res):
-                        parts = k.split(":")
-                        if len(parts) == 3 and parts[-1].isdigit():
-                            uid = parts[-1]
-                            raw = item.get("result")
-                            if raw:
-                                parsed = json.loads(raw) if isinstance(raw, str) else raw
-                                if isinstance(parsed, dict):
-                                    if uid not in tokens or len(parsed) > len(tokens.get(uid, {})):
-                                        tokens[uid] = parsed
+                if keys:
+                    pipeline_cmds = [["GET", k] for k in keys]
+                    p_req = urllib.request.Request(
+                        f"{UPSTASH_URL}/pipeline",
+                        data=json.dumps(pipeline_cmds).encode(),
+                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
+                    )
+                    with urllib.request.urlopen(p_req, timeout=8) as presp:
+                        pipeline_res = json.loads(presp.read().decode())
+                        for k, item in zip(keys, pipeline_res):
+                            parts = k.split(":")
+                            if len(parts) == 3 and parts[-1].isdigit():
+                                uid = parts[-1]
+                                raw = item.get("result")
+                                if raw:
+                                    parsed = json.loads(raw) if isinstance(raw, str) else raw
+                                    if isinstance(parsed, dict):
+                                        if uid not in tokens or len(parsed) > len(tokens.get(uid, {})):
+                                            tokens[uid] = parsed
         except Exception as e:
             print(f"⚠️ Upstash fleet:tokens:* pipeline fetch note: {e}")
 
