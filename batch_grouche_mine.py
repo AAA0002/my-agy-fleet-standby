@@ -27,6 +27,7 @@ import logging
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest
+from telethon.tl.functions.channels import JoinChannelRequest
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -112,10 +113,36 @@ async def process_account(account: dict, index: int, total: int):
             await client.disconnect()
             return
 
+        account["grouchemine_init_data"] = init_data
+
+        # Sync to Upstash Redis if available
+        upstash_url = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL")
+        upstash_token = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN")
+        if upstash_url and upstash_token:
+            try:
+                # Merge into existing fleet:tokens:{uid}
+                get_req = urllib.request.Request(
+                    f"{upstash_url}/get/fleet:tokens:{uid}",
+                    headers={"Authorization": f"Bearer {upstash_token}"}
+                )
+                with urllib.request.urlopen(get_req, timeout=4) as u_resp:
+                    raw = json.loads(u_resp.read().decode("utf-8")).get("result")
+                    curr_toks = json.loads(raw) if raw and isinstance(raw, str) else (raw or {})
+                curr_toks["grouchemine_init_data"] = init_data
+                set_req = urllib.request.Request(
+                    f"{upstash_url}/set/fleet:tokens:{uid}",
+                    data=json.dumps(curr_toks).encode("utf-8"),
+                    headers={"Authorization": f"Bearer {upstash_token}"}
+                )
+                urllib.request.urlopen(set_req, timeout=4)
+            except Exception:
+                pass
+
         # 3. Authenticate
         login_res = api_call("/auth/login", method="POST", data={"initData": init_data}, init_data=init_data)
         user_info = login_res.get("data", {}).get("user", {})
-        lnx_bal = user_info.get("lnxBalance", 0)
+        lnx_bal = float(user_info.get("lnxBalance", 0) or 0)
+        curr_bal = lnx_bal
         logger.info(f"  ✅ Authenticated: {user_info.get('username') or name} | Balance: {lnx_bal} LNX")
 
         # 4. Connect TON Wallet
@@ -131,12 +158,21 @@ async def process_account(account: dict, index: int, total: int):
         # 5. Claim Daily Reward
         daily_res = api_call("/users/daily-claim", method="POST", data={}, init_data=init_data)
         if daily_res.get("success"):
-            reward = daily_res.get("data", {}).get("rewardLnx", 5)
+            reward = float(daily_res.get("data", {}).get("rewardLnx", 5) or 5)
+            curr_bal += reward
             logger.info(f"  🎁 Daily Reward Claimed: +{reward} LNX")
         else:
             logger.info(f"  ⏳ Daily claim: {daily_res.get('error', 'Already claimed')}")
 
         # 6. Complete available tasks
+        # Join sponsor channels for Telegram task verification
+        for ch in ["grouchemine", "GroucheCoinEn"]:
+            try:
+                ch_ent = await client.get_entity(ch)
+                await client(JoinChannelRequest(ch_ent))
+            except Exception:
+                pass
+
         tasks_res = api_call("/tasks", method="GET", init_data=init_data)
         tasks = tasks_res.get("data", [])
         if isinstance(tasks, list):
@@ -148,11 +184,13 @@ async def process_account(account: dict, index: int, total: int):
                 r_lnx = t.get("rewardLnx", 0)
                 # Open task
                 api_call(f"/tasks/{tid}/open", method="POST", data={}, init_data=init_data)
-                await asyncio.sleep(4)
+                # Wait 11s (server enforces 10s countdown HF=10)
+                await asyncio.sleep(11)
                 # Complete task
                 c_res = api_call(f"/tasks/{tid}/complete", method="POST", data={}, init_data=init_data)
                 if c_res.get("success"):
                     logger.info(f"  🎯 Completed Task: '{ttitle}' (+{r_lnx} LNX)")
+                    curr_bal += r_lnx
                 else:
                     logger.info(f"  ℹ️ Task '{ttitle}': {c_res.get('error')}")
 
@@ -160,7 +198,7 @@ async def process_account(account: dict, index: int, total: int):
         mining_res = api_call("/mining/status", method="GET", init_data=init_data)
         m_data = mining_res.get("data", {})
         sess_mined = m_data.get("sessionMinedLnx", 0)
-        curr_bal = m_data.get("lnxBalance", lnx_bal)
+        curr_bal = float(m_data.get("lnxBalance", curr_bal) or curr_bal)
         if sess_mined > 0:
             claim_res = api_call("/mining/claim", method="POST", data={}, init_data=init_data)
             if claim_res.get("success"):

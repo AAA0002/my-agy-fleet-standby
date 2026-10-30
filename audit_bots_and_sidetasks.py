@@ -724,6 +724,42 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["8. Chicken Land"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
+        # -------------------------------------------------------------
+        # 9. Grouche Mine (@GRC_AirdrooBot)
+        # -------------------------------------------------------------
+        grc_init = tokens.get("grouchemine_init_data")
+        b_rep = {"core": {}, "side_tasks": []}
+        if grc_init:
+            try:
+                g_h = {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": grc_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36"
+                }
+                async with session.get("https://grouchemine.world/api/mining/status", headers=g_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        g_data = await r.json()
+                        m_inf = g_data.get("data", {})
+                        is_m = m_inf.get("isMining", False)
+                        pkgs = m_inf.get("packageCount", 0)
+                        bal = float(m_inf.get("lnxBalance", 0) or 0)
+                        d_lnx = float(m_inf.get("dailyLnx", 0) or 0)
+                        b_rep["core"] = {
+                            "status": f"Mining Active: {bal:,.2f} GRC ({pkgs} Rigs • {d_lnx:.1f} GRC/d)" if is_m else f"Idle: {bal:,.2f} GRC",
+                            "balance": bal,
+                            "packages": pkgs
+                        }
+                        if is_m:
+                            b_rep["side_tasks"].append(f"Active Rigs: {pkgs}")
+                        b_rep["side_tasks"].append(f"Session Mined: {m_inf.get('sessionMinedLnx', 0):.4f} GRC")
+                    else:
+                        b_rep["core"]["status"] = f"HTTP {r.status} ⚠️"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["9. Grouche Mine"] = b_rep
+        else:
+            report["bots"]["9. Grouche Mine"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
     return report
 
 async def audit_single_account(acc, idx, total, tokens_db, sem):
@@ -782,7 +818,8 @@ async def main():
         "diggo": 0.0,
         "chicken_coins": 0,
         "chicken_eggs": 0,
-        "chicken_hens": 0
+        "chicken_hens": 0,
+        "grc": 0.0
     }
     for rep in fleet_reports.values():
         bots = rep.get("bots", {})
@@ -821,6 +858,10 @@ async def main():
         totals["chicken_coins"] += int(chk.get("coins", 0) or 0)
         totals["chicken_eggs"] += int(chk.get("egg_bal", 0) or 0) + int(chk.get("eggs", 0) or 0)
         totals["chicken_hens"] += int(chk.get("hens", 0) or 0)
+        # Grouche Mine
+        grc_b = bots.get("9. Grouche Mine", {}).get("core", {}).get("balance", 0)
+        try: totals["grc"] += float(grc_b)
+        except Exception: pass
 
     print("\n" + "="*80)
     print("💎 FLEET-WIDE 21-ACCOUNT ACCUMULATED ASSET TOTALS:")
@@ -832,6 +873,7 @@ async def main():
     print(f"  • 🤖 AdxEarn AI:      {totals['adx']:,} Points")
     print(f"  • ⛏️ DiggoMiner:      {totals['diggo']:,.2f} DIGGO")
     print(f"  • 🐔 Chicken Land:    {totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs • {totals['chicken_coins']:,} Coins")
+    print(f"  • 🍐 Grouche Mine:    {totals['grc']:,.2f} GRC")
     print("="*80)
     print(f"✅ Fleet-Wide Audit Complete! All {len(fleet_reports)} accounts saved to live_farming_and_sidetasks_report.json")
     print("="*80)
@@ -842,15 +884,16 @@ async def main():
     if bot_token and notif_channel:
         healthy_accounts = sum(1 for r in fleet_reports.values() if sum(1 for b, v in r.get("bots", {}).items() if not v.get("error")) >= 5)
         short_card = (
-            f"🔍 <b>Fleet-Wide 8-Bot Audit Complete</b>\n"
+            f"🔍 <b>Fleet-Wide 9-Bot Audit Complete</b>\n"
             f"• <b>Accounts Audited:</b> <code>{len(fleet_reports)}/{len(fleet_reports)} Checked</code>\n"
             f"• <b>Operational Nodes:</b> <code>{healthy_accounts}/{len(fleet_reports)} Healthy</code>\n"
-            f"• <b>Active Protocols:</b> <code>8/8 Legitimate Mining Pools</code>\n"
+            f"• <b>Active Protocols:</b> <code>9/9 Legitimate Mining Pools</code>\n"
             f"• <b>Accumulated Yields:</b>\n"
             f"  ⚡ <code>{totals['mrg']:,.1f} MRG</code> • 🪙 <code>{totals['atf']:,.1f} ATF</code>\n"
             f"  🌐 <code>{totals['knx']:,.0f} KNX</code> • 🐸 <code>{totals['pepe']:,.0f} PEPE</code>\n"
             f"  🤖 <code>{totals['adx']:,} ADX</code> • ⛏️ <code>{totals['diggo']:,.1f} DIGGO</code>\n"
             f"  🐔 <code>{totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs</code>\n"
+            f"  🍐 <code>{totals['grc']:,.1f} GRC</code>\n"
             f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
         )
         try:
