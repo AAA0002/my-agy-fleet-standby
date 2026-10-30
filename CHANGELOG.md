@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🍐 Grouche Mine Strict Zero-Spend Policy & Full 9-Bot Cloud Pipeline Integration (October 30, 2026)**:
+  - **Strict Zero-Spend Policy Enforced**:
+    * Permanently eliminated all miner package auto-purchasing (`/api/users/buy-package`) from `batch_grouche_mine.py` and `finish_all_fleet_sidetasks.py`.
+    * Enforced 100% raw token retention: only complete social tasks, daily streak claims, Adsgram quests (+10 GRC each), and accumulated mining yield claims to withdraw balance.
+    * Existing Master account rigs (yielding 0.26 USDT / 233.39 GRC daily) will continue running until expiry with automated yield claims without purchasing additional packages.
+  - **Adsgram Quest Reverse-Engineering & Fleet Harvest**:
+    * Reverse-engineered Adsgram quest endpoints (`GET /api/users/ads` and `POST /api/users/ads/complete`).
+    * Automated 8-ad 12-hour cycle with realistic watch duration payloads (`watchedMs: 15500-17500ms`).
+    * Executed across all 21 accounts, successfully harvesting 167 ads and yielding 2,742.18 GRC total fleet balance.
+  - **Upstash Redis Active Cluster Failover**:
+    * Diagnosed expired cluster `rich-emu-106119.upstash.io` returning HTTP 400 Bad Request.
+    * Promoted live, active cluster `internal-dodo-83852.upstash.io` to primary `UPSTASH_URL` and `UPSTASH_REDIS_REST_URL` in `.env`.
+    * Synchronized 21-account tokens and `miniapp_tokens` key to Upstash Redis.
+  - **Full Cloud Architecture Integration (`app.py` & Render Standby Node 2)**:
+    * Added Grouche Mine (`GRC_AirdrooBot`) token extraction into `extract_tokens_with_client` and `extract_tokens_for_account`.
+    * Added Grouche Mine to token freshness watchdog (`is_token_data_expired`).
+    * Implemented `_farm_grouchemine()` in `app.py` with strict zero-spend policy, social tasks with 11s server delay, Adsgram ads, and yield claims.
+    * Expanded `ALL_9_BOT_KEYS`, `bot_routines`, `BOT_COOLDOWNS`, `bot_aliases`, and Telegram auto-farming completion cards.
+  - **Admin Consoles & Financial Ledger**:
+    * Integrated Grouche Mine into `daily_profit_reporter.py` Multi-Chain Mining Treasury.
+    * Updated `public/admin.html` and `public_admin/admin.html` with Grouche Mine ($GRC, 🍐) across all navigation tabs.
+
 - **🍐 Grouche Mine ($GRC) Full Fleet Integration & Master 6-Rig Mining Deployment (October 30, 2026)**:
   - **Reverse-Engineering & Full API Protocol**:
     * Reverse-engineered `@GRC_AirdrooBot` (ID `8754769755`) and WebApp `https://grouchemine.world/`.

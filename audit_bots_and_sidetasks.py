@@ -728,7 +728,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         # -------------------------------------------------------------
         # 9. Grouche Mine (@GRC_AirdrooBot)
         # -------------------------------------------------------------
-        grc_init = tokens.get("grouchemine_init_data")
+        grc_init = tokens.get("grouchemine_init_data") or acc_info.get("grouchemine_init_data") or ""
         b_rep = {"core": {}, "side_tasks": []}
         if grc_init:
             try:

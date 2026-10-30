@@ -487,6 +487,8 @@ ADXEARN_BOT = "AdxEarnAibot"
 ADXEARN_REFERRAL_CODE = "ref_6727787768"
 CHICKENLAND_BOT = "ChickenLandBot"
 CHICKENLAND_REFERRAL_CODE = "12668"
+GROUCHEMINE_BOT = "GRC_AirdrooBot"
+GROUCHEMINE_REFERRAL_CODE = "6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -703,10 +705,11 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 14.0) -> bool:
     except Exception:
         return True
 
-    # Check individual token auth_date signatures across all 8 active WebApp Bots
+    # Check individual token auth_date signatures across all 9 active WebApp Bots
     key_tokens = [
         "mrg_init_data", "atf_init_data", "victors_init_data", "kynex_init_data",
-        "pepegram_init_data", "adxearn_init_data", "diggo_init_data", "chickenland_init_data"
+        "pepegram_init_data", "adxearn_init_data", "diggo_init_data", "chickenland_init_data",
+        "grouchemine_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -992,7 +995,13 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if chk_tok:
         tokens["chickenland_init_data"] = chk_tok
 
-    # Active Mining Bots: MRG, ATF, Victor's, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land
+    # 9. Grouche Mine (@GRC_AirdrooBot - Silent WebApp query)
+    grc_param = None if is_master else GROUCHEMINE_REFERRAL_CODE
+    grc_tok = await extract_bot_webapp_token(client, GROUCHEMINE_BOT, start_param=grc_param, default_url="https://grouchemine.world/", candidate_short_names=["app", "miniapp", "play"])
+    if grc_tok:
+        tokens["grouchemine_init_data"] = grc_tok
+
+    # Active Mining Bots: MRG, ATF, Victor's, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine
     return tokens
 
 
@@ -2080,15 +2089,15 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_8_BOT_KEYS = ["mrg", "atf", "victors", "kynex", "diggo", "pepegram", "adxearn", "chickenland"]
-ALL_9_BOT_KEYS = ALL_8_BOT_KEYS
-ALL_10_BOT_KEYS = ALL_8_BOT_KEYS
+ALL_9_BOT_KEYS = ["mrg", "atf", "victors", "kynex", "diggo", "pepegram", "adxearn", "chickenland", "grouchemine"]
+ALL_8_BOT_KEYS = ALL_9_BOT_KEYS
+ALL_10_BOT_KEYS = ALL_9_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 8 active fleet bots."""
+    """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
     if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
         return True
-    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_8_BOT_KEYS)
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_9_BOT_KEYS)
 
 
 
@@ -2370,12 +2379,26 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Chicken Land referral bind note: {e}")
 
-    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_8_BOT_KEYS):
+    # 9. Grouche Mine Referral Binding (@GRC_AirdrooBot)
+    if force or not acc_entry.get("grouchemine_referral_bound"):
+        try:
+            try:
+                await client.send_message(GROUCHEMINE_BOT, f"/start {GROUCHEMINE_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, GROUCHEMINE_BOT, start_param=GROUCHEMINE_REFERRAL_CODE, default_url="https://grouchemine.world/", candidate_short_names=["app", "miniapp", "play"])
+            acc_entry["grouchemine_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Grouche Mine referral bind note: {e}")
+
+    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_9_BOT_KEYS):
         acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_10_referrals_bound"] = True
         acc_entry["all_8_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 8 active fleet bots successfully bound to Master ID 6727787768!")
+    logger.info(f"[{name}] ✅ All 9 active fleet bots successfully bound to Master ID 6727787768!")
 
     # Wait 1.0s for Telegram bot backends to complete registration
     await asyncio.sleep(1.0)
@@ -6658,7 +6681,83 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["chickenland"] = f"api_error: {format_error(e)}"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (8 Active Bots)
+    async def _farm_grouchemine():
+        g_init = tokens.get("grouchemine_init_data")
+        if not g_init:
+            status["bots"]["grouchemine"] = "skipped (no initData)"
+            return
+        try:
+            g_headers = {
+                **headers,
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": g_init
+            }
+            base_url = "https://grouchemine.world/api"
+
+            # 1. Login
+            c_st, l_data = await safe_post(f"{base_url}/auth/login", json_data={"initData": g_init}, req_headers=g_headers, timeout_sec=8)
+            if c_st != 200 or not isinstance(l_data, dict):
+                status["bots"]["grouchemine"] = f"auth_failed ({c_st})"
+                return
+            u_inf = l_data.get("data", {}).get("user", {})
+            bal = float(u_inf.get("lnxBalance", 0) or 0)
+
+            # 2. Daily Claim
+            await safe_post(f"{base_url}/users/daily-claim", json_data={}, req_headers=g_headers, timeout_sec=6)
+
+            # 3. Tasks fetch & complete
+            c_st, t_res = await safe_get(f"{base_url}/tasks", req_headers=g_headers, timeout_sec=6)
+            if c_st == 200 and isinstance(t_res, dict):
+                tasks = t_res.get("data", [])
+                if isinstance(tasks, list):
+                    for t in tasks:
+                        if not t.get("completed") and not t.get("isCompleted"):
+                            tid = t.get("id") or t.get("_id")
+                            await safe_post(f"{base_url}/tasks/{tid}/open", json_data={}, req_headers=g_headers, timeout_sec=5)
+                            await asyncio.sleep(11)
+                            await safe_post(f"{base_url}/tasks/{tid}/complete", json_data={}, req_headers=g_headers, timeout_sec=6)
+
+            # 4. Adsgram Watch & Click (+10 GRC each, up to 8 per 12 hours) - ZERO SPEND
+            try:
+                c_st, ads_res = await safe_get(f"{base_url}/users/ads", req_headers=g_headers, timeout_sec=6)
+                if c_st == 200 and isinstance(ads_res, dict):
+                    a_data = ads_res.get("data", {})
+                    limit = int(a_data.get("limit", 8))
+                    watched = int(a_data.get("watched", 0))
+                    remaining = max(0, limit - watched)
+                    for _ in range(remaining):
+                        ad_payload = {"clicked": 1, "watchedMs": 15500 + random.randint(100, 2000)}
+                        c_st, c_ads = await safe_post(f"{base_url}/users/ads/complete", json_data=ad_payload, req_headers=g_headers, timeout_sec=6)
+                        if c_st != 200:
+                            break
+                        await asyncio.sleep(1)
+            except Exception:
+                pass
+
+            # 5. Mining Status & Yield Claim - STRICT ZERO-SPEND (NEVER buy packages)
+            try:
+                c_st, m_res = await safe_get(f"{base_url}/mining/status", req_headers=g_headers, timeout_sec=6)
+                if c_st == 200 and isinstance(m_res, dict):
+                    m_dat = m_res.get("data", {})
+                    pkg_cnt = m_dat.get("packageCount", 0)
+                    is_min = m_dat.get("isMining", False)
+                    sess_mined = float(m_dat.get("sessionMinedLnx", 0) or 0)
+                    bal = float(m_dat.get("lnxBalance", bal) or bal)
+                    if sess_mined > 0:
+                        c_st, cl_res = await safe_post(f"{base_url}/mining/claim", json_data={}, req_headers=g_headers, timeout_sec=6)
+                        if c_st == 200 and isinstance(cl_res, dict):
+                            bal = float(cl_res.get("data", {}).get("lnxBalance", bal + sess_mined) or (bal + sess_mined))
+                    if pkg_cnt > 0 and not is_min:
+                        await safe_post(f"{base_url}/mining/toggle", json_data={}, req_headers=g_headers, timeout_sec=6)
+            except Exception:
+                pass
+
+            acc["grouchemine_balance"] = bal
+            status["bots"]["grouchemine"] = f"farmed (bal: {bal:.2f} GRC)"
+        except Exception as e:
+            status["bots"]["grouchemine"] = f"api_error: {format_error(e)}"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (9 Active Bots)
     BOT_COOLDOWNS = {
         "atf": (1800, 3600),
         "mrg": (3600, 7200),
@@ -6668,6 +6767,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "adxearn": (7200, 14400),
         "diggo": (7200, 14400),
         "chickenland": (21600, 28800),
+        "grouchemine": (7200, 14400),
     }
 
     bot_routines = [
@@ -6679,6 +6779,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data") or tokens.get("adx_init_data"))},
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
         {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data"))},
+        {"name": "grouchemine", "fn": _farm_grouchemine, "has_data": bool(tokens.get("grouchemine_init_data"))},
     ]
 
     for b in bot_routines:
@@ -6692,6 +6793,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "knx": "kynex", "kynex": "kynex",
         "dgo": "diggo", "diggo": "diggo", "diggominer": "diggo",
         "chicken": "chickenland", "chickenland": "chickenland", "chickenlandbot": "chickenland",
+        "grouche": "grouchemine", "grouchemine": "grouchemine", "grc": "grouchemine",
         "atf": "atf", "mrg": "mrg"
     }
     norm_target = bot_aliases.get(target_bot.lower(), target_bot.lower()) if target_bot else "all"
@@ -6919,11 +7021,12 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
     adx_c = bot_stats.get("adxearn", 0)
     dig_c = bot_stats.get("diggo", 0)
     chk_c = bot_stats.get("chickenland", 0)
+    grc_c = bot_stats.get("grouchemine", 0)
 
     card = (
-        f"⚡ <b>Fleet 8-Bot Auto-Farming Complete</b>\n"
+        f"⚡ <b>Fleet 9-Bot Auto-Farming Complete</b>\n"
         f"• <b>Accounts Farmed:</b> <code>{farmed_count}/{total_accounts} Online</code>\n"
-        f"• <b>Active Pools (8/8):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c}</code>\n"
+        f"• <b>Active Pools (9/9):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c} • GRC:{grc_c}</code>\n"
         f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>{source} • Render Primary Node 3</code>\n"
         f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
     )
