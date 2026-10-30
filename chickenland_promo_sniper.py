@@ -39,7 +39,7 @@ except ImportError:
 # Constants & Configuration
 CHANNEL_URL = "https://t.me/s/ChickenLandCodes"
 RPC_URL = "https://app8968434282.tgcloud.ai/api/rpc"
-UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID") or "6727787768"

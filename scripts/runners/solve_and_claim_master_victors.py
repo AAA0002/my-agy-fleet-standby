@@ -22,7 +22,7 @@ sys.path.insert(0, PROJECT_ROOT)
 config = dotenv_values(os.path.join(PROJECT_ROOT, ".env"))
 api_id = int(config.get("TELEGRAM_API_ID", 28005322))
 api_hash = config.get("TELEGRAM_API_HASH", "5cd9b2512f7f2b1d7d0a51c4db223b47")
-UPSTASH_URL = config.get("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_URL = config.get("UPSTASH_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = config.get("UPSTASH_TOKEN") or ""
 
 VICTORS_SITEKEY = "0x4AAAAAAFD0KRgPRFVwDvgn"

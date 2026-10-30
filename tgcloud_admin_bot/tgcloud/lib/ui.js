@@ -315,7 +315,7 @@ export function buildMeshStatusBanner(live = {}) {
 🚀 *TIER 3: RENDER CLUSTER & UPSTASH REDIS*
 • Primary Host: \`Node 2 Frankfurt\` (🟢 200 OK Coordinator)
 • Standby Failover: \`Node 3 Oregon\` & \`Node 1 Singapore\`
-• Distributed DB: \`rich-emu-106119.upstash.io\` (🟢 10k Quota)
+• Distributed DB: \`internal-dodo-83852.upstash.io\` (🟢 10k Quota)
 
 📱 *LOCAL HOST (SAMSUNG GALAXY A30):*
 • Mode: \`100% Dedicated Pair Programming CLI\`

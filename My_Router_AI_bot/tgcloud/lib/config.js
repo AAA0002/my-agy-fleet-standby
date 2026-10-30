@@ -15,7 +15,7 @@ export const RENDER_NODES = [
   "https://my-agy-fleet-standby-node2.onrender.com"
 ];
 
-export const UPSTASH_URL = "https://rich-emu-106119.upstash.io";
+export const UPSTASH_URL = "https://internal-dodo-83852.upstash.io";
 export const UPSTASH_TOKEN = (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "";
 
 export const BROWSER_HEADERS = {

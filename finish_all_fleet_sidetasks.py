@@ -58,7 +58,7 @@ if os.path.exists(env_file):
                 k, v = line.split("=", 1)
                 env[k.strip()] = v.strip().strip('"').strip("'")
 
-UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or ""
 SECRET_KEY = env.get("SECRET_KEY") or env.get("CF_SECRET_KEY") or ""
 
@@ -1813,12 +1813,12 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         account_report["results"]["diggo"] = diggo_res
 
         # 8. Chicken Land
-        chk_init = acc_toks.get("chickenland_init_data") or acc_toks.get("chicken_init_data", "")
+        chk_init = acc_toks.get("chickenland_init_data") or acc.get("chickenland_init_data") or acc_toks.get("chicken_init_data", "")
         chicken_res = await sweep_chickenland_tasks(session, uid, name, chk_init, acc)
         account_report["results"]["chickenland"] = chicken_res
 
         # 9. Grouche Mine
-        grc_init = acc_toks.get("grouchemine_init_data") or acc_toks.get("grc_init_data", "")
+        grc_init = acc_toks.get("grouchemine_init_data") or acc.get("grouchemine_init_data") or acc_toks.get("grc_init_data", "")
         grc_res = await sweep_grouchemine_tasks(session, uid, name, grc_init, {**acc, **acc_toks})
         account_report["results"]["grouchemine"] = grc_res
 

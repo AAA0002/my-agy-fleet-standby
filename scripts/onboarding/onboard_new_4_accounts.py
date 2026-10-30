@@ -15,7 +15,7 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from login_account import bind_referrals, API_ID, API_HASH, save_accounts
 
-UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://rich-emu-106119.upstash.io")
+UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://internal-dodo-83852.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 if not UPSTASH_TOKEN and os.path.exists(".env"):
     with open(".env") as f:

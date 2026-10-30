@@ -35,7 +35,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 FLEET_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 
 if not UPSTASH_TOKEN and os.path.exists(os.path.join(BASE_DIR, ".env")):

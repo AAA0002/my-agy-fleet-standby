@@ -36,7 +36,7 @@ if os.path.exists(env_file):
                 k, v = line.split("=", 1)
                 env[k.strip()] = v.strip().strip('"').strip("'")
 
-UPSTASH_URL = env.get("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_URL = env.get("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = env.get("UPSTASH_REDIS_REST_TOKEN") or ""
 
 async def solve_single_account(browser, uid: str, name: str, v_init: str) -> bool:

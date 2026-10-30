@@ -68,7 +68,7 @@ jobs:
               try:
                   print("Checking Upstash Redis & Pinata IPFS fallback...")
                   import json
-                  up_url = "https://rich-emu-106119.upstash.io/get/fleet:latest_ipfs_cid"
+                  up_url = "https://internal-dodo-83852.upstash.io/get/fleet:latest_ipfs_cid"
                   up_req = urllib.request.Request(up_url, headers={"Authorization": "Bearer ${{ secrets.UPSTASH_TOKEN }}"})
                   with urllib.request.urlopen(up_req, timeout=8) as up_r:
                       if up_r.status == 200:

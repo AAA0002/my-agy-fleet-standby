@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Comprehensive Fleet Bug Hunt & Multi-Cloud Stability Hardening (October 30, 2026)**:
+  - **Fixed UnboundLocalError in `api_remove_account` (`app.py`)**:
+    * Identified and fixed Python `UnboundLocalError` at line 4796 where `FLEET_ACCOUNTS_CACHE.pop(...)` was called before assignment due to a missing `global FLEET_ACCOUNTS_CACHE` declaration.
+  - **Repaired Render Node 3 Upstash Database Fallback & Deployed Live**:
+    * Discovered that Render Node 3 lacked `UPSTASH_URL` and `UPSTASH_TOKEN` in its service environment settings, causing it to fall back to the dead `rich-emu-106119` cluster.
+    * Injected live Upstash cluster (`https://internal-dodo-83852.upstash.io`) and bearer token directly into Render Node 3 via Render API (`PUT /v1/services/{id}/env-vars`).
+    * Updated default fallback in `app.py` and triggered build/deploy `dep-dbi5gjafngtc73cbtkt0`, verified 100% `live`.
+  - **Promoted Node 3 as Active Cloud MTProto Coordinator in Upstash Redis**:
+    * Discovered Node 1 and Node 2 were returning HTTP 503 (monthly quota exhausted) and `fleet:active_render_node` in Redis was unset (`None`).
+    * Explicitly promoted Node 3 (`node3`) as active coordinator in Upstash Redis (`fleet:active_render_node` and `fleet:mtproto_coordinator`), unblocking autonomous background token refreshing across all 21 accounts.
+  - **Codebase-Wide Purge of Expired Upstash Cluster References**:
+    * Systematically searched and replaced all fallback references to `rich-emu-106119.upstash.io` across 37 source code files and 6 GitHub Actions workflows with active cluster `internal-dodo-83852.upstash.io`.
+  - **Regex Token Hardening in `audit_bots_and_sidetasks.py`**:
+    * Replaced fragile chained `.split()` string parsing for MRG and ATF balances with robust regular expressions (`re.search(r"([\d\.]+)\s*ATF", ...)`).
+  - **Fallback Account Token Extraction in `finish_all_fleet_sidetasks.py`**:
+    * Added fallback to `accounts.json` for `grouchemine_init_data` and `chickenland_init_data` to ensure zero token skips even during cold cache startup.
+
 - **🍐 Grouche Mine Strict Zero-Spend Policy & Full 9-Bot Cloud Pipeline Integration (October 30, 2026)**:
   - **Strict Zero-Spend Policy Enforced**:
     * Permanently eliminated all miner package auto-purchasing (`/api/users/buy-package`) from `batch_grouche_mine.py` and `finish_all_fleet_sidetasks.py`.

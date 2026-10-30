@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 
 def load_tokens_db():
@@ -825,14 +825,16 @@ async def main():
     for rep in fleet_reports.values():
         bots = rep.get("bots", {})
         # MRG
-        mrg_bal = bots.get("1. MRG Miner", {}).get("core", {}).get("balance", "")
-        if "MRG" in mrg_bal:
-            try: totals["mrg"] += float(mrg_bal.split("MRG")[0].strip())
+        mrg_bal = str(bots.get("1. MRG Miner", {}).get("core", {}).get("balance", ""))
+        m_mrg = re.search(r"([\d\.]+)\s*MRG", mrg_bal)
+        if m_mrg:
+            try: totals["mrg"] += float(m_mrg.group(1))
             except Exception: pass
         # ATF
-        atf_st = bots.get("2. ATF Miner", {}).get("core", {}).get("status", "")
-        if "ATF" in atf_st:
-            try: totals["atf"] += float(atf_st.split("ATF")[0].split(":")[-1].strip())
+        atf_st = str(bots.get("2. ATF Miner", {}).get("core", {}).get("status", ""))
+        m_atf = re.search(r"([\d\.]+)\s*ATF", atf_st)
+        if m_atf:
+            try: totals["atf"] += float(m_atf.group(1))
             except Exception: pass
         # Kynex
         knx_bal = bots.get("4. Kynex Network", {}).get("core", {}).get("balance", "")

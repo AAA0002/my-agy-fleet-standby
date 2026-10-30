@@ -39,7 +39,7 @@ logger = logging.getLogger("onboard_kynex")
 
 API_ID = 37321306
 API_HASH = "5cd9e5bbfb572a4429a0c54774153b47"
-UPSTASH_URL = os.getenv("UPSTASH_URL", "https://rich-emu-106119.upstash.io")
+UPSTASH_URL = os.getenv("UPSTASH_URL", "https://internal-dodo-83852.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN", "")
 CF_SECRET = os.getenv("CF_SECRET_KEY") or os.getenv("SECRET_KEY", "")
 CF_WORKERS = [

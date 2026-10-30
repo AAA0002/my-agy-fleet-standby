@@ -26,7 +26,7 @@ jobs:
           SECRET_KEY: "${{ secrets.SECRET_KEY || secrets.CF_SECRET_KEY }}"
           SUPABASE_URL: "https://znbbaozpevurvbfkxakz.supabase.co"
           SUPABASE_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
-          UPSTASH_URL: "https://rich-emu-106119.upstash.io"
+          UPSTASH_URL: "https://internal-dodo-83852.upstash.io"
           UPSTASH_TOKEN: "${{ secrets.UPSTASH_TOKEN }}"
           TONAPI_KEY: "${{ secrets.TONAPI_KEY }}"
           ETHERSCAN_KEY: "${{ secrets.ETHERSCAN_KEY }}"
@@ -341,7 +341,7 @@ jobs:
 
       - name: Run Autonomous Multi-Tier Sanitation & Maintenance Engine
         env:
-          UPSTASH_URL: "https://rich-emu-106119.upstash.io"
+          UPSTASH_URL: "https://internal-dodo-83852.upstash.io"
           UPSTASH_TOKEN: "${{ secrets.UPSTASH_TOKEN }}"
         run: |
           python clean_up_system.py
