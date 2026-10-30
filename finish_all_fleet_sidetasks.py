@@ -1645,6 +1645,124 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
     return res
 
 
+async def sweep_grouchemine_tasks(session: aiohttp.ClientSession, uid: str, name: str, g_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps Grouche Mine daily claim, tasks, and yield claim. Strict Zero-Spend Policy: NEVER buys packages."""
+    res = {"bot": "Grouche Mine", "tasks_claimed": 0, "notes": [], "success": False}
+    if not g_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": g_init,
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+    }
+    base_url = "https://grouchemine.world/api"
+
+    try:
+        # 1. Login
+        async with session.post(f"{base_url}/auth/login", json={"initData": g_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+            if r.status != 200:
+                res["notes"].append(f"auth_failed_http_{r.status}")
+                return res
+            l_data = await r.json()
+            u_inf = l_data.get("data", {}).get("user", {})
+            res["balance"] = float(u_inf.get("lnxBalance", 0) or 0)
+            res["success"] = True
+
+        # 2. Connect TON wallet if available
+        ton_addr = acc.get("ton_wallet") or acc.get("ton_address") or ""
+        if ton_addr:
+            try:
+                await session.post(f"{base_url}/users/wallet/connect", json={"address": ton_addr}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+            except Exception:
+                pass
+
+        # 3. Daily Claim
+        try:
+            async with session.post(f"{base_url}/users/daily-claim", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as d_r:
+                if d_r.status == 200:
+                    d_res = await d_r.json()
+                    if d_res.get("success"):
+                        rew = d_res.get("data", {}).get("rewardLnx", 5)
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"daily_claim_{rew}")
+                        res["balance"] += float(rew)
+        except Exception:
+            pass
+
+        # 4. Tasks fetch & complete
+        try:
+            async with session.get(f"{base_url}/tasks", headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as t_r:
+                if t_r.status == 200:
+                    t_res = await t_r.json()
+                    tasks = t_res.get("data", [])
+                    if isinstance(tasks, list):
+                        for t in tasks:
+                            if not t.get("isCompleted") and not t.get("completed"):
+                                tid = t.get("id") or t.get("_id")
+                                await session.post(f"{base_url}/tasks/{tid}/open", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+                                await asyncio.sleep(11) # Server enforces 10s countdown
+                                async with session.post(f"{base_url}/tasks/{tid}/complete", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as c_r:
+                                    if c_r.status == 200:
+                                        c_res = await c_r.json()
+                                        if c_res.get("success"):
+                                            res["tasks_claimed"] += 1
+                                            res["notes"].append(f"task_{tid}")
+                                            res["balance"] += float(t.get("rewardLnx", 15) or 15)
+        except Exception:
+            pass
+
+        # 4.1 Adsgram Watch & Click (+10 GRC each, up to 8 per 12 hours)
+        try:
+            async with session.get(f"{base_url}/users/ads", headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as ads_r:
+                if ads_r.status == 200:
+                    a_data = (await ads_r.json()).get("data", {})
+                    limit = int(a_data.get("limit", 8))
+                    watched = int(a_data.get("watched", 0))
+                    remaining = max(0, limit - watched)
+                    for ad_i in range(remaining):
+                        ad_payload = {"clicked": 1, "watchedMs": 15500 + random.randint(100, 2000)}
+                        async with session.post(f"{base_url}/users/ads/complete", json=ad_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as c_ads:
+                            if c_ads.status == 200:
+                                c_res = await c_ads.json()
+                                if c_res.get("success"):
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append(f"ad_{ad_i+1}")
+                                    res["balance"] = float(c_res.get("data", {}).get("lnxBalance", res["balance"]) or res["balance"])
+                            else:
+                                break
+                        await asyncio.sleep(1)
+        except Exception:
+            pass
+
+        # 5. Claim Mining Yield (Zero spend - never buy packages)
+        try:
+            async with session.get(f"{base_url}/mining/status", headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as m_r:
+                if m_r.status == 200:
+                    m_res = await m_r.json()
+                    m_dat = m_res.get("data", {})
+                    res["packages"] = m_dat.get("packageCount", 0)
+                    res["is_mining"] = m_dat.get("isMining", False)
+                    sess_mined = float(m_dat.get("sessionMinedLnx", 0) or 0)
+                    if sess_mined > 0:
+                        async with session.post(f"{base_url}/mining/claim", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as cl_r:
+                            if cl_r.status == 200:
+                                res["tasks_claimed"] += 1
+                                res["notes"].append(f"mined_yield_{sess_mined:.2f}")
+                                res["balance"] += sess_mined
+                    # If packages exist but mining paused, ensure toggle is ON
+                    if res["packages"] > 0 and not res["is_mining"]:
+                        await session.post(f"{base_url}/mining/toggle", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+        except Exception:
+            pass
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:40]}")
+
+    return res
+
+
 
 # =============================================================================
 # 3. MAIN RUNNER (21-ACCOUNT PARALLEL PIPELINE)
@@ -1699,6 +1817,11 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         chicken_res = await sweep_chickenland_tasks(session, uid, name, chk_init, acc)
         account_report["results"]["chickenland"] = chicken_res
 
+        # 9. Grouche Mine
+        grc_init = acc_toks.get("grouchemine_init_data") or acc_toks.get("grc_init_data", "")
+        grc_res = await sweep_grouchemine_tasks(session, uid, name, grc_init, {**acc, **acc_toks})
+        account_report["results"]["grouchemine"] = grc_res
+
         # Sync tokens to Cloudflare Workers if newly refreshed
         await sync_token_to_cf(session, uid, acc_toks)
 
@@ -1709,7 +1832,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info(f"🎯 STARTING COMPLETE 8-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
+    logger.info(f"🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -1725,7 +1848,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 80)
-        logger.info(f"📊 8-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
+        logger.info(f"📊 9-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
         logger.info("=" * 80)
         total_tasks = 0
         for rep in reports:
@@ -1739,9 +1862,10 @@ async def main():
             adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
             dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
             chk_cl = res.get("chickenland", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl
+            grc_cl = res.get("grouchemine", {}).get("tasks_claimed", 0)
+            acc_total = mrg_cl + atf_cl + vic_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl + grc_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} GRC:{grc_cl} | Tot: {acc_total}")
 
         logger.info("=" * 80)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
@@ -1758,14 +1882,15 @@ async def main():
         adx_tot = sum(r["results"].get("adxearn", {}).get("tasks_claimed", 0) for r in reports)
         dig_tot = sum(r["results"].get("diggo", {}).get("tasks_claimed", 0) for r in reports)
         chk_tot = sum(r["results"].get("chickenland", {}).get("tasks_claimed", 0) for r in reports)
+        grc_tot = sum(r["results"].get("grouchemine", {}).get("tasks_claimed", 0) for r in reports)
         elapsed = time.time() - t_start
 
         if bot_token and notif_channel:
             short_card = (
-                f"⚡ <b>Fleet 8-Bot Auto-Harvest Complete</b>\n"
+                f"⚡ <b>Fleet 9-Bot Auto-Harvest Complete</b>\n"
                 f"• <b>Accounts Farmed:</b> <code>{len(ACCOUNTS)}/{len(ACCOUNTS)} Online</code>\n"
                 f"• <b>Tasks & Rewards Claimed:</b> <code>{total_tasks} Total Claimed</code>\n"
-                f"• <b>Pools Claimed (8/8):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot}</code>\n"
+                f"• <b>Pools Claimed (9/9):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot} • GRC:{grc_tot}</code>\n"
                 f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>Render Cloud Mesh</code>\n"
                 f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
             )

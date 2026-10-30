@@ -20,6 +20,7 @@ import os
 import sys
 import json
 import time
+import random
 import asyncio
 import urllib.parse
 import urllib.request
@@ -193,6 +194,34 @@ async def process_account(account: dict, index: int, total: int):
                     curr_bal += r_lnx
                 else:
                     logger.info(f"  ℹ️ Task '{ttitle}': {c_res.get('error')}")
+
+        # 6.1 Adsgram Watch & Click (+10 GRC each, up to 8 per 12 hours)
+        try:
+            ads_status = api_call("/users/ads", method="GET", init_data=init_data)
+            if ads_status.get("success"):
+                a_data = ads_status.get("data", {})
+                limit = int(a_data.get("limit", 8))
+                watched = int(a_data.get("watched", 0))
+                remaining = max(0, limit - watched)
+                if remaining > 0:
+                    logger.info(f"  📺 Claiming {remaining}/{limit} Adsgram ads (+10 GRC each)...")
+                    for ad_i in range(remaining):
+                        c_res = api_call(
+                            "/users/ads/complete",
+                            method="POST",
+                            data={"clicked": 1, "watchedMs": 15500 + random.randint(100, 2000)},
+                            init_data=init_data
+                        )
+                        if c_res.get("success"):
+                            c_bal = c_res.get("data", {}).get("lnxBalance", curr_bal)
+                            curr_bal = float(c_bal or curr_bal)
+                            logger.info(f"    🎯 Ad [{ad_i+1}/{remaining}] Completed! (+10 GRC | Balance: {curr_bal:,.2f} GRC)")
+                        else:
+                            logger.info(f"    ℹ️ Ad note: {c_res.get('error')}")
+                            break
+                        await asyncio.sleep(2)
+        except Exception as e:
+            logger.warning(f"  ⚠️ Adsgram error: {e}")
 
         # 7. Check current status & claim mining yield
         mining_res = api_call("/mining/status", method="GET", init_data=init_data)
