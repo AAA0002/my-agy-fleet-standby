@@ -8834,6 +8834,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 - Initialized local Git repository with `.gitignore`.
 - Configured project rules and isolation boundary in `AGENTS.md`.
 
+## [2.3.0] - 2026-10-30
+### Universal Smart Session Resume & Remote Control Daemon Engine
+- **Universal Installer (`setup_smart_agy.sh`)**:
+  - Implemented cross-platform bootstrapping supporting Linux VPS/VMs, Cloudflare nodes, and mobile Android Termux/PRoot environments.
+  - Configured zero-touch-lag `~/.tmux.conf` (`set -g mouse off`, `set -sg escape-time 0`, `repeat-time 0`, `aggressive-resize on`, and `window-size latest`), preventing Android touchscreens from flooding terminal sessions with escape sequences.
+  - Installed smart switcher `agy-entry` (with direct bypass `agy-direct`): guarantees background Remote Control daemon is active, smoothly resumes active conversation sessions (`--continue`), and handles nested TMUX windows without process collision.
+  - Automated Google Antigravity Remote Control daemon (`antigravity-cli-daemon.service`) registration under instance `aaa-hub-vm` for live control via https://antigravity.google.com.
+- **1-Click Disaster Recovery Integration**:
+  - Embedded `setup_smart_agy.sh` directly into `restore.sh` step 4.1, enabling out-of-the-box smart session resumption upon any backup restore.
+  - Added `setup_smart_agy.sh` and `batch_grouche_mine.py` to `CORE_BOT_FILES` in `backup_manager.py`.
+
 ## [2.2.0] - 2026-10-25
 ### 100% Cloud Multi-Bot Solver, Zero Fake Data Purge & 20-Account Audit Hardening
 - **Discovered & Fixed 13-Day Token Expiration Across All 19 Worker Accounts**:

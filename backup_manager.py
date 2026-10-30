@@ -113,7 +113,9 @@ CORE_BOT_FILES = [
     "AUTOMATION_AND_SOLVER_ARCHITECTURE.md",
     "FLEET_9_BOTS_COMPREHENSIVE_ANALYSIS_AND_RESOLUTION.md",
     "NINE_BOTS_OPERATIONAL_STUDY.md",
-    "audit_bots_and_sidetasks.py"
+    "audit_bots_and_sidetasks.py",
+    "batch_grouche_mine.py",
+    "setup_smart_agy.sh"
 ]
 
 
