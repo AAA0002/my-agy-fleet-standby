@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Fleet Proxy Mesh Aggregation (70 Proxies) & Standby Upstash Redis Failover (October 30, 2026)**:
+  - **70-Proxy Webshare Pool Integration**:
+    * Integrated 4 additional validated Webshare production keys (`WEBSHARE_KEY_4` through `WEBSHARE_KEY_7`) from AAA Vault.
+    * Expanded active rotating proxy network to 70 direct proxies across 7 verified keys, ensuring 100% Turnstile solve success and zero IP blocks.
+  - **Standby Disaster Recovery Upstash Redis**:
+    * Authenticated and provisioned secondary serverless Upstash Redis instance (`internal-dodo-83852.upstash.io`) with active QStash event broker.
+    * Added `UPSTASH_STANDBY_URL` and `UPSTASH_STANDBY_TOKEN` to environment fallback for zero-downtime database failover.
+  - **Better Stack Fleet Uptime Expansion**:
+    * Verified 2 new Better Stack API tokens (`bs_hub_ee5e7f3d`, `bs_hub_6c09f7a6`), adding 20 additional uptime monitors.
+
 - **🌐 Fresh Webshare Proxy Key Provisioning & 30-Proxy Pool Expansion (October 29, 2026)**:
   - **Fresh Catch-All Webshare Account Onboarding**:
     * Successfully onboarded fresh Webshare account (`test_audio_123@agy.dpdns.org`) using Cloudflare Catch-All Email Routing over custom domain `agy.dpdns.org`.
