@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🍐 Grouche Mine ($GRC) Full Fleet Integration & Master 6-Rig Mining Deployment (October 30, 2026)**:
+  - **Reverse-Engineering & Full API Protocol**:
+    * Reverse-engineered `@GRC_AirdrooBot` (ID `8754769755`) and WebApp `https://grouchemine.world/`.
+    * Extracted complete API schema (`/api/auth/login`, `/api/users/wallet/connect`, `/api/users/daily-claim`, `/api/tasks`, `/api/users/buy-package`, `/api/mining/status`, `/api/mining/toggle`, `/api/mining/claim`).
+    * Discovered that TON wallet binding is required to activate daily claims and qualification.
+  - **Autonomous 21-Account Cloud Pipeline (`batch_grouche_mine.py`)**:
+    * Automated full fleet onboarding across all 20 worker accounts with referral binding under Master `6727787768`.
+    * Linked dedicated account TON wallets from `accounts.json` achieving 20/20 active verified referrals.
+    * Claimed daily streak rewards across all accounts.
+  - **Master Account Mining Deployment & Asset Accrual**:
+    * Swept 2,400+ GRC referral bonuses into Master Arif Hossain (`6727787768`).
+    * Reinvested earned balances to purchase 6 high-tier mining rigs: 2× `CYBER ULTRA RIG` (Tier 3), 2× `PRO MINER X2` (Tier 2), and 2× `BASIC MINER v1` (Tier 1).
+    * Achieved active 24/7 cloud mining hashrate yielding **0.26 USDT/day** (**235.29 GRC/day**).
+  - **SSOT Registry Update**:
+    * Registered `grouchemine` in `bot_registry.py` under active legitimate bots with STON.fi liquidity tracking.
+
 - **🌐 Fleet Proxy Mesh Aggregation (70 Proxies) & Standby Upstash Redis Failover (October 30, 2026)**:
   - **70-Proxy Webshare Pool Integration**:
     * Integrated 4 additional validated Webshare production keys (`WEBSHARE_KEY_4` through `WEBSHARE_KEY_7`) from AAA Vault.

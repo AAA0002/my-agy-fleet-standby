@@ -120,6 +120,20 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "sponsor_channels": ["LandChickenNews", "ChickenLandPay", "ChickenLandCodes"],
         "requires_turnstile": False,
         "is_active": True,
+    },
+    "grouchemine": {
+        "id": "grouchemine",
+        "name": "Grouche Mine 🍐",
+        "bot_username": "GRC_AirdrooBot",
+        "bot_aliases": ["groucheminebot"],
+        "master_ref_code": "6727787768",
+        "app_url": "https://grouchemine.world/",
+        "token_key": "grouchemine_init_data",
+        "short_names": ["app"],
+        "api_base": "https://grouchemine.world/api",
+        "sponsor_channels": ["grouchemine", "GroucheCoinEn"],
+        "requires_turnstile": False,
+        "is_active": True,
     }
 }
 
