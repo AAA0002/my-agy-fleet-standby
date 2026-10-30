@@ -136,8 +136,8 @@ CF_WORKER_URLS = [
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or ""
-UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAAUeMAAIgcDI1ODEyOGQ4NDI0MWU0OWJmYTE3MjJhZWQ2MzI5YjI1MQ"
 TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
 TURSO_TOKEN = os.getenv("TURSO_TOKEN") or os.getenv("TURSO_DB_TOKEN") or ""
 
@@ -4765,6 +4765,7 @@ async def get_qr_status(chat_id: str = ""):
 @app.get("/api/account/remove")
 async def api_remove_account(request: Request):
     """Permanently disconnects and removes an account from the cloud fleet."""
+    global FLEET_ACCOUNTS_CACHE
     body = {}
     try:
         body = await request.json()
