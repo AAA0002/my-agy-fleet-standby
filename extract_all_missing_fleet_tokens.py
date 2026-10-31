@@ -37,7 +37,7 @@ TARGET_BOTS = [
     },
     {
         "key": "atf_init_data",
-        "bot": "atfminers_bot",
+        "bot": "ATF_AIRDROP_bot",
         "url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "short_names": ["app", "miner", "play"],
         "name": "ATF Miner"

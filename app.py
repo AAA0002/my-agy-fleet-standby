@@ -473,7 +473,7 @@ def solve_atf_math(question_text: str) -> str:
 # Active Fleet Mini-App Bots (All 8 Bots)
 MRG_BOT = "mrgtoken_bot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
-ATF_BOT = "atfminers_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
 VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
@@ -924,9 +924,9 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["mrg_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 2. ATF Miner (@atfminers_bot - Silent WebApp query, zero chat messages)
+    # 2. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
     atf_param = None if is_master else ATF_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
+    tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"], prefer_direct_url=True)
     if tok:
         tokens["atf_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))

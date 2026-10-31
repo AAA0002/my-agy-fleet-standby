@@ -31,8 +31,8 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
     "atf": {
         "id": "atf",
         "name": "ATF Miner",
-        "bot_username": "atfminers_bot",
-        "bot_aliases": ["ATF_AIRDROP_bot", "atfminerbot"],
+        "bot_username": "ATF_AIRDROP_bot",
+        "bot_aliases": ["atfminers_bot", "atfminerbot"],
         "master_ref_code": "6727787768",
         "app_url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "token_key": "atf_init_data",

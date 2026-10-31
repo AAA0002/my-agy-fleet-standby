@@ -59,13 +59,14 @@ except Exception:
     ]
 
 MRG_BOT = "mrgtoken_bot"
-ATF_BOT = "atfminers_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
 VICTORS_BOT = "VictorsCompanybot"
 KYNEX_BOT = "Kynex_miningbot"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 ADXEARN_BOT = "AdxEarnAibot"
 DIGGO_BOT = "Diggominer_bot"
 CHICKENLAND_BOT = "ChickenLandBot"
+GROUCHEMINE_BOT = "GRC_AirdrooBot"
 
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
