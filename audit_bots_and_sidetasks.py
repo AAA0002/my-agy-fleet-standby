@@ -426,6 +426,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                                                 udoc = await ur.json()
                                                 knx_bal = udoc.get("knxBalance", 0)
                                                 energy = udoc.get("energySeconds", 0)
+                                                b_rep["core"]["status"] = f"Active: {float(knx_bal):.1f} KNX (Energy: {energy}s)"
                                                 b_rep["core"]["balance"] = f"{float(knx_bal):.1f} KNX (Energy: {energy}s)"
                                         async with session.post("https://us-central1-keynex-e9511.cloudfunctions.net/claimDailyCheckin", json={"data": {}}, headers=k_auth_h, timeout=aiohttp.ClientTimeout(total=6)) as cr:
                                             b_rep["side_tasks"].append(f"Daily Check-in: HTTP {cr.status}")
@@ -832,29 +833,33 @@ async def main():
             except Exception: pass
         # ATF
         atf_st = str(bots.get("2. ATF Miner", {}).get("core", {}).get("status", ""))
-        m_atf = re.search(r"([\d\.]+)\s*ATF", atf_st)
+        m_atf = re.search(r"([\d,]+(?:\.\d+)?)\s*ATF", atf_st)
         if m_atf:
-            try: totals["atf"] += float(m_atf.group(1))
+            try: totals["atf"] += float(m_atf.group(1).replace(",", ""))
             except Exception: pass
         # Kynex
-        knx_bal = bots.get("4. Kynex Network", {}).get("core", {}).get("balance", "")
-        if "KNX" in knx_bal:
-            try: totals["knx"] += float(knx_bal.split("KNX")[0].strip())
+        knx_bal = str(bots.get("4. Kynex Network", {}).get("core", {}).get("balance", ""))
+        m_knx = re.search(r"([\d,]+(?:\.\d+)?)\s*KNX", knx_bal)
+        if m_knx:
+            try: totals["knx"] += float(m_knx.group(1).replace(",", ""))
             except Exception: pass
         # PepeGram
-        pepe_st = bots.get("5. PepeGram", {}).get("core", {}).get("status", "")
-        if "PEPE" in pepe_st:
-            try: totals["pepe"] += float(pepe_st.split("PEPE")[0].split(":")[-1].strip())
+        pepe_st = str(bots.get("5. PepeGram", {}).get("core", {}).get("status", ""))
+        m_pep = re.search(r"([\d,]+(?:\.\d+)?)\s*PEPE", pepe_st)
+        if m_pep:
+            try: totals["pepe"] += float(m_pep.group(1).replace(",", ""))
             except Exception: pass
         # AdxEarn
-        adx_st = bots.get("6. AdxEarn AI", {}).get("core", {}).get("status", "")
-        if "Points" in adx_st:
-            try: totals["adx"] += int(adx_st.split("Points")[0].split(":")[-1].strip())
+        adx_st = str(bots.get("6. AdxEarn AI", {}).get("core", {}).get("status", ""))
+        m_adx = re.search(r"([\d,]+)\s*Points", adx_st)
+        if m_adx:
+            try: totals["adx"] += int(m_adx.group(1).replace(",", ""))
             except Exception: pass
         # Diggo
-        diggo_st = bots.get("7. DiggoMiner", {}).get("core", {}).get("status", "")
-        if "DIGGO" in diggo_st:
-            try: totals["diggo"] += float(diggo_st.split("DIGGO")[0].split(":")[-1].strip())
+        diggo_st = str(bots.get("7. DiggoMiner", {}).get("core", {}).get("status", ""))
+        m_dig = re.search(r"([\d,]+(?:\.\d+)?)\s*DIGGO", diggo_st)
+        if m_dig:
+            try: totals["diggo"] += float(m_dig.group(1).replace(",", ""))
             except Exception: pass
         # Chicken Land
         chk = bots.get("8. Chicken Land", {}).get("core", {})
@@ -863,7 +868,7 @@ async def main():
         totals["chicken_hens"] += int(chk.get("hens", 0) or 0)
         # Grouche Mine
         grc_b = bots.get("9. Grouche Mine", {}).get("core", {}).get("balance", 0)
-        try: totals["grc"] += float(grc_b)
+        try: totals["grc"] += float(str(grc_b).replace(",", ""))
         except Exception: pass
 
     print("\n" + "="*80)

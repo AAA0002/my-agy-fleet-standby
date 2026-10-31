@@ -267,7 +267,7 @@ async def run_fleet():
         await process_account(acc, idx, len(accounts))
         await asyncio.sleep(2)
 
-    # Process master last so it receives all accumulated referral bonuses and buys highest tier rigs
+    # Process master last (accumulate 100% raw balance, strict zero-spend: NEVER buy packages)
     for idx, acc in enumerate(masters, len(workers) + 1):
         await process_account(acc, idx, len(accounts))
 
