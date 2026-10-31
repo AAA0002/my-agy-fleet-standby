@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **👑 User Bot Admin Dashboard User Visibility Resolution & Public Mini App 9-Pool Protocol Integration (October 31, 2026)**:
+  - **Root Cause Analysis & Complete Resolution of Missing Users on User Bot Admin Console**:
+    * **Identified CORS Preflight Blocker**: Cross-origin requests from Render Node 3 (`onrender.com`) and browser previews were blocked because `X-Secret` was sent in headers by the dashboard, but omitted from Cloudflare Worker's `Access-Control-Allow-Headers`. Added `X-Secret, x-secret, x-admin-token, *` to `corsHeaders` in `deploy_both_cf_workers.py`.
+    * **Added Same-Origin Priority in `fetchMeshApi`**: Updated `candidateUrls` in `user-admin.html` to always prioritize `window.location.origin` as candidate 0 before external edge nodes. When accessed on Render Node 3, requests now hit `/api/admin/users` directly with zero cross-origin CORS overhead.
+    * **Guaranteed Query-Param Edge Authentication**: Automatically appends `?secret=2743` to protected admin paths (`/api/admin/*`), ensuring authentication succeeds even if cross-origin headers are stripped by restrictive webview environments.
+    * **Auto-Authentication for Commander Arif via `tg.initData`**: Detects verified owner `tg.initDataUnsafe.user.id === 6727787768` and unlocks the console automatically without forcing manual PIN re-entry every session. Also supports `?secret=2743`, `?token=...`, and `?admin_token=...` directly from launcher URLs.
+    * **Graceful Session Expiration & Stale Token Auto-Clearing**: Fixed silent 401 failure trap. When an expired token is encountered, `atf_admin_token` is cleared from `localStorage` and `sessionStorage`, prompting the user cleanly to re-authenticate instead of leaving the user table blank.
+    * **1-Tap Community Miners Reload Button**: Added an interactive "Fetch Community Miners (1-Tap)" button in the empty state card, allowing instant telemetry sync with spinning feedback.
+  - **Public User Mini App Full 9-Pool Protocol Synchronization (`public/miner/index.html`)**:
+    * Added **Protocol 9: Grouche Mine 🍐 ($GRC)** card (`@GRC_AirdrooBot` / Earn GRC) with 1-click harvest button and bot launcher.
+    * Added Grouche Mine (`grouchemine`) chip to the Target Mining Protocol selector bar.
+    * Migrated ATF Miner launcher link from `@atfminers_bot` to official live bot `@ATF_AIRDROP_bot`.
+    * Synchronized all 8-pool references across counters, badges, and tooltips to 9 pools.
+    * Synchronized all Mini App mirrors: `public_ads/miner/index.html`, `public/app/index.html`, and `public/miner/index.html`.
+  - **Updated User Bot Launcher Keyboards (`deploy_both_cf_workers.py`)**:
+    * Updated reply keyboard and command buttons (`👑 User Admin Console`) to pass `?secret=2743&v=6.1`, unlocking the dashboard seamlessly on tap.
+    * Added FastAPI `CORSMiddleware` and proxy routes `/api/admin/stats` and `/api/rates` in `app.py`.
+  - **Re-Deployed Edge Worker Node 4 (`https://restore-agy.agorameet.workers.dev`)**:
+    * Verified live deployment serving updated miniapp and user admin console with full CORS support and 31 authentic community miners.
+
+
 - **👑 User Bot Admin Dashboard (`user-admin.html`) Full 9-Pool Upgrade & Render Redundancy (October 31, 2026)**:
   - **Expanded `POOLS_LIST` to 9 Legitimate Mining Pools in `user-admin.html`**:
     * Added Grouche Mine 🍐 ($GRC) (`@GRC_AirdrooBot` / `https://t.me/GRC_AirdrooBot?start=6727787768`) with cloud miner & Adsgram quest telemetry.

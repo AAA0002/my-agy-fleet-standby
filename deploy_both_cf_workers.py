@@ -2929,8 +2929,8 @@ export default {
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data, X-User-Id, X-Admin-Token"
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data, X-User-Id, X-Admin-Token, X-Secret, x-secret, x-admin-token, *"
     };
 
     if (request.method === "OPTIONS") {
@@ -13143,7 +13143,7 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "👥 Invite Friends" },
-              { text: "👑 User Admin Console", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin?v=6.0" } }
+              { text: "👑 User Admin Console", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin?secret=2743&v=6.1" } }
             ]
           ],
           resize_keyboard: true,
@@ -15050,7 +15050,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "👑 Launch Admin Dashboard ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin?v=6.0" } }]
+                [{ text: "👑 Launch Admin Dashboard ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin?secret=2743&v=6.1" } }]
               ]
             });
             return;

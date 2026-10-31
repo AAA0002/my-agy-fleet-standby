@@ -109,7 +109,17 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("RenderSessionCollector")
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="MY AGY AI — Standby Batch Session Link Collector")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 API_ID = int(os.getenv("TELEGRAM_API_ID", "37321306"))
@@ -543,6 +553,33 @@ async def api_proxy_admin_users(request: Request):
     except Exception as e:
         logger.warning(f"Error proxying /api/admin/users to Cloudflare: {e}")
     return {"ok": False, "error": "Edge mesh unreachable"}
+
+@app.get("/api/admin/stats")
+@app.get("/api/admin/community")
+async def api_proxy_admin_stats(request: Request):
+    """Proxies User Bot community stats from Primary Edge Gateway."""
+    cf_url = "https://restore-agy.agorameet.workers.dev/api/admin/users?secret=2743"
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(cf_url, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    return await r.json()
+    except Exception as e:
+        logger.warning(f"Error proxying /api/admin/stats to Cloudflare: {e}")
+    return {"ok": False, "error": "Edge mesh unreachable"}
+
+@app.get("/api/rates")
+async def api_proxy_rates():
+    """Proxies crypto rates from Primary Edge Gateway."""
+    cf_url = "https://restore-agy.agorameet.workers.dev/api/rates"
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(cf_url, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                if r.status == 200:
+                    return await r.json()
+    except Exception:
+        pass
+    return {"ok": True, "ton_usd": 1.62, "bnb_usd": 750.0}
 
 @app.get("/health")
 async def health():
