@@ -581,6 +581,59 @@ async def api_proxy_rates():
         pass
     return {"ok": True, "ton_usd": 1.62, "bnb_usd": 750.0}
 
+@app.get("/api/status")
+@app.get("/api/fleet/status")
+@app.get("/api/stats")
+async def api_proxy_status(request: Request):
+    """Proxies Executive Fleet telemetry from Primary Edge Gateway or fallback."""
+    cf_url = "https://restore-agy.agorameet.workers.dev/api/status?secret=2743"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(cf_url, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    return await r.json()
+    except Exception as e:
+        logger.warning(f"Error proxying /api/status to Cloudflare: {e}")
+    try:
+        acc_path = os.path.join(BASE_DIR, "accounts.json")
+        if os.path.exists(acc_path):
+            with open(acc_path, "r") as f:
+                accs = json.load(f)
+            return {"ok": True, "accounts": accs, "active_bots": 9, "source": "render_local_cache"}
+    except Exception:
+        pass
+    return {"ok": False, "error": "Edge mesh unreachable"}
+
+@app.post("/api/tokens/refresh")
+@app.get("/api/tokens/refresh")
+async def api_proxy_tokens_refresh(request: Request):
+    """Proxies token refresh to /collect-tokens."""
+    try:
+        return await collect_tokens(request)
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.post("/api/harvest")
+@app.get("/api/harvest")
+async def api_proxy_harvest(request: Request):
+    """Proxies harvest execution to Primary Edge Gateway."""
+    cf_url = "https://restore-agy.agorameet.workers.dev/api/harvest?secret=2743"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Content-Type": "application/json"}
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.post(cf_url, json=body, headers=headers, timeout=aiohttp.ClientTimeout(total=20)) as r:
+                if r.status == 200:
+                    return await r.json()
+    except Exception as e:
+        logger.warning(f"Error proxying /api/harvest to Cloudflare: {e}")
+    return {"ok": False, "error": "Edge mesh unreachable"}
+
 @app.get("/health")
 async def health():
     in_maint, reason, rem = await is_in_maintenance_mode()

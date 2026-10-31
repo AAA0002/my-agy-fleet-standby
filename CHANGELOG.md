@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Cloudflare Edge Cron Grouche Mine Farming Integration & Executive Console Mesh Hardening (October 31, 2026)**:
+  - **Full Grouche Mine Autonomous Cloud Farming in Cloudflare Edge Mesh (`deploy_both_cf_workers.py`)**:
+    * **Integrated `farmGrouchemine` into `farmSingleAccountAllBots`**: Cloudflare Workers 15-minute cron runner (`*/15 * * * *`) now autonomously farms Grouche Mine across all accounts. Executes `/auth/login`, claims daily reward (`/users/daily-claim`), checks and completes all social tasks (`/tasks/*`) with server-enforced delay, harvests Adsgram ads (`/users/ads/complete`, up to 8 ads per 12h, +10 GRC each), claims accumulated mining yield (`/mining/claim`), and enforces **Strict Zero-Spend Policy** (never purchase packages).
+    * **Added Grouche Mine to Autonomous Pipeline Routing**: Configured `BOT_COOLDOWNS.grouchemine` (2-4 hours), registered in `botRoutines`, and added aliases (`grouche`, `grouchemine`, `grc`, `grc_airdroobot`) to `BOT_KEY_ALIASES`.
+    * **Fixed D1 SQL Token Purge Whitelist Bug**: Added `'grouchemine'` to `DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'kynex', 'diggo', 'pepegram', 'adxearn', 'chickenland', 'grouchemine')`. Previously, any Grouche Mine tokens stored in D1 would be purged due to missing whitelist entry.
+    * **Updated All UI Labels & Prompts to 9 Mining Pools**: Replaced all remaining legacy "8 bots / 8 pools" strings across status cards, bot hub buttons (`btn_bots_hub`), broadcast prompts, welcome messages, wallet descriptions, and account binding summaries.
+    * **Deployed Live to Edge Node 4 (`https://restore-agy.agorameet.workers.dev`)**: Uploaded and verified script with active cron triggers.
+  - **Render Node 3 Executive API Proxy Endpoints (`app.py`)**:
+    * Added `@app.get("/api/status")`, `@app.get("/api/fleet/status")`, and `@app.get("/api/stats")` proxying to Primary Edge Gateway with browser-compatible headers and local `accounts.json` fallback, resolving HTTP 404 when opening the Executive Console on Render Node 3.
+    * Added `/api/tokens/refresh` and `/api/harvest` proxy routes to trigger token extraction and multi-bot farming cycles from Render origin.
+  - **Executive Console (`admin.html`) Same-Origin & Mesh Authentication Upgrade**:
+    * **Added Same-Origin First Route in `fetchMeshApi`**: Tries `window.location.origin` as candidate 0 before external worker URLs, eliminating CORS issues on Render Node 3.
+    * **Auto-Appends Secret to Admin API Requests**: Appends `?secret=${activeToken || '2743'}` to ensure authentication succeeds on edge nodes.
+    * **Auto-Authentication for Commander Arif**: Detects verified owner `tg.initDataUnsafe.user.id === 6727787768` or `?secret=2743`, unlocking the dashboard seamlessly without manual PIN prompts.
+    * **Auto-Clearing Stale Tokens on 401**: Prevents stale tokens from trapping the dashboard in locked or unauthenticated states.
+    * Synchronized all mirrors: `public_admin/admin.html`, `public_admin/admin/index.html`, and `public/admin.html`.
+  - **Grouche Mine 🍐 Ground-Truth Verification & Zero-Spend Adherence**:
+    * Verified on Master Arif (`6727787768`): All 3 social tasks `completed: true`. All 8/8 Adsgram ads watched and credited. Claimed 1.34 GRC mined yield to main balance (total: 626.08 GRC). Zero miner packages purchased.
+  - **Standby & Solver Synchronization (`push_to_standby_repo.py`)**:
+    * Added `batch_grouche_mine.py` synchronization to `AAA0002/my-agy-fleet-standby` and `AAA0002/cloud-fleet-solver`.
+
 - **👑 User Bot Admin Dashboard User Visibility Resolution & Public Mini App 9-Pool Protocol Integration (October 31, 2026)**:
   - **Root Cause Analysis & Complete Resolution of Missing Users on User Bot Admin Console**:
     * **Identified CORS Preflight Blocker**: Cross-origin requests from Render Node 3 (`onrender.com`) and browser previews were blocked because `X-Secret` was sent in headers by the dashboard, but omitted from Cloudflare Worker's `Access-Control-Allow-Headers`. Added `X-Secret, x-secret, x-admin-token, *` to `corsHeaders` in `deploy_both_cf_workers.py`.

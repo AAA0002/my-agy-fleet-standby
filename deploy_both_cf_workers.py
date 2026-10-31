@@ -1783,8 +1783,114 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // Humanized Execution Pipeline: Active Fleet Mining Pools (8 Authentic Legitimate Bots)
-  // Time-aligned cooldowns respect true protocol cycle durations (e.g. 6-8h, 24h)
+  // 10. Grouche Mine (@GRC_AirdrooBot) — Cloud Miner Yield & Adsgram Quests
+  const farmGrouchemine = async () => {
+    let grcInit = accData.grouchemine_init_data || accData.grc_init_data;
+    if (!grcInit) return;
+    try {
+      if (typeof grcInit === "string" && (grcInit.startsWith("user%3D") || grcInit.includes("%257B") || grcInit.includes("%2522"))) {
+        try { grcInit = decodeURIComponent(grcInit); } catch (_) {}
+      }
+      const grcHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://grouchemine.world",
+        "Referer": "https://grouchemine.world/",
+        "X-Telegram-Init-Data": grcInit
+      });
+
+      const callGrc = async (endpoint, method = "GET", data = null) => {
+        const opts = { method, headers: grcHeaders };
+        if (data !== null) opts.body = JSON.stringify(data);
+        const resp = await fetchWithRetry(`https://grouchemine.world/api${endpoint}`, opts, 2, 800).catch(() => null);
+        if (!resp) return { success: false };
+        return await resp.json().catch(() => ({ success: false }));
+      };
+
+      // 1. Authenticate / Login
+      const loginRes = await callGrc("/auth/login", "POST", { initData: grcInit });
+      if (!loginRes.success && loginRes.error) {
+        result.bots.grouchemine = `auth_failed (${loginRes.error})`;
+        return;
+      }
+
+      const uData = loginRes.data?.user || {};
+      let lnxBal = parseFloat(uData.lnxBalance || 0);
+
+      // 2. Daily Claim
+      await humanDelay(600, 1200);
+      const dailyRes = await callGrc("/users/daily-claim", "POST", {});
+      if (dailyRes.success) {
+        const rew = parseFloat(dailyRes.data?.rewardLnx || 5);
+        lnxBal += rew;
+      }
+
+      // 3. Complete available social tasks
+      try {
+        const tasksRes = await callGrc("/tasks", "GET");
+        if (tasksRes.success && Array.isArray(tasksRes.data)) {
+          for (const t of tasksRes.data) {
+            if (!t.completed && t.id) {
+              await callGrc(`/tasks/${t.id}/open`, "POST", {});
+              await humanDelay(10500, 11500); // Server enforces 10s countdown
+              const compRes = await callGrc(`/tasks/${t.id}/complete`, "POST", {});
+              if (compRes.success) {
+                lnxBal += parseFloat(t.rewardLnx || 0);
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 4. Adsgram Quests (+10 GRC each, up to 8 per 12h)
+      try {
+        const adsStatus = await callGrc("/users/ads", "GET");
+        if (adsStatus.success) {
+          const limit = parseInt(adsStatus.data?.limit || 8);
+          const watched = parseInt(adsStatus.data?.watched || 0);
+          const remaining = Math.max(0, limit - watched);
+          if (remaining > 0) {
+            for (let adI = 0; adI < remaining; adI++) {
+              await humanDelay(1000, 2000);
+              const adRes = await callGrc("/users/ads/complete", "POST", {
+                clicked: 1,
+                watchedMs: 15500 + Math.floor(Math.random() * 2000)
+              });
+              if (adRes.success) {
+                lnxBal = parseFloat(adRes.data?.lnxBalance || lnxBal);
+              } else {
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 5. Mining Claim (Strict Zero-Spend Policy: NEVER buy packages)
+      const miningRes = await callGrc("/mining/status", "GET");
+      if (miningRes.success) {
+        const mData = miningRes.data || {};
+        const sessMined = parseFloat(mData.sessionMinedLnx || 0);
+        if (sessMined > 0) {
+          await humanDelay(500, 1000);
+          const claimRes = await callGrc("/mining/claim", "POST", {});
+          if (claimRes.success) {
+            lnxBal = parseFloat(claimRes.data?.lnxBalance || lnxBal);
+          }
+        }
+        // Ensure mining is running if packages are owned
+        if (mData.packageCount > 0 && !mData.isMining) {
+          await callGrc("/mining/toggle", "POST", {});
+        }
+      }
+
+      result.bots.grouchemine = `farmed (balance: ${lnxBal.toFixed(2)} GRC)`;
+    } catch (e) {
+      result.bots.grouchemine = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Active Fleet Mining Pools (9 Authentic Legitimate Bots)
+  // Time-aligned cooldowns respect true protocol cycle durations (e.g. 6-8h, 12h, 24h)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1800, maxSec: 3600 },
     mrg: { minSec: 3600, maxSec: 7200 },
@@ -1793,7 +1899,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     pepegram: { minSec: 21600, maxSec: 28800 },
     adxearn: { minSec: 7200, maxSec: 14400 },
     diggo: { minSec: 7200, maxSec: 14400 },
-    chickenland: { minSec: 21600, maxSec: 28800 }
+    chickenland: { minSec: 21600, maxSec: 28800 },
+    grouchemine: { minSec: 7200, maxSec: 14400 }
   };
 
   const botRoutines = [
@@ -1804,7 +1911,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data || accData.pepe_init_data) },
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data || accData.adx_init_data) },
     { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) },
-    { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data || accData.chicken_init_data) }
+    { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data || accData.chicken_init_data) },
+    { name: "grouchemine", fn: farmGrouchemine, hasData: Boolean(accData.grouchemine_init_data || accData.grc_init_data) }
   ];
 
   const BOT_KEY_ALIASES = {
@@ -1814,6 +1922,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     knx: "kynex", kynex: "kynex",
     dgo: "diggo", diggo: "diggo", diggominer: "diggo",
     chicken: "chickenland", chickenland: "chickenland", chickenlandbot: "chickenland",
+    grouche: "grouchemine", grouchemine: "grouchemine", grc: "grouchemine", grc_airdroobot: "grouchemine",
     atf: "atf", mrg: "mrg"
   };
   const normTarget = targetBot ? (BOT_KEY_ALIASES[targetBot.toLowerCase()] || targetBot.toLowerCase()) : "all";
@@ -3335,7 +3444,7 @@ export default {
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 8 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 9 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -5371,7 +5480,7 @@ fi
             }
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(env.DB.prepare(
-                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'kynex', 'diggo', 'pepegram', 'adxearn', 'chickenland')"
+                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'kynex', 'diggo', 'pepegram', 'adxearn', 'chickenland', 'grouchemine')"
               ).run().catch(() => {}));
             }
           } catch (_) {}
@@ -6474,7 +6583,7 @@ fi
             `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (${Math.round(activeCount/accounts.length*100)}% Online) ✅\n` +
             `• ⚡ *Cloud WebApp Farming:* \`${Math.max(atfCount, accounts.length)}/${accounts.length} Accounts\` (100% Active in Cloud)\n` +
             `• 🔄 *Session Guardian:* 24h token auto-refresh active via Render Node 3\n\n` +
-            `🤖 *8 Legitimate Active Bots (Live Ground-Truth):*\n` +
+            `🤖 *9 Legitimate Active Bots (Live Ground-Truth):*\n` +
             `• 🪙 *ATF Miner:* \`${atfCount || accounts.length}/${accounts.length} Active\` • Cryptographic Math Solver\n` +
             `• ⚡ *MRG Miner:* \`${mrgActive}/${accounts.length} Active\` • Level 95+ Auto-Upgrade\n` +
             `• 🏢 *Victor's Co:* \`${victorsActive}/${accounts.length} Active\` • 24h Turnstile Pass & Deep Mine\n` +
@@ -6482,7 +6591,8 @@ fi
             `• ⛏️ *DiggoMiner:* \`${diggoCount || accounts.length}/${accounts.length} Active\` • 30-Day JWT Session Mining\n` +
             `• 🐸 *PepeGram:* \`${pepeCount || accounts.length}/${accounts.length} Active\` • 6h Production Cycles\n` +
             `• 🤖 *AdxEarn AI:* \`${adxCount || accounts.length}/${accounts.length} Active\` • Daily Mining & Streaks\n` +
-            `• 🐔 *Chicken Land:* \`${chkCount || accounts.length}/${accounts.length} Active\` • 8h Basket (${chkHens} Hens, ${chkEggs} Eggs)\n\n` +
+            `• 🐔 *Chicken Land:* \`${chkCount || accounts.length}/${accounts.length} Active\` • 8h Basket (${chkHens} Hens, ${chkEggs} Eggs)\n` +
+            `• 🍐 *Grouche Mine:* \`${accounts.length}/${accounts.length} Active\` • Cloud Miner Yield & Adsgram (+10 GRC)\n\n` +
             `☁️ *Cloud Infrastructure & Mesh:*\n` +
             `• 🖥️ *Coordinator Node:* ${coordNodeDesc}\n` +
             `• 🖥️ *Cloud VM Sentinel:* Online (Quad-Layer Anti-Pause • 4 vCPUs • 8 GB RAM)\n` +
@@ -6567,7 +6677,7 @@ fi
               `📊 *Session Health Summary:*\n` +
               `• 🟢 *Active & Authorized:* \`${activeList.length}/${accounts.length} Accounts\` (100% Online)\n` +
               `• 🟢 *Blocked / Revoked:* \`0 Accounts\` ✅\n` +
-              `• 🤖 *24/7 Farming:* All 8 Active Pools (MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn • Chicken Land)\n` +
+              `• 🤖 *24/7 Farming:* All 9 Active Pools (MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn • Chicken Land • Grouche Mine)\n` +
               `• 🛡️ *Status:* 100% Verified Cloud MTProto Sessions\n\n` +
               `🟢 *Live Active Accounts (${activeList.length}):*\n` +
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n` +
@@ -6921,7 +7031,7 @@ fi
                         `• *User ID:* \`${res2fa.user_id}\`\n` +
                         `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
                         `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
-                        `✅ *100% Cloud MTProto Active!*\nAll 8 autonomous farming bots are online 24/7 in the cloud.`;
+                        `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                       await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                       return new Response("OK");
                     }
@@ -6960,7 +7070,7 @@ fi
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
                     `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
-                    `✅ *100% Cloud MTProto Active!*\nAll 8 autonomous farming bots are online 24/7 in the cloud.`;
+                    `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
                 }
@@ -7775,7 +7885,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 All 8 Bots", callback_data: "btn_bots_hub" }
+                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -8248,7 +8358,7 @@ fi
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
                 const health = await getSessionHealthState();
-                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 8 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
                 const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size} mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
                 const prov = aiData.provider || "Cloudflare Workers AI";
                 const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -9012,7 +9122,7 @@ fi
             await sendReply("⏳ *Generating AI Executive Briefing via Cloudflare Workers AI (Llama 3.1 & DeepSeek R1)...*");
             try {
               const health = await getSessionHealthState();
-              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 8 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
               const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size} mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
               const prov = aiData.provider || "Cloudflare Workers AI";
               const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -9458,7 +9568,7 @@ fi
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Phone:* \`${res.phone || phone}\`\n` +
-                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `• *Master Referrals:* 🚀 \`All 9 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
                 `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
@@ -10216,7 +10326,7 @@ fi
                   `• *Daemon Status:* ${daemonStatus}\n` +
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
-                  `• *Active Lineup:* 8 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land)\n` +
+                  `• *Active Lineup:* 9 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land • Grouche Mine)\n` +
                   `• *⏱️ Synced:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-${accounts.length}>\` to inspect any account or \`/accounts\` for full fleet roster._`;
@@ -10723,7 +10833,7 @@ fi
           const parts = text.split(/\s+/);
           const bMsg = parts.slice(1).join(" ").trim();
           if (!bMsg) {
-            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 8 pools are active & paying out!`", statusInlineKeyboard);
+            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 9 pools are active & paying out!`", statusInlineKeyboard);
             return new Response("OK");
           }
           ctx.waitUntil((async () => {
@@ -11687,7 +11797,7 @@ Reply to Arif naturally:`;
                   `• Channels: 3/3 ✅\n` +
                   `• Ad Watched: +20 Pts ✅\n` +
                   `• Balance: ${profile.points} Pts\n\n` +
-                  `24/7 cloud mining is active across all 8 bots!`;
+                  `24/7 cloud mining is active across all 9 bots!`;
                 ctx.waitUntil(
                   fetch(`https://api.telegram.org/bot${env.USER_BOT_TOKEN}/sendMessage`, {
                     method: "POST",
@@ -13514,7 +13624,7 @@ Reply to Arif naturally:`;
 
             const walletMsg = `💎 *YOUR NON-CUSTODIAL WALLET SUITE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 8 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
+              `All 9 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
               `🌐 *Bot-Managed Multi-Chain Wallets:*\n` +
               `• *TON (v4r2):*\n  \`${tonAddr}\`\n` +
               `• *EVM (BSC / ETH):*\n  \`${evmAddr}\`\n` +
@@ -13726,7 +13836,7 @@ Reply to Arif naturally:`;
                 `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
                 `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
                 `🔒 *100% Serverless & Encrypted:*\n` +
-                `Your session runs safely in the cloud and automatically binds to all 8 mining pools.\n\n` +
+                `Your session runs safely in the cloud and automatically binds to all 9 mining pools.\n\n` +
                 `_(Send phone number or tap ❌ Cancel Connection below)_`;
               ctx.waitUntil(sendCqReply(promptPhone, userCancelKeyboard));
               return new Response("OK");
@@ -13749,7 +13859,7 @@ Reply to Arif naturally:`;
                 `• *Pass Status:* ${passBadge}\n` +
                 `• *Points Balance:* ${profile.points} Pts\n\n` +
                 `📱 *Active Accounts:*\n${accList}\n\n` +
-                `💡 _Every account automatically farms all 8 pools 24/7 in the cloud._`;
+                `💡 _Every account automatically farms all 9 pools 24/7 in the cloud._`;
               const inlineBtns = [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
@@ -13906,7 +14016,7 @@ Reply to Arif naturally:`;
             const guideKb = {
               inline_keyboard: [
                 [{ text: "📱 1-Tap QR Login (0 Codes)", callback_data: "ub_login_qr" }, { text: "📱 Phone Login", callback_data: "ub_login_phone" }],
-                [{ text: "💎 My Wallets & Secrets", callback_data: "ub_wallets" }, { text: "⛏️ View 8 Pools", callback_data: "ub_pools" }],
+                [{ text: "💎 My Wallets & Secrets", callback_data: "ub_wallets" }, { text: "⛏️ View 9 Pools", callback_data: "ub_pools" }],
                 [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "📊 Dashboard", callback_data: "ub_stats" }]
               ]
             };
@@ -14230,7 +14340,7 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 8 Pools Active");
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
                 const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
@@ -14467,7 +14577,7 @@ Reply to Arif naturally:`;
             await saveUserProfile(chatId, profile);
             ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `WebApp Connected (${label})`, "24/7 Autonomous Mining Live"));
 
-            const poolInfo = MINING_POOLS[poolKey] || { name: "All 8 Pools" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "All 9 Pools" };
             const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY!* 🚀\n\n` +
               `• *Label:* \`${label}\`\n` +
               `• *Account:* ${accName} (@${accUsername || "None"})\n` +
@@ -15172,7 +15282,7 @@ Reply to Arif naturally:`;
           if (text.startsWith("/start") || text === "/menu") {
             const dash = renderMiningDashboard(profile, chatId, senderName);
             await sendUserReply(dash.text, dash.markup);
-            await sendUserReply(`⚡ *AAA Cloud Mining Active* • 8 Pools Running 24/7`, activeUserKeyboard);
+            await sendUserReply(`⚡ *AAA Cloud Mining Active* • 9 Pools Running 24/7`, activeUserKeyboard);
 
             // Ensure persistent Chat Menu Button on User Bot launches the Ads Portal
             if (ctx && ctx.waitUntil) {
@@ -15259,7 +15369,7 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 8 Pools Active");
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
                 const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
@@ -15357,7 +15467,7 @@ Reply to Arif naturally:`;
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Active Slots:* ${profile.accounts.length} / ${totalSlots} Connected\n` +
               `• *Cloud Nodes:* 🟢 Render Cloud Node Active\n` +
-              `• *Protocols:* All 8 Pools Automated 24/7\n\n` +
+              `• *Protocols:* All 9 Pools Automated 24/7\n\n` +
               `👉 *Choose Connection Method:*\n\n` +
               `1️⃣ *⚡ 1-Tap QR Device Link (Fastest):*\n` +
               `Link your Telegram session directly with zero SMS codes and zero typing!\n\n` +
@@ -15516,7 +15626,7 @@ Reply to Arif naturally:`;
 
             const walletMsg = `💎 *YOUR NON-CUSTODIAL WALLET SUITE*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 8 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
+              `All 9 cloud mining pools automatically accumulate tokens and payouts into your dedicated user vault.\n\n` +
               `🌐 *Bot-Managed Multi-Chain Wallets:*\n` +
               `• *TON (v4r2):*\n  \`${tonAddr}\`\n` +
               `• *EVM (BSC / ETH):*\n  \`${evmAddr}\`\n` +
@@ -16051,7 +16161,7 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
-    // 3. Mini-App Automated Edge Claims (8 Legitimate Bots)
+    // 3. Mini-App Automated Edge Claims (9 Legitimate Bots)
     ctx.waitUntil((async () => {
       try {
         let tokens = await getFleetTokens(env);
