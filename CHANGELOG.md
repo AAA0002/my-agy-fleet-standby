@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🪙 ATF Miner Bot Handle Migration (@ATF_AIRDROP_bot) & 21-Account Token Regeneration (October 31, 2026)**:
+  - **Identified Official Bot Handle Migration**:
+    * Discovered official ATF channel (`@AI_TRADING_FOREX`) migrated its MiniApp bot to `@ATF_AIRDROP_bot` (ID `8233119648`), leaving legacy handle `@atfminers_bot` unoccupied.
+    * Updated `ATF_BOT = "ATF_AIRDROP_bot"` with fallback alias in `app.py`, `bot_registry.py`, `refresh_cloud_tokens.py`, and `extract_all_missing_fleet_tokens.py`.
+  - **Fleet-Wide 21-Account Token Extraction & Synchronization**:
+    * Programmatically extracted fresh cryptographic WebApp tokens across all 21 accounts via Telethon MTProto.
+    * Synchronized fresh tokens to Upstash Redis (`fleet:tokens:{uid}` and `miniapp_tokens`).
+  - **Fleet Financial Ledger & Audit Recovery**:
+    * Resolved all previous HTTP 401 errors on ATF Miner, restoring ground-truth live data across all 21 accounts with **14,656.04 ATF** total balance (Master holding 6,191.89 ATF at Level 164).
+    * Updated Render Node 3 to build/deploy `b1946d1`, verified 100% `live`.
+  - **MRG Miner & Victor's Company Appeal Monitoring**:
+    * Confirmed Telegram flagged `@Mrgminerbot` and `@VictorsCompanybot` with `Scam: True` on Oct 29-30, disabling `RequestWebViewRequest` API access while their official communities appeal directly to Telegram.
+    * The fleet continues fully automated mining, task execution, and yield accumulation across all active pools: ATF Miner, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, and Grouche Mine.
+
 - **🐛 Comprehensive Fleet Bug Hunt & Multi-Cloud Stability Hardening (October 30, 2026)**:
   - **Fixed UnboundLocalError in `api_remove_account` (`app.py`)**:
     * Identified and fixed Python `UnboundLocalError` at line 4796 where `FLEET_ACCOUNTS_CACHE.pop(...)` was called before assignment due to a missing `global FLEET_ACCOUNTS_CACHE` declaration.
