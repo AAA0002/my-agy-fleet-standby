@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **👑 User Bot Admin Dashboard (`user-admin.html`) Full 9-Pool Upgrade & Render Redundancy (October 31, 2026)**:
+  - **Expanded `POOLS_LIST` to 9 Legitimate Mining Pools in `user-admin.html`**:
+    * Added Grouche Mine 🍐 ($GRC) (`@GRC_AirdrooBot` / `https://t.me/GRC_AirdrooBot?start=6727787768`) with cloud miner & Adsgram quest telemetry.
+    * Updated ATF Miner handle from legacy `@atfminers_bot` to official live bot `@ATF_AIRDROP_bot` (`https://t.me/ATF_AIRDROP_bot?start=6727787768`).
+    * Updated pool count indicators (`9 Pools`, `9 Cloud Pools 24/7`, `poolsCount: 9`) across header ticker, segmented tab rail, bottom floating dock, and pool telemetry views.
+    * Synchronized all 4 mirror files: `public_admin/user-admin.html`, `public_admin/user-admin/index.html`, `public_admin/users/index.html`, and `public/user-admin.html`.
+  - **Added 1-Click CSV Spreadsheet Export (`exportUsersCsv`)**:
+    * Implemented `exportUsersCsv` alongside JSON export, allowing 1-tap download of community users with user ID, username, name, points, connected accounts count, farming status, VIP status, ban state, ads watched, streak, and TON/Custom wallets.
+  - **Synchronized User Bot Cloudflare Edge Mesh (`deploy_both_cf_workers.py`)**:
+    * Updated `poolsCount: 9` in `/api/admin/users` REST payload (verified live 200 OK returning 31 authentic community miners).
+    * Updated ATF Miner handle across all LLM system prompts, keyword fallbacks, onboarding guides, and pool detection regex.
+    * Added Grouche Mine (`@GRC_AirdrooBot`) to User Bot pool tables, help menus, and callback keyboards (`ub_pool_grouchemine`).
+    * Deployed live to Primary Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+  - **Added Redundant Dashboard Hosting on Render Node 3 (`app.py`)**:
+    * Resolved HTTP 404 on Render Node 3 by adding `/user-admin`, `/user-admin.html`, `/users`, `/admin`, and `/admin.html` routes via FastAPI `FileResponse`.
+    * Added `/api/admin/users` proxy endpoint in `app.py` forwarding to edge gateway, enabling Render Node 3 to serve both executive and user admin consoles out-of-the-box.
+
+
 - **🛠️ Fleet Asset Audit Hardening & Ground-Truth Verification (October 31, 2026)**:
   - **Fixed Status Metric Missing Key in `audit_bots_and_sidetasks.py`**:
     * Identified that Kynex Network only populated `b_rep["core"]["balance"]` and `b_rep["core"]["auth"]`, omitting `b_rep["core"]["status"]`. Added `b_rep["core"]["status"] = f"Active: {float(knx_bal):.1f} KNX (Energy: {energy}s)"` for uniform status parsing across fleet audits.

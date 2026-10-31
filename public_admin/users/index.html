@@ -203,16 +203,17 @@ function Icon({ name, className = "w-4 h-4" }) {
   });
 }
 
-// 8 Supported Cloud Mining Pools
+// 9 Supported Cloud Mining Pools
 const POOLS_LIST = [
   { name: "MRG Miner", key: "mrg", icon: "⚡", cadence: "Hashrate Active", username: "mrgtoken_bot", url: "https://t.me/mrgtoken_bot?start=ref_IRN1G3XD" },
-  { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming", username: "atfminers_bot", url: "https://t.me/atfminers_bot?start=6727787768" },
+  { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming", username: "ATF_AIRDROP_bot", url: "https://t.me/ATF_AIRDROP_bot?start=6727787768" },
   { name: "Victor's Company", key: "victors", icon: "🏢", cadence: "Mining Active", username: "VictorsCompanybot", url: "https://t.me/VictorsCompanybot?start=6727787768" },
   { name: "Kynex Network", key: "kynex", icon: "🌐", cadence: "12h Energy Reserve", username: "Kynex_miningbot", url: "https://t.me/Kynex_miningbot" },
   { name: "DiggoMiner", key: "diggo", icon: "⛏️", cadence: "30d JWT Mining", username: "Diggominer_bot", url: "https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff" },
   { name: "PepeGram", key: "pepegram", icon: "🐸", cadence: "6h Hash Production", username: "Pepe_gram_bot", url: "https://t.me/Pepe_gram_bot?start=6727787768" },
   { name: "AdxEarn AI", key: "adxearn", icon: "💎", cadence: "Daily Ads Farming", username: "AdxEarnAibot", url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768" },
-  { name: "Chicken Land", key: "chickenland", icon: "🐔", cadence: "Auto-Egg Laying", username: "ChickenLandBot", url: "https://t.me/ChickenLandBot?start=12668" }
+  { name: "Chicken Land", key: "chickenland", icon: "🐔", cadence: "Auto-Egg Laying", username: "ChickenLandBot", url: "https://t.me/ChickenLandBot?start=12668" },
+  { name: "Grouche Mine", key: "grouchemine", icon: "🍐", cadence: "Cloud Miner & Quests", username: "GRC_AirdrooBot", url: "https://t.me/GRC_AirdrooBot?start=6727787768" }
 ];
 
 const BLOCK_EXPLORERS = {
@@ -611,7 +612,7 @@ function App() {
     totalPoints: 0,
     totalAds: 0,
     totalRefs: 0,
-    poolsCount: 8,
+    poolsCount: 9,
     dailyBurnRate: 0
   });
 
@@ -953,6 +954,40 @@ function App() {
     }
   };
 
+  // Export CSV Snapshot
+  const exportUsersCsv = () => {
+    try {
+      const headers = ["User ID", "Username", "First Name", "Last Name", "Points", "Accounts", "Farming Active", "VIP", "Banned", "Ads Watched", "Streak", "TON Wallet", "Custom Wallet"];
+      const rows = adminUsers.map(u => [
+        u.user_id || "",
+        u.username || "",
+        (u.first_name || "").replace(/"/g, '""'),
+        (u.last_name || "").replace(/"/g, '""'),
+        u.points || 0,
+        (u.accounts || []).length,
+        u.farming_active ? "Yes" : "No",
+        (u.subscription_expiry && u.subscription_expiry > Date.now()) ? "Yes" : "No",
+        u.is_banned ? "Yes" : "No",
+        u.ads_watched || 0,
+        u.daily_streak || 0,
+        u.wallets?.ton?.address || "",
+        u.custom_wallet || (u.custom_wallets && u.custom_wallets[0]?.address) || ""
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(","));
+
+      const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(","), ...rows].join("\n"));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", csvContent);
+      downloadAnchor.setAttribute("download", "community_miners_" + new Date().toISOString().slice(0, 10) + ".csv");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Downloaded users CSV snapshot!");
+      if (soundEnabled) playSound("success");
+    } catch (err) {
+      showToast("Failed to export CSV", "error");
+    }
+  };
+
   // Filtered Users List
   const filteredUsers = useMemo(() => {
     return adminUsers.filter(u => {
@@ -1154,7 +1189,7 @@ function App() {
       ),
       React.createElement("div", { className: "flex items-center gap-1.5 text-slate-400" },
         React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500" }),
-        React.createElement("span", null, "8 Cloud Pools 24/7")
+        React.createElement("span", null, "9 Cloud Pools 24/7")
       )
     ),
 
@@ -1204,7 +1239,7 @@ function App() {
         { id: "users", label: "Miners", icon: "users", count: adminUsers.length },
         { id: "wallets", label: "Wallets", icon: "wallet", count: communityWallets.length },
         { id: "broadcast", label: "Broadcast", icon: "bell" },
-        { id: "pools", label: "8 Pools", icon: "zap", count: 8 },
+        { id: "pools", label: "9 Pools", icon: "zap", count: 9 },
         { id: "economy", label: "Economy", icon: "crown" }
       ].map(tab => {
         const isActive = activeNavTab === tab.id;
@@ -1302,10 +1337,18 @@ function App() {
           React.createElement("button", {
             onClick: exportUsersJson,
             title: "Export Users as JSON",
-            className: `tap-target px-3 py-2 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 transition active:scale-95 ${isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs"}`
+            className: `tap-target px-2.5 py-2 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1 transition active:scale-95 cursor-pointer ${isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs"}`
           },
             React.createElement(Icon, { name: "download", className: "w-3.5 h-3.5" }),
             React.createElement("span", { className: "text-[11px]" }, "JSON")
+          ),
+          React.createElement("button", {
+            onClick: exportUsersCsv,
+            title: "Export Users as CSV Spreadsheet",
+            className: `tap-target px-2.5 py-2 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1 transition active:scale-95 cursor-pointer ${isDarkMode ? "bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800/50" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-2xs"}`
+          },
+            React.createElement(Icon, { name: "database", className: "w-3.5 h-3.5" }),
+            React.createElement("span", { className: "text-[11px]" }, "CSV")
           )
         ),
 
@@ -1421,7 +1464,7 @@ function App() {
           React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono mb-2.5 px-0.5 text-slate-400" },
             React.createElement("div", { className: "flex items-center gap-1.5" },
               React.createElement("span", { className: "font-sans font-bold" }, `📱 ${accs.length} Connected`),
-              accs.length > 0 && React.createElement("span", { className: "text-emerald-400 font-bold" }, "(8 Pools 24/7)")
+              accs.length > 0 && React.createElement("span", { className: "text-emerald-400 font-bold" }, "(9 Pools 24/7)")
             ),
             (tonW || customW) && React.createElement("div", { className: "flex items-center gap-1 text-[9px]" },
               tonW && React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30" }, "TON"),
@@ -1709,13 +1752,13 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 4: 8 CLOUD MINING POOLS TELEMETRY VIEW
+    // TAB 4: 9 CLOUD MINING POOLS TELEMETRY VIEW
     // ==========================================================
     activeNavTab === "pools" && React.createElement("div", { className: "space-y-2.5 animate-fade-in" },
       React.createElement("div", { className: `p-3 rounded-2xl border ${cardBg}` },
         React.createElement("h2", { className: "font-black text-xs uppercase tracking-wider text-slate-400 mb-1" }, "Autonomous Cloud Farming Engine"),
         React.createElement("p", { className: "text-xs text-slate-300 leading-relaxed" },
-          "All 8 mining pools run 24/7 on the Cloudflare Edge Mesh and Render Standby Node 3 with zero battery load."
+          "All 9 mining pools run 24/7 on the Cloudflare Edge Mesh and Render Standby Node 3 with zero battery load."
         )
       ),
 
@@ -1827,7 +1870,7 @@ function App() {
           { id: "users", label: "Miners", icon: "users", count: adminUsers.length },
           { id: "wallets", label: "Wallets", icon: "wallet", count: communityWallets.length },
           { id: "broadcast", label: "Broadcast", icon: "bell" },
-          { id: "pools", label: "8 Pools", icon: "zap" },
+          { id: "pools", label: "9 Pools", icon: "zap" },
           { id: "economy", label: "Economy", icon: "crown" }
         ].map(tab => {
           const isActive = activeNavTab === tab.id;

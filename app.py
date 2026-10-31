@@ -76,6 +76,7 @@ def create_telethon_client(sess_str: str = "", identifier: Any = "default", prox
     )
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
@@ -506,6 +507,42 @@ async def root():
         "nodes": CF_WORKER_URLS,
         "last_run": LAST_BATCH_RUN
     }
+
+@app.get("/user-admin", response_class=HTMLResponse)
+@app.get("/user-admin.html", response_class=HTMLResponse)
+@app.get("/users", response_class=HTMLResponse)
+async def serve_user_admin():
+    file_path = os.path.join(BASE_DIR, "public_admin", "user-admin.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    file_path_pub = os.path.join(BASE_DIR, "public", "user-admin.html")
+    if os.path.exists(file_path_pub):
+        return FileResponse(file_path_pub, media_type="text/html")
+    return HTMLResponse("<h1>User Admin Console Not Found</h1>", status_code=404)
+
+@app.get("/admin", response_class=HTMLResponse)
+@app.get("/admin.html", response_class=HTMLResponse)
+async def serve_admin_console():
+    file_path = os.path.join(BASE_DIR, "public_admin", "admin.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    file_path_pub = os.path.join(BASE_DIR, "public", "admin.html")
+    if os.path.exists(file_path_pub):
+        return FileResponse(file_path_pub, media_type="text/html")
+    return HTMLResponse("<h1>Executive Admin Console Not Found</h1>", status_code=404)
+
+@app.get("/api/admin/users")
+async def api_proxy_admin_users(request: Request):
+    """Proxies User Bot community miners telemetry from Primary Edge Gateway."""
+    cf_url = "https://restore-agy.agorameet.workers.dev/api/admin/users?secret=2743"
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(cf_url, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    return await r.json()
+    except Exception as e:
+        logger.warning(f"Error proxying /api/admin/users to Cloudflare: {e}")
+    return {"ok": False, "error": "Edge mesh unreachable"}
 
 @app.get("/health")
 async def health():
