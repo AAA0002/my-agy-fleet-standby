@@ -883,6 +883,7 @@ async def interactive_login():
         "name": name,
         "username": username,
         "user_id": me.id,
+        "account_id": str(me.id),
         "phone": phone,
         "session_string": session_str,
         "added_at": datetime.now(timezone.utc).isoformat(),

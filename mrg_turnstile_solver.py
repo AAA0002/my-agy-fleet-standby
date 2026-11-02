@@ -193,7 +193,7 @@ def load_all_fleet_uids() -> list:
         try:
             with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
                 accs = json.load(f)
-                uids = [int(a["user_id"]) for a in accs if a.get("user_id")]
+                uids = [int(a.get("user_id") or a.get("account_id") or a.get("id")) for a in accs if (a.get("user_id") or a.get("account_id") or a.get("id"))]
                 if uids:
                     return uids
         except Exception:

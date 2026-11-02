@@ -36,7 +36,7 @@ import struct
 import base64
 import urllib.parse
 import urllib.request
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 logging.basicConfig(
     level=logging.INFO,
@@ -108,11 +108,12 @@ if UPSTASH_URL and UPSTASH_TOKEN:
             res = data.get("result")
             if res:
                 up_accs = json.loads(res) if isinstance(res, str) else res
-                existing_uids = {str(a.get("user_id")) for a in ACCOUNTS}
+                existing_uids = {str(a.get("user_id") or a.get("account_id") or a.get("id") or "") for a in ACCOUNTS}
                 for a in up_accs:
-                    if str(a.get("user_id")) not in existing_uids:
+                    a_uid = str(a.get("user_id") or a.get("account_id") or a.get("id") or "")
+                    if a_uid and a_uid not in existing_uids:
                         ACCOUNTS.append(a)
-                        existing_uids.add(str(a.get("user_id")))
+                        existing_uids.add(a_uid)
     except Exception:
         pass
 
@@ -337,7 +338,7 @@ async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str
         logger.warning(f"Error loading miniapp_tokens: {e}")
 
     # Discover all dynamic accounts from Upstash Redis keys fleet:tokens:*
-    discovered_uids = set(str(acc.get("user_id")) for acc in ACCOUNTS if acc.get("user_id"))
+    discovered_uids = set(str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "") for acc in ACCOUNTS if (acc.get("user_id") or acc.get("account_id") or acc.get("id")))
     try:
         async with session.get(f"{UPSTASH_URL}/keys/fleet:tokens:*", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as kr:
             if kr.status == 200:
@@ -350,10 +351,11 @@ async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str
         pass
 
     # Ensure any newly discovered account is dynamically present in ACCOUNTS
-    existing_uids = set(str(acc.get("user_id")) for acc in ACCOUNTS if acc.get("user_id"))
+    existing_uids = set(str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "") for acc in ACCOUNTS if (acc.get("user_id") or acc.get("account_id") or acc.get("id")))
     for duid in discovered_uids:
         if duid not in existing_uids:
-            ACCOUNTS.append({"user_id": int(duid), "name": f"Account_{duid}"})
+            ACCOUNTS.append({"user_id": int(duid), "account_id": duid, "name": f"Account_{duid}"})
+            existing_uids.add(duid)
 
     # Second, merge individual fleet:tokens:{uid}
     for uid in discovered_uids:
@@ -2023,7 +2025,7 @@ async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: 
 
 async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: dict, sem: asyncio.Semaphore) -> Dict[str, Any]:
     async with sem:
-        uid = str(acc.get("user_id"))
+        uid = str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "")
         name = acc.get("name", f"Account_{uid}")
         is_owner = (uid == MASTER_UID)
         acc_toks = tokens_db.get(uid, {})

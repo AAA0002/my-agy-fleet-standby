@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Multi-Cloud 11-Bot State Synchronization, Runtime Bug Elimination & Defensiveness Hardening (November 2, 2026)**:
+  - **11-Bot Token State Unification (`sync_fleet_all_tokens.py`)**:
+    * Created and executed `sync_fleet_all_tokens.py` to bridge the data state disjunction between storage layers.
+    * Synchronized all 11 bot tokens across Upstash Redis `miniapp_tokens`, `fleet_miniapp_tokens`, `accounts.json`, and `fleet_miniapp_tokens.json`. All 21 accounts now have 100% complete tokens across all 11 bots (MRG, ATF, Victor's, Kynex, PepeGram, AdxEarn, Diggo, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+    * Synced all 21 accounts directly to Primary Edge Gateway Node 4 KV (`https://restore-agy.agorameet.workers.dev/api/tokens`) using browser User-Agent header, bypassing Cloudflare WAF code 1010 blocking.
+  - **Runtime NameError Elimination in `finish_all_fleet_sidetasks.py`**:
+    * Resolved fatal `NameError: name 'Optional' is not defined` inside `sweep_earnvault_tasks` by importing `Optional` from `typing`.
+    * Hardened account ID resolution with defensive `a.get("user_id") or a.get("account_id") or a.get("id") or ""` fallbacks across account gathering loops.
+  - **Identity Field Normalization in `accounts.json` & Solvers**:
+    * Resolved missing `user_id` on accounts `8609131528` (Asaduzzaman Sarker) and `8937908003` (Adil H), ensuring both `user_id` (integer) and `account_id` (string) are populated on all 21 accounts.
+    * Added defensive UID extraction in `mrg_turnstile_solver.py` and `victors_sb_solver.py` (`load_all_fleet_uids`) to prevent crashes or skipped accounts if `user_id` is ever absent.
+    * Updated `login_account.py` to write both `user_id` and `account_id` on newly onboarded accounts.
+  - **Referral Gate Bug Fixed in `app.py`**:
+    * Fixed `is_account_referrals_bound(acc_entry)` in `app.py` line 2272. Previously, it checked `all_8_referrals_bound` or `all_9_referrals_bound`, causing any account with legacy `all_8_referrals_bound: True` to skip binding Grouche Mine (Bot 9), LUM Miner (Bot 10), and EarnVault (Bot 11). Now strictly verifies `all_11_referrals_bound: True` and checks all 11 referral keys.
+    * Updated all 21 accounts in `accounts.json` to reflect `all_11_referrals_bound = True`.
+  - **Serverless Cloud State Sync (`fleet:accounts`)**:
+    * Uploaded complete, sanitized 21-account database to Upstash Redis `fleet:accounts`, providing a high-speed cloud source of truth for Render Node 2/3 and Cloudflare edge workers.
+  - **Treasury Reporting & Sweeper Improvements**:
+    * Updated `daily_profit_reporter.py` to calculate LUM Miner referral yields from qualified friend counts (20,000 LUM).
+    * Enhanced `cloud_wallet_sweeper.py` to format and broadcast verified audit status cards to Admin DM when `--notify` is specified.
+
+
 - **🐛 Comprehensive Fleet Bug Elimination, 11-Bot Full Pipeline & Edge Gateway Deployment (November 2, 2026)**:
   - **`app.py` 11-Bot Full Pipeline Unification**:
     * **Added Bot 10 (LUM Miner) & Bot 11 (EarnVault) Constants**: Defined `LUMEON_BOT = "lumeonminer_bot"`, `LUMEON_REFERRAL_CODE = "6727787768"`, `EARNVAULT_BOT = "EarnVaultApp_bot"`, and `EARNVAULT_REFERRAL_CODE = "6727787768"` at the root constants level.

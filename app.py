@@ -2269,7 +2269,7 @@ ALL_10_BOT_KEYS = ALL_11_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
     """Checks whether an account already has its master referrals bound across all 11 active fleet bots."""
-    if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_10_referrals_bound") or acc_entry.get("all_11_referrals_bound"):
+    if acc_entry.get("all_11_referrals_bound"):
         return True
     return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_11_BOT_KEYS)
 

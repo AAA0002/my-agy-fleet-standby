@@ -238,6 +238,9 @@ async def get_fleet_mining_totals() -> dict:
                             if isinstance(core, dict) and "balance" in core:
                                 try: totals["lum"] += float(core["balance"])
                                 except Exception: pass
+                            elif isinstance(core, dict) and (core.get("qualified") or core.get("friends")):
+                                try: totals["lum"] += float((core.get("qualified") or core.get("friends") or 0) * 1000)
+                                except Exception: pass
                             else:
                                 m = re.search(r"([\d\.]+)\s*LUM", core_str)
                                 if m: totals["lum"] += float(m.group(1))

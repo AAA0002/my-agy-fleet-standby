@@ -226,6 +226,10 @@ def push_app():
     if os.path.exists(audit_f):
         push_file(audit_f, "audit_bots_and_sidetasks.py", "feat: 11-bot fleet comprehensive live audit engine")
         push_to_solver_repo(audit_f, "audit_bots_and_sidetasks.py", "feat: 11-bot fleet comprehensive live audit engine")
+    sync_tok_f = os.path.join(BASE_DIR, "sync_fleet_all_tokens.py")
+    if os.path.exists(sync_tok_f):
+        push_file(sync_tok_f, "sync_fleet_all_tokens.py", "feat: 11-bot token synchronizer and database unifier")
+        push_to_solver_repo(sync_tok_f, "sync_fleet_all_tokens.py", "feat: 11-bot token synchronizer and database unifier")
     
     # Dynamic Render Deployment: Detect active node from Upstash Redis or default to Node 3
     active_node = "node3"

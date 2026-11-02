@@ -568,6 +568,19 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
                 f"\n📡 <i>Status: CONFIRMED ON-CHAIN • Automated Sweeper</i>"
             )
             await send_telegram_receipt(session, receipt_msg)
+        elif notify_if_empty:
+            audit_msg = (
+                f"🛡️ <b>ON-CHAIN WALLET AUDIT SUMMARY</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"• <b>EVM Workers:</b> <code>{len(evm_audit)} audited</code> • Total: <code>{total_bnb:.6f} BNB / {total_eth:.6f} ETH / ${total_usdt:.2f} USDT</code>\n"
+                f"• <b>TON Workers:</b> <code>{len(ton_audit)} audited</code> • Total: <code>{total_ton:.4f} TON</code>\n"
+                f"• <b>Status:</b> All worker wallets secure • Below sweep threshold.\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🎯 <b>EVM Master Vault:</b> <code>{MASTER_EVM_VAULT}</code>\n"
+                f"🎯 <b>TON Master Vault:</b> <code>{MASTER_TON_VAULT}</code>\n"
+                f"📡 <i>Status: NOMINAL • Autonomous Sweeper</i>"
+            )
+            await send_telegram_receipt(session, audit_msg)
         elif funded_evm or funded_ton:
             logger.info(f"[Audit Summary] {len(funded_evm)} EVM and {len(funded_ton)} TON worker wallets have balance. Awaiting threshold sweep. Telegram notification suppressed per zero-spam directive.")
         else:
