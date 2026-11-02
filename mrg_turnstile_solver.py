@@ -2002,7 +2002,7 @@ def check_and_farm_adxearn_rest(a_acc: dict) -> tuple[bool, int]:
 
     # Restart farming session
     safe_post(f"{ADX_API}/farming/start", {}, extra_headers=adx_h)
-    safe_post(f"{ADX_API}/farming/boost", {}, extra_headers=adx_h)
+    # Strictly NEVER call /farming/boost - it deducts $0.1000 points from user balance to skip 5% time!
 
     # Dynamic tasks sweeping
     try:

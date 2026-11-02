@@ -6528,7 +6528,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         reward = claim_d.get("reward", 0)
                         pts += reward
                     await safe_post("https://api.adxearnai.xyz/api/farming/start", json_data={}, req_headers=adx_h)
-                    await safe_post("https://api.adxearnai.xyz/api/farming/boost", json_data={}, req_headers=adx_h)
+                    # NOTE: NEVER call /farming/boost - it deducts $0.1000 of mined points to skip 5% time!
 
                     # Parallelized Dynamic Tasks, Ad Networks, and CPA Offers
                     started_tasks = []
@@ -7218,18 +7218,24 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             net_id = net.get("id")
                             left = int(net.get("left", 0))
                             if net.get("ready") and left > 0 and net_id:
-                                c_sa, sa_d = await safe_post(f"{functions_base}/startAd", json_data={"data": {"net": net_id}}, req_headers=auth_headers, timeout_sec=6)
-                                if c_sa == 200 and isinstance(sa_d, dict):
-                                    sa_res = sa_d.get("result", {})
-                                    sess_id = sa_res.get("sessionId")
-                                    min_watch = int(sa_res.get("minWatchSeconds", 10))
-                                    if sess_id:
-                                        await asyncio.sleep(min_watch + 1)
-                                        c_ca, ca_d = await safe_post(f"{functions_base}/completeAd", json_data={"data": {"sessionId": sess_id}}, req_headers=auth_headers, timeout_sec=6)
-                                        if c_ca == 200 and isinstance(ca_d, dict):
-                                            ca_res = ca_d.get("result", {})
-                                            if ca_res.get("creditedCents"):
-                                                bal_usd += (ca_res.get("creditedCents") / 100.0)
+                                # Watch all remaining ads in this network to earn the batch reward ($0.10 for 10 ads)
+                                for _ in range(min(left, 10)):
+                                    c_sa, sa_d = await safe_post(f"{functions_base}/startAd", json_data={"data": {"net": net_id}}, req_headers=auth_headers, timeout_sec=6)
+                                    if c_sa == 200 and isinstance(sa_d, dict):
+                                        sa_res = sa_d.get("result", {})
+                                        sess_id = sa_res.get("sessionId")
+                                        min_watch = int(sa_res.get("minWatchSeconds", 10))
+                                        if sess_id:
+                                            await asyncio.sleep(min_watch + 1)
+                                            c_ca, ca_d = await safe_post(f"{functions_base}/completeAd", json_data={"data": {"sessionId": sess_id}}, req_headers=auth_headers, timeout_sec=6)
+                                            if c_ca == 200 and isinstance(ca_d, dict):
+                                                ca_res = ca_d.get("result", {})
+                                                if ca_res.get("creditedCents"):
+                                                    bal_usd += (ca_res.get("creditedCents") / 100.0)
+                                            else:
+                                                break
+                                    else:
+                                        break
             except Exception:
                 pass
 
@@ -7260,7 +7266,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "atf": (1800, 3600),
         "mrg": (3600, 7200),
         "victors": (14400, 28800),
-        "kynex": (43200, 86400),
+        "kynex": (3600, 4200),
         "pepegram": (21600, 28800),
         "adxearn": (7200, 14400),
         "diggo": (7200, 14400),

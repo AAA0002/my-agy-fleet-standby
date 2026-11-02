@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ AdxEarn AI Boost Eradication, Kynex 1-Hour Cadence, Grouche & EarnVault Ad Full-Batching, and Mobile Tmux Ergonomics (November 2, 2026)**:
+  - **AdxEarn AI Point-Deducting Boost Eradicated Fleet-Wide**:
+    * Discovered that `/farming/boost` corresponds to the UI button `⚡ Boost (-$0.1000)` which actively docks $0.1000 points from user balance to skip 5% remaining time.
+    * Permanently eliminated every call to `/farming/boost` across all backend codebases, workers, and solvers (`app.py`, `finish_all_fleet_sidetasks.py`, `mrg_turnstile_solver.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`). Zero points will ever be deducted for boosting.
+  - **Kynex Network 1-Hour Mining Cadence Restoration**:
+    * Discovered Kynex mining sessions run for exactly 1 hour, but `BOT_COOLDOWNS["kynex"]` was set to 12h–24h (`43200, 86400`), keeping the miner in the "STOPPED" state for ~23 hours per day.
+    * Reduced cooldown in `app.py` to 1 hour (`3600, 4200`), ensuring continuous, uninterrupted mining power (100 KNX/hr).
+  - **EarnVault 10-Ad Full-Batch Completion Engine**:
+    * Discovered EarnVault awards its $0.10 payout only after all 10 ads for an ad network (Monetag, GigaPub, Adsgram, Adsterra, QuickMoney) are completed.
+    * Refactored `app.py` and `finish_all_fleet_sidetasks.py` to loop through all remaining ads in an active network (`for _ in range(min(left, 10)):`) so that full batch payouts ($0.10 per network, up to $0.50 daily) are credited directly to balance.
+  - **Grouche Mine 8/8 Adsgram Watch & Click Full Sweeper**:
+    * Verified and ensured all 8/8 Adsgram Watch & Click ads (`/users/ads/complete`) are claimed (+10 GRC each, +80 GRC total per 12h cycle) across `app.py`, `batch_grouche_mine.py`, `finish_all_fleet_sidetasks.py`, and Cloudflare Edge Worker.
+  - **LUM Miner Architecture & Client-Side Verification Analysis**:
+    * Reverse engineered `https://lum-miner.gurmessa747.workers.dev/` and verified that "Watch Ads (+15 LUM)" and boosts are client-side Monetag popups stored in browser `localStorage`, with no server-side credit endpoint. All verified server endpoints (`/check-join` for +200 LUM channel joins, `/referral` for 20,000 LUM referral harvest) are fully automated.
+  - **Mobile Tmux Usability & Remote Control Optimization**:
+    * Configured VM `~/.tmux.conf` with dual prefix (`Ctrl-a` / `Ctrl-b`), 1-touch direct detach (`Alt-d` / `Alt-q`), and persistent status-bar help.
+    * Wrapped `agy-entry` with non-terminating bash subshell so exiting CLI returns to shell rather than terminating tmux.
+    * Added mobile aliases `detach`, `tmux-detach`, `kill-tmux`, `tmux-help` in `~/.bashrc`.
+
+
 - **🚀 11-Bot Full Sidetask & Ad-Watching Automation, Entity Fallback & Pipeline Hardening (November 2, 2026)**:
   - **Chicken Land Rewarded Ads & Free Hen Claim Automation**:
     * Integrated `/api/ad/start` -> 25.0s wait -> `/api/ad/done` rewarded ad watching in both `app.py` (`_farm_chickenland`) and `finish_all_fleet_sidetasks.py` (`sweep_chickenland_tasks`).

@@ -529,8 +529,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                             b_rep["side_tasks"].append(f"Farming Claim: {f_txt}")
                         # Farming start
                         await session.post("https://api.adxearnai.xyz/api/farming/start", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6))
-                        # Farming boost & Dynamic Tasks
-                        await session.post("https://api.adxearnai.xyz/api/farming/boost", json={}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=5))
+                        # Strictly NEVER call /farming/boost - it deducts $0.1000 of mined points to skip 5% time!
+                        # Dynamic Tasks
                         try:
                             async with session.get("https://api.adxearnai.xyz/api/rewards/tasks", headers=adx_h, timeout=aiohttp.ClientTimeout(total=5)) as tr:
                                 if tr.status == 200:

@@ -1351,7 +1351,7 @@ Whenever you perform work in this repository:
   7. **LeafEarn** (`@LeafEarnBot`): Full Connect-RPC engine (`leaf.v1.*`) with anti-bot WASM HMAC signature.
   8. **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`): Supabase RPC protocol (`astra_login`, `astra_sync_wallet`, `astra_math_challenge`, `astra_start_mine`, `astra_mine_claim`).
   9. **PepeGram** (`@Pepe_gram_bot`): Mini Empire multi-tenant backend (`tid=1449`, auth, claim-welcome-bonus, claim, tasks/mine).
-  10. **AdxEarn AI** (`@AdxEarnAibot`): Dynamic REST API (`/user/session`, `/rewards/checkin`, `/farming/status`, `/farming/claim`, `/farming/start`, `/farming/boost`, `/rewards/tasks`).
+  10. **AdxEarn AI** (`@AdxEarnAibot`): Dynamic REST API (`/user/session`, `/rewards/checkin`, `/farming/status`, `/farming/claim`, `/farming/start`, `/rewards/tasks`). Zero-Deduction Policy: Strictly never call `/farming/boost` (which deducts $0.1000 points from user balance).
 * **LeafEarn Connect-RPC & Anti-Bot WebAssembly Discovery**:
   - **The Anti-Bot Protection**: LeafEarn uses a client-side WebAssembly binary (`https://leafearn.site/fx/tone-d27e853a.wasm`) that validates every request with mandatory HTTP headers `x-app-rev` and `x-view-hint`. Requests without valid signatures fail with `400 failed_precondition: Please close and reopen Leaf to update`.
   - **Deterministic Decompilation**: We reverse-engineered the WASM functions (`grain()`, `ease()`, `tone()`) and discovered that `ease() = 18394`, `grain() = 536425909`, and `tone()` uses a static 5x32 byte table.
@@ -1919,9 +1919,22 @@ Whenever you perform work in this repository:
   - **Autonomous Edge Cron**: Integrated `farmEarnvault` in `deploy_both_cf_workers.py` for continuous 15-minute background farming.
   - **Harvester & Audit Integration**: Integrated `sweep_earnvault_tasks` in `finish_all_fleet_sidetasks.py` and Bot 11 in `audit_bots_and_sidetasks.py`.
   - **Mini App Protocol 11 Card**: Added Protocol 11 in `public/miner/index.html` with 1-click harvest and bot launcher.
-* **11-Bot Full Fleet Deployment & Synchronization**:
-  - Updated all bot counters and pool hubs (`btn_bots_hub`) to **11 Active Legitimate Mining Pools**.
-  - Re-deployed Primary Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) with synchronized menu buttons, webhooks, and 15-minute cron triggers.
-  - Synchronized all 3 public Mini App mirrors: `public/miner/index.html`, `public_ads/miner/index.html`, and `public/app/index.html`.
+* **AdxEarn AI Boost Eradication, Kynex 1-Hour Cadence, Grouche & EarnVault Ad Batching, and Mobile Tmux Hardening (November 2, 2026)**:
+  - **AdxEarn AI Zero-Deduction Policy**:
+    * **Root Cause**: The `/farming/boost` endpoint corresponds to the UI button `⚡ Boost (-$0.1000)` which costs $0.1000 from the user's mined points balance to skip 5% remaining time.
+    * **Total Eradication**: Removed every single call to `/farming/boost` across all backend scripts, Cloudflare edge workers, and runners (`app.py`, `finish_all_fleet_sidetasks.py`, `mrg_turnstile_solver.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`). Zero points will ever be deducted for boosting.
+  - **Kynex Network 1-Hour Cadence Optimization**:
+    * **Root Cause**: Kynex mining sessions last exactly 1 hour, but `BOT_COOLDOWNS["kynex"]` was configured to 12h–24h (`43200, 86400`), leaving accounts in the "STOPPED" status for ~23 hours a day.
+    * **Remediation**: Reconfigured cooldown in `app.py` to 1 hour (`3600, 4200`), allowing instant re-activation of mining power (100 KNX/hr) as soon as the session completes.
+  - **EarnVault 10-Ad Full Batch Payout**:
+    * **Root Cause**: EarnVault only credits $0.10 once all 10 ads of a network (Monetag, GigaPub, Adsgram, Adsterra, QuickMoney) are completed. Watching 1 ad per run left networks at e.g. 9/10 with $0.00 today's earnings.
+    * **Remediation**: Updated ad loops in `app.py` and `finish_all_fleet_sidetasks.py` to complete all remaining ads (`for _ in range(min(left, 10)):`) so that full 10-ad batches are credited immediately ($0.10 per network, up to $0.50 daily).
+  - **Grouche Mine 8/8 Adsgram Watch & Click Automation**:
+    * Fully automated the 8/8 Adsgram Watch & Click ads (`/users/ads/complete`) awarding +10 GRC per ad (+80 GRC total per 12h cycle) across `app.py`, `batch_grouche_mine.py`, `finish_all_fleet_sidetasks.py`, and Cloudflare Edge Worker.
+  - **LUM Miner Architecture & Client-Side Task Clarification**:
+    * Reverse-engineered the LUM Miner web app (`https://lum-miner.gurmessa747.workers.dev/`). Verified that "Watch Ads (+15 LUM)" and power boosts are purely client-side Monetag popups stored in browser `localStorage`, with no server-side credit endpoint. All verified server endpoints (`/check-join` for +200 LUM channel joins, `/referral` for 20,000 LUM referral harvest) are fully automated.
+  - **Mobile Tmux & Remote Session Ergonomics**:
+    * Configured VM `~/.tmux.conf` with dual prefix (`Ctrl-a` / `Ctrl-b`), 1-touch direct detach (`Alt-d` / `Alt-q`), and persistent status-bar help. Wrapped `agy-entry` with non-terminating bash subshell so exiting CLI returns to shell rather than terminating tmux. Added aliases `detach`, `kill-tmux`, `tmux-help` in `~/.bashrc`.
+
 
 

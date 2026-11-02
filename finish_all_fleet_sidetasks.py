@@ -1370,9 +1370,7 @@ async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: st
                         await session.post(f"{adx_base}/farming/start", json={}, headers=adx_headers)
                         res["notes"].append("farming_started")
 
-        # 4. Farming Boost
-        await jitter(0.3, 0.7)
-        await session.post(f"{adx_base}/farming/boost", json={}, headers=adx_headers)
+        # 4. Strict Zero-Deduction Policy: NEVER call /farming/boost (it deducts $0.1000 of mined points to skip 5% time!)
 
         # 5. Parallelized Task, Ad Network, and CPA Offer Verification
         # In AdxEarn AI, tasks, ad network views, and CPA offers each require a ~16s cooldown between start and claim.
@@ -2017,23 +2015,30 @@ async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: 
                             net_id = net.get("id")
                             left = int(net.get("left", 0))
                             if net.get("ready") and left > 0 and net_id:
-                                # Watch 1 ad per network per sweep cycle to respect natural pacing
-                                async with session.post(f"{functions_base}/startAd", json={"data": {"net": net_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as sa_r:
-                                    if sa_r.status == 200:
-                                        sa_d = (await sa_r.json()).get("result", {})
-                                        sess_id = sa_d.get("sessionId")
-                                        min_watch = int(sa_d.get("minWatchSeconds", 10))
-                                        if sess_id:
-                                            await asyncio.sleep(min_watch + 1)
-                                            async with session.post(f"{functions_base}/completeAd", json={"data": {"sessionId": sess_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ca_r:
-                                                if ca_r.status == 200:
-                                                    ca_d = (await ca_r.json()).get("result", {})
-                                                    st = ca_d.get("status")
-                                                    if st in ("counted", "credited"):
-                                                        res["tasks_claimed"] += 1
-                                                        res["notes"].append(f"ad_{net_id}_{st}")
-                                                        if ca_d.get("creditedCents"):
-                                                            res["balance"] += (ca_d.get("creditedCents") / 100.0)
+                                # Watch all remaining ads in this network to earn the batch reward ($0.10 for 10 ads)
+                                for _ in range(min(left, 10)):
+                                    async with session.post(f"{functions_base}/startAd", json={"data": {"net": net_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as sa_r:
+                                        if sa_r.status == 200:
+                                            sa_d = (await sa_r.json()).get("result", {})
+                                            sess_id = sa_d.get("sessionId")
+                                            min_watch = int(sa_d.get("minWatchSeconds", 10))
+                                            if sess_id:
+                                                await asyncio.sleep(min_watch + 1)
+                                                async with session.post(f"{functions_base}/completeAd", json={"data": {"sessionId": sess_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ca_r:
+                                                    if ca_r.status == 200:
+                                                        ca_d = (await ca_r.json()).get("result", {})
+                                                        st = ca_d.get("status")
+                                                        if st in ("counted", "credited"):
+                                                            res["tasks_claimed"] += 1
+                                                            if ca_d.get("creditedCents"):
+                                                                res["notes"].append(f"ad_{net_id}_credited_+{ca_d.get('creditedCents')}c")
+                                                                res["balance"] += (ca_d.get("creditedCents") / 100.0)
+                                                            else:
+                                                                res["notes"].append(f"ad_{net_id}_{st}")
+                                                    else:
+                                                        break
+                                        else:
+                                            break
         except Exception as ae:
             logger.debug(f"[{name}] EarnVault ad watch note: {ae}")
 

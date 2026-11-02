@@ -1327,9 +1327,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         await fetch("https://api.adxearnai.xyz/api/farming/start", {
           method: "POST", headers: aHeaders, body: JSON.stringify({})
         }).catch(() => {});
-        await fetch("https://api.adxearnai.xyz/api/farming/boost", {
-          method: "POST", headers: aHeaders, body: JSON.stringify({})
-        }).catch(() => {});
+        // Strictly NEVER call /farming/boost - it deducts $0.1000 of mined points to skip 5% time!
         try {
           const tResp = await fetch("https://api.adxearnai.xyz/api/rewards/tasks", { headers: aHeaders }).catch(() => null);
           if (tResp && tResp.ok) {
