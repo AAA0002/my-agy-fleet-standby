@@ -1799,7 +1799,7 @@ async def sweep_lumeon_tasks(session: aiohttp.ClientSession, uid: str, name: str
             pass
 
         # 3. Tasks
-        tasks = [("community", 50), ("payouts", 50), ("gramapps", 30), ("grammoney", 30)]
+        tasks = [("community", 50), ("payouts", 50), ("gramapps", 30), ("grammoney", 30), ("youtube", 40)]
         for tid, rew in tasks:
             try:
                 async with session.post(f"{base_url}/check-join", json={"task": tid, "initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as t_r:
@@ -1839,7 +1839,7 @@ async def sweep_lumeon_tasks(session: aiohttp.ClientSession, uid: str, name: str
 
 
 async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: str, init_data: str, acc: dict) -> Dict[str, Any]:
-    """Sweeps EarnVault ($USD / $TON) daily check-ins, cooldown claims, and partner tasks."""
+    """Sweeps EarnVault ($USD / $TON) daily check-ins, cooldown claims, rewarded ads, bonus tasks, and partner quests."""
     res = {"bot": "EarnVault", "tasks_claimed": 0, "notes": [], "success": False, "balance": 0.0}
     if not init_data:
         return res
@@ -1871,6 +1871,32 @@ async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: 
 
         auth_headers = {**headers, "Authorization": f"Bearer {id_tok}"}
 
+        # Gate solver helper (solves ad/captcha gate required for checkin, claims, and bonuses)
+        async def solve_gate(purpose: str) -> Optional[str]:
+            try:
+                async with session.post(f"{functions_base}/startGate", json={"data": {"purpose": purpose}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as sg_r:
+                    if sg_r.status != 200:
+                        return None
+                    sg_d = await sg_r.json()
+                    sess_id = sg_d.get("result", {}).get("sessionId")
+                if not sess_id:
+                    return None
+
+                for _ in range(12):
+                    async with session.post(f"{functions_base}/confirmGate", json={"data": {"sessionId": sess_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as cg_r:
+                        if cg_r.status == 200:
+                            cg_d = (await cg_r.json()).get("result", {})
+                            st = cg_d.get("status")
+                            if st in ("ready", "credited"):
+                                return sess_id
+                            wait_ms = cg_d.get("waitMs", 2000)
+                            await asyncio.sleep(min(max(1.0, wait_ms / 1000.0 + 0.3), 4.0))
+                        else:
+                            break
+            except Exception:
+                pass
+            return None
+
         # 3. Tasks
         tasks = [("official", 20), ("glamour", 10)]
         for tid, rew in tasks:
@@ -1887,7 +1913,7 @@ async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: 
             except Exception:
                 pass
 
-        # 4. Dashboard & Daily Check-in & Claim Reward
+        # 4. Dashboard & Daily Check-in & Claim Reward (with Gate Resolution)
         try:
             async with session.post(f"{functions_base}/getDashboard", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as d_r:
                 if d_r.status == 200:
@@ -1895,25 +1921,92 @@ async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: 
                     bal_cents = dash.get("balanceCents", 0)
                     res["balance"] = bal_cents / 100.0
 
-                    # Checkin
+                    # A. Daily Checkin
                     ci = dash.get("checkin", {})
                     if not ci.get("doneToday"):
-                        async with session.post(f"{functions_base}/dailyCheckIn", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ci_r:
+                        gate_sess = None
+                        if ci.get("gate", {}).get("required"):
+                            gate_sess = await solve_gate("checkin")
+                        ci_payload = {"gateSessionId": gate_sess} if gate_sess else {}
+                        async with session.post(f"{functions_base}/dailyCheckIn", json={"data": ci_payload}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ci_r:
                             if ci_r.status == 200:
                                 ci_d = (await ci_r.json()).get("result", {})
                                 if not ci_d.get("already") and ci_d.get("creditedCents"):
                                     res["tasks_claimed"] += 1
                                     res["notes"].append(f"checkin_+{ci_d.get('creditedCents')}c")
+                                    res["balance"] += (ci_d.get("creditedCents") / 100.0)
 
-                    # Claim Reward
+                    # B. Claim Reward
                     cl = dash.get("claim", {})
                     if cl.get("status") == "ready" or cl.get("remainingMs", 1) <= 0:
-                        async with session.post(f"{functions_base}/claimReward", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as cl_r:
+                        gate_sess = None
+                        if cl.get("gate", {}).get("required"):
+                            gate_sess = await solve_gate("claim")
+                        cl_payload = {"idempotencyKey": str(uuid.uuid4())}
+                        if gate_sess:
+                            cl_payload["gateSessionId"] = gate_sess
+                        async with session.post(f"{functions_base}/claimReward", json={"data": cl_payload}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as cl_r:
                             if cl_r.status == 200:
                                 cl_d = (await cl_r.json()).get("result", {})
                                 if cl_d.get("creditedCents"):
                                     res["tasks_claimed"] += 1
                                     res["notes"].append(f"claim_+{cl_d.get('creditedCents')}c")
+                                    res["balance"] += (cl_d.get("creditedCents") / 100.0)
+        except Exception:
+            pass
+
+        # 5. Rewarded Watch Ads (Monetag, Adsgram, Adsterra, Giga, QuickMoney)
+        try:
+            async with session.post(f"{functions_base}/getAdState", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ads_r:
+                if ads_r.status == 200:
+                    ad_data = (await ads_r.json()).get("result", {})
+                    if ad_data.get("enabled") and ad_data.get("eligible"):
+                        networks = ad_data.get("networks", [])
+                        for net in networks:
+                            net_id = net.get("id")
+                            left = int(net.get("left", 0))
+                            if net.get("ready") and left > 0 and net_id:
+                                # Watch 1 ad per network per sweep cycle to respect natural pacing
+                                async with session.post(f"{functions_base}/startAd", json={"data": {"net": net_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as sa_r:
+                                    if sa_r.status == 200:
+                                        sa_d = (await sa_r.json()).get("result", {})
+                                        sess_id = sa_d.get("sessionId")
+                                        min_watch = int(sa_d.get("minWatchSeconds", 10))
+                                        if sess_id:
+                                            await asyncio.sleep(min_watch + 1)
+                                            async with session.post(f"{functions_base}/completeAd", json={"data": {"sessionId": sess_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ca_r:
+                                                if ca_r.status == 200:
+                                                    ca_d = (await ca_r.json()).get("result", {})
+                                                    st = ca_d.get("status")
+                                                    if st in ("counted", "credited"):
+                                                        res["tasks_claimed"] += 1
+                                                        res["notes"].append(f"ad_{net_id}_{st}")
+                                                        if ca_d.get("creditedCents"):
+                                                            res["balance"] += (ca_d.get("creditedCents") / 100.0)
+        except Exception as ae:
+            logger.debug(f"[{name}] EarnVault ad watch note: {ae}")
+
+        # 6. Bonus Tasks (getBonusState -> startBonus -> confirmGate)
+        try:
+            async with session.post(f"{functions_base}/getBonusState", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as bn_r:
+                if bn_r.status == 200:
+                    bn_data = (await bn_r.json()).get("result", {})
+                    items = bn_data.get("items", [])
+                    for item in items:
+                        item_id = item.get("id")
+                        if item.get("ready") and not item.get("done") and item_id:
+                            async with session.post(f"{functions_base}/startBonus", json={"data": {"id": item_id}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as sb_r:
+                                if sb_r.status == 200:
+                                    sb_d = (await sb_r.json()).get("result", {})
+                                    b_sess = sb_d.get("sessionId")
+                                    if b_sess:
+                                        await asyncio.sleep(2)
+                                        async with session.post(f"{functions_base}/confirmGate", json={"data": {"sessionId": b_sess}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as cb_r:
+                                            if cb_r.status == 200:
+                                                cb_d = (await cb_r.json()).get("result", {})
+                                                if cb_d.get("status") in ("ready", "credited"):
+                                                    res["tasks_claimed"] += 1
+                                                    res["notes"].append(f"bonus_{item_id}")
         except Exception:
             pass
 

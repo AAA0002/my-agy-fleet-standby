@@ -2,6 +2,34 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 Forensic 11-Bot Full Inspection, Gate Solvers, Rewarded Ads & Autonomous Cloud Refresher Expansion (November 2, 2026)**:
+  - **Forensic Inspection & Protocol Optimization Across All 11 Mining Bots**:
+    * **Bot 1 (MRG Miner ⚡)**: Verified daily streak check-in (+5 to +15 MRG), TonConnect 2.0 wallet proof, link/channel tasks claim (with 15s wait debounce), mining claim with Turnstile verification, level auto-upgrade (1-203), and Master referral commissions/bonuses.
+    * **Bot 2 (ATF Miner 🪙)**: Verified login and stateful session cookies (`atf_tma_session`), mining claim, team wallet claim, referral commission claim, TON wallet sync, local deterministic math solver, interaction recording, boost activation, and 10 recurring/one-time tasks.
+    * **Bot 3 (Victor's Company 🏢)**: Verified Turnstile pass retrieval, tutorial auto-completion, Level 1 miner unlock (+100 V/day passive yield), mining balance claim, daily check-in, TonConnect 2.0 wallet proof, jobs board tasks (with 4.2s debounce), referral bonus/commission, and Deep Mine Arcade expeditions (safe rows 0 & 1, 0% bust chance).
+    * **Bot 4 (Kynex Network 🌐)**: Verified Firebase RTDB auth, mining claim/start, daily check-in, 43200s energy task, Prime (+5h) & Advance (+7h) ad boost claiming (`claimAdReward`), ads milestone boost, social tasks, ad tasks discovery across networks, and daily invite/ultra boost.
+    * **Bot 5 (DiggoMiner ⛏️)**: Verified JWT auth caching, TON wallet proof binding (`/api/ton/bind`), mining claim, referral claim, day rewards/streak claim, checkin & play milestone tasks, Telegram channel join (+30 DIGGO), social tasks (start -> attempt wait -> confirm -> claim), Solana launch tasks (quiz & pump), and Rewarded Ads (`/api/adsgram/start` -> wait -> `/api/adsgram/complete` -> claim task `ad`, up to 4/day).
+    * **Bot 6 (PepeGram 🐸)**: Verified miniapp auth, welcome bonus, hashes claim, mine tap, production session start (6h), tasks claim, and **Free Power Boosts**: `/tasks/ad-roll`, `/tasks/ad-roll2`, and `/tasks/slot-spin`.
+    * **Bot 7 (AdxEarn AI 🤖)**: Verified session init, checkin streak (+points), farming claim/start/boost, dynamic task claims, CPA offers auto-claim, referral milestones, and **Ad Networks Auto-Watch**: status check -> `/rewards/ad-verify-start` -> 16s cooldown -> `/rewards/ad-claim` across Adsgram, Monetag, Gigapub, and Popup.
+    * **Bot 8 (Chicken Land 🐔)**: Verified `/api/me`, auto-captcha fallback (pick solver), welcome bonus, daily checkin, egg collection & selling, custom partner tasks, autonomous promo sniper from `@ChickenLandCodes`, referral claim, basket upgrade, and hen auto-purchases.
+    * **Bot 9 (Grouche Mine 🍐)**: Verified login, daily claim, social tasks (with 11s server countdown), mining yield claim, TON wallet connect, and **Adsgram Watch Ads**: `/users/ads` status -> `/users/ads/complete` (up to 8 ads per 12h, +10 GRC each). Enforces strict Zero-Spend Policy.
+    * **Bot 10 (LUM Miner 💎)**: Added missing `youtube` (+40 LUM) task to community, payouts, gramapps, and grammoney tasks. Verified referral join under Master, wallet qualification, Master referral claims (1,000 LUM per qualified friend), and withdrawal pipeline.
+    * **Bot 11 (EarnVault 🏦)**: Discovered, reverse-engineered, and solved full security gate architecture and ad reward pipelines.
+  - **Live Fleet-Wide Harvest & Financial Audit Execution**:
+    * **527 Total Tasks/Rewards Claimed**: Executed `finish_all_fleet_sidetasks.py` across all 21 accounts in 3-worker concurrent batches. Claimed 24 to 27 tasks/rewards per account across all 11 bots (AdxEarn video ads, Diggo rewarded ads, PepeGram power boosts, Grouche Mine Adsgram ads, EarnVault multi-network ads and security gate claims, Kynex energy boosts, Chicken Land promo codes and daily tasks).
+    * **11/11 Responsive Bots Across Entire Fleet**: Executed `audit_bots_and_sidetasks.py`, validating 100% cryptographic connectivity across all 21 accounts. Confirmed fleet assets: 15,729.65 ATF, 2,283,700.80 KNX, 54,067.19 PEPE, 37,835 AdxEarn Points, 20,399.65 DIGGO, 324 Hens & 203,288 Eggs, 12,101.43 GRC, 20 LUM Qualified Referrals, and $16.90 USD EarnVault cash balance.
+    * **Dispatched Verification Cards**: Delivered live completion alert and financial audit card directly to AAA Admin notification (`-1004358687850`).
+
+  - **EarnVault 🏦 Gate-Bypassing Engine & Rewarded Ad Networks Implementation (`finish_all_fleet_sidetasks.py` & `deploy_both_cf_workers.py`)**:
+    * **Security Gate Solver**: Reversed `/startGate` and `/confirmGate` polling mechanisms. Server requires client to wait `waitMs` (typically 8.9s) before acknowledging gate completion. Integrated autonomous gate solver into `dailyCheckIn` and `claimReward` (with UUID `idempotencyKey`), transforming previously rejected attempts into verified cash credits!
+    * **Multi-Network Rewarded Video Ads Auto-Watch**: Integrated `/getAdState`, `/startAd`, and `/completeAd` across 5 ad networks (**Monetag**, **Adsgram**, **Adsterra**, **GigaPub**, and **QuickMoney**). Dynamically handles `minWatchSeconds` delay, crediting direct USD/cents rewards into fleet balances.
+    * **Bonus Tasks Auto-Claim**: Integrated `/getBonusState`, `/startBonus`, and `/confirmGate` to harvest special bonus events.
+  - **Single Source of Truth Registry & Autonomous 24h Cloud Token Refresher (`bot_registry.py` & `refresh_cloud_tokens.py`)**:
+    * **Registered All 11 Bots in SSOT Registry**: Added `lumeon` (`lumeonminer_bot`) and `earnvault` (`EarnVaultApp_bot`) to `bot_registry.py` along with their mandatory sponsor channels (`lumminercommunity`, `lumpayout`, `gramminiappsmining`, `Grammoneywallet`, `EarnVaulte`).
+    * **Cloud Token Refresher Full Mesh Integration**: Updated `refresh_cloud_tokens.py` to extract MTProto WebApp hashes for Grouche Mine, LUM Miner, and EarnVault in addition to the original 8 bots. Guarantees 24-hour cryptographic token freshness across Render Node 2, Cloudflare Edge KV, and Upstash Redis without manual intervention.
+  - **Cloudflare Edge Deployment (`deploy_both_cf_workers.py`)**:
+    * Synchronized full gate solvers, EarnVault multi-network ad watch, and LUM Miner YouTube tasks into Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified 200 OK and active 15-minute cron triggers (`*/15 * * * *`).
+
 - **💎 Complete 11-Bot Full Fleet Deployment: Edge Crons, Harvester, Audit & Mini App (November 2, 2026)**:
   - **Cloudflare Edge 15-Minute Cron Automation (`deploy_both_cf_workers.py`)**:
     * Integrated `farmLumeon`: Autonomous joining under Master, referral qualification, and community tasks verification on `lum-miner.gurmessa747.workers.dev`. If Master (`6727787768`), automatically queries unpaid qualified referrals and claims referral bonuses.

@@ -67,6 +67,8 @@ ADXEARN_BOT = "AdxEarnAibot"
 DIGGO_BOT = "Diggominer_bot"
 CHICKENLAND_BOT = "ChickenLandBot"
 GROUCHEMINE_BOT = "GRC_AirdrooBot"
+LUMEON_BOT = "lumeonminer_bot"
+EARNVAULT_BOT = "EarnVaultApp_bot"
 
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
@@ -76,6 +78,9 @@ PEPEGRAM_REF = "1449"
 ADXEARN_REF = "ref_6727787768"
 DIGGO_REF = "ref_4088138f11effe8eef4b86ff"
 CHICKENLAND_REF = "12668"
+GROUCHEMINE_REF = "6727787768"
+LUMEON_REF = "6727787768"
+EARNVAULT_REF = "6727787768"
 
 
 def load_accounts():
@@ -424,6 +429,30 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if chk_tok:
             tokens["chickenland_init_data"] = chk_tok
             print(f"  🐔 Chicken Land: Collected")
+        await asyncio.sleep(0.5)
+
+        # 9. Grouche Mine (@GRC_AirdrooBot)
+        grc_p = None if is_master else GROUCHEMINE_REF
+        grc_tok = await extract_bot_webapp_token(cl, GROUCHEMINE_BOT, start_param=grc_p, default_url="https://grouchemine.world/", candidate_short_names=["app"])
+        if grc_tok:
+            tokens["grouchemine_init_data"] = grc_tok
+            print(f"  🍐 Grouche Mine: Collected")
+        await asyncio.sleep(0.5)
+
+        # 10. LUM Miner (@lumeonminer_bot)
+        lum_p = None if is_master else LUMEON_REF
+        lum_tok = await extract_bot_webapp_token(cl, LUMEON_BOT, start_param=lum_p, default_url="https://lum-miner.gurmessa747.workers.dev/", candidate_short_names=["Lum", "lum", "app"])
+        if lum_tok:
+            tokens["lumeon_init_data"] = lum_tok
+            print(f"  💎 LUM Miner: Collected")
+        await asyncio.sleep(0.5)
+
+        # 11. EarnVault (@EarnVaultApp_bot)
+        ev_p = None if is_master else EARNVAULT_REF
+        ev_tok = await extract_bot_webapp_token(cl, EARNVAULT_BOT, start_param=ev_p, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"])
+        if ev_tok:
+            tokens["earnvault_init_data"] = ev_tok
+            print(f"  🏦 EarnVault: Collected")
 
         # Auto-join mandatory sponsor channels for side-task verification
         for s_ch in MANDATORY_SPONSOR_CHANNELS:

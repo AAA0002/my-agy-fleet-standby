@@ -1916,7 +1916,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       }, 1, 500).catch(() => {});
 
       // 3. Complete and check tasks
-      const tasks = ["community", "payouts", "gramapps", "grammoney"];
+      const tasks = ["community", "payouts", "gramapps", "grammoney", "youtube"];
       let tasksDone = 0;
       for (const t of tasks) {
         try {
@@ -1995,6 +1995,35 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
       const authHeaders = { ...evHeaders, "Authorization": `Bearer ${idTok}` };
 
+      // Gate resolution helper for check-ins, claims, and bonuses
+      const solveGate = async (purpose) => {
+        try {
+          const sgResp = await fetchWithRetry(`${functionsBase}/startGate`, {
+            method: "POST", headers: authHeaders, body: JSON.stringify({ data: { purpose } })
+          }, 1, 600);
+          if (!sgResp || !sgResp.ok) return null;
+          const sgData = await sgResp.json();
+          const sessId = sgData.result?.sessionId;
+          if (!sessId) return null;
+
+          for (let attempt = 0; attempt < 10; attempt++) {
+            const cgResp = await fetchWithRetry(`${functionsBase}/confirmGate`, {
+              method: "POST", headers: authHeaders, body: JSON.stringify({ data: { sessionId: sessId } })
+            }, 1, 600);
+            if (cgResp && cgResp.ok) {
+              const cgData = await cgResp.json();
+              const st = cgData.result?.status;
+              if (st === "ready" || st === "credited") return sessId;
+              const waitMs = cgData.result?.waitMs || 2000;
+              await humanDelay(Math.min(waitMs + 300, 3500), Math.min(waitMs + 800, 4000));
+            } else {
+              break;
+            }
+          }
+        } catch (_) {}
+        return null;
+      };
+
       // 3. Social tasks
       for (const t of ["official", "glamour"]) {
         try {
@@ -2008,7 +2037,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         } catch (_) {}
       }
 
-      // 4. Dashboard & Daily Checkin & Claim Reward
+      // 4. Dashboard & Daily Checkin & Claim Reward (with Gate Solving)
       let balCents = 0;
       const dashResp = await fetchWithRetry(`${functionsBase}/getDashboard`, {
         method: "POST", headers: authHeaders, body: JSON.stringify({ data: {} })
@@ -2020,8 +2049,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         // Daily Checkin
         if (dData.checkin && !dData.checkin.doneToday) {
           try {
+            let gateSess = null;
+            if (dData.checkin.gate?.required) {
+              gateSess = await solveGate("checkin");
+            }
+            const ciPayload = gateSess ? { gateSessionId: gateSess } : {};
             const ciResp = await fetchWithRetry(`${functionsBase}/dailyCheckIn`, {
-              method: "POST", headers: authHeaders, body: JSON.stringify({ data: {} })
+              method: "POST", headers: authHeaders, body: JSON.stringify({ data: ciPayload })
             }, 1, 500);
             if (ciResp && ciResp.ok) {
               const ciD = (await ciResp.json()).result || {};
@@ -2033,8 +2067,15 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         // Claim Reward if ready
         if (dData.claim && (dData.claim.status === "ready" || (dData.claim.remainingMs || 0) <= 0)) {
           try {
+            let gateSess = null;
+            if (dData.claim.gate?.required) {
+              gateSess = await solveGate("claim");
+            }
+            const randKey = "cl-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
+            const clPayload = { idempotencyKey: randKey };
+            if (gateSess) clPayload.gateSessionId = gateSess;
             const clResp = await fetchWithRetry(`${functionsBase}/claimReward`, {
-              method: "POST", headers: authHeaders, body: JSON.stringify({ data: {} })
+              method: "POST", headers: authHeaders, body: JSON.stringify({ data: clPayload })
             }, 1, 500);
             if (clResp && clResp.ok) {
               const clD = (await clResp.json()).result || {};
@@ -2043,6 +2084,73 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           } catch (_) {}
         }
       }
+
+      // 5. Rewarded Ad Networks Auto-Watch
+      try {
+        const adStatResp = await fetchWithRetry(`${functionsBase}/getAdState`, {
+          method: "POST", headers: authHeaders, body: JSON.stringify({ data: {} })
+        }, 1, 600);
+        if (adStatResp && adStatResp.ok) {
+          const adData = (await adStatResp.json()).result || {};
+          if (adData.enabled && adData.eligible) {
+            const networks = adData.networks || [];
+            for (const net of networks) {
+              const netId = net?.id;
+              const left = Number(net?.left || 0);
+              if (net?.ready && left > 0 && netId) {
+                const saResp = await fetchWithRetry(`${functionsBase}/startAd`, {
+                  method: "POST", headers: authHeaders, body: JSON.stringify({ data: { net: netId } })
+                }, 1, 600);
+                if (saResp && saResp.ok) {
+                  const saData = (await saResp.json()).result || {};
+                  const sessId = saData.sessionId;
+                  const minWatch = Number(saData.minWatchSeconds || 10);
+                  if (sessId && ctx && ctx.waitUntil) {
+                    ctx.waitUntil(new Promise(async (resolve) => {
+                      try {
+                        await humanDelay((minWatch + 1) * 1000, (minWatch + 2) * 1000);
+                        await fetchWithRetry(`${functionsBase}/completeAd`, {
+                          method: "POST", headers: authHeaders, body: JSON.stringify({ data: { sessionId: sessId } })
+                        }, 1, 500);
+                      } catch (_) {}
+                      resolve();
+                    }));
+                  }
+                }
+                break; // 1 ad per network start per edge cycle
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 6. Bonus Tasks Auto-Claim
+      try {
+        const bnResp = await fetchWithRetry(`${functionsBase}/getBonusState`, {
+          method: "POST", headers: authHeaders, body: JSON.stringify({ data: {} })
+        }, 1, 600);
+        if (bnResp && bnResp.ok) {
+          const bnData = (await bnResp.json()).result || {};
+          const items = bnData.items || [];
+          for (const item of items) {
+            if (item?.ready && !item?.done && item?.id) {
+              const sbResp = await fetchWithRetry(`${functionsBase}/startBonus`, {
+                method: "POST", headers: authHeaders, body: JSON.stringify({ data: { id: item.id } })
+              }, 1, 600);
+              if (sbResp && sbResp.ok) {
+                const sbData = (await sbResp.json()).result || {};
+                const bSess = sbData.sessionId;
+                if (bSess) {
+                  await humanDelay(2000, 3000);
+                  await fetchWithRetry(`${functionsBase}/confirmGate`, {
+                    method: "POST", headers: authHeaders, body: JSON.stringify({ data: { sessionId: bSess } })
+                  }, 1, 500).catch(() => {});
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
 
       result.bots.earnvault = `farmed (balance: $${(balCents / 100).toFixed(2)})`;
     } catch (e) {

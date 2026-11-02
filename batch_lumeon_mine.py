@@ -160,7 +160,8 @@ async def process_account(account: dict, index: int, total: int):
             ("community", 50),
             ("payouts", 50),
             ("gramapps", 30),
-            ("grammoney", 30)
+            ("grammoney", 30),
+            ("youtube", 40)
         ]
         claimed_lum = 0
         for tid, rew in tasks:

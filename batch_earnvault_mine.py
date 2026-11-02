@@ -19,6 +19,7 @@ Bot: @EarnVaultApp_bot | MiniApp: https://eearnvault.top/
 import os
 import sys
 import json
+import uuid
 import asyncio
 import urllib.parse
 import urllib.request
@@ -76,6 +77,21 @@ def get_id_token(custom_token: str) -> str:
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read().decode("utf-8")).get("idToken")
+
+async def solve_gate(purpose: str, id_token: str) -> str:
+    res = call_function("startGate", {"purpose": purpose}, id_token)
+    gate = res.get("gate", {})
+    session_id = gate.get("sessionId")
+    if not session_id:
+        return None
+    wait_ms = int(gate.get("waitMs", 8900))
+    await asyncio.sleep(min(12.0, max(2.0, wait_ms / 1000.0) + 0.5))
+    for _ in range(5):
+        c_res = call_function("confirmGate", {"sessionId": session_id}, id_token)
+        if c_res.get("status") == "ready":
+            return session_id
+        await asyncio.sleep(2.0)
+    return session_id
 
 async def process_account(account: dict, index: int, total: int):
     uid = str(account.get("user_id") or "")
@@ -183,7 +199,11 @@ async def process_account(account: dict, index: int, total: int):
         # 7. Try Daily Check-In
         ci = dash.get("checkin", {})
         if not ci.get("doneToday"):
-            ci_res = call_function("dailyCheckIn", {}, id_token)
+            gate_sess = None
+            if ci.get("gate", {}).get("required"):
+                gate_sess = await solve_gate("checkin", id_token)
+            ci_payload = {"gateSessionId": gate_sess} if gate_sess else {}
+            ci_res = call_function("dailyCheckIn", ci_payload, id_token)
             if not ci_res.get("already") and ci_res.get("creditedCents"):
                 bal_cents += ci_res.get("creditedCents")
                 logger.info(f"  🎁 Daily Check-in: +{ci_res.get('creditedCents')}¢")
@@ -191,10 +211,43 @@ async def process_account(account: dict, index: int, total: int):
         # 8. Try Claim Reward if cooldown is zero
         cl = dash.get("claim", {})
         if cl.get("status") == "ready" or cl.get("remainingMs", 1) <= 0:
-            cl_res = call_function("claimReward", {}, id_token)
+            gate_sess = None
+            if cl.get("gate", {}).get("required"):
+                gate_sess = await solve_gate("claim", id_token)
+            cl_payload = {"idempotencyKey": str(uuid.uuid4())}
+            if gate_sess:
+                cl_payload["gateSessionId"] = gate_sess
+            cl_res = call_function("claimReward", cl_payload, id_token)
             if cl_res.get("creditedCents"):
                 bal_cents += cl_res.get("creditedCents")
                 logger.info(f"  ⛏️ Claimed Reward: +{cl_res.get('creditedCents')}¢")
+
+        # 9. Multi-network Rewarded Video Ads
+        try:
+            ad_state = call_function("getAdState", {}, id_token)
+            for net in ["monetag", "adsgram", "adsterra", "gigapub", "quickmoney"]:
+                info = ad_state.get(net, {})
+                if info.get("canWatch") and (info.get("remaining") is None or info.get("remaining") > 0):
+                    s_res = call_function("startAd", {"net": net}, id_token)
+                    s_id = s_res.get("sessionId")
+                    if s_id:
+                        wait_sec = int(s_res.get("minWatchSeconds", 10))
+                        await asyncio.sleep(wait_sec + 1)
+                        comp_res = call_function("completeAd", {"sessionId": s_id}, id_token)
+                        if comp_res.get("status") == "counted":
+                            logger.info(f"  📺 Watched Ad ({net}): credited!")
+        except Exception as e:
+            logger.warning(f"  ⚠️ Ad watching error: {e}")
+
+        # 10. Bonus Missions
+        try:
+            b_state = call_function("getBonusState", {}, id_token)
+            for b_key, b_info in b_state.items():
+                if isinstance(b_info, dict) and b_info.get("canClaim"):
+                    b_gate = await solve_gate(f"bonus_{b_key}", id_token)
+                    call_function("startBonus", {"bonusId": b_key, "gateSessionId": b_gate}, id_token)
+        except Exception:
+            pass
 
         logger.info(f"  📊 {name} EarnVault session complete (Total Balance: {bal_cents}¢ / ${bal_cents/100:.2f})\n")
 

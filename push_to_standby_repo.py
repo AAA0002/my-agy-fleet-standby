@@ -165,7 +165,11 @@ def push_app():
         push_file(arc_file, "victors_arcade_solver.py", "feat: Victor's Company Deep Mine arcade solver engine")
     sidetasks_file = os.path.join(BASE_DIR, "finish_all_fleet_sidetasks.py")
     if os.path.exists(sidetasks_file):
-        push_file(sidetasks_file, "finish_all_fleet_sidetasks.py", "feat: 8-bot fleet side tasks auto-sweep engine")
+        push_file(sidetasks_file, "finish_all_fleet_sidetasks.py", "feat: 11-bot fleet side tasks auto-sweep engine")
+        push_to_solver_repo(sidetasks_file, "finish_all_fleet_sidetasks.py", "feat: 11-bot fleet side tasks auto-sweep engine")
+    cf_deploy = os.path.join(BASE_DIR, "deploy_both_cf_workers.py")
+    if os.path.exists(cf_deploy):
+        push_file(cf_deploy, "deploy_both_cf_workers.py", "feat: 11-bot cloudflare edge worker deployer")
     mrg_solver = os.path.join(BASE_DIR, "mrg_turnstile_solver.py")
     if os.path.exists(mrg_solver):
         push_file(mrg_solver, "mrg_turnstile_solver.py", "feat: MRG total holding level qualification and solver")
