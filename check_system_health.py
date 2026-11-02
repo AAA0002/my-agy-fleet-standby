@@ -126,6 +126,18 @@ async def test_live_11_bots_probe():
     master_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) == "6727787768"][0]
     worker_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) != "6727787768"][0]
 
+    # Pull live tokens from Upstash Redis if available
+    live_tokens = {}
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            req = urllib.request.Request(f"{UPSTASH_URL}/get/fleet:tokens:6727787768", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                raw_d = json.loads(resp.read()).get("result")
+                if raw_d:
+                    live_tokens = json.loads(raw_d) if isinstance(raw_d, str) else raw_d
+        except Exception:
+            pass
+
     bots_to_test = [
         ("1. MRG Miner", "https://mrg.up.railway.app/user", "mrg_init_data"),
         ("2. ATF Miner", "https://atfminers.asloni.online/miner/index.php?action=login", "atf_init_data"),
@@ -142,22 +154,23 @@ async def test_live_11_bots_probe():
 
     async with aiohttp.ClientSession() as s:
         for b_name, b_url, tok_key in bots_to_test:
-            tok = master_acc.get(tok_key) or worker_acc.get(tok_key)
+            tok = live_tokens.get(tok_key) or master_acc.get(tok_key) or worker_acc.get(tok_key)
+            if not tok and tok_key == "diggo_jwt":
+                tok = live_tokens.get("diggo_init_data") or master_acc.get("diggo_init_data")
             if not tok:
                 print(f"  ⚠️ {b_name}: Token {tok_key} missing")
                 continue
             try:
                 # Custom request payload per bot
                 t0 = time.time()
+                r_status = None
                 if "mrg" in tok_key:
                     m_h = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
                     async with s.post("https://mrg.up.railway.app/api/user/me", json={"initData": tok}, headers=m_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "atf" in tok_key:
                     async with s.post(b_url, data={"initData": tok, "ref": "6727787768"}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "victors" in tok_key:
                     v_h = {"Authorization": f"tma {tok}", "User-Agent": "Mozilla/5.0", "Origin": "https://app.victors.company", "Referer": "https://app.victors.company/"}
                     if UPSTASH_URL and UPSTASH_TOKEN:
@@ -170,42 +183,51 @@ async def test_live_11_bots_probe():
                                         v_h["x-human-pass"] = str(p_val.get("humanPass") if isinstance(p_val, dict) else p_val)
                         except Exception: pass
                     async with s.get(b_url, headers=v_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "kynex" in tok_key:
                     async with s.post("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", json={"data": {"initData": tok, "referral": "6727787768"}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "pepegram" in tok_key:
                     async with s.post(b_url, json={"initData": tok, "tid": 1449}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "adxearn" in tok_key:
                     async with s.post(b_url, json={"initData": tok, "fp": "fp_6727787768"}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "diggo" in tok_key:
-                    async with s.get(b_url, headers={"Authorization": f"Bearer {tok}", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                    jwt = live_tokens.get("diggo_jwt") or master_acc.get("diggo_jwt")
+                    if not jwt and "user%3D" in str(tok) or "query_id=" in str(tok):
+                        async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": tok}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as ar:
+                            if ar.status == 200:
+                                jwt = (await ar.json()).get("token")
+                    if jwt:
+                        async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt}", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                            r_status = r.status
+                    else:
+                        r_status = 401
                 elif "chickenland" in tok_key:
                     import base64
                     b64_c = tok[4:].strip() if tok.startswith("TMA ") else base64.b64encode(tok.encode()).decode()
                     async with s.post(b_url, json={"method": "POST", "path": "/api/me", "body": {"ref": "12668"}}, headers={"Authorization": f"TMA {b64_c}", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "grouchemine" in tok_key:
                     async with s.post(b_url, json={"initData": tok}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "lumeon" in tok_key:
                     async with s.get(b_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                        r_status = r.status
                 elif "earnvault" in tok_key:
-                    async with s.post(b_url, json={"data": {"initData": tok}}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        lat = int((time.time() - t0) * 1000)
-                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                    async with s.post(b_url, json={"data": {"initData": tok}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        r_status = r.status
+
+                lat = int((time.time() - t0) * 1000)
+                if r_status in (200, 201):
+                    print(f"  ✅ {b_name}: HTTP {r_status} ({lat}ms)")
+                elif r_status == 401:
+                    print(f"  ❌ {b_name}: HTTP 401 (Expired/Unauthorized) ({lat}ms)")
+                else:
+                    print(f"  ⚠️ {b_name}: HTTP {r_status} ({lat}ms)")
+            except Exception as e:
+                print(f"  ⚠️ {b_name} probe note: {e}")
             except Exception as e:
                 print(f"  ⚠️ {b_name} probe note: {e}")
 

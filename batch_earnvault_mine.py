@@ -222,32 +222,55 @@ async def process_account(account: dict, index: int, total: int):
                 bal_cents += cl_res.get("creditedCents")
                 logger.info(f"  ⛏️ Claimed Reward: +{cl_res.get('creditedCents')}¢")
 
-        # 9. Multi-network Rewarded Video Ads
+        # 9. Multi-network Rewarded Video Ads (Monetag, GigaPub, Adsgram, Adsterra, QuickMoney)
         try:
             ad_state = call_function("getAdState", {}, id_token)
-            for net in ["monetag", "adsgram", "adsterra", "gigapub", "quickmoney"]:
-                info = ad_state.get(net, {})
-                if info.get("canWatch") and (info.get("remaining") is None or info.get("remaining") > 0):
-                    s_res = call_function("startAd", {"net": net}, id_token)
-                    s_id = s_res.get("sessionId")
-                    if s_id:
-                        wait_sec = int(s_res.get("minWatchSeconds", 10))
-                        await asyncio.sleep(wait_sec + 1)
-                        comp_res = call_function("completeAd", {"sessionId": s_id}, id_token)
-                        if comp_res.get("status") == "counted":
-                            logger.info(f"  📺 Watched Ad ({net}): credited!")
+            if ad_state.get("enabled") and ad_state.get("eligible"):
+                networks = ad_state.get("networks", [])
+                for net_info in networks:
+                    net_id = net_info.get("id")
+                    left = int(net_info.get("left", 0))
+                    if net_info.get("ready") and left > 0 and net_id:
+                        for _ in range(min(left, 10)):
+                            s_res = call_function("startAd", {"net": net_id}, id_token)
+                            s_id = s_res.get("sessionId")
+                            if s_id:
+                                wait_sec = int(s_res.get("minWatchSeconds", 10))
+                                await asyncio.sleep(wait_sec + 1)
+                                comp_res = call_function("completeAd", {"sessionId": s_id}, id_token)
+                                if comp_res.get("status") in ("counted", "credited"):
+                                    if comp_res.get("creditedCents"):
+                                        bal_cents += comp_res.get("creditedCents")
+                                        logger.info(f"  📺 Watched Ad ({net_id}): batch credited +{comp_res.get('creditedCents')}¢!")
+                                    else:
+                                        logger.info(f"  📺 Watched Ad ({net_id}): counted")
+                                else:
+                                    break
+                            else:
+                                break
         except Exception as e:
             logger.warning(f"  ⚠️ Ad watching error: {e}")
 
-        # 10. Bonus Missions
+        # 10. Bonus Missions (getBonusState -> startBonus -> confirmGate)
         try:
             b_state = call_function("getBonusState", {}, id_token)
-            for b_key, b_info in b_state.items():
-                if isinstance(b_info, dict) and b_info.get("canClaim"):
-                    b_gate = await solve_gate(f"bonus_{b_key}", id_token)
-                    call_function("startBonus", {"bonusId": b_key, "gateSessionId": b_gate}, id_token)
-        except Exception:
-            pass
+            items = b_state.get("items", []) if isinstance(b_state, dict) else []
+            for itm in items:
+                if isinstance(itm, dict) and itm.get("canStart") and not itm.get("completed"):
+                    item_id = itm.get("id")
+                    if item_id:
+                        sb_res = call_function("startBonus", {"id": item_id}, id_token)
+                        b_sess = sb_res.get("sessionId")
+                        if b_sess:
+                            wait_s = max(1, int(sb_res.get("waitSeconds", 3)))
+                            await asyncio.sleep(wait_s + 1)
+                            cb_res = call_function("confirmGate", {"sessionId": b_sess}, id_token)
+                            if cb_res.get("status") in ("ready", "credited"):
+                                if cb_res.get("creditedCents"):
+                                    bal_cents += cb_res.get("creditedCents")
+                                logger.info(f"  🎯 Completed Bonus Mission: {item_id}")
+        except Exception as e:
+            logger.debug(f"  ⚠️ Bonus mission note: {e}")
 
         logger.info(f"  📊 {name} EarnVault session complete (Total Balance: {bal_cents}¢ / ${bal_cents/100:.2f})\n")
 

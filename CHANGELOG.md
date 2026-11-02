@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🩺 Live System Health Verifier & Standalone EarnVault Automation Bug Elimination (November 2, 2026)**:
+  - **`check_system_health.py` Token Precision & False Checkmark Bug Fixed**:
+    * Discovered that `check_system_health.py` was reading stale tokens from `accounts.json` on disk instead of Upstash Redis `fleet:tokens:6727787768`.
+    * Fixed false-positive reporting: previously printed green checkmark `✅` on all responses, including HTTP 401 and 500 errors. Now strictly prints `✅` on 200/201, `❌` on 401 Unauthorized/Expired, and `⚠️` on other error statuses.
+    * Fixed DiggoMiner probe: now exchanges `initData` for JWT or reads cached `diggo_jwt` before querying `/api/state`, bringing live probe to **HTTP 200 OK**.
+  - **`batch_earnvault_mine.py` Response Parsing & Multi-Ad Batching**:
+    * Fixed `ad_state` parsing: Firebase Cloud Function returns `{"result": {"networks": [...]}}`. Previously, it attempted to look up `ad_state.get("monetag")`, which evaluated to `None` and prevented ad watching.
+    * Added full batch looping (`for _ in range(min(left, 10)):`) so that full $0.10 batch payouts are triggered.
+    * Fixed `getBonusState` mission parsing: now iterates over `b_state.get("items", [])` and executes `startBonus` -> `confirmGate` properly.
+
+
 - **🔍 Fleet-Wide Entity Resolution Resiliency, Kynex Yield Accounting & Diggo Timeout Hardening (November 2, 2026)**:
   - **Bot Username Scrubbing & Entity Resolution Fallback**:
     * Discovered that `refresh_cloud_tokens.py`, `extract_all_missing_fleet_tokens.py`, and `login_account.py` still utilized obsolete bot usernames (`mrgtoken_bot` and `VictorsCompanybot`) without entity alias fallbacks, causing Telethon to fail with `ValueError: No user has "..." as username` and leaving MRG and Victor's tokens unrefreshed past 24h expiration.

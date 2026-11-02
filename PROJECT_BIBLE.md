@@ -1935,13 +1935,16 @@ Whenever you perform work in this repository:
     * Reverse-engineered the LUM Miner web app (`https://lum-miner.gurmessa747.workers.dev/`). Verified that "Watch Ads (+15 LUM)" and power boosts are purely client-side Monetag popups stored in browser `localStorage`, with no server-side credit endpoint. All verified server endpoints (`/check-join` for +200 LUM channel joins, `/referral` for 20,000 LUM referral harvest) are fully automated.
   - **Mobile Tmux & Remote Session Ergonomics**:
     * Configured VM `~/.tmux.conf` with dual prefix (`Ctrl-a` / `Ctrl-b`), 1-touch direct detach (`Alt-d` / `Alt-q`), and persistent status-bar help. Wrapped `agy-entry` with non-terminating bash subshell so exiting CLI returns to shell rather than terminating tmux. Added aliases `detach`, `kill-tmux`, `tmux-help` in `~/.bashrc`.
-* **Fleet-Wide Entity Resolution Resiliency, Kynex Yield Accounting & Diggo Timeout Hardening (November 2, 2026)**:
-  - **Bot Username Scrubbing & Entity Resolution Fallback**:
-    * Standardized canonical usernames (`mrgminerbot`, `VictorsCompanyGame`, `atfminers_bot`) and multi-candidate resolution loops checking numeric IDs (`8862173167`, `8943931170`, `7058204689`) across `refresh_cloud_tokens.py`, `extract_all_missing_fleet_tokens.py`, and `login_account.py`.
-  - **Kynex Network Yield & Task Accounting**:
-    * Updated `sweep_kynex_tasks` in `finish_all_fleet_sidetasks.py` to count hourly mining yield claims (`claimed_..._KNX`) and mining re-activation (`mining_started`) in `tasks_claimed`.
-  - **DiggoMiner Timeout Hardening**:
-    * Added explicit 8s request timeouts and non-blocking exception handlers on mining and referral claims to guard against transient network delays on `diggo.linkpc.net`.
+* **Live System Health Verifier & Standalone EarnVault Automation Bug Elimination (November 2, 2026)**:
+  - **`check_system_health.py` Token Precision & False Checkmark Bug Fixed**:
+    * Discovered that `check_system_health.py` was reading stale tokens from `accounts.json` on disk instead of Upstash Redis `fleet:tokens:6727787768`.
+    * Fixed false-positive reporting: previously printed green checkmark `✅` on all responses, including HTTP 401 and 500 errors. Now strictly prints `✅` on 200/201, `❌` on 401 Unauthorized/Expired, and `⚠️` on other error statuses.
+    * Fixed DiggoMiner probe: now exchanges `initData` for JWT or reads cached `diggo_jwt` before querying `/api/state`, bringing live probe to **HTTP 200 OK**.
+  - **`batch_earnvault_mine.py` Response Parsing & Multi-Ad Batching**:
+    * Fixed `ad_state` parsing: Firebase Cloud Function returns `{"result": {"networks": [...]}}`. Previously, it attempted to look up `ad_state.get("monetag")`, which evaluated to `None` and prevented ad watching.
+    * Added full batch looping (`for _ in range(min(left, 10)):`) so that full $0.10 batch payouts are triggered.
+    * Fixed `getBonusState` mission parsing: now iterates over `b_state.get("items", [])` and executes `startBonus` -> `confirmGate` properly.
+
 
 
 
