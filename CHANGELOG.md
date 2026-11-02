@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Cloudflare Edge Mesh D1 Token Sanitization, Pruning & Kynex Cooldown Harmonization (November 2, 2026)**:
+  - **D1 Edge Token Sanitization & Silent Stripping Eliminated**:
+    * Discovered that `ALLOWED_FLEET_BOTS` and `sanitizeFleetTokensObject` in `deploy_both_cf_workers.py` omitted `grouchemine`, `lumeon`, and `earnvault`, causing Cloudflare Edge in-memory token reconstruction to silently drop these 3 bots.
+    * Added all 11 bot prefixes (`mrg`, `atf`, `victors`, `kynex`, `pepegram`, `adxearn`, `diggo`, `chickenland`, `grouchemine`, `lumeon`, `earnvault`) plus aliases to `ALLOWED_FLEET_BOTS` and added fallback aliases.
+  - **D1 SQL Pruning & Query Parity**:
+    * Discovered that the D1 fallback query and background pruning statement (`DELETE FROM fleet_tokens WHERE bot_name NOT IN (...)`) omitted `diggo_jwt`, `lumeon`, and `earnvault`, which caused D1 to wipe those tokens on every sync.
+    * Synchronized all D1 SQL queries to preserve all 11 bots and `diggo_jwt`.
+  - **Edge Worker Autonomous Cooldown Harmonization**:
+    * Updated `BOT_COOLDOWNS["kynex"]` from 12h–24h to 1h (`minSec: 3600, maxSec: 4200`) to guarantee continuous mining re-activation across Cloudflare Edge cron triggers.
+    * Optimized `earnvault` cooldown to 30–60m (`1800, 3600`) and `grouchemine` to 1–2h (`3600, 7200`).
+  - **Edge Gateway Deployment**:
+    * Re-deployed primary edge worker to Node 4 (`https://restore-agy.agorameet.workers.dev`) and verified Telegram webhooks for `@myagyai` and `@AAAPREMIUMAPPSbot`.
+
 - **🚀 Headless Cloud Solver 11-Bot Parity Integration (`mrg_turnstile_solver.py`) (November 2, 2026)**:
   - **Full 11-Bot REST Automation for GitHub Actions Runner (`AAA0002/cloud-fleet-solver`)**:
     * Integrated native, zero-dependency REST handlers for **Grouche Mine** (`check_and_farm_grouchemine_rest`), **LUM Miner** (`check_and_farm_lumeon_rest`), and **EarnVault** (`check_and_farm_earnvault_rest`) directly into `mrg_turnstile_solver.py`.

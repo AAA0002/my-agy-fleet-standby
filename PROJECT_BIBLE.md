@@ -1948,6 +1948,12 @@ Whenever you perform work in this repository:
   - **11-Bot Full Parity on GitHub Actions Runner (`AAA0002/cloud-fleet-solver`)**:
     * Built native, zero-dependency REST handlers for **Grouche Mine**, **LUM Miner**, and **EarnVault** inside `mrg_turnstile_solver.py`.
     * Extended Phase 1 harvesting loop, audit summary, telemetry logging, and Telegram broadcast alert to seamlessly monitor and report all 11 active fleet bots without external dependencies.
+* **Cloudflare Edge Mesh D1 Token Sanitization, Pruning & Kynex Cooldown Harmonization (November 2, 2026)**:
+  - **D1 Edge Token Sanitization & Pruning Parity**:
+    * Updated `ALLOWED_FLEET_BOTS` and `sanitizeFleetTokensObject` in `deploy_both_cf_workers.py` to prevent silent stripping of `grouchemine`, `lumeon`, and `earnvault` tokens during edge memory caching.
+    * Fixed D1 query and pruning statement (`DELETE FROM fleet_tokens WHERE bot_name NOT IN (...)`) to safeguard all 11 active bots and `diggo_jwt`.
+    * Synchronized `BOT_COOLDOWNS["kynex"]` to 1 hour (`3600, 4200`) and deployed to Primary Edge Gateway (`https://restore-agy.agorameet.workers.dev`).
+
 
 
 

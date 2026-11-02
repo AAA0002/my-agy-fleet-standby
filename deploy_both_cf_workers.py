@@ -2162,14 +2162,14 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     atf: { minSec: 1800, maxSec: 3600 },
     mrg: { minSec: 3600, maxSec: 7200 },
     victors: { minSec: 14400, maxSec: 28800 },
-    kynex: { minSec: 43200, maxSec: 86400 },
+    kynex: { minSec: 3600, maxSec: 4200 },
     pepegram: { minSec: 21600, maxSec: 28800 },
     adxearn: { minSec: 7200, maxSec: 14400 },
     diggo: { minSec: 7200, maxSec: 14400 },
     chickenland: { minSec: 21600, maxSec: 28800 },
-    grouchemine: { minSec: 7200, maxSec: 14400 },
+    grouchemine: { minSec: 3600, maxSec: 7200 },
     lumeon: { minSec: 7200, maxSec: 14400 },
-    earnvault: { minSec: 7200, maxSec: 14400 }
+    earnvault: { minSec: 1800, maxSec: 3600 }
   };
 
   const botRoutines = [
@@ -2297,7 +2297,8 @@ let memAdminUsersPayload = null;
 let memAdminUsersTimestamp = 0;
 
 const ALLOWED_FLEET_BOTS = [
-  "mrg", "atf", "victors", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo", "chickenland", "chicken"
+  "mrg", "atf", "victors", "kynex", "pepegram", "pepe", "adxearn", "adx", "diggo", "chickenland", "chicken",
+  "grouchemine", "grc", "lumeon", "lum", "earnvault", "earn"
 ];
 
 function sanitizeFleetTokensObject(rawObj) {
@@ -2329,6 +2330,12 @@ function sanitizeFleetTokensObject(rawObj) {
     if (!item.adxearn_init_data && item.adx_init_data) {
       item.adxearn_init_data = item.adx_init_data;
     }
+    if (!item.grouchemine_init_data && item.grc_init_data) {
+      item.grouchemine_init_data = item.grc_init_data;
+    }
+    if (!item.lumeon_init_data && item.lum_init_data) {
+      item.lumeon_init_data = item.lum_init_data;
+    }
     cleaned[uid] = item;
   }
   return cleaned;
@@ -2355,7 +2362,7 @@ async function getFleetTokens(env) {
   // 2. Secondary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
-      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'kynex', 'pepegram', 'adxearn', 'diggo', 'diggo_jwt', 'chickenland')").all();
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'kynex', 'pepegram', 'adxearn', 'diggo', 'diggo_jwt', 'chickenland', 'grouchemine', 'lumeon', 'earnvault')").all();
       if (dbRows && dbRows.results && dbRows.results.length > 0) {
         const recon = {};
         for (const r of dbRows.results) {
@@ -5757,7 +5764,7 @@ fi
             }
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(env.DB.prepare(
-                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'kynex', 'diggo', 'pepegram', 'adxearn', 'chickenland', 'grouchemine')"
+                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'kynex', 'diggo', 'diggo_jwt', 'pepegram', 'adxearn', 'chickenland', 'grouchemine', 'lumeon', 'earnvault')"
               ).run().catch(() => {}));
             }
           } catch (_) {}
