@@ -1944,6 +1944,11 @@ Whenever you perform work in this repository:
     * Fixed `ad_state` parsing: Firebase Cloud Function returns `{"result": {"networks": [...]}}`. Previously, it attempted to look up `ad_state.get("monetag")`, which evaluated to `None` and prevented ad watching.
     * Added full batch looping (`for _ in range(min(left, 10)):`) so that full $0.10 batch payouts are triggered.
     * Fixed `getBonusState` mission parsing: now iterates over `b_state.get("items", [])` and executes `startBonus` -> `confirmGate` properly.
+* **Headless Cloud Solver 11-Bot Parity Integration (`mrg_turnstile_solver.py`) (November 2, 2026)**:
+  - **11-Bot Full Parity on GitHub Actions Runner (`AAA0002/cloud-fleet-solver`)**:
+    * Built native, zero-dependency REST handlers for **Grouche Mine**, **LUM Miner**, and **EarnVault** inside `mrg_turnstile_solver.py`.
+    * Extended Phase 1 harvesting loop, audit summary, telemetry logging, and Telegram broadcast alert to seamlessly monitor and report all 11 active fleet bots without external dependencies.
+
 
 
 

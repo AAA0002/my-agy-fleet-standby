@@ -2,6 +2,14 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Headless Cloud Solver 11-Bot Parity Integration (`mrg_turnstile_solver.py`) (November 2, 2026)**:
+  - **Full 11-Bot REST Automation for GitHub Actions Runner (`AAA0002/cloud-fleet-solver`)**:
+    * Integrated native, zero-dependency REST handlers for **Grouche Mine** (`check_and_farm_grouchemine_rest`), **LUM Miner** (`check_and_farm_lumeon_rest`), and **EarnVault** (`check_and_farm_earnvault_rest`) directly into `mrg_turnstile_solver.py`.
+    * **Grouche Mine**: Authenticates silently, claims daily bonuses, completes partner quests with 10.5s countdown, sweeps all 8 Adsgram watch & click ads (+10 GRC each), claims unharvested mining yield, and ensures mining toggle is active with strict zero-spend package buying.
+    * **LUM Miner**: Automatically joins under Master UID `6727787768`, qualifies referrals, verifies channel join missions (+200 LUM), and executes master commission claims on qualified friends.
+    * **EarnVault**: Authenticates via `telegramAuth` and exchanges custom token for Firebase ID token, handles dynamic security gates (`startGate`/`confirmGate`), checks in daily, claims periodic rewards, loops through full 10-ad batches for $0.10 network payouts, and completes bonus missions.
+    * **Telemetry & Reporting**: Extended Phase 1 auditing, summary logging, and Telegram broadcast card to track and report live status, counts, and earnings across all 11 active fleet bots.
+
 - **🩺 Live System Health Verifier & Standalone EarnVault Automation Bug Elimination (November 2, 2026)**:
   - **`check_system_health.py` Token Precision & False Checkmark Bug Fixed**:
     * Discovered that `check_system_health.py` was reading stale tokens from `accounts.json` on disk instead of Upstash Redis `fleet:tokens:6727787768`.

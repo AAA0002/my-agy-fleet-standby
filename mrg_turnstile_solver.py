@@ -2282,6 +2282,304 @@ def check_and_farm_chickenland_rest(c_acc: dict) -> tuple[bool, int, int]:
         return False, 0, 0
 
 
+def check_and_farm_grouchemine_rest(g_acc: dict) -> tuple[bool, float, int]:
+    """
+    Fast REST handler for Grouche Mine (@GRC_AirdrooBot).
+    Claims daily rewards, completes available quests, sweeps Adsgram watch & click ads,
+    and harvests session mining yield without buying packages (Strict Zero-Spend Policy).
+    Returns: (is_success, claimed_grc, tasks_count)
+    """
+    g_uid = g_acc["uid"]
+    g_init = g_acc.get("init_data")
+    if not g_init:
+        return False, 0.0, 0
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": g_init,
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+    }
+    base_url = "https://grouchemine.world/api"
+
+    claimed_grc = 0.0
+    tasks_count = 0
+
+    try:
+        # 1. Login
+        code, l_data = safe_post(f"{base_url}/auth/login", {"initData": g_init}, extra_headers=headers)
+        if code != 200 or not isinstance(l_data, dict):
+            return False, 0.0, 0
+
+        # 2. Daily Claim
+        d_code, d_res = safe_post(f"{base_url}/users/daily-claim", {}, extra_headers=headers)
+        if d_code == 200 and isinstance(d_res, dict) and d_res.get("success"):
+            rew = float(d_res.get("data", {}).get("rewardLnx", 5) or 5)
+            claimed_grc += rew
+            tasks_count += 1
+
+        # 3. Tasks fetch & complete
+        t_code, t_res = safe_get(f"{base_url}/tasks", extra_headers=headers)
+        if t_code == 200 and isinstance(t_res, dict):
+            tasks = t_res.get("data", [])
+            if isinstance(tasks, list):
+                for t in tasks:
+                    if not t.get("isCompleted") and not t.get("completed"):
+                        tid = t.get("id") or t.get("_id")
+                        if tid:
+                            safe_post(f"{base_url}/tasks/{tid}/open", {}, extra_headers=headers)
+                            time.sleep(10.5)  # Server enforces 10s countdown
+                            c_code, c_res = safe_post(f"{base_url}/tasks/{tid}/complete", {}, extra_headers=headers)
+                            if c_code == 200 and isinstance(c_res, dict) and c_res.get("success"):
+                                claimed_grc += float(t.get("rewardLnx", 15) or 15)
+                                tasks_count += 1
+
+        # 4. Adsgram Watch & Click (+10 GRC each, up to 8 per 12 hours)
+        ads_code, ads_res = safe_get(f"{base_url}/users/ads", extra_headers=headers)
+        if ads_code == 200 and isinstance(ads_res, dict):
+            a_data = ads_res.get("data", {})
+            limit = int(a_data.get("limit", 8))
+            watched = int(a_data.get("watched", 0))
+            remaining = max(0, limit - watched)
+            for _ in range(min(remaining, 8)):
+                ad_payload = {"clicked": 1, "watchedMs": 15500 + random.randint(100, 2000)}
+                c_ads_code, c_ads = safe_post(f"{base_url}/users/ads/complete", ad_payload, extra_headers=headers)
+                if c_ads_code == 200 and isinstance(c_ads, dict) and c_ads.get("success"):
+                    claimed_grc += 10.0
+                    tasks_count += 1
+                else:
+                    break
+                time.sleep(1.0)
+
+        # 5. Claim Mining Yield (Zero spend - never buy packages)
+        m_code, m_res = safe_get(f"{base_url}/mining/status", extra_headers=headers)
+        if m_code == 200 and isinstance(m_res, dict):
+            m_dat = m_res.get("data", {})
+            pkg_cnt = m_dat.get("packageCount", 0)
+            is_mining = m_dat.get("isMining", False)
+            sess_mined = float(m_dat.get("sessionMinedLnx", 0) or 0)
+            if sess_mined > 0:
+                cl_code, _ = safe_post(f"{base_url}/mining/claim", {}, extra_headers=headers)
+                if cl_code == 200:
+                    claimed_grc += sess_mined
+                    tasks_count += 1
+            if pkg_cnt > 0 and not is_mining:
+                safe_post(f"{base_url}/mining/toggle", {}, extra_headers=headers)
+
+        logger.info(f"🍐 [GroucheMine] UID {g_uid}: Successfully farmed via REST (+{claimed_grc:.2f} GRC, {tasks_count} tasks).")
+        return True, claimed_grc, tasks_count
+    except Exception as ge:
+        logger.debug(f"[GroucheMine] UID {g_uid} rest farm note: {ge}")
+        return False, 0.0, 0
+
+
+def check_and_farm_lumeon_rest(l_acc: dict) -> tuple[bool, float, int]:
+    """
+    Fast REST handler for LUM Miner ($LUM).
+    Sweeps social channel joins, referral qualifications, and master commissions.
+    Returns: (is_success, claimed_lum, tasks_count)
+    """
+    l_uid = l_acc["uid"]
+    l_init = l_acc.get("init_data")
+    if not l_init:
+        return False, 0.0, 0
+
+    base_url = "https://lum-miner.gurmessa747.workers.dev"
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+    }
+    is_master = (str(l_uid) == "6727787768")
+    claimed_lum = 0.0
+    tasks_count = 0
+
+    try:
+        # 1. Join under Master if worker
+        if not is_master:
+            safe_post(f"{base_url}/referral", {"action": "join", "inviter": "6727787768", "initData": l_init}, extra_headers=headers)
+            safe_post(f"{base_url}/referral", {"action": "qualify", "initData": l_init}, extra_headers=headers)
+
+        # 2. Channel Join Tasks
+        tasks = [("community", 50), ("payouts", 50), ("gramapps", 30), ("grammoney", 30), ("youtube", 40)]
+        for tid, rew in tasks:
+            t_code, t_d = safe_post(f"{base_url}/check-join", {"task": tid, "initData": l_init}, extra_headers=headers)
+            if t_code == 200 and isinstance(t_d, dict) and t_d.get("ok"):
+                claimed_lum += rew
+                tasks_count += 1
+
+        # 3. Master Referral Claim
+        if is_master:
+            ref_code, ref_d = safe_get(f"{base_url}/referral?id=6727787768", extra_headers=headers)
+            if ref_code == 200 and isinstance(ref_d, dict):
+                friends = ref_d.get("friends", [])
+                unpaid = [f for f in friends if f.get("qualified") and not f.get("paid")]
+                if unpaid:
+                    cl_code, cl_d = safe_post(f"{base_url}/referral", {"action": "claim", "initData": l_init}, extra_headers=headers)
+                    if cl_code == 200 and isinstance(cl_d, dict) and cl_d.get("ok"):
+                        paid_cnt = int(cl_d.get("paid", len(unpaid)) or len(unpaid))
+                        claimed_lum += (paid_cnt * 1000)
+                        tasks_count += paid_cnt
+
+        logger.info(f"💎 [LUM Miner] UID {l_uid}: Successfully farmed via REST (+{claimed_lum:.1f} LUM, {tasks_count} tasks).")
+        return True, claimed_lum, tasks_count
+    except Exception as le:
+        logger.debug(f"[LUM Miner] UID {l_uid} rest farm note: {le}")
+        return False, 0.0, 0
+
+
+def check_and_farm_earnvault_rest(e_acc: dict) -> tuple[bool, float, int]:
+    """
+    Fast REST handler for EarnVault ($USD / $TON).
+    Exchanges Firebase ID token, solves gates, checks in daily, claims periodic rewards,
+    completes partner quests, watches remaining ad batches ($0.10 per 10 ads), and completes bonus missions.
+    Returns: (is_success, claimed_usd, tasks_count)
+    """
+    import uuid
+    e_uid = e_acc["uid"]
+    e_init = e_acc.get("init_data")
+    if not e_init:
+        return False, 0.0, 0
+
+    functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+    }
+    claimed_usd = 0.0
+    tasks_count = 0
+
+    try:
+        # 1. Authenticate to get custom token
+        a_code, auth_d = safe_post(f"{functions_base}/telegramAuth", {"data": {"initData": e_init}}, extra_headers=headers)
+        if a_code != 200 or not isinstance(auth_d, dict):
+            return False, 0.0, 0
+        custom_tok = auth_d.get("result", {}).get("token")
+        if not custom_tok:
+            return False, 0.0, 0
+
+        # 2. Exchange for Firebase ID Token
+        ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+        ex_code, ex_d = safe_post(ex_url, {"token": custom_tok, "returnSecureToken": True})
+        if ex_code != 200 or not isinstance(ex_d, dict):
+            return False, 0.0, 0
+        id_tok = ex_d.get("idToken")
+        if not id_tok:
+            return False, 0.0, 0
+
+        auth_headers = {**headers, "Authorization": f"Bearer {id_tok}"}
+
+        # Gate solver helper
+        def solve_gate(purpose: str) -> str:
+            sg_c, sg_d = safe_post(f"{functions_base}/startGate", {"data": {"purpose": purpose}}, extra_headers=auth_headers)
+            if sg_c != 200 or not isinstance(sg_d, dict):
+                return None
+            sess_id = sg_d.get("result", {}).get("sessionId")
+            if not sess_id:
+                return None
+            for _ in range(8):
+                cg_c, cg_d = safe_post(f"{functions_base}/confirmGate", {"data": {"sessionId": sess_id}}, extra_headers=auth_headers)
+                if cg_c == 200 and isinstance(cg_d, dict):
+                    res = cg_d.get("result", {})
+                    if res.get("status") in ("ready", "credited"):
+                        return sess_id
+                    wait_ms = res.get("waitMs", 2000)
+                    time.sleep(min(max(1.0, wait_ms / 1000.0 + 0.3), 3.0))
+                else:
+                    break
+            return None
+
+        # 3. Tasks
+        for tid in ["official", "glamour"]:
+            safe_post(f"{functions_base}/startTask", {"data": {"taskId": tid}}, extra_headers=auth_headers)
+            time.sleep(0.5)
+            v_code, v_d = safe_post(f"{functions_base}/verifyTask", {"data": {"taskId": tid}}, extra_headers=auth_headers)
+            if v_code == 200 and isinstance(v_d, dict) and v_d.get("result", {}).get("verified"):
+                tasks_count += 1
+
+        # 4. Dashboard, Daily Checkin & Claim Reward
+        d_code, d_res = safe_post(f"{functions_base}/getDashboard", {"data": {}}, extra_headers=auth_headers)
+        if d_code == 200 and isinstance(d_res, dict):
+            dash = d_res.get("result", {})
+
+            # Daily Check-in
+            ci = dash.get("checkin", {})
+            if not ci.get("doneToday"):
+                gate_sess = solve_gate("checkin") if ci.get("gate", {}).get("required") else None
+                ci_payload = {"gateSessionId": gate_sess} if gate_sess else {}
+                ci_c, ci_d = safe_post(f"{functions_base}/dailyCheckIn", {"data": ci_payload}, extra_headers=auth_headers)
+                if ci_c == 200 and isinstance(ci_d, dict):
+                    c_res = ci_d.get("result", {})
+                    if not c_res.get("already") and c_res.get("creditedCents"):
+                        cents = c_res.get("creditedCents", 0)
+                        claimed_usd += (cents / 100.0)
+                        tasks_count += 1
+
+            # Periodic Claim Reward
+            cl = dash.get("claim", {})
+            if cl.get("status") == "ready" or cl.get("remainingMs", 1) <= 0:
+                gate_sess = solve_gate("claim") if cl.get("gate", {}).get("required") else None
+                cl_payload = {"idempotencyKey": str(uuid.uuid4())}
+                if gate_sess:
+                    cl_payload["gateSessionId"] = gate_sess
+                cl_c, cl_d = safe_post(f"{functions_base}/claimReward", {"data": cl_payload}, extra_headers=auth_headers)
+                if cl_c == 200 and isinstance(cl_d, dict):
+                    cents = cl_d.get("result", {}).get("creditedCents", 0)
+                    if cents:
+                        claimed_usd += (cents / 100.0)
+                        tasks_count += 1
+
+        # 5. Rewarded Ads (Watch all remaining ads to complete 10-ad batch for $0.10)
+        ads_c, ads_d = safe_post(f"{functions_base}/getAdState", {"data": {}}, extra_headers=auth_headers)
+        if ads_c == 200 and isinstance(ads_d, dict):
+            ad_res = ads_d.get("result", {})
+            if ad_res.get("enabled") and ad_res.get("eligible"):
+                for net in ad_res.get("networks", []):
+                    net_id = net.get("id")
+                    left = int(net.get("left", 0))
+                    if net.get("ready") and left > 0 and net_id:
+                        for _ in range(min(left, 10)):
+                            sa_c, sa_d = safe_post(f"{functions_base}/startAd", {"data": {"net": net_id}}, extra_headers=auth_headers)
+                            if sa_c == 200 and isinstance(sa_d, dict):
+                                sa_res = sa_d.get("result", {})
+                                sess_id = sa_res.get("sessionId")
+                                min_watch = int(sa_res.get("minWatchSeconds", 10))
+                                if sess_id:
+                                    time.sleep(min_watch + 1)
+                                    ca_c, ca_d = safe_post(f"{functions_base}/completeAd", {"data": {"sessionId": sess_id}}, extra_headers=auth_headers)
+                                    if ca_c == 200 and isinstance(ca_d, dict):
+                                        ca_res = ca_d.get("result", {})
+                                        if ca_res.get("status") in ("counted", "credited"):
+                                            tasks_count += 1
+                                            if ca_res.get("creditedCents"):
+                                                claimed_usd += (ca_res.get("creditedCents") / 100.0)
+                                    else:
+                                        break
+                            else:
+                                break
+
+        # 6. Bonus Missions
+        bn_c, bn_d = safe_post(f"{functions_base}/getBonusState", {"data": {}}, extra_headers=auth_headers)
+        if bn_c == 200 and isinstance(bn_d, dict):
+            items = bn_d.get("result", {}).get("items", [])
+            for item in items:
+                item_id = item.get("id")
+                if item.get("ready") and not item.get("done") and item_id:
+                    sb_c, sb_d = safe_post(f"{functions_base}/startBonus", {"data": {"id": item_id}}, extra_headers=auth_headers)
+                    if sb_c == 200 and isinstance(sb_d, dict):
+                        b_sess = sb_d.get("result", {}).get("sessionId")
+                        if b_sess:
+                            time.sleep(2)
+                            cb_c, cb_d = safe_post(f"{functions_base}/confirmGate", {"data": {"sessionId": b_sess}}, extra_headers=auth_headers)
+                            if cb_c == 200 and isinstance(cb_d, dict):
+                                if cb_d.get("result", {}).get("status") in ("ready", "credited"):
+                                    tasks_count += 1
+
+        logger.info(f"💰 [EarnVault] UID {e_uid}: Successfully farmed via REST (+${claimed_usd:.2f} USD, {tasks_count} tasks).")
+        return True, claimed_usd, tasks_count
+    except Exception as ee:
+        logger.debug(f"[EarnVault] UID {e_uid} rest farm note: {ee}")
+        return False, 0.0, 0
+
+
 async def run_mrg_auto_solver():
     """Main workflow: audits all 20 accounts across 5 bots, solves needed challenges, connects wallets, and auto-claims."""
     logger.info("====================================================================")
@@ -2305,12 +2603,18 @@ async def run_mrg_auto_solver():
     adx_solved = 0
     diggo_solved = 0
     chicken_solved = 0
+    grouche_solved = 0
+    lumeon_solved = 0
+    earnvault_solved = 0
     total_claimed_mrg = 0.0
     total_claimed_pepe = 0.0
     total_claimed_adx = 0
     total_claimed_diggo = 0.0
     total_eggs_sold = 0
     total_hens_bought = 0
+    total_claimed_grc = 0.0
+    total_claimed_lum = 0.0
+    total_claimed_usd = 0.0
 
     # 1. Fetch tokens and execute Fast REST Audits & Instant Harvesting
     logger.info("⚡ Phase 1: Rapid REST Pre-Flight & Instant Multi-Bot Harvesting...")
@@ -2379,6 +2683,30 @@ async def run_mrg_auto_solver():
                 chicken_solved += 1
                 total_eggs_sold += c_eggs
                 total_hens_bought += c_hens
+
+        # Grouche Mine Fast REST Check
+        grouche_init = tok_dict.get("grouchemine_init_data") or tok_dict.get("grc_init_data")
+        if grouche_init:
+            g_handled, g_claimed, g_cnt = check_and_farm_grouchemine_rest({"uid": uid, "init_data": grouche_init})
+            if g_handled:
+                grouche_solved += 1
+                total_claimed_grc += g_claimed
+
+        # LUM Miner Fast REST Check
+        lum_init = tok_dict.get("lumeon_init_data") or tok_dict.get("lum_init_data")
+        if lum_init:
+            l_handled, l_claimed, l_cnt = check_and_farm_lumeon_rest({"uid": uid, "init_data": lum_init})
+            if l_handled:
+                lumeon_solved += 1
+                total_claimed_lum += l_claimed
+
+        # EarnVault Fast REST Check
+        ev_init = tok_dict.get("earnvault_init_data")
+        if ev_init:
+            ev_handled, ev_claimed, ev_cnt = check_and_farm_earnvault_rest({"uid": uid, "init_data": ev_init})
+            if ev_handled:
+                earnvault_solved += 1
+                total_claimed_usd += ev_claimed
 
         # MRG Status Check
         if not mrg_init:
@@ -2456,7 +2784,11 @@ async def run_mrg_auto_solver():
         f"Kynex accounts: {len(kynex_accounts)}. "
         f"PepeGram: {pepe_solved} farmed. "
         f"AdxEarn AI: {adx_solved} farmed. "
-        f"DiggoMiner: {diggo_solved} farmed."
+        f"DiggoMiner: {diggo_solved} farmed. "
+        f"Chicken Land: {chicken_solved} farmed. "
+        f"Grouche Mine: {grouche_solved} farmed. "
+        f"LUM Miner: {lumeon_solved} farmed. "
+        f"EarnVault: {earnvault_solved} farmed."
     )
 
     # 2. Kynex Network Multi-Account Cloud Auto-Farming (Fast REST First)
@@ -2706,6 +3038,9 @@ async def run_mrg_auto_solver():
         f"• <b>AdxEarn AI Farmed:</b> {adx_solved} (+{total_claimed_adx} Pts)\n"
         f"• <b>DiggoMiner Farmed:</b> {diggo_solved} (+{total_claimed_diggo:.2f} DIGGO)\n"
         f"• <b>Chicken Land Farmed:</b> {chicken_solved} (+{total_eggs_sold} Eggs sold, {total_hens_bought} Hens bought)\n"
+        f"• <b>Grouche Mine Farmed:</b> {grouche_solved} (+{total_claimed_grc:.2f} GRC)\n"
+        f"• <b>LUM Miner Farmed:</b> {lumeon_solved} (+{total_claimed_lum:.1f} LUM)\n"
+        f"• <b>EarnVault Farmed:</b> {earnvault_solved} (+${total_claimed_usd:.2f} USD)\n"
         f"• <b>Execution Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
         f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
     )
@@ -2715,8 +3050,10 @@ async def run_mrg_auto_solver():
         f"Victor's Solved {victors_solved}/{len(victors_accounts)}, "
         f"Kynex Farmed {kynex_farmed}/{len(kynex_accounts)}, "
         f"Pepe Farmed {pepe_solved}, Adx Farmed {adx_solved}, Diggo Farmed {diggo_solved}, "
-        f"Chicken Land Farmed {chicken_solved}, "
-        f"Claimed {total_claimed_mrg:.2f} MRG, {total_claimed_knx:.2f} KNX, {total_claimed_pepe:.2f} PEPE."
+        f"Chicken Land Farmed {chicken_solved}, Grouche Farmed {grouche_solved}, "
+        f"LUM Farmed {lumeon_solved}, EarnVault Farmed {earnvault_solved}, "
+        f"Claimed {total_claimed_mrg:.2f} MRG, {total_claimed_knx:.2f} KNX, {total_claimed_pepe:.2f} PEPE, "
+        f"{total_claimed_grc:.2f} GRC, {total_claimed_lum:.1f} LUM, ${total_claimed_usd:.2f} USD."
     )
     send_tg_alert(report_msg)
 
