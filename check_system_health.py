@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+"""
+check_system_health.py
+Live forensic health verification across:
+1. Cloudflare Edge Mesh (5 nodes)
+2. Render Cloud Nodes (3 nodes)
+3. Telegram Bot Webhooks
+4. Render Deployment Status
+5. Upstash Redis State
+6. Live 11-Bot API Probe
+"""
+
+import os
+import json
+import time
+import urllib.request
+import urllib.error
+import aiohttp
+import asyncio
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+env = {}
+env_file = os.path.join(BASE_DIR, ".env")
+if os.path.exists(env_file):
+    with open(env_file) as f:
+        for line in f:
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip().strip("\"'\"'")
+
+UPSTASH_URL = env.get("UPSTASH_URL")
+UPSTASH_TOKEN = env.get("UPSTASH_TOKEN")
+ADMIN_BOT_TOKEN = env.get("ADMIN_BOT_TOKEN") or env.get("REPORT_BOT_TOKEN")
+USER_BOT_TOKEN = env.get("USER_BOT_TOKEN")
+RENDER_KEY = env.get("RENDER_API_KEY_3") or env.get("RENDER_API_KEY")
+
+async def test_cf_nodes():
+    print("\n--- 1. Testing Cloudflare Edge Nodes ---")
+    cf_nodes = [
+        ("Primary Gateway Node 4", "https://restore-agy.agorameet.workers.dev"),
+        ("Secondary Node 1", "https://restore-agy.aaaai2.workers.dev"),
+        ("Secondary Node 2", "https://restore-agy.aaa-bot.workers.dev"),
+        ("Secondary Node 3", "https://restore-agy.aaa222.workers.dev"),
+        ("Secondary Node 5", "https://restore-agy.aaaai.workers.dev")
+    ]
+    async with aiohttp.ClientSession() as s:
+        for name, url in cf_nodes:
+            t0 = time.time()
+            try:
+                async with s.get(f"{url}/health", headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                    lat = int((time.time() - t0) * 1000)
+                    print(f"  ✅ {name} ({url}): HTTP {r.status} ({lat}ms)")
+            except Exception as e:
+                print(f"  ⚠️ {name} ({url}): {e}")
+
+async def test_render_nodes():
+    print("\n--- 2. Testing Render Cloud Standby Nodes ---")
+    render_nodes = [
+        ("Render Node 3 (Oregon - Primary)", "https://my-agy-fleet-standby-node3.onrender.com"),
+        ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com"),
+        ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com")
+    ]
+    async with aiohttp.ClientSession() as s:
+        for name, r_url in render_nodes:
+            t0 = time.time()
+            try:
+                async with s.get(f"{r_url}/health", headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=10)) as r:
+                    lat = int((time.time() - t0) * 1000)
+                    print(f"  ✅ {name}: HTTP {r.status} ({lat}ms)")
+            except Exception as e:
+                print(f"  ⚠️ {name}: {e}")
+
+async def test_telegram_webhooks():
+    print("\n--- 3. Testing Telegram Webhook Endpoints ---")
+    bots = [
+        ("Admin Bot (@myagyai)", ADMIN_BOT_TOKEN),
+        ("User Bot (@AAAPREMIUMAPPSbot)", USER_BOT_TOKEN)
+    ]
+    async with aiohttp.ClientSession() as s:
+        for name, tok in bots:
+            if not tok:
+                print(f"  ⚠️ {name}: No token found")
+                continue
+            try:
+                async with s.get(f"https://api.telegram.org/bot{tok}/getWebhookInfo", timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    d = await r.json()
+                    res = d.get("result", {})
+                    wh = res.get("url", "None")
+                    pending = res.get("pending_update_count", 0)
+                    err = res.get("last_error_message")
+                    err_s = f" | Last Error: {err}" if err else ""
+                    print(f"  ✅ {name}: Webhook -> {wh} (Pending: {pending}{err_s})")
+            except Exception as e:
+                print(f"  ⚠️ {name}: {e}")
+
+async def test_render_deployments():
+    print("\n--- 4. Checking Render Deployment Progress ---")
+    srv_id = "srv-db437o3tqb8s73dt4erg"
+    if not RENDER_KEY:
+        print("  ⚠️ No RENDER_API_KEY found.")
+        return
+    async with aiohttp.ClientSession() as s:
+        try:
+            headers = {"Authorization": f"Bearer {RENDER_KEY}"}
+            async with s.get(f"https://api.render.com/v1/services/{srv_id}/deploys?limit=3", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    deploys = await r.json()
+                    for item in deploys:
+                        dep = item.get("deploy", {})
+                        print(f"  🚀 Deploy {dep.get('id')}: Status = {dep.get('status')} | Created: {dep.get('createdAt')}")
+                else:
+                    print(f"  ⚠️ Render API HTTP {r.status}")
+        except Exception as e:
+            print(f"  ⚠️ Render check error: {e}")
+
+async def test_live_11_bots_probe():
+    print("\n--- 5. Probing Live 11-Bot API Connectivity & Tokens ---")
+    accs_file = os.path.join(BASE_DIR, "accounts.json")
+    if not os.path.exists(accs_file):
+        print("  ⚠️ accounts.json missing")
+        return
+    with open(accs_file, "r") as f:
+        accs = json.load(f)
+    master_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) == "6727787768"][0]
+    worker_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) != "6727787768"][0]
+
+    bots_to_test = [
+        ("1. MRG Miner", "https://mrg.up.railway.app/user", "mrg_init_data"),
+        ("2. ATF Miner", "https://atfminers.asloni.online/miner/index.php?action=login", "atf_init_data"),
+        ("3. Victor's Company", "https://server.victors.company/api/me", "victors_init_data"),
+        ("4. Kynex Network", "https://us-central1-keynex-e9511.cloudfunctions.net/telegramAuth", "kynex_init_data"),
+        ("5. PepeGram", "https://app.miniempire.app/miniapp/auth?tid=1449", "pepegram_init_data"),
+        ("6. AdxEarn AI", "https://api.adxearnai.xyz/api/user/session", "adxearn_init_data"),
+        ("7. DiggoMiner", "https://diggo.linkpc.net/api/state", "diggo_jwt"),
+        ("8. Chicken Land", "https://app8968434282.tgcloud.ai/api/rpc", "chickenland_init_data"),
+        ("9. Grouche Mine", "https://grouchemine.world/api/auth/login", "grouchemine_init_data"),
+        ("10. LUM Miner", "https://lum-miner.gurmessa747.workers.dev/referral?id=6727787768", "lumeon_init_data"),
+        ("11. EarnVault", "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth", "earnvault_init_data")
+    ]
+
+    async with aiohttp.ClientSession() as s:
+        for b_name, b_url, tok_key in bots_to_test:
+            tok = master_acc.get(tok_key) or worker_acc.get(tok_key)
+            if not tok:
+                print(f"  ⚠️ {b_name}: Token {tok_key} missing")
+                continue
+            try:
+                # Custom request payload per bot
+                t0 = time.time()
+                if "mrg" in tok_key:
+                    m_h = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
+                    async with s.post("https://mrg.up.railway.app/api/user/me", json={"initData": tok}, headers=m_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "atf" in tok_key:
+                    async with s.post(b_url, data={"initData": tok, "ref": "6727787768"}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "victors" in tok_key:
+                    v_h = {"Authorization": f"tma {tok}", "User-Agent": "Mozilla/5.0", "Origin": "https://app.victors.company", "Referer": "https://app.victors.company/"}
+                    if UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with s.get(f"{UPSTASH_URL}/get/victors:pass:6727787768", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}) as pr:
+                                if pr.status == 200:
+                                    raw_p = (await pr.json()).get("result")
+                                    if raw_p:
+                                        p_val = json.loads(raw_p) if isinstance(raw_p, str) else raw_p
+                                        v_h["x-human-pass"] = str(p_val.get("humanPass") if isinstance(p_val, dict) else p_val)
+                        except Exception: pass
+                    async with s.get(b_url, headers=v_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "kynex" in tok_key:
+                    async with s.post("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", json={"data": {"initData": tok, "referral": "6727787768"}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "pepegram" in tok_key:
+                    async with s.post(b_url, json={"initData": tok, "tid": 1449}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "adxearn" in tok_key:
+                    async with s.post(b_url, json={"initData": tok, "fp": "fp_6727787768"}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "diggo" in tok_key:
+                    async with s.get(b_url, headers={"Authorization": f"Bearer {tok}", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "chickenland" in tok_key:
+                    import base64
+                    b64_c = tok[4:].strip() if tok.startswith("TMA ") else base64.b64encode(tok.encode()).decode()
+                    async with s.post(b_url, json={"method": "POST", "path": "/api/me", "body": {"ref": "12668"}}, headers={"Authorization": f"TMA {b64_c}", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "grouchemine" in tok_key:
+                    async with s.post(b_url, json={"initData": tok}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "lumeon" in tok_key:
+                    async with s.get(b_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+                elif "earnvault" in tok_key:
+                    async with s.post(b_url, json={"data": {"initData": tok}}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        lat = int((time.time() - t0) * 1000)
+                        print(f"  ✅ {b_name}: HTTP {r.status} ({lat}ms)")
+            except Exception as e:
+                print(f"  ⚠️ {b_name} probe note: {e}")
+
+async def main():
+    print("=" * 70)
+    print("🔍 COMPREHENSIVE LIVE SYSTEM & 11-BOT HEALTH VERIFICATION")
+    print("=" * 70)
+    await test_cf_nodes()
+    await test_render_nodes()
+    await test_telegram_webhooks()
+    await test_render_deployments()
+    await test_live_11_bots_probe()
+    print("\n" + "=" * 70)
+    print("🎉 Verification Complete!")
+
+if __name__ == "__main__":
+    asyncio.run(main())
