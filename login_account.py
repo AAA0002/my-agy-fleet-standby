@@ -66,6 +66,15 @@ ADX_REFERRAL_CODE = "6727787768"
 CHICKEN_BOT = "ChickenLandBot"
 CHICKEN_REFERRAL_CODE = "12668"
 
+GROUCHEMINE_BOT = "GRC_AirdrooBot"
+GROUCHEMINE_REFERRAL_CODE = "6727787768"
+
+LUMEON_BOT = "lumeonminer_bot"
+LUMEON_REFERRAL_CODE = "6727787768"
+
+EARNVAULT_BOT = "EarnVaultApp_bot"
+EARNVAULT_REFERRAL_CODE = "6727787768"
+
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
@@ -603,12 +612,114 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["chickenland_referral_bound"] = True
-        print(f"  ✅ [8/8] Successfully bound to Chicken Land ({CHICKEN_REFERRAL_CODE})!")
+        print(f"  ✅ [8/11] Successfully bound to Chicken Land ({CHICKEN_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Chicken Land referral: {e}")
 
+    # 9. Grouche Mine (@GRC_AirdrooBot)
+    print(f"  • [9/11] Connecting to @{GROUCHEMINE_BOT} with referral: {GROUCHEMINE_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=GROUCHEMINE_BOT))
+        except Exception:
+            pass
+        b_grc = await client.get_entity(GROUCHEMINE_BOT)
+        await mute_peer(client, b_grc, "GRC_AirdrooBot")
+        try:
+            await client.send_message(b_grc, f"/start {GROUCHEMINE_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_grc = await client(RequestWebViewRequest(
+                peer=b_grc,
+                bot=b_grc,
+                url="https://grouchemine.world/",
+                platform="android",
+                start_param=GROUCHEMINE_REFERRAL_CODE
+            ))
+            p_grc = urllib.parse.urlparse(getattr(r_grc, 'url', None) or "")
+            grc_init = urllib.parse.parse_qs(p_grc.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_grc.query).get("tgWebAppData", [None])[0]
+            if grc_init:
+                acc_entry["grouchemine_init_data"] = grc_init
+        except Exception:
+            pass
+        acc_entry["grouchemine_referral_bound"] = True
+        print(f"  ✅ [9/11] Successfully bound to Grouche Mine ({GROUCHEMINE_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Grouche Mine referral: {e}")
+
+    # 10. LUM Miner (@lumeonminer_bot)
+    print(f"  • [10/11] Connecting to @{LUMEON_BOT} with referral: {LUMEON_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=LUMEON_BOT))
+        except Exception:
+            pass
+        b_lum = await client.get_entity(LUMEON_BOT)
+        await mute_peer(client, b_lum, "lumeonminer_bot")
+        try:
+            await client.send_message(b_lum, f"/start {LUMEON_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_lum = await client(RequestWebViewRequest(
+                peer=b_lum,
+                bot=b_lum,
+                url="https://lum-miner.gurmessa747.workers.dev/",
+                platform="android",
+                start_param=LUMEON_REFERRAL_CODE
+            ))
+            p_lum = urllib.parse.urlparse(getattr(r_lum, 'url', None) or "")
+            lum_init = urllib.parse.parse_qs(p_lum.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_lum.query).get("tgWebAppData", [None])[0]
+            if lum_init:
+                acc_entry["lumeon_init_data"] = lum_init
+        except Exception:
+            pass
+        acc_entry["lumeon_referral_bound"] = True
+        print(f"  ✅ [10/11] Successfully bound to LUM Miner ({LUMEON_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding LUM Miner referral: {e}")
+
+    # 11. EarnVault (@EarnVaultApp_bot)
+    print(f"  • [11/11] Connecting to @{EARNVAULT_BOT} with referral: {EARNVAULT_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=EARNVAULT_BOT))
+        except Exception:
+            pass
+        b_ev = await client.get_entity(EARNVAULT_BOT)
+        await mute_peer(client, b_ev, "EarnVaultApp_bot")
+        try:
+            await client.send_message(b_ev, f"/start {EARNVAULT_REFERRAL_CODE}")
+            await asyncio.sleep(0.5)
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+        try:
+            r_ev = await client(RequestWebViewRequest(
+                peer=b_ev,
+                bot=b_ev,
+                url="https://eearnvault.top/",
+                platform="android",
+                start_param=EARNVAULT_REFERRAL_CODE
+            ))
+            p_ev = urllib.parse.urlparse(getattr(r_ev, 'url', None) or "")
+            ev_init = urllib.parse.parse_qs(p_ev.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_ev.query).get("tgWebAppData", [None])[0]
+            if ev_init:
+                acc_entry["earnvault_init_data"] = ev_init
+        except Exception:
+            pass
+        acc_entry["earnvault_referral_bound"] = True
+        print(f"  ✅ [11/11] Successfully bound to EarnVault ({EARNVAULT_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding EarnVault referral: {e}")
+
     # Auto-join all mandatory sponsor channels for immediate side-task qualification
-    print("  • Auto-joining all mandatory sponsor channels across all 8 bots...")
+    print("  • Auto-joining all mandatory sponsor channels across all 11 bots...")
     try:
         from bot_registry import get_all_sponsor_channels
         s_channels = get_all_sponsor_channels()
@@ -628,7 +739,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
 
     # Audit final referral status
-    all_8_keys = [
+    all_11_keys = [
         "mrg_referral_bound",
         "atf_referral_bound",
         "victors_referral_bound",
@@ -636,19 +747,24 @@ async def bind_referrals(client, me, acc_entry):
         "diggo_referral_bound",
         "pepegram_referral_bound",
         "adxearn_referral_bound",
-        "chickenland_referral_bound"
+        "chickenland_referral_bound",
+        "grouchemine_referral_bound",
+        "lumeon_referral_bound",
+        "earnvault_referral_bound"
     ]
-    bound_count = sum(1 for k in all_8_keys if acc_entry.get(k))
-    if bound_count == len(all_8_keys):
-        acc_entry["all_8_referrals_bound"] = True
+    bound_count = sum(1 for k in all_11_keys if acc_entry.get(k))
+    if bound_count == len(all_11_keys):
+        acc_entry["all_11_referrals_bound"] = True
+        acc_entry["all_10_referrals_bound"] = True
         acc_entry["all_9_referrals_bound"] = True
+        acc_entry["all_8_referrals_bound"] = True
         acc_entry["all_5_referrals_bound"] = True
         acc_entry["all_4_referrals_bound"] = True
         acc_entry["all_17_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 8/8 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 11/11 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/8 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/11 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

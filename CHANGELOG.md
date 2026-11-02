@@ -23,6 +23,10 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
   - **Daily Financial Ledger (`daily_profit_reporter.py`)**:
     * Added LUM Miner (`lum`) and EarnVault (`earnvault`) parsing from `live_farming_and_sidetasks_report.json` and fallback extraction from `accounts.json`.
     * Upgraded daily ledger card dispatched to Payouts Channel (`-1004402765950`) to display all 11 active mining pool reserves.
+  - **Account Onboarding & Batch Extraction Unification (`login_account.py` & `extract_all_missing_fleet_tokens.py`)**:
+    * **`login_account.py`**: Upgraded new account connection flow to bind all 11 bots (added steps 9: Grouche Mine, 10: LUM Miner, 11: EarnVault) with dual-layer MTProto `/start` and WebApp `start_param`, updating audit keys to `all_11_keys`.
+    * **`extract_all_missing_fleet_tokens.py`**: Added Grouche Mine, LUM Miner, and EarnVault to `TARGET_BOTS` for full 11-bot token extraction.
+    * **`app.py` `/collect-tokens` Resiliency**: Added local `accounts.json` fallback so token extraction proceeds seamlessly even if external backup archives are delayed.
 
 - **🛡️ Resilient Admin Dashboards, User Telemetry Access Fix & 11-Pool Fleet Alignment (November 2, 2026)**:
   - **User Bot Admin Dashboard (`user-admin.html`) & Executive Console (`admin.html`) Telemetry Resiliency**:

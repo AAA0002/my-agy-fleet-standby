@@ -83,6 +83,27 @@ TARGET_BOTS = [
         "url": "https://app8968434282.tgcloud.ai/",
         "short_names": ["play", "app", "farm", "miniapp"],
         "name": "Chicken Land"
+    },
+    {
+        "key": "grouchemine_init_data",
+        "bot": "GRC_AirdrooBot",
+        "url": "https://grouchemine.world/",
+        "short_names": ["app"],
+        "name": "Grouche Mine"
+    },
+    {
+        "key": "lumeon_init_data",
+        "bot": "lumeonminer_bot",
+        "url": "https://lum-miner.gurmessa747.workers.dev/",
+        "short_names": ["Lum", "lum", "app"],
+        "name": "LUM Miner"
+    },
+    {
+        "key": "earnvault_init_data",
+        "bot": "EarnVaultApp_bot",
+        "url": "https://eearnvault.top/",
+        "short_names": ["App", "app", "earn"],
+        "name": "EarnVault"
     }
 ]
 

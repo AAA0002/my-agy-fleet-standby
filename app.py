@@ -1274,6 +1274,18 @@ async def collect_tokens(request: Request):
                 except Exception as e:
                     logger.warning(f"Could not load backup zip from {cf_url}: {e}")
 
+    if not any(a.get("session_string") or a.get("session") for a in accounts):
+        accs_local = os.path.join(BASE_DIR, "accounts.json")
+        if os.path.exists(accs_local):
+            try:
+                with open(accs_local, "r", encoding="utf-8") as f:
+                    local_accs = json.load(f)
+                    if any(a.get("session_string") or a.get("session") for a in local_accs):
+                        accounts = local_accs
+                        logger.info(f"Loaded {len(accounts)} accounts with sessions from local accounts.json.")
+            except Exception:
+                pass
+
     if not (await is_this_node_active()) and not request.query_params.get("force") == "1":
         cur_n = get_current_node_number()
         act_n = await get_active_render_node()
