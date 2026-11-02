@@ -372,10 +372,10 @@
         </button>
       </div>
 
-      <!-- 8 Verified Mining Protocols Grid -->
+      <!-- 11 Verified Mining Protocols Grid -->
       <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">8 Supported Mining Protocols</h2>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">11 Supported Mining Protocols</h2>
           <span class="text-[10px] font-mono text-cyan-400">Multi-Edge Architecture</span>
         </div>
 
@@ -639,6 +639,64 @@
             </a>
           </div>
         </div>
+
+        <!-- Protocol 10: LUM Miner -->
+        <div class="card-glass-interactive p-3 rounded-2xl flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 font-black">
+              💎
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">LUM Miner</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">4h cycle</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-bold">Earn LUM</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">LUM Token Cloud Mining • 1,000 LUM/Ref Mesh</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-lumeon-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-lumeon" onclick="harvestSingleBot('lumeon')" class="px-2 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest LUM Miner">
+              ⚡
+            </button>
+            <button onclick="openConnectTab('lumeon')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              Connect
+            </button>
+            <a href="https://t.me/lumeonminer_bot/Lum?startapp=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Protocol 11: EarnVault -->
+        <div class="card-glass-interactive p-3 rounded-2xl flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 font-black">
+              🏦
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">EarnVault</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-semibold">4h cycle</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-green-500/20 text-green-300 rounded font-bold">Earn USD</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">USD Cash Rewards & Daily Cooldown Yields</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-earnvault-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-earnvault" onclick="harvestSingleBot('earnvault')" class="px-2 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest EarnVault">
+              ⚡
+            </button>
+            <button onclick="openConnectTab('earnvault')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              Connect
+            </button>
+            <a href="https://t.me/EarnVaultApp_bot/App?startapp=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -658,7 +716,7 @@
                 <h2 class="font-bold text-xs sm:text-sm text-white font-display">Link Mining Account</h2>
                 <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">24/7 CLOUD</span>
               </div>
-              <p class="text-[10px] text-slate-400 font-mono">Autonomous Cloud Nodes Harvest All 9 Pools Continuously</p>
+              <p class="text-[10px] text-slate-400 font-mono">Autonomous Cloud Nodes Harvest All 11 Pools Continuously</p>
             </div>
           </div>
           <button onclick="switchTab('accounts')" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-[10px] font-mono flex items-center gap-1">
@@ -690,11 +748,11 @@
         <div class="space-y-1.5 pt-1">
           <div class="flex items-center justify-between text-[10px] font-mono">
             <span class="text-slate-400 font-semibold uppercase tracking-wider">Target Mining Protocols:</span>
-            <span class="text-cyan-400 font-bold text-[9px]" id="selected-pool-label">All 9 Pools Selected</span>
+            <span class="text-cyan-400 font-bold text-[9px]" id="selected-pool-label">All 11 Pools Selected</span>
           </div>
           <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
             <button onclick="selectMiningPool('all')" data-pool="all" class="pool-chip active-pool px-3 py-1.5 rounded-xl border text-[10px] font-mono font-bold shrink-0">
-              🌐 All 9 Pools
+              🌐 All 11 Pools
             </button>
             <button onclick="selectMiningPool('mrg')" data-pool="mrg" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               ⚡ MRG
@@ -722,6 +780,12 @@
             </button>
             <button onclick="selectMiningPool('grouchemine')" data-pool="grouchemine" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               🍐 Grouche
+            </button>
+            <button onclick="selectMiningPool('lumeon')" data-pool="lumeon" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              💎 LUM Miner
+            </button>
+            <button onclick="selectMiningPool('earnvault')" data-pool="earnvault" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              🏦 EarnVault
             </button>
           </div>
         </div>
@@ -2083,7 +2147,7 @@
       selectedPool = pKey;
       const labelEl = document.getElementById('selected-pool-label');
       const poolLabels = {
-        all: 'All 9 Pools Selected (Recommended)',
+        all: 'All 11 Pools Selected (Recommended)',
         mrg: 'MRG Miner Selected',
         atf: 'ATF Miner Selected',
         victors: "Victor's Company Selected",
@@ -2092,7 +2156,9 @@
         adxearn: 'AdxEarn AI Selected',
         pepegram: 'PepeGram Selected',
         chickenland: 'Chicken Land Selected',
-        grouchemine: 'Grouche Mine Selected'
+        grouchemine: 'Grouche Mine Selected',
+        lumeon: 'LUM Miner Selected',
+        earnvault: 'EarnVault Selected'
       };
       if (labelEl) labelEl.textContent = poolLabels[pKey] || `${pKey.toUpperCase()} Selected`;
 
@@ -2210,12 +2276,14 @@
         pepegram: '🐸 PepeGram',
         chickenland: '🐔 Chicken Land',
         grouchemine: '🍐 Grouche Mine',
-        all: '🌐 All 9 Pools'
+        lumeon: '💎 LUM Miner',
+        earnvault: '🏦 EarnVault',
+        all: '🌐 All 11 Pools'
       };
 
       container.innerHTML = accs.map((a, idx) => {
         const initial = (a.name || a.label || 'M').charAt(0).toUpperCase();
-        const pLabel = poolLabels[a.pool] || (a.pool ? a.pool.toUpperCase() : 'All 9 Pools');
+        const pLabel = poolLabels[a.pool] || (a.pool ? a.pool.toUpperCase() : 'All 11 Pools');
         return `
         <div class="card-glass p-3.5 rounded-2xl flex items-center justify-between gap-3 border border-white/10 hover:border-cyan-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">

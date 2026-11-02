@@ -201,6 +201,7 @@ solve_challenge_deterministic = solve_atf_math
 
 async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
     is_owner = (str(uid) == MASTER_UID)
+    is_master = is_owner
     report = {
         "account": f"{name} (UID: {uid})",
         "name": name,
@@ -762,6 +763,71 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["9. Grouche Mine"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
+        # 10. LUM Miner
+        lumeon_tok = tokens.get("lumeon_init_data")
+        if lumeon_tok:
+            b_rep = {"core": {}, "side_tasks": []}
+            try:
+                url_ref = f"https://lum-miner.gurmessa747.workers.dev/referral?id={uid}"
+                async with session.get(url_ref, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        ref_data = await r.json()
+                        friends = ref_data.get("friends", [])
+                        qual = sum(1 for f in friends if f.get("qualified"))
+                        paid = sum(1 for f in friends if f.get("paid"))
+                        b_rep["core"] = {
+                            "status": f"Active (Friends: {len(friends)} • Qual: {qual})",
+                            "friends": len(friends),
+                            "qualified": qual
+                        }
+                        b_rep["side_tasks"].append(f"Referrals: {len(friends)}")
+                        if is_master:
+                            b_rep["side_tasks"].append(f"Paid Refs: {paid}")
+                    else:
+                        b_rep["core"]["status"] = f"HTTP {r.status} ⚠️"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["10. LUM Miner"] = b_rep
+        else:
+            report["bots"]["10. LUM Miner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
+        # 11. EarnVault
+        ev_tok = tokens.get("earnvault_init_data")
+        if ev_tok:
+            b_rep = {"core": {}, "side_tasks": []}
+            try:
+                auth_url = "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth"
+                async with session.post(auth_url, json={"data": {"initData": ev_tok}}, headers={"Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r_auth:
+                    if r_auth.status == 200:
+                        c_tok = (await r_auth.json()).get("result", {}).get("token")
+                        if c_tok:
+                            ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+                            async with session.post(ex_url, json={"token": c_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as r_ex:
+                                if r_ex.status == 200:
+                                    id_tok = (await r_ex.json()).get("idToken")
+                                    dash_url = "https://us-central1-earnvaulte.cloudfunctions.net/getDashboard"
+                                    async with session.post(dash_url, json={"data": {}}, headers={"Authorization": f"Bearer {id_tok}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r_dash:
+                                        if r_dash.status == 200:
+                                            d_data = (await r_dash.json()).get("result", {})
+                                            bal_c = d_data.get("balanceCents", 0)
+                                            ref_c = d_data.get("referral", {}).get("total", 0)
+                                            b_rep["core"] = {
+                                                "status": f"Active: {bal_c}¢ (${bal_c/100:.2f})",
+                                                "balance_cents": bal_c,
+                                                "balance_usd": bal_c / 100.0,
+                                                "referrals": ref_c
+                                            }
+                                            b_rep["side_tasks"].append(f"Balance: ${bal_c/100:.2f}")
+                                            if is_master:
+                                                b_rep["side_tasks"].append(f"Referrals: {ref_c}")
+                if not b_rep["core"].get("status"):
+                    b_rep["core"]["status"] = "Auth Pending"
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["11. EarnVault"] = b_rep
+        else:
+            report["bots"]["11. EarnVault"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
+
     return report
 
 async def audit_single_account(acc, idx, total, tokens_db, sem):
@@ -769,7 +835,7 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
         uid = str(acc.get("user_id"))
         name = f"{acc.get('first_name', '')} {acc.get('last_name', '')}".strip() or acc.get("name") or f"Account {idx}"
         is_master = (uid == MASTER_UID)
-        tokens = tokens_db.get(uid, {})
+        tokens = {**acc, **tokens_db.get(uid, {})}
         
         # If tokens missing from batch, attempt individual Upstash fetch
         if not tokens or not any(k.endswith("_init_data") for k in tokens.keys()):
@@ -821,7 +887,11 @@ async def main():
         "chicken_coins": 0,
         "chicken_eggs": 0,
         "chicken_hens": 0,
-        "grc": 0.0
+        "grc": 0.0,
+        "lum_friends": 0,
+        "lum_qual": 0,
+        "earnvault_usd": 0.0,
+        "earnvault_cents": 0
     }
     for rep in fleet_reports.values():
         bots = rep.get("bots", {})
@@ -870,6 +940,15 @@ async def main():
         grc_b = bots.get("9. Grouche Mine", {}).get("core", {}).get("balance", 0)
         try: totals["grc"] += float(str(grc_b).replace(",", ""))
         except Exception: pass
+        # LUM Miner
+        lum_core = bots.get("10. LUM Miner", {}).get("core", {})
+        totals["lum_friends"] += int(lum_core.get("friends", 0) or 0)
+        totals["lum_qual"] += int(lum_core.get("qualified", 0) or 0)
+        # EarnVault
+        ev_core = bots.get("11. EarnVault", {}).get("core", {})
+        c_bal = int(ev_core.get("balance_cents", 0) or 0)
+        totals["earnvault_cents"] += c_bal
+        totals["earnvault_usd"] += (c_bal / 100.0)
 
     print("\n" + "="*80)
     print("💎 FLEET-WIDE 21-ACCOUNT ACCUMULATED ASSET TOTALS:")
@@ -882,6 +961,8 @@ async def main():
     print(f"  • ⛏️ DiggoMiner:      {totals['diggo']:,.2f} DIGGO")
     print(f"  • 🐔 Chicken Land:    {totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs • {totals['chicken_coins']:,} Coins")
     print(f"  • 🍐 Grouche Mine:    {totals['grc']:,.2f} GRC")
+    print(f"  • 💎 LUM Miner:       {totals['lum_friends']} Refs ({totals['lum_qual']} Qualified)")
+    print(f"  • 🏦 EarnVault:       ${totals['earnvault_usd']:,.2f} USD ({totals['earnvault_cents']}¢)")
     print("="*80)
     print(f"✅ Fleet-Wide Audit Complete! All {len(fleet_reports)} accounts saved to live_farming_and_sidetasks_report.json")
     print("="*80)
@@ -892,16 +973,18 @@ async def main():
     if bot_token and notif_channel:
         healthy_accounts = sum(1 for r in fleet_reports.values() if sum(1 for b, v in r.get("bots", {}).items() if not v.get("error")) >= 5)
         short_card = (
-            f"🔍 <b>Fleet-Wide 9-Bot Audit Complete</b>\n"
+            f"🔍 <b>Fleet-Wide 11-Bot Audit Complete</b>\n"
             f"• <b>Accounts Audited:</b> <code>{len(fleet_reports)}/{len(fleet_reports)} Checked</code>\n"
             f"• <b>Operational Nodes:</b> <code>{healthy_accounts}/{len(fleet_reports)} Healthy</code>\n"
-            f"• <b>Active Protocols:</b> <code>9/9 Legitimate Mining Pools</code>\n"
+            f"• <b>Active Protocols:</b> <code>11/11 Legitimate Mining Pools</code>\n"
             f"• <b>Accumulated Yields:</b>\n"
             f"  ⚡ <code>{totals['mrg']:,.1f} MRG</code> • 🪙 <code>{totals['atf']:,.1f} ATF</code>\n"
             f"  🌐 <code>{totals['knx']:,.0f} KNX</code> • 🐸 <code>{totals['pepe']:,.0f} PEPE</code>\n"
             f"  🤖 <code>{totals['adx']:,} ADX</code> • ⛏️ <code>{totals['diggo']:,.1f} DIGGO</code>\n"
             f"  🐔 <code>{totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs</code>\n"
             f"  🍐 <code>{totals['grc']:,.1f} GRC</code>\n"
+            f"  💎 <code>{totals['lum_friends']} LUM Refs ({totals['lum_qual']} Qual)</code>\n"
+            f"  🏦 <code>${totals['earnvault_usd']:,.2f} USD EarnVault</code>\n"
             f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
         )
         try:

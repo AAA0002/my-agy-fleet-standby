@@ -218,6 +218,10 @@ def push_app():
     if os.path.exists(ev_f):
         push_file(ev_f, "batch_earnvault_mine.py", "feat: EarnVault 🏦 autonomous cloud farming engine")
         push_to_solver_repo(ev_f, "batch_earnvault_mine.py", "feat: EarnVault 🏦 autonomous cloud farming engine")
+    audit_f = os.path.join(BASE_DIR, "audit_bots_and_sidetasks.py")
+    if os.path.exists(audit_f):
+        push_file(audit_f, "audit_bots_and_sidetasks.py", "feat: 11-bot fleet comprehensive live audit engine")
+        push_to_solver_repo(audit_f, "audit_bots_and_sidetasks.py", "feat: 11-bot fleet comprehensive live audit engine")
     
     # Dynamic Render Deployment: Detect active node from Upstash Redis or default to Node 3
     active_node = "node3"

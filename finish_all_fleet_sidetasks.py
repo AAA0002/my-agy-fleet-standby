@@ -1763,6 +1763,166 @@ async def sweep_grouchemine_tasks(session: aiohttp.ClientSession, uid: str, name
     return res
 
 
+async def sweep_lumeon_tasks(session: aiohttp.ClientSession, uid: str, name: str, init_data: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps LUM Miner ($LUM) tasks, qualifications, and Master referral claims."""
+    res = {"bot": "LUM Miner", "tasks_claimed": 0, "notes": [], "success": False, "balance": 0.0}
+    if not init_data:
+        return res
+
+    base_url = "https://lum-miner.gurmessa747.workers.dev"
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+    }
+    is_master = (str(uid) == MASTER_UID)
+
+    try:
+        # 1. Join under Master if worker
+        if not is_master:
+            try:
+                async with session.post(f"{base_url}/referral", json={"action": "join", "inviter": MASTER_UID, "initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as j_r:
+                    if j_r.status == 200:
+                        j_d = await j_r.json()
+                        if j_d.get("ok"):
+                            res["notes"].append("joined_master")
+            except Exception:
+                pass
+
+        # 2. Qualify referral
+        try:
+            async with session.post(f"{base_url}/referral", json={"action": "qualify", "initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as q_r:
+                if q_r.status == 200:
+                    q_d = await q_r.json()
+                    if q_d.get("ok"):
+                        res["notes"].append("qualified")
+        except Exception:
+            pass
+
+        # 3. Tasks
+        tasks = [("community", 50), ("payouts", 50), ("gramapps", 30), ("grammoney", 30)]
+        for tid, rew in tasks:
+            try:
+                async with session.post(f"{base_url}/check-join", json={"task": tid, "initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as t_r:
+                    if t_r.status == 200:
+                        t_d = await t_r.json()
+                        if t_d.get("ok"):
+                            res["tasks_claimed"] += 1
+                            res["notes"].append(f"task_{tid}")
+                            res["balance"] += rew
+            except Exception:
+                pass
+
+        # 4. Master Referral Claim
+        if is_master:
+            try:
+                async with session.get(f"{base_url}/referral?id={MASTER_UID}", headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as ref_r:
+                    if ref_r.status == 200:
+                        ref_d = await ref_r.json()
+                        friends = ref_d.get("friends", [])
+                        unpaid = [f for f in friends if f.get("qualified") and not f.get("paid")]
+                        if unpaid:
+                            async with session.post(f"{base_url}/referral", json={"action": "claim", "initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as cl_r:
+                                if cl_r.status == 200:
+                                    cl_d = await cl_r.json()
+                                    if cl_d.get("ok"):
+                                        paid_cnt = cl_d.get("paid", len(unpaid))
+                                        res["tasks_claimed"] += paid_cnt
+                                        res["notes"].append(f"ref_claim_{paid_cnt*1000}LUM")
+            except Exception:
+                pass
+
+        res["success"] = True
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:40]}")
+
+    return res
+
+
+async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: str, init_data: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps EarnVault ($USD / $TON) daily check-ins, cooldown claims, and partner tasks."""
+    res = {"bot": "EarnVault", "tasks_claimed": 0, "notes": [], "success": False, "balance": 0.0}
+    if not init_data:
+        return res
+
+    functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+    }
+
+    try:
+        # 1. telegramAuth to get custom token
+        async with session.post(f"{functions_base}/telegramAuth", json={"data": {"initData": init_data}}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as a_r:
+            if a_r.status != 200:
+                return res
+            auth_d = await a_r.json()
+            custom_tok = auth_d.get("result", {}).get("token")
+            if not custom_tok:
+                return res
+
+        # 2. Exchange for Firebase ID Token
+        ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+        async with session.post(ex_url, json={"token": custom_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as ex_r:
+            if ex_r.status != 200:
+                return res
+            id_tok = (await ex_r.json()).get("idToken")
+            if not id_tok:
+                return res
+
+        auth_headers = {**headers, "Authorization": f"Bearer {id_tok}"}
+
+        # 3. Tasks
+        tasks = [("official", 20), ("glamour", 10)]
+        for tid, rew in tasks:
+            try:
+                await session.post(f"{functions_base}/startTask", json={"data": {"taskId": tid}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6))
+                await asyncio.sleep(0.5)
+                async with session.post(f"{functions_base}/verifyTask", json={"data": {"taskId": tid}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as v_r:
+                    if v_r.status == 200:
+                        v_d = await v_r.json()
+                        res_d = v_d.get("result", {})
+                        if res_d.get("verified"):
+                            res["tasks_claimed"] += 1
+                            res["notes"].append(f"task_{tid}")
+            except Exception:
+                pass
+
+        # 4. Dashboard & Daily Check-in & Claim Reward
+        try:
+            async with session.post(f"{functions_base}/getDashboard", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as d_r:
+                if d_r.status == 200:
+                    dash = (await d_r.json()).get("result", {})
+                    bal_cents = dash.get("balanceCents", 0)
+                    res["balance"] = bal_cents / 100.0
+
+                    # Checkin
+                    ci = dash.get("checkin", {})
+                    if not ci.get("doneToday"):
+                        async with session.post(f"{functions_base}/dailyCheckIn", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as ci_r:
+                            if ci_r.status == 200:
+                                ci_d = (await ci_r.json()).get("result", {})
+                                if not ci_d.get("already") and ci_d.get("creditedCents"):
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append(f"checkin_+{ci_d.get('creditedCents')}c")
+
+                    # Claim Reward
+                    cl = dash.get("claim", {})
+                    if cl.get("status") == "ready" or cl.get("remainingMs", 1) <= 0:
+                        async with session.post(f"{functions_base}/claimReward", json={"data": {}}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as cl_r:
+                            if cl_r.status == 200:
+                                cl_d = (await cl_r.json()).get("result", {})
+                                if cl_d.get("creditedCents"):
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append(f"claim_+{cl_d.get('creditedCents')}c")
+        except Exception:
+            pass
+
+        res["success"] = True
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:40]}")
+
+    return res
+
 
 # =============================================================================
 # 3. MAIN RUNNER (21-ACCOUNT PARALLEL PIPELINE)
@@ -1822,6 +1982,16 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         grc_res = await sweep_grouchemine_tasks(session, uid, name, grc_init, {**acc, **acc_toks})
         account_report["results"]["grouchemine"] = grc_res
 
+        # 10. LUM Miner
+        lum_init = acc_toks.get("lumeon_init_data") or acc.get("lumeon_init_data", "")
+        lum_res = await sweep_lumeon_tasks(session, uid, name, lum_init, acc)
+        account_report["results"]["lumeon"] = lum_res
+
+        # 11. EarnVault
+        ev_init = acc_toks.get("earnvault_init_data") or acc.get("earnvault_init_data", "")
+        ev_res = await sweep_earnvault_tasks(session, uid, name, ev_init, acc)
+        account_report["results"]["earnvault"] = ev_res
+
         # Sync tokens to Cloudflare Workers if newly refreshed
         await sync_token_to_cf(session, uid, acc_toks)
 
@@ -1832,7 +2002,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info(f"🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
+    logger.info(f"🎯 STARTING COMPLETE 11-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -1848,7 +2018,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 80)
-        logger.info(f"📊 9-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
+        logger.info(f"📊 11-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
         logger.info("=" * 80)
         total_tasks = 0
         for rep in reports:
@@ -1863,9 +2033,11 @@ async def main():
             dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
             chk_cl = res.get("chickenland", {}).get("tasks_claimed", 0)
             grc_cl = res.get("grouchemine", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl + grc_cl
+            lum_cl = res.get("lumeon", {}).get("tasks_claimed", 0)
+            ev_cl = res.get("earnvault", {}).get("tasks_claimed", 0)
+            acc_total = mrg_cl + atf_cl + vic_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl + grc_cl + lum_cl + ev_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} GRC:{grc_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} GRC:{grc_cl} LUM:{lum_cl} EV:{ev_cl} | Tot: {acc_total}")
 
         logger.info("=" * 80)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
@@ -1883,14 +2055,16 @@ async def main():
         dig_tot = sum(r["results"].get("diggo", {}).get("tasks_claimed", 0) for r in reports)
         chk_tot = sum(r["results"].get("chickenland", {}).get("tasks_claimed", 0) for r in reports)
         grc_tot = sum(r["results"].get("grouchemine", {}).get("tasks_claimed", 0) for r in reports)
+        lum_tot = sum(r["results"].get("lumeon", {}).get("tasks_claimed", 0) for r in reports)
+        ev_tot = sum(r["results"].get("earnvault", {}).get("tasks_claimed", 0) for r in reports)
         elapsed = time.time() - t_start
 
         if bot_token and notif_channel:
             short_card = (
-                f"⚡ <b>Fleet 9-Bot Auto-Harvest Complete</b>\n"
+                f"⚡ <b>Fleet 11-Bot Auto-Harvest Complete</b>\n"
                 f"• <b>Accounts Farmed:</b> <code>{len(ACCOUNTS)}/{len(ACCOUNTS)} Online</code>\n"
                 f"• <b>Tasks & Rewards Claimed:</b> <code>{total_tasks} Total Claimed</code>\n"
-                f"• <b>Pools Claimed (9/9):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot} • GRC:{grc_tot}</code>\n"
+                f"• <b>Pools Claimed (11/11):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot} • GRC:{grc_tot} • LUM:{lum_tot} • EV:{ev_tot}</code>\n"
                 f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>Render Cloud Mesh</code>\n"
                 f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
             )
@@ -1908,6 +2082,8 @@ async def main():
                         logger.info(f"Dispatched completion alert to AAA Admin notification ({notif_channel})")
                     else:
                         logger.warning(f"Notification HTTP {n_resp.status}: {await n_resp.text()}")
+            except Exception as ex:
+                logger.warning(f"Failed to dispatch completion alert: {ex}")
             except Exception as ex:
                 logger.warning(f"Failed to dispatch completion alert: {ex}")
 

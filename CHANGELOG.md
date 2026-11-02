@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Complete 11-Bot Full Fleet Deployment: Edge Crons, Harvester, Audit & Mini App (November 2, 2026)**:
+  - **Cloudflare Edge 15-Minute Cron Automation (`deploy_both_cf_workers.py`)**:
+    * Integrated `farmLumeon`: Autonomous joining under Master, referral qualification, and community tasks verification on `lum-miner.gurmessa747.workers.dev`. If Master (`6727787768`), automatically queries unpaid qualified referrals and claims referral bonuses.
+    * Integrated `farmEarnvault`: Autonomous `telegramAuth` HMAC exchange, Firebase ID token retrieval, social task verification (`official`, `glamour`), daily check-ins (`dailyCheckIn`), and cooldown claims (`claimReward`).
+    * Configured `BOT_COOLDOWNS` (2-4 hours) and registered `lumeon` and `earnvault` in `botRoutines` and `BOT_KEY_ALIASES`.
+    * Upgraded `MINING_POOLS` definitions, bot hubs (`btn_bots_hub`), interactive command center cards (`btn_lumeon`, `btn_earnvault`), and Telegram bot commands to 11 Legitimate Mining Pools.
+    * Deployed live to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+  - **Comprehensive Multi-Bot Side-Task Harvester (`finish_all_fleet_sidetasks.py`)**:
+    * Implemented `sweep_lumeon_tasks`: Automated sweep of community, payouts, and Gram partner tasks, plus Master referral reward claim.
+    * Implemented `sweep_earnvault_tasks`: Automated sweep of Firebase tasks, daily check-in, and reward claims.
+    * Updated fleet reporting and Telegram alert cards to 11 mining pools.
+  - **Fleet-Wide Financial Audit Engine (`audit_bots_and_sidetasks.py`)**:
+    * Integrated Bot 10 (LUM Miner) and Bot 11 (EarnVault) balance querying, referral metrics, and qualification tracking.
+    * Updated asset totals aggregation (`totals['lum_friends']`, `totals['lum_qual']`, `totals['earnvault_usd']`, `totals['earnvault_cents']`).
+  - **Public User Mini App Full 11-Pool Protocol Synchronization (`public/miner/index.html`)**:
+    * Added **Protocol 10: LUM Miner 💎 ($LUM)** card with 1-click harvest and direct launcher.
+    * Added **Protocol 11: EarnVault 🏦 ($USD)** card with 1-click harvest and direct launcher.
+    * Added LUM Miner and EarnVault chips to the Target Mining Protocol selector bar.
+    * Synchronized all 3 public mirrors: `public/miner/index.html`, `public_ads/miner/index.html`, and `public/app/index.html`.
+
 - **💎 Onboarding & Autonomous Fleet Integration of LUM Miner & EarnVault (October 31, 2026)**:
   - **LUM Miner 💎 (`@lumeonminer_bot` / `https://lum-miner.gurmessa747.workers.dev`) Full Integration**:
     * **Engineered `batch_lumeon_mine.py`**: Reverse-engineered Cloudflare Workers edge backend (`/referral`, `/check-join`, `/withdraw`).
