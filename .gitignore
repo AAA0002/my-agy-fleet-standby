@@ -26,6 +26,7 @@ generate_wallet_doc.py
 *SECRETS*
 *secrets*
 *vault*
+!batch_earnvault_mine.py
 ARCHIVED_*
 antigravity_session/
 cloudflared_config/

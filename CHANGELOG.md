@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Onboarding & Autonomous Fleet Integration of LUM Miner & EarnVault (October 31, 2026)**:
+  - **LUM Miner 💎 (`@lumeonminer_bot` / `https://lum-miner.gurmessa747.workers.dev`) Full Integration**:
+    * **Engineered `batch_lumeon_mine.py`**: Reverse-engineered Cloudflare Workers edge backend (`/referral`, `/check-join`, `/withdraw`).
+    * **100% Fleet Referral Binding**: Dispatched `/start 6727787768` and extracted `RequestAppWebViewRequest` tokens for all 20 worker accounts, binding them under Master Arif (`6727787768`).
+    * **Referral Qualification & Task Automation**: Qualified dedicated TON wallets for all workers, joined 4 official sponsor channels (`lumminercommunity`, `lumpayout`, `gramminiappsmining`, `Grammoneywallet`), and completed verified tasks (`community` +50 LUM, `payouts` +50 LUM, `gramapps` +30 LUM, `grammoney` +30 LUM = +160 LUM per account).
+    * **Harvested Referral Bonus**: Master Arif claimed **+20,000 LUM** direct referral bonus (`20 qualified referrals × 1,000 LUM/ref`).
+    * **Synchronized State**: `lumeon_init_data` synchronized to `accounts.json` and Upstash Redis `miniapp_tokens`.
+  - **EarnVault 🏦 (`@EarnVaultApp_bot` / `https://eearnvault.top`) Full Integration**:
+    * **Engineered `batch_earnvault_mine.py`**: Reverse-engineered Firebase Cloud Functions architecture (`telegramAuth`, `getDashboard`, `getProfile`, `dailyCheckIn`, `claimReward`, `startTask`, `verifyTask`).
+    * **100% Fleet Referral Binding**: Sent `/start 6727787768` to `@EarnVaultApp_bot` and extracted `RequestAppWebViewRequest` tokens with `start_param=6727787768` across all 20 worker accounts.
+    * **Firebase Custom Token & Identity Exchange**: Automatically authenticated each account via `telegramAuth` and exchanged custom tokens for Firebase ID tokens via Identity Toolkit API.
+    * **Task Verification & Balance Accumulation**: Joined official sponsor channels (`EarnVaulte`, `Nexpaychanel`), started and verified social tasks (`official` +20¢, `glamour` +10¢), and claimed initial balances.
+    * **Ground-Truth Fleet Holdings**: Each worker account holds **130¢ ($1.30)** ($26.00 across fleet). Master Arif's balance increased to **232¢ ($2.32)** with **19 verified referrals**!
+    * **Synchronized State**: `earnvault_init_data` synchronized to `accounts.json` and Upstash Redis `miniapp_tokens`.
+  - **Failover & Standby Repository Sync**:
+    * Added `batch_lumeon_mine.py` and `batch_earnvault_mine.py` to `push_to_standby_repo.py` for automated continuous synchronization to `AAA0002/my-agy-fleet-standby` and `AAA0002/cloud-fleet-solver`.
+
 - **🚀 Cloudflare Edge Cron Grouche Mine Farming Integration & Executive Console Mesh Hardening (October 31, 2026)**:
   - **Full Grouche Mine Autonomous Cloud Farming in Cloudflare Edge Mesh (`deploy_both_cf_workers.py`)**:
     * **Integrated `farmGrouchemine` into `farmSingleAccountAllBots`**: Cloudflare Workers 15-minute cron runner (`*/15 * * * *`) now autonomously farms Grouche Mine across all accounts. Executes `/auth/login`, claims daily reward (`/users/daily-claim`), checks and completes all social tasks (`/tasks/*`) with server-enforced delay, harvests Adsgram ads (`/users/ads/complete`, up to 8 ads per 12h, +10 GRC each), claims accumulated mining yield (`/mining/claim`), and enforces **Strict Zero-Spend Policy** (never purchase packages).

@@ -210,6 +210,14 @@ def push_app():
     if os.path.exists(grc_f):
         push_file(grc_f, "batch_grouche_mine.py", "feat: Grouche Mine 🍐 autonomous cloud farming engine")
         push_to_solver_repo(grc_f, "batch_grouche_mine.py", "feat: Grouche Mine 🍐 autonomous cloud farming engine")
+    lum_f = os.path.join(BASE_DIR, "batch_lumeon_mine.py")
+    if os.path.exists(lum_f):
+        push_file(lum_f, "batch_lumeon_mine.py", "feat: LUM Miner 💎 autonomous cloud farming engine")
+        push_to_solver_repo(lum_f, "batch_lumeon_mine.py", "feat: LUM Miner 💎 autonomous cloud farming engine")
+    ev_f = os.path.join(BASE_DIR, "batch_earnvault_mine.py")
+    if os.path.exists(ev_f):
+        push_file(ev_f, "batch_earnvault_mine.py", "feat: EarnVault 🏦 autonomous cloud farming engine")
+        push_to_solver_repo(ev_f, "batch_earnvault_mine.py", "feat: EarnVault 🏦 autonomous cloud farming engine")
     
     # Dynamic Render Deployment: Detect active node from Upstash Redis or default to Node 3
     active_node = "node3"
