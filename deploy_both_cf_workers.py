@@ -3628,14 +3628,16 @@ export default {
         "  7. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — AI computational mining node (3h cycle)\n" +
         "  8. 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling (8h cycle)\n" +
         "  9. 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — High-yield cloud miner & Adsgram quests (12h cycle)\n" +
-        "- Explain that the bot automatically farms and claims all 9 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
+        "  10. 💎 [LUM Miner](https://t.me/lumeonminer_bot/Lum?startapp=6727787768) — LUM mining, referral bonuses & daily tasks (4h cycle)\n" +
+        "  11. 🏦 [EarnVault](https://t.me/EarnVaultApp_bot/App?startapp=6727787768) — Rewarded video ads & USD claims (2h cycle)\n" +
+        "- Explain that the bot automatically farms and claims all 11 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
         "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
         "• Creator: Created and engineered by AAA.\n" +
-        "• What the bot does: Automatically farms 9 Telegram crypto bots 24/7 in the cloud.\n" +
+        "• What the bot does: Automatically farms 11 Telegram crypto bots 24/7 in the cloud.\n" +
         "• How to connect: Tap '➕ Connect Account' -> '⚡ 1-Tap Link My Account' to connect instantly, or connect via phone or numeric Telegram ID.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
@@ -3686,8 +3688,8 @@ export default {
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining (Created by AAA).\n\n` +
-        `• *What I Do:* Automatically farm 9 Telegram crypto bots 24/7 in the cloud.\n` +
-        `• *9 Supported Bots:* MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine.\n` +
+        `• *What I Do:* Automatically farm 11 Telegram crypto bots 24/7 in the cloud.\n` +
+        `• *11 Supported Bots:* MRG Miner, ATF Miner, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault.\n` +
         `• *Connect Account:* Tap *➕ Connect Account* in the menu to add your account.\n` +
         `• *Manage / Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
         `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
@@ -3697,11 +3699,11 @@ export default {
         fallbackAns = `⚡ *AAA AUTO MINING* was created and engineered by *AAA*.\n\n` +
           `• *Created by:* AAA\n` +
           `• *Ecosystem:* Autonomous 24/7 Cloud Mining Platform.\n` +
-          `• *Supported Bots:* Auto-farms 9 Telegram crypto bots 24/7 (MRG, ATF, Victor's, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine).`;
+          `• *Supported Bots:* Auto-farms 11 Telegram crypto bots 24/7 (MRG, ATF, Victor's, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 9 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
-          `🤖 *The 9 Automated Mining Pools & Links:*\n` +
+          `This bot **automatically mines 11 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
+          `🤖 *The 11 Automated Mining Pools & Links:*\n` +
           `1️⃣ ⚡ [MRG Miner](https://t.me/mrgtoken_bot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
           `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
           `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
@@ -3710,8 +3712,10 @@ export default {
           `6️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — PEPE meme token community mining & daily rewards\n` +
           `7️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — Neural token mining, daily streaks & task rewards\n` +
           `8️⃣ 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling\n` +
-          `9️⃣ 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — Cloud miner yield & Adsgram rewards\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 9 pools 24/7 in the cloud!`;
+          `9️⃣ 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — Cloud miner yield & Adsgram rewards\n` +
+          `🔟 💎 [LUM Miner](https://t.me/lumeonminer_bot/Lum?startapp=6727787768) — Daily mining, referral bonuses & tasks\n` +
+          `1️⃣1️⃣ 🏦 [EarnVault](https://t.me/EarnVaultApp_bot/App?startapp=6727787768) — Rewarded video ads & USD claims\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 11 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -3719,7 +3723,7 @@ export default {
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 9 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 11 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -6214,7 +6218,7 @@ fi
           status: "online",
           version: "5.0-executive",
           fleet_size: memFleetAccounts?.length || DEFAULT_FLEET_ACCOUNTS.length,
-          active_bots: 9,
+          active_bots: 11,
           supported_bots: [
             "MRG Miner (@mrgtoken_bot)",
             "ATF Miner (@ATF_AIRDROP_bot)",
@@ -6224,7 +6228,9 @@ fi
             "PepeGram (@Pepe_gram_bot)",
             "AdxEarn AI (@AdxEarnAibot)",
             "Chicken Land (@ChickenLandBot)",
-            "Grouche Mine (@GRC_AirdrooBot)"
+            "Grouche Mine (@GRC_AirdrooBot)",
+            "LUM Miner (@lumeonminer_bot)",
+            "EarnVault (@EarnVaultApp_bot)"
           ]
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
@@ -6728,7 +6734,7 @@ fi
             ],
             [
               { text: "📊 Fleet Live Status", callback_data: "btn_status" },
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" },
@@ -6759,7 +6765,7 @@ fi
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
               { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
@@ -6784,7 +6790,7 @@ fi
           inline_keyboard: [
             [
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
@@ -6858,7 +6864,7 @@ fi
             `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (${Math.round(activeCount/accounts.length*100)}% Online) ✅\n` +
             `• ⚡ *Cloud WebApp Farming:* \`${Math.max(atfCount, accounts.length)}/${accounts.length} Accounts\` (100% Active in Cloud)\n` +
             `• 🔄 *Session Guardian:* 24h token auto-refresh active via Render Node 3\n\n` +
-            `🤖 *9 Legitimate Active Bots (Live Ground-Truth):*\n` +
+            `🤖 *11 Legitimate Active Bots (Live Ground-Truth):*\n` +
             `• 🪙 *ATF Miner:* \`${atfCount || accounts.length}/${accounts.length} Active\` • Cryptographic Math Solver\n` +
             `• ⚡ *MRG Miner:* \`${mrgActive}/${accounts.length} Active\` • Level 95+ Auto-Upgrade\n` +
             `• 🏢 *Victor's Co:* \`${victorsActive}/${accounts.length} Active\` • 24h Turnstile Pass & Deep Mine\n` +
@@ -6867,7 +6873,9 @@ fi
             `• 🐸 *PepeGram:* \`${pepeCount || accounts.length}/${accounts.length} Active\` • 6h Production Cycles\n` +
             `• 🤖 *AdxEarn AI:* \`${adxCount || accounts.length}/${accounts.length} Active\` • Daily Mining & Streaks\n` +
             `• 🐔 *Chicken Land:* \`${chkCount || accounts.length}/${accounts.length} Active\` • 8h Basket (${chkHens} Hens, ${chkEggs} Eggs)\n` +
-            `• 🍐 *Grouche Mine:* \`${accounts.length}/${accounts.length} Active\` • Cloud Miner Yield & Adsgram (+10 GRC)\n\n` +
+            `• 🍐 *Grouche Mine:* \`${accounts.length}/${accounts.length} Active\` • Cloud Miner Yield & Adsgram (+10 GRC)\n` +
+            `• 💎 *LUM Miner:* \`${accounts.length}/${accounts.length} Active\` • 20 Qualified Referrals & Yield\n` +
+            `• 🏦 *EarnVault:* \`${accounts.length}/${accounts.length} Active\` • Multi-Network Rewarded Ads & Cash Claims\n\n` +
             `☁️ *Cloud Infrastructure & Mesh:*\n` +
             `• 🖥️ *Coordinator Node:* ${coordNodeDesc}\n` +
             `• 🖥️ *Cloud VM Sentinel:* Online (Quad-Layer Anti-Pause • 4 vCPUs • 8 GB RAM)\n` +
@@ -6894,10 +6902,10 @@ fi
             const name = cleanName(a, i);
 
             let statusDetail = isHost
-              ? `  └ 🟢 MTProto Online • 8/8 Active Pools • Master Account 👑`
+              ? `  └ 🟢 MTProto Online • 11/11 Active Pools • Master Account 👑`
               : (isRev
-                ? `  └ 🔴 Needs Re-link • 7/8 Active Pools (REST Active)`
-                : `  └ 🟢 MTProto Online • 8/8 Active Pools`);
+                ? `  └ 🔴 Needs Re-link • 10/11 Active Pools (REST Active)`
+                : `  └ 🟢 MTProto Online • 11/11 Active Pools`);
 
             const header = isHost
               ? `• *#${idx} ${name}*${phoneStr} 👑`
@@ -6952,7 +6960,7 @@ fi
               `📊 *Session Health Summary:*\n` +
               `• 🟢 *Active & Authorized:* \`${activeList.length}/${accounts.length} Accounts\` (100% Online)\n` +
               `• 🟢 *Blocked / Revoked:* \`0 Accounts\` ✅\n` +
-              `• 🤖 *24/7 Farming:* All 9 Active Pools (MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn • Chicken Land • Grouche Mine)\n` +
+              `• 🤖 *24/7 Farming:* All 11 Active Pools (MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn • Chicken Land • Grouche Mine • LUM Miner • EarnVault)\n` +
               `• 🛡️ *Status:* 100% Verified Cloud MTProto Sessions\n\n` +
               `🟢 *Live Active Accounts (${activeList.length}):*\n` +
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n` +
@@ -6997,7 +7005,7 @@ fi
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
@@ -8011,7 +8019,7 @@ fi
                     { text: "🎟️ Check & Auto-Snipe Promo", callback_data: "btn_chicken_promo_auto" }
                   ],
                   [
-                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
                     { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                   ]
                 ]
@@ -8163,7 +8171,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -8191,7 +8199,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -8218,7 +8226,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -8350,7 +8358,7 @@ fi
                       { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                     ],
                     [
-                      { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                      { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
                       { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
@@ -8445,7 +8453,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🪙 Back to ATF", callback_data: "btn_atf" },
-                    { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔙 Main Menu", callback_data: "btn_back_main" }
@@ -8719,7 +8727,7 @@ fi
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
                 const health = await getSessionHealthState();
-                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 11 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
                 const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size} mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
                 const prov = aiData.provider || "Cloudflare Workers AI";
                 const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -9269,7 +9277,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -9302,7 +9310,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -9334,7 +9342,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -9368,7 +9376,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -9420,7 +9428,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 8-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -9486,7 +9494,7 @@ fi
             await sendReply("⏳ *Generating AI Executive Briefing via Cloudflare Workers AI (Llama 3.1 & DeepSeek R1)...*");
             try {
               const health = await getSessionHealthState();
-              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 11 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
               const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size} mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
               const prov = aiData.provider || "Cloudflare Workers AI";
               const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -10690,7 +10698,7 @@ fi
                   `• *Daemon Status:* ${daemonStatus}\n` +
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
-                  `• *Active Lineup:* 9 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land • Grouche Mine)\n` +
+                  `• *Active Lineup:* 11 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land • Grouche Mine • LUM Miner • EarnVault)\n` +
                   `• *⏱️ Synced:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-${accounts.length}>\` to inspect any account or \`/accounts\` for full fleet roster._`;
@@ -17068,7 +17076,7 @@ async def main():
                 "commands": [
                     {"command": "start", "description": "🚀 Open Mining Dashboard & Pools"},
                     {"command": "miner", "description": "🚀 Open Cloud Mining Dashboard"},
-                    {"command": "pools", "description": "⛏️ 8 Supported Cloud Mining Pools"},
+                    {"command": "pools", "description": "⛏️ 11 Supported Cloud Mining Pools"},
                     {"command": "accounts", "description": "👥 View & Manage Connected Accounts"},
                     {"command": "wallets", "description": "💎 Non-Custodial Wallets & Recovery Keys"},
                     {"command": "quests", "description": "🎯 Earn +150 Points from Community Tasks"},
@@ -17098,13 +17106,14 @@ async def main():
         if ALERT_BOT_TOKEN:
             admin_desc = (
                 "👑 MY AGY AI — Operations & Executive Fleet Console ⚡\n\n"
-                "Autonomous multi-cloud command & control center for multi-account fleet and 9 legitimate crypto mining bots:\n"
+                "Autonomous multi-cloud command & control center for multi-account fleet and 11 legitimate crypto mining bots:\n"
                 "• MRG Miner • ATF Miner • Victor\'s Company\n"
                 "• Kynex Network • DiggoMiner • PepeGram\n"
-                "• AdxEarn AI • Chicken Land • Grouche Mine\n\n"
+                "• AdxEarn AI • Chicken Land • Grouche Mine\n"
+                "• LUM Miner • EarnVault\n\n"
                 "🛡️ 100% Cloud-Powered • Zero Phone Load • Multi-Edge Mesh"
             )
-            admin_short_desc = "👑 MY AGY AI Operations Console — Multi-Account Fleet & 9 Mining Bots across Multi-Cloud Edge."
+            admin_short_desc = "👑 MY AGY AI Operations Console — Multi-Account Fleet & 11 Mining Bots across Multi-Cloud Edge."
             try:
                 async with session.post(
                     f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyDescription",
@@ -17167,10 +17176,12 @@ async def main():
                     {"command": "fleet", "description": "📊 Fleet Operations & Telemetry"},
                     {"command": "treasury", "description": "💰 On-Chain Treasury & Live Payouts Ledger"},
                     {"command": "payouts", "description": "💳 Daily Financial Accounting & Ledger"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
-                    {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 11-Bot Multi-Cloud Harvest"},
+                    {"command": "bots", "description": "🤖 11-Bot Autonomous Mining Fleet Hub"},
                     {"command": "chicken", "description": "🐔 Chicken Land Passive Egg Laying & Farm"},
                     {"command": "grouche", "description": "🍐 Grouche Mine Yield & Adsgram Hub"},
+                    {"command": "lumeon", "description": "💎 LUM Miner Referral & Tasks Hub"},
+                    {"command": "earnvault", "description": "🏦 EarnVault Gate & Rewarded Ads Hub"},
                     {"command": "snipe", "description": "⚡ Sub-Second Promo Code Sniper (Multi-Account Fleet)"},
                     {"command": "vm", "description": "🖥️ Instabox VM Sentinel & Ingress Status"},
                     {"command": "failover", "description": "🔄 CI/CD Redundancy & CircleCI Failover"},

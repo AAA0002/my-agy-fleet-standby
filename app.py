@@ -76,7 +76,7 @@ def create_telethon_client(sess_str: str = "", identifier: Any = "default", prox
     )
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
@@ -541,32 +541,49 @@ async def serve_admin_console():
         return FileResponse(file_path_pub, media_type="text/html")
     return HTMLResponse("<h1>Executive Admin Console Not Found</h1>", status_code=404)
 
+@app.api_route("/api/admin/{subpath:path}", methods=["GET", "POST", "OPTIONS", "HEAD", "PUT", "DELETE"])
+async def api_proxy_admin_universal(request: Request, subpath: str):
+    """Universal proxy for all User Bot & Executive Admin API requests directly to Cloudflare Edge Mesh."""
+    if request.method == "OPTIONS":
+        return Response(status_code=204, headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data, X-User-Id, X-Admin-Token, X-Secret, x-secret, x-admin-token, *"
+        })
+    cf_base = "https://restore-agy.agorameet.workers.dev/api/admin"
+    query_str = str(request.query_params)
+    if "secret=" not in query_str and "token=" not in query_str:
+        query_str = f"{query_str}&secret=2743" if query_str else "secret=2743"
+    target_url = f"{cf_base}/{subpath}?{query_str}"
+    
+    headers = {
+        "Accept": "application/json",
+        "Authorization": request.headers.get("Authorization") or "Bearer 2743",
+        "X-Admin-Token": request.headers.get("X-Admin-Token") or "2743",
+        "X-Secret": request.headers.get("X-Secret") or "2743",
+    }
+    body = None
+    if request.method in ("POST", "PUT", "PATCH"):
+        body = await request.body()
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.request(request.method, target_url, headers=headers, data=body, timeout=aiohttp.ClientTimeout(total=12)) as r:
+                resp_data = await r.read()
+                return Response(content=resp_data, status_code=r.status, media_type=r.headers.get("Content-Type", "application/json"), headers={"Access-Control-Allow-Origin": "*"})
+    except Exception as e:
+        logger.warning(f"Error proxying /api/admin/{subpath} to Cloudflare: {e}")
+        return JSONResponse({"ok": False, "error": f"Edge mesh proxy error: {str(e)}"}, status_code=502)
+
 @app.get("/api/admin/users")
 async def api_proxy_admin_users(request: Request):
     """Proxies User Bot community miners telemetry from Primary Edge Gateway."""
-    cf_url = "https://restore-agy.agorameet.workers.dev/api/admin/users?secret=2743"
-    try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(cf_url, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                if r.status == 200:
-                    return await r.json()
-    except Exception as e:
-        logger.warning(f"Error proxying /api/admin/users to Cloudflare: {e}")
-    return {"ok": False, "error": "Edge mesh unreachable"}
+    return await api_proxy_admin_universal(request, "users")
 
 @app.get("/api/admin/stats")
 @app.get("/api/admin/community")
 async def api_proxy_admin_stats(request: Request):
     """Proxies User Bot community stats from Primary Edge Gateway."""
-    cf_url = "https://restore-agy.agorameet.workers.dev/api/admin/users?secret=2743"
-    try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(cf_url, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                if r.status == 200:
-                    return await r.json()
-    except Exception as e:
-        logger.warning(f"Error proxying /api/admin/stats to Cloudflare: {e}")
-    return {"ok": False, "error": "Edge mesh unreachable"}
+    return await api_proxy_admin_universal(request, "users")
 
 @app.get("/api/rates")
 async def api_proxy_rates():

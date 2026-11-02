@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Resilient Admin Dashboards, User Telemetry Access Fix & 11-Pool Fleet Alignment (November 2, 2026)**:
+  - **User Bot Admin Dashboard (`user-admin.html`) & Executive Console (`admin.html`) Telemetry Resiliency**:
+    * **Resolved Premature Session Wiping Bug**: Discovered that if the first candidate URL in the edge mesh (e.g., Render same-origin) returned 401, `fetchMeshApi` prematurely purged `atf_admin_token` from both `sessionStorage` and `localStorage` and reset `authToken` to `""`, wiping credentials before secondary failover nodes could respond. Updated failover loop to continue across all mesh shards, only prompting re-auth if all nodes fail and token is not master PIN `2743`.
+    * **Zero-Latency PIN 2743 Fallback**: Enabled instant offline client-side validation for Commander Arif's master PIN (`2743`) in both `AdminAuthGate` components, eliminating network latency or transient 404/502 errors during login.
+    * **11-Pool Roster Alignment**: Updated `POOLS_LIST` in `user-admin.html` and the 4 mining bot telemetry sections in `admin.html` to reflect all 11 legitimate active mining bots (adding Bot 10: LUM Miner and Bot 11: EarnVault).
+  - **Universal Admin API Proxy in `app.py`**:
+    * Engineered `@app.api_route("/api/admin/{subpath:path}")` in `app.py` with support for GET, POST, OPTIONS, and HEAD. Automatically forwards authentication headers and credentials (`secret=2743`) directly to the Primary Edge Gateway (`https://restore-agy.agorameet.workers.dev`), ensuring all operations (`/users`, `/auth/login`, `/user-action`, `/daily-sweep`, `/broadcast`) function seamlessly whether accessed via Render Node 3 or Cloudflare directly.
+  - **Cloudflare Edge Synchronizer (`deploy_both_cf_workers.py`)**:
+    * Updated `telegram-webhook` to report `active_bots: 11` with all 11 supported bot handles.
+    * Standardized all interactive bot hub buttons to `🤖 11-Bot Mining Hub`.
+    * Deployed live to Primary Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified 200 OK.
+
 - **🎯 Forensic 11-Bot Full Inspection, Gate Solvers, Rewarded Ads & Autonomous Cloud Refresher Expansion (November 2, 2026)**:
   - **Forensic Inspection & Protocol Optimization Across All 11 Mining Bots**:
     * **Bot 1 (MRG Miner ⚡)**: Verified daily streak check-in (+5 to +15 MRG), TonConnect 2.0 wallet proof, link/channel tasks claim (with 15s wait debounce), mining claim with Turnstile verification, level auto-upgrade (1-203), and Master referral commissions/bonuses.

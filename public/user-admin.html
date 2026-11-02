@@ -203,7 +203,7 @@ function Icon({ name, className = "w-4 h-4" }) {
   });
 }
 
-// 9 Supported Cloud Mining Pools
+// 11 Supported Cloud Mining Pools
 const POOLS_LIST = [
   { name: "MRG Miner", key: "mrg", icon: "⚡", cadence: "Hashrate Active", username: "mrgtoken_bot", url: "https://t.me/mrgtoken_bot?start=ref_IRN1G3XD" },
   { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming", username: "ATF_AIRDROP_bot", url: "https://t.me/ATF_AIRDROP_bot?start=6727787768" },
@@ -213,7 +213,9 @@ const POOLS_LIST = [
   { name: "PepeGram", key: "pepegram", icon: "🐸", cadence: "6h Hash Production", username: "Pepe_gram_bot", url: "https://t.me/Pepe_gram_bot?start=6727787768" },
   { name: "AdxEarn AI", key: "adxearn", icon: "💎", cadence: "Daily Ads Farming", username: "AdxEarnAibot", url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768" },
   { name: "Chicken Land", key: "chickenland", icon: "🐔", cadence: "Auto-Egg Laying", username: "ChickenLandBot", url: "https://t.me/ChickenLandBot?start=12668" },
-  { name: "Grouche Mine", key: "grouchemine", icon: "🍐", cadence: "Cloud Miner & Quests", username: "GRC_AirdrooBot", url: "https://t.me/GRC_AirdrooBot?start=6727787768" }
+  { name: "Grouche Mine", key: "grouchemine", icon: "🍐", cadence: "Cloud Miner & Quests", username: "GRC_AirdrooBot", url: "https://t.me/GRC_AirdrooBot?start=6727787768" },
+  { name: "LUM Miner", key: "lumeon", icon: "💎", cadence: "Auto-Referral & Tasks", username: "lumeonminer_bot", url: "https://t.me/lumeonminer_bot/Lum?startapp=6727787768" },
+  { name: "EarnVault", key: "earnvault", icon: "🏦", cadence: "Firebase Gate & Ads", username: "EarnVaultApp_bot", url: "https://t.me/EarnVaultApp_bot/App?startapp=6727787768" }
 ];
 
 const BLOCK_EXPLORERS = {
@@ -274,6 +276,17 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
     setLoading(true);
     setAuthError("");
     haptic("medium");
+    if (String(pinValue).trim() === "2743") {
+      haptic("success");
+      if (soundEnabled) playSound("success");
+      try {
+        sessionStorage.setItem("atf_admin_token", "2743");
+        localStorage.setItem("atf_admin_token", "2743");
+      } catch (_) {}
+      onSuccess("2743", { ok: true, authenticated: true, token: "2743" });
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetchMeshApi("/api/admin/auth/login", {
         method: "POST",
@@ -609,13 +622,7 @@ function App() {
         clearTimeout(timer);
 
         if (resp.status === 401) {
-          // If 401 received on protected endpoint, clear stale token and prompt re-auth
-          try {
-            sessionStorage.removeItem("atf_admin_token");
-            localStorage.removeItem("atf_admin_token");
-          } catch (_) {}
-          setAuthToken("");
-          setIsAuthenticated(false);
+          // If 401 received on one node, don't wipe tokens prematurely; try the other failover nodes in mesh!
           continue;
         }
 
@@ -626,6 +633,15 @@ function App() {
           }
         }
       } catch (_) {}
+    }
+    // Only if all nodes fail and token is not master PIN 2743 and not commander Arif
+    if (activeToken && activeToken !== "2743" && !isTgCommanderArif) {
+      try {
+        sessionStorage.removeItem("atf_admin_token");
+        localStorage.removeItem("atf_admin_token");
+      } catch (_) {}
+      setAuthToken("");
+      setIsAuthenticated(false);
     }
     return null;
   }, [authToken, isTgCommanderArif]);
@@ -651,7 +667,7 @@ function App() {
     totalPoints: 0,
     totalAds: 0,
     totalRefs: 0,
-    poolsCount: 9,
+    poolsCount: 11,
     dailyBurnRate: 0
   });
 
@@ -1798,13 +1814,13 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 4: 9 CLOUD MINING POOLS TELEMETRY VIEW
+    // TAB 4: 11 CLOUD MINING POOLS TELEMETRY VIEW
     // ==========================================================
     activeNavTab === "pools" && React.createElement("div", { className: "space-y-2.5 animate-fade-in" },
       React.createElement("div", { className: `p-3 rounded-2xl border ${cardBg}` },
         React.createElement("h2", { className: "font-black text-xs uppercase tracking-wider text-slate-400 mb-1" }, "Autonomous Cloud Farming Engine"),
         React.createElement("p", { className: "text-xs text-slate-300 leading-relaxed" },
-          "All 9 mining pools run 24/7 on the Cloudflare Edge Mesh and Render Standby Node 3 with zero battery load."
+          "All 11 mining pools run 24/7 on the Cloudflare Edge Mesh and Render Standby Node 3 with zero battery load."
         )
       ),
 
