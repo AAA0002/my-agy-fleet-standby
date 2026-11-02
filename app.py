@@ -482,11 +482,11 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgtoken_bot"
+MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
-ATF_BOT = "ATF_AIRDROP_bot"
+ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanybot"
+VICTORS_BOT = "VictorsCompanyGame"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -915,11 +915,33 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     bot_ent = None
     bot_in = None
-    try:
-        bot_ent = await client.get_entity(bot_username)
-        bot_in = await client.get_input_entity(bot_ent)
-    except Exception as e:
-        logger.debug(f"Entity resolution note for {bot_username}: {e}")
+    candidates = [bot_username]
+    BOT_ALIASES = {
+        "mrgtoken_bot": ["mrgminerbot", 8862173167],
+        "mrgminerbot": ["mrgtoken_bot", 8862173167],
+        "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
+        "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
+        "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
+        "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
+        "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
+        "Pepe_gram_bot": ["pepegram_bot", 7639148332],
+    }
+    if bot_username in BOT_ALIASES:
+        for a in BOT_ALIASES[bot_username]:
+            if a not in candidates:
+                candidates.append(a)
+
+    for cand in candidates:
+        try:
+            bot_ent = await client.get_entity(cand)
+            bot_in = await client.get_input_entity(bot_ent)
+            if bot_ent and bot_in:
+                break
+        except Exception:
+            continue
+
+    if not bot_ent or not bot_in:
+        logger.debug(f"Entity resolution failed for {bot_username} (candidates: {candidates})")
         return None
 
     # Priority 0: Direct RequestWebViewRequest if prefer_direct_url is enabled
@@ -6458,6 +6480,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await safe_post("https://app.miniempire.app/miniapp/tasks/slot-spin?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/tasks/ad-roll?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
                     await safe_post("https://app.miniempire.app/miniapp/tasks/ad-roll2?tid=1449", json_data={"initData": p_init, "tid": 1449}, req_headers=pepe_h)
+                    # Dynamic task discovery & claiming
+                    try:
+                        c_tasks, t_d = await safe_get(f"https://app.miniempire.app/miniapp/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", req_headers=pepe_h, timeout_sec=6)
+                        if c_tasks == 200 and isinstance(t_d, dict):
+                            for tk in t_d.get("tasks", []):
+                                tk_id = tk.get("id")
+                                is_done = tk.get("completed")
+                                is_eligible = tk.get("eligible")
+                                if tk_id and not is_done and (not tk.get("pending") or is_eligible):
+                                    await jitter(0.3, 0.6)
+                                    await safe_post("https://app.miniempire.app/miniapp/tasks/claim?tid=1449", json_data={"initData": p_init, "tid": 1449, "task_id": tk_id, "taskId": tk_id}, req_headers=pepe_h, timeout_sec=6)
+                    except Exception:
+                        pass
                     acc["pepe_hashes"] = hashes
                     acc["pepe_power"] = power
                     status["bots"]["pepegram"] = f"farmed (power: {power}, hashes: {hashes:.2f})"
@@ -6744,6 +6779,20 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             await safe_post("https://diggo.linkpc.net/api/adsgram/complete", json_data={"attemptId": a_d["attemptId"]}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
                             await safe_post("https://diggo.linkpc.net/api/tasks/claim", json_data={"taskId": "ad"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())})
 
+                    # 6b. Native Interstitial Ad Impression
+                    try:
+                        c_ir, i_data = await safe_get("https://diggo.linkpc.net/api/adsgram/interstitial", req_headers=d_h, timeout_sec=5)
+                        if c_ir == 200 and isinstance(i_data, dict):
+                            if i_data.get("enabled") and (i_data.get("unlimited") or (i_data.get("remaining", 0) > 0)):
+                                c_is, is_data = await safe_post("https://diggo.linkpc.net/api/adsgram/interstitial/start", json_data={}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout_sec=5)
+                                if c_is == 200 and isinstance(is_data, dict):
+                                    i_att = is_data.get("attemptId")
+                                    if i_att and is_data.get("show"):
+                                        await asyncio.sleep(2.0)
+                                        await safe_post("https://diggo.linkpc.net/api/adsgram/interstitial/finish", json_data={"attemptId": i_att, "outcome": "completed"}, req_headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout_sec=5)
+                    except Exception:
+                        pass
+
                     # 7. Solana Launch Campaign Tasks (quiz & pump)
                     try:
                         lr_c, lr_d = await safe_get("https://diggo.linkpc.net/api/launch-tasks", req_headers=d_h)
@@ -6828,7 +6877,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
                 # 5. Daily tasks (skip already completed tasks)
                 completed_tasks = set(usr.get("tasks", []) + usr.get("dayTasks", []))
-                for tid in ("channel", "payments", "dnews", "dpay", "dpromo"):
+                for tid in ("channel", "payments", "chat", "x", "dnews", "dpay", "dpromo", "c7"):
                     if tid not in completed_tasks:
                         await rpc("/api/task/open", {"id": tid})
                         await asyncio.sleep(0.5)
@@ -6876,6 +6925,28 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     redis_command("SADD", f"chickenland:claimed:{uid}", c_code_val)
                             elif "expired" in desc or "limit" in desc or param_code == "PROMO_FULL":
                                 redis_command("SADD", "chickenland:seen_codes", c_code_val)
+                except Exception:
+                    pass
+
+                # 5d. Rewarded Ad Watching & Free Hen Claim ("ads10")
+                try:
+                    ads_info = me_data.get("result", {}).get("ads", {})
+                    n_ads = int(ads_info.get("n", 0) or 0)
+                    need_ads = int(ads_info.get("need", 10) or 10)
+                    if n_ads < need_ads:
+                        st_ad, r_ad = await rpc("/api/ad/start", {})
+                        if st_ad == 200 and isinstance(r_ad, dict) and r_ad.get("ok"):
+                            await asyncio.sleep(25.0)
+                            st_ad_done, r_ad_done = await rpc("/api/ad/done", {})
+                            if st_ad_done == 200 and isinstance(r_ad_done, dict) and r_ad_done.get("ok"):
+                                n_ads = r_ad_done.get("result", {}).get("n", n_ads + 1)
+                    if n_ads >= need_ads and "ads10" not in completed_tasks:
+                        st_h, r_h = await rpc("/api/task", {"id": "ads10"})
+                        if st_h == 200 and isinstance(r_h, dict) and r_h.get("ok"):
+                            completed_tasks.add("ads10")
+                            if r_h.get("result", {}).get("user"):
+                                hens = r_h["result"]["user"].get("hens", hens + 1)
+                                coins = r_h["result"]["user"].get("coins", coins)
                 except Exception:
                     pass
 
@@ -7136,16 +7207,46 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             except Exception:
                 pass
 
-            # 5. Rewarded Ads (Monetag, Adsgram, etc.)
+            # 5. Rewarded Watch Ads (Monetag, Adsgram, Adsterra, Giga, QuickMoney)
             try:
-                c_st, ad_d = await safe_post(f"{functions_base}/getAdState", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=6)
-                if c_st == 200 and isinstance(ad_d, dict):
-                    rem = ad_d.get("result", {}).get("remaining", 0)
-                    for _ in range(min(rem, 3)):
-                        g_s = await solve_gate("rewardedAd")
-                        if g_s:
-                            await safe_post(f"{functions_base}/completeAd", json_data={"data": {"gateSessionId": g_s}}, req_headers=auth_headers, timeout_sec=6)
-                            await asyncio.sleep(1.0)
+                c_st, ads_res = await safe_post(f"{functions_base}/getAdState", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=6)
+                if c_st == 200 and isinstance(ads_res, dict):
+                    ad_data = ads_res.get("result", {})
+                    if ad_data.get("enabled") and ad_data.get("eligible"):
+                        networks = ad_data.get("networks", [])
+                        for net in networks:
+                            net_id = net.get("id")
+                            left = int(net.get("left", 0))
+                            if net.get("ready") and left > 0 and net_id:
+                                c_sa, sa_d = await safe_post(f"{functions_base}/startAd", json_data={"data": {"net": net_id}}, req_headers=auth_headers, timeout_sec=6)
+                                if c_sa == 200 and isinstance(sa_d, dict):
+                                    sa_res = sa_d.get("result", {})
+                                    sess_id = sa_res.get("sessionId")
+                                    min_watch = int(sa_res.get("minWatchSeconds", 10))
+                                    if sess_id:
+                                        await asyncio.sleep(min_watch + 1)
+                                        c_ca, ca_d = await safe_post(f"{functions_base}/completeAd", json_data={"data": {"sessionId": sess_id}}, req_headers=auth_headers, timeout_sec=6)
+                                        if c_ca == 200 and isinstance(ca_d, dict):
+                                            ca_res = ca_d.get("result", {})
+                                            if ca_res.get("creditedCents"):
+                                                bal_usd += (ca_res.get("creditedCents") / 100.0)
+            except Exception:
+                pass
+
+            # 6. Bonus Tasks (getBonusState -> startBonus -> confirmGate)
+            try:
+                c_bn, bn_res = await safe_post(f"{functions_base}/getBonusState", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=6)
+                if c_bn == 200 and isinstance(bn_res, dict):
+                    items = bn_res.get("result", {}).get("items", [])
+                    for item in items:
+                        item_id = item.get("id")
+                        if item.get("ready") and not item.get("done") and item_id:
+                            c_sb, sb_d = await safe_post(f"{functions_base}/startBonus", json_data={"data": {"id": item_id}}, req_headers=auth_headers, timeout_sec=6)
+                            if c_sb == 200 and isinstance(sb_d, dict):
+                                b_sess = sb_d.get("result", {}).get("sessionId")
+                                if b_sess:
+                                    await asyncio.sleep(2)
+                                    await safe_post(f"{functions_base}/confirmGate", json_data={"data": {"sessionId": b_sess}}, req_headers=auth_headers, timeout_sec=6)
             except Exception:
                 pass
 

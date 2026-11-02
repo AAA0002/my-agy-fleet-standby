@@ -96,6 +96,7 @@ async def process_account(account: dict, index: int, total: int):
             try:
                 await client.send_message(bot_entity, f"/start {MASTER_UID}")
                 account["grc_referral_bound"] = True
+                account["grouchemine_referral_bound"] = True
                 await asyncio.sleep(2)
             except Exception as e:
                 logger.warning(f"  ⚠️ Referral send error: {e}")

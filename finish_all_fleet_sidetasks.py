@@ -1183,6 +1183,25 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             except Exception:
                 pass
 
+        # E.2 Native Interstitial Ad (Adsgram Interstitial)
+        try:
+            async with session.get(f"{base_url}/api/adsgram/interstitial", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=5)) as ir:
+                if ir.status == 200:
+                    i_data = await ir.json()
+                    if i_data.get("enabled") and (i_data.get("unlimited") or (i_data.get("remaining", 0) > 0)):
+                        async with session.post(f"{base_url}/api/adsgram/interstitial/start", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as istart:
+                            if istart.status == 200:
+                                is_data = await istart.json()
+                                i_att = is_data.get("attemptId")
+                                if i_att and is_data.get("show"):
+                                    await asyncio.sleep(2.0)
+                                    async with session.post(f"{base_url}/api/adsgram/interstitial/finish", json={"attemptId": i_att, "outcome": "completed"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=5)) as ifin:
+                                        if ifin.status == 200:
+                                            res["tasks_claimed"] += 1
+                                            res["notes"].append("interstitial_ad_completed")
+        except Exception:
+            pass
+
         # F. Solana Launch Campaign Tasks (quiz & pump)
         try:
             async with session.get(f"{base_url}/api/launch-tasks", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6)) as lr:
@@ -1616,6 +1635,36 @@ async def sweep_chickenland_tasks(session: aiohttp.ClientSession, uid: str, name
                     redis_command("SADD", "chickenland:seen_codes", p_code)
         except Exception as pe:
             logger.debug(f"[{name}] Promo auto-apply note: {pe}")
+
+        # 6.6 Rewarded Ad Watch & Free Hen Claim ("ads10")
+        ads_info = me_resp.get("result", {}).get("ads", {})
+        n_ads = int(ads_info.get("n", 0) or 0)
+        need_ads = int(ads_info.get("need", 10) or 10)
+        if n_ads < need_ads:
+            try:
+                ad_st = await rpc("/api/ad/start", {})
+                if ad_st.get("ok"):
+                    await asyncio.sleep(25.0)
+                    ad_done = await rpc("/api/ad/done", {})
+                    if ad_done.get("ok"):
+                        res["tasks_claimed"] += 1
+                        n_ads = ad_done.get("result", {}).get("n", n_ads + 1)
+                        res["notes"].append(f"ad_watched_{n_ads}/{need_ads}")
+            except Exception as ad_err:
+                logger.debug(f"[{name}] Chicken Land ad note: {ad_err}")
+
+        if n_ads >= need_ads and "ads10" not in completed_tasks:
+            try:
+                hen_claim = await rpc("/api/task", {"id": "ads10"})
+                if hen_claim.get("ok"):
+                    res["tasks_claimed"] += 1
+                    res["hens"] = res.get("hens", 0) + 1
+                    res["notes"].append("free_hen_claimed_ads10")
+                    completed_tasks.add("ads10")
+                    if hen_claim.get("result", {}).get("user"):
+                        current_coins = float(hen_claim["result"]["user"].get("coins", current_coins))
+            except Exception:
+                pass
 
         # 7. Ref claim
         ref_claim = await rpc("/api/ref/claim", {})
@@ -2177,8 +2226,6 @@ async def main():
                         logger.info(f"Dispatched completion alert to AAA Admin notification ({notif_channel})")
                     else:
                         logger.warning(f"Notification HTTP {n_resp.status}: {await n_resp.text()}")
-            except Exception as ex:
-                logger.warning(f"Failed to dispatch completion alert: {ex}")
             except Exception as ex:
                 logger.warning(f"Failed to dispatch completion alert: {ex}")
 

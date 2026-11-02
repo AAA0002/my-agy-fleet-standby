@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 11-Bot Full Sidetask & Ad-Watching Automation, Entity Fallback & Pipeline Hardening (November 2, 2026)**:
+  - **Chicken Land Rewarded Ads & Free Hen Claim Automation**:
+    * Integrated `/api/ad/start` -> 25.0s wait -> `/api/ad/done` rewarded ad watching in both `app.py` (`_farm_chickenland`) and `finish_all_fleet_sidetasks.py` (`sweep_chickenland_tasks`).
+    * Implemented automatic claim for `POST /api/task {"id": "ads10"}` when `n >= need` to grant +1 Free Hen to the account's active farm.
+    * Expanded task detection to include `chat`, `x`, `c7` along with `channel`, `payments`, `dnews`, `dpay`, `dpromo`, and partner tasks from `/api/tasks`.
+  - **DiggoMiner Native Interstitial Ad & Rewarded Ad Hardening**:
+    * Integrated native interstitial ad flow (`/api/adsgram/interstitial`, `/api/adsgram/interstitial/start`, `/api/adsgram/interstitial/finish` with `outcome: "completed"`) into `app.py` (`_farm_diggo`) and `finish_all_fleet_sidetasks.py` (`sweep_diggo_tasks`).
+    * Handled Adsgram server-side verification callbacks gracefully.
+  - **PepeGram Dynamic Tasks Discovery & Auto-Claiming**:
+    * Upgraded `_farm_pepegram` in `app.py` to query `GET /miniapp/tasks` and claim uncompleted eligible tasks via `POST /miniapp/tasks/claim`, synchronizing cloud farm cycles with `finish_all_fleet_sidetasks.py`.
+  - **EarnVault Real Multi-Network Ad & Bonus Task Engine**:
+    * Replaced erroneous `solve_gate("rewardedAd")` in `_farm_earnvault` with verified real API: `getAdState` -> multi-network `startAd` -> timer sleep -> `completeAd` with `sessionId`.
+    * Implemented Bonus Tasks execution via `getBonusState` -> `startBonus` -> `confirmGate`.
+  - **Bot Username Scrubbing Resilience & Entity Resolution Fallback**:
+    * Updated `bot_registry.py` and `app.py` with official primary usernames (`mrgminerbot`, `VictorsCompanyGame`, `atfminers_bot`) and numeric bot IDs (`8862173167`, `8943931170`, `7058204689`).
+    * Added multi-candidate resolution fallback in `extract_bot_webapp_token` to prevent `ValueError: No user has "mrgtoken_bot" as username` failures during MTProto queries.
+  - **Code Hygiene & Syntax Fixes**:
+    * Removed duplicate exception handler in `finish_all_fleet_sidetasks.py`.
+
 - **⚡ AdxEarn AI Parallel Task & Rewarded Ad Execution Acceleration (November 2, 2026)**:
   - **`app.py` AdxEarn Parallelization**:
     * Eliminated sequential blocking sleeps and premature 1-second claim attempts in `_farm_adxearn`.
