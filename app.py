@@ -6495,20 +6495,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await safe_post("https://api.adxearnai.xyz/api/farming/start", json_data={}, req_headers=adx_h)
                     await safe_post("https://api.adxearnai.xyz/api/farming/boost", json_data={}, req_headers=adx_h)
 
-                    # Dynamic Rewards Tasks
+                    # Parallelized Dynamic Tasks, Ad Networks, and CPA Offers
+                    started_tasks = []
+                    started_nets = []
+                    started_offers = []
+
+                    # A. Dynamic Rewards Tasks
                     try:
                         c_tk, tk_d = await safe_get("https://api.adxearnai.xyz/api/rewards/tasks", req_headers=adx_h)
                         if c_tk == 200 and isinstance(tk_d, dict):
                             for tk in tk_d.get("tasks", []):
                                 t_id = tk.get("id")
                                 if t_id and not tk.get("completed") and not tk.get("claimed"):
-                                    await safe_post("https://api.adxearnai.xyz/api/rewards/task-start", {"taskId": t_id}, req_headers=adx_h)
-                                    await asyncio.sleep(1.0)
-                                    await safe_post("https://api.adxearnai.xyz/api/rewards/task-claim", {"taskId": t_id}, req_headers=adx_h)
+                                    c_st, _ = await safe_post("https://api.adxearnai.xyz/api/rewards/task-start", {"taskId": t_id}, req_headers=adx_h)
+                                    if c_st == 200:
+                                        started_tasks.append(t_id)
                     except Exception:
                         pass
 
-                    # Ad Networks & Flash Bonus
+                    # B. Ad Networks & Flash Bonus
                     try:
                         c_ns, ns_d = await safe_get("https://api.adxearnai.xyz/api/rewards/ad-networks/status", req_headers=adx_h)
                         if c_ns == 200 and isinstance(ns_d, dict):
@@ -6519,30 +6524,55 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     cap = net_info.get("dailyCap", 0)
                                     cd_rem = net_info.get("cooldownRemainingSec", 0)
                                     if (cap == 0 or watched < cap) and cd_rem == 0:
-                                        await safe_post("https://api.adxearnai.xyz/api/rewards/ad-verify-start", {"network": net_slug}, req_headers=adx_h)
-                                        wait_s = 6 if net_slug == "adsgram" else 16
-                                        await asyncio.sleep(wait_s)
-                                        c_ac, ac_d = await safe_post("https://api.adxearnai.xyz/api/rewards/ad-claim", {"network": net_slug}, req_headers=adx_h)
-                                        if c_ac == 200 and isinstance(ac_d, dict):
-                                            pts += int(ac_d.get("reward") or 100)
-                                        break
+                                        c_v, _ = await safe_post("https://api.adxearnai.xyz/api/rewards/ad-verify-start", {"network": net_slug}, req_headers=adx_h)
+                                        if c_v == 200:
+                                            started_nets.append(net_slug)
                     except Exception:
                         pass
 
-                    # CPA Offers
+                    # C. CPA Offers
                     try:
                         c_co, co_d = await safe_get("https://api.adxearnai.xyz/api/cpa-offers", req_headers=adx_h)
                         if c_co == 200 and isinstance(co_d, dict):
                             for off in co_d.get("offers", []):
                                 oid = off.get("id")
                                 if oid:
-                                    await safe_post("https://api.adxearnai.xyz/api/cpa-offers/start", {"offerId": oid}, req_headers=adx_h)
-                                    await asyncio.sleep(16)
-                                    c_cl, cl_d = await safe_post("https://api.adxearnai.xyz/api/cpa-offers/claim", {"offerId": oid}, req_headers=adx_h)
-                                    if c_cl == 200 and isinstance(cl_d, dict):
-                                        pts += int(cl_d.get("reward") or 300)
+                                    c_os, _ = await safe_post("https://api.adxearnai.xyz/api/cpa-offers/start", {"offerId": oid}, req_headers=adx_h)
+                                    if c_os == 200:
+                                        started_offers.append(oid)
                     except Exception:
                         pass
+
+                    # D. Single Unified Cooldown Sleep (Server requires 16s cooldown between start and claim)
+                    if started_tasks or started_nets or started_offers:
+                        await asyncio.sleep(16.2)
+
+                    # E. Claim Tasks
+                    for t_id in started_tasks:
+                        try:
+                            c_cl, cl_d = await safe_post("https://api.adxearnai.xyz/api/rewards/task-claim", {"taskId": t_id}, req_headers=adx_h)
+                            if c_cl == 200 and isinstance(cl_d, dict):
+                                pts += int(cl_d.get("reward") or 100)
+                        except Exception:
+                            pass
+
+                    # F. Claim Ad Networks
+                    for net_slug in started_nets:
+                        try:
+                            c_ac, ac_d = await safe_post("https://api.adxearnai.xyz/api/rewards/ad-claim", {"network": net_slug}, req_headers=adx_h)
+                            if c_ac == 200 and isinstance(ac_d, dict):
+                                pts += int(ac_d.get("reward") or 100)
+                        except Exception:
+                            pass
+
+                    # G. Claim CPA Offers
+                    for oid in started_offers:
+                        try:
+                            c_cl, cl_d = await safe_post("https://api.adxearnai.xyz/api/cpa-offers/claim", {"offerId": oid}, req_headers=adx_h)
+                            if c_cl == 200 and isinstance(cl_d, dict):
+                                pts += int(cl_d.get("reward") or 300)
+                        except Exception:
+                            pass
 
                     # Master Referral Milestones Claim
                     if str(uid) == "6727787768":

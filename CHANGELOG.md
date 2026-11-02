@@ -2,6 +2,12 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ AdxEarn AI Parallel Task & Rewarded Ad Execution Acceleration (November 2, 2026)**:
+  - **`app.py` AdxEarn Parallelization**:
+    * Eliminated sequential blocking sleeps and premature 1-second claim attempts in `_farm_adxearn`.
+    * Implemented parallel batch dispatch for dynamic rewards tasks, ad networks (Adsgram, Monetag, Gigapub, Popup), and CPA offers, followed by a single unified 16.2-second cooldown wait and concurrent claims.
+    * Increased points yield per farming cycle while reducing execution time from ~50s down to 16.5s.
+
 - **🐛 Multi-Cloud 11-Bot State Synchronization, Runtime Bug Elimination & Defensiveness Hardening (November 2, 2026)**:
   - **11-Bot Token State Unification (`sync_fleet_all_tokens.py`)**:
     * Created and executed `sync_fleet_all_tokens.py` to bridge the data state disjunction between storage layers.
