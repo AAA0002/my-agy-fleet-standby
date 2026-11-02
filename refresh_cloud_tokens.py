@@ -58,9 +58,9 @@ except Exception:
         "kynex_mining", "mrgminer", "mrgwithdrawal", "pepe_grammmm", "solanamemes001", "victors_company"
     ]
 
-MRG_BOT = "mrgtoken_bot"
-ATF_BOT = "ATF_AIRDROP_bot"
-VICTORS_BOT = "VictorsCompanybot"
+MRG_BOT = "mrgminerbot"
+ATF_BOT = "atfminers_bot"
+VICTORS_BOT = "VictorsCompanyGame"
 KYNEX_BOT = "Kynex_miningbot"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 ADXEARN_BOT = "AdxEarnAibot"
@@ -219,10 +219,32 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     bot_ent = None
     bot_in = None
-    try:
-        bot_ent = await client.get_entity(bot_username)
-        bot_in = await client.get_input_entity(bot_ent)
-    except Exception as e:
+    candidates = [bot_username]
+    BOT_ALIASES = {
+        "mrgtoken_bot": ["mrgminerbot", 8862173167],
+        "mrgminerbot": ["mrgtoken_bot", 8862173167],
+        "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
+        "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
+        "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
+        "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
+        "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
+        "Pepe_gram_bot": ["pepegram_bot", 7639148332],
+    }
+    if bot_username in BOT_ALIASES:
+        for a in BOT_ALIASES[bot_username]:
+            if a not in candidates:
+                candidates.append(a)
+
+    for cand in candidates:
+        try:
+            bot_ent = await client.get_entity(cand)
+            bot_in = await client.get_input_entity(bot_ent)
+            if bot_ent and bot_in:
+                break
+        except Exception:
+            continue
+
+    if not bot_ent or not bot_in:
         return None
 
     # Strategy A: RequestAppWebViewRequest with short names

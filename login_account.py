@@ -42,14 +42,40 @@ API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
 # All 8 Verified Legitimate Fleet Bots & Referral Codes
-MRG_BOT = "mrgtoken_bot"
+MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 
 ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
 
-VICTORS_BOT = "VictorsCompanybot"
+VICTORS_BOT = "VictorsCompanyGame"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
+
+BOT_ALIASES = {
+    "mrgtoken_bot": ["mrgminerbot", 8862173167],
+    "mrgminerbot": ["mrgtoken_bot", 8862173167],
+    "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
+    "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
+    "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
+    "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
+    "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
+    "Pepe_gram_bot": ["pepegram_bot", 7639148332],
+}
+
+async def resolve_bot_entity(client, bot_name):
+    candidates = [bot_name]
+    if bot_name in BOT_ALIASES:
+        for a in BOT_ALIASES[bot_name]:
+            if a not in candidates:
+                candidates.append(a)
+    for cand in candidates:
+        try:
+            ent = await client.get_entity(cand)
+            if ent:
+                return ent
+        except Exception:
+            continue
+    return None
 
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -317,8 +343,8 @@ async def bind_referrals(client, me, acc_entry):
             await client(UnblockRequest(id=MRG_BOT))
         except Exception:
             pass
-        b_mrg = await client.get_entity(MRG_BOT)
-        await mute_peer(client, b_mrg, "mrgtoken_bot")
+        b_mrg = (await resolve_bot_entity(client, MRG_BOT)) or (await client.get_entity(MRG_BOT))
+        await mute_peer(client, b_mrg, "mrgminerbot")
         try:
             await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
             await asyncio.sleep(0.5)
@@ -326,7 +352,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
         await asyncio.sleep(1.0)
         try:
-            bot_mrg_in = await client.get_input_entity(MRG_BOT)
+            bot_mrg_in = await client.get_input_entity(b_mrg)
             res_mrg = await client(RequestAppWebViewRequest(
                 peer=bot_mrg_in,
                 app=InputBotAppShortName(bot_id=bot_mrg_in, short_name="app"),
@@ -409,8 +435,8 @@ async def bind_referrals(client, me, acc_entry):
             await client(UnblockRequest(id=VICTORS_BOT))
         except Exception:
             pass
-        b_vic = await client.get_entity(VICTORS_BOT)
-        await mute_peer(client, b_vic, "VictorsCompanybot")
+        b_vic = (await resolve_bot_entity(client, VICTORS_BOT)) or (await client.get_entity(VICTORS_BOT))
+        await mute_peer(client, b_vic, "VictorsCompanyGame")
         try:
             await client.send_message(b_vic, f"/start {VICTORS_REFERRAL_CODE}")
             await asyncio.sleep(0.5)

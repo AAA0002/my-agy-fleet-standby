@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔍 Fleet-Wide Entity Resolution Resiliency, Kynex Yield Accounting & Diggo Timeout Hardening (November 2, 2026)**:
+  - **Bot Username Scrubbing & Entity Resolution Fallback**:
+    * Discovered that `refresh_cloud_tokens.py`, `extract_all_missing_fleet_tokens.py`, and `login_account.py` still utilized obsolete bot usernames (`mrgtoken_bot` and `VictorsCompanybot`) without entity alias fallbacks, causing Telethon to fail with `ValueError: No user has "..." as username` and leaving MRG and Victor's tokens unrefreshed past 24h expiration.
+    * Upgraded all token refresher scripts with canonical usernames (`mrgminerbot`, `VictorsCompanyGame`, `atfminers_bot`) and multi-candidate resolution loops checking numeric IDs (`8862173167`, `8943931170`, `7058204689`).
+  - **Kynex Network Yield & Task Accounting Correction**:
+    * Resolved accounting discrepancy in `sweep_kynex_tasks` where hourly mining yield claims (`claimed_..._KNX`) and mining re-activation (`mining_started`) were omitted from `tasks_claimed` counter.
+    * Expanded filter to include all legitimate yield/boost notes and fallback to `tasks_claimed = 1` if `claimed_knx > 0`.
+  - **DiggoMiner Dynamic DNS Network Timeout Hardening**:
+    * Hardened `sweep_diggo_tasks` against transient timeouts on `diggo.linkpc.net` by adding explicit 8s request timeouts and non-blocking exception handlers on mining and referral claims.
+
+
 - **🛡️ AdxEarn AI Boost Eradication, Kynex 1-Hour Cadence, Grouche & EarnVault Ad Full-Batching, and Mobile Tmux Ergonomics (November 2, 2026)**:
   - **AdxEarn AI Point-Deducting Boost Eradicated Fleet-Wide**:
     * Discovered that `/farming/boost` corresponds to the UI button `⚡ Boost (-$0.1000)` which actively docks $0.1000 points from user balance to skip 5% remaining time.

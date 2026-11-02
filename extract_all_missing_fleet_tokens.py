@@ -30,21 +30,21 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 TARGET_BOTS = [
     {
         "key": "mrg_init_data",
-        "bot": "mrgtoken_bot",
+        "bot": "mrgminerbot",
         "url": "https://app.mrgtoken.xyz/",
         "short_names": ["app", "miniapp"],
         "name": "MRG Miner"
     },
     {
         "key": "atf_init_data",
-        "bot": "ATF_AIRDROP_bot",
+        "bot": "atfminers_bot",
         "url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "short_names": ["app", "miner", "play"],
         "name": "ATF Miner"
     },
     {
         "key": "victors_init_data",
-        "bot": "VictorsCompanybot",
+        "bot": "VictorsCompanyGame",
         "url": "https://app.victors.company/",
         "short_names": ["app", "play"],
         "name": "Victor's Company"
@@ -164,8 +164,34 @@ async def process_account(acc, idx, total, tokens_data):
             b_url = bot_info["url"]
             b_title = bot_info["name"]
 
+            BOT_ALIASES = {
+                "mrgtoken_bot": ["mrgminerbot", 8862173167],
+                "mrgminerbot": ["mrgtoken_bot", 8862173167],
+                "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
+                "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
+                "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
+                "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
+            }
+            candidates = [b_username]
+            if b_username in BOT_ALIASES:
+                for a in BOT_ALIASES[b_username]:
+                    if a not in candidates:
+                        candidates.append(a)
+
+            b_entity = None
+            for cand in candidates:
+                try:
+                    b_entity = await cl.get_entity(cand)
+                    if b_entity:
+                        break
+                except Exception:
+                    continue
+
+            if not b_entity:
+                print(f"  ⚠️ Could not resolve entity for {b_title} (candidates: {candidates})")
+                continue
+
             try:
-                b_entity = await cl.get_entity(b_username)
                 res = await cl(RequestWebViewRequest(
                     peer=b_entity,
                     bot=b_entity,

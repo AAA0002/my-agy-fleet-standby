@@ -1935,6 +1935,14 @@ Whenever you perform work in this repository:
     * Reverse-engineered the LUM Miner web app (`https://lum-miner.gurmessa747.workers.dev/`). Verified that "Watch Ads (+15 LUM)" and power boosts are purely client-side Monetag popups stored in browser `localStorage`, with no server-side credit endpoint. All verified server endpoints (`/check-join` for +200 LUM channel joins, `/referral` for 20,000 LUM referral harvest) are fully automated.
   - **Mobile Tmux & Remote Session Ergonomics**:
     * Configured VM `~/.tmux.conf` with dual prefix (`Ctrl-a` / `Ctrl-b`), 1-touch direct detach (`Alt-d` / `Alt-q`), and persistent status-bar help. Wrapped `agy-entry` with non-terminating bash subshell so exiting CLI returns to shell rather than terminating tmux. Added aliases `detach`, `kill-tmux`, `tmux-help` in `~/.bashrc`.
+* **Fleet-Wide Entity Resolution Resiliency, Kynex Yield Accounting & Diggo Timeout Hardening (November 2, 2026)**:
+  - **Bot Username Scrubbing & Entity Resolution Fallback**:
+    * Standardized canonical usernames (`mrgminerbot`, `VictorsCompanyGame`, `atfminers_bot`) and multi-candidate resolution loops checking numeric IDs (`8862173167`, `8943931170`, `7058204689`) across `refresh_cloud_tokens.py`, `extract_all_missing_fleet_tokens.py`, and `login_account.py`.
+  - **Kynex Network Yield & Task Accounting**:
+    * Updated `sweep_kynex_tasks` in `finish_all_fleet_sidetasks.py` to count hourly mining yield claims (`claimed_..._KNX`) and mining re-activation (`mining_started`) in `tasks_claimed`.
+  - **DiggoMiner Timeout Hardening**:
+    * Added explicit 8s request timeouts and non-blocking exception handlers on mining and referral claims to guard against transient network delays on `diggo.linkpc.net`.
+
 
 
 

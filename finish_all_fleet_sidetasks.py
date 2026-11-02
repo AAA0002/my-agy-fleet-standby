@@ -908,8 +908,10 @@ async def sweep_kynex_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         res["mining_active"] = farm_res.get("mining_active", False)
         
         notes = farm_res.get("notes", [])
-        claimed_tasks = [n for n in notes if "social_" in n or "ad_" in n or "daily_checkin" in n]
+        claimed_tasks = [n for n in notes if any(k in n for k in ("social_", "ad_", "daily_checkin", "claimed_", "mining_started", "boost_", "energy_", "milestone_"))]
         res["tasks_claimed"] = len(claimed_tasks)
+        if farm_res.get("claimed_knx", 0) > 0 and res["tasks_claimed"] == 0:
+            res["tasks_claimed"] = 1
         res["notes"] = notes
     except Exception as e:
         logger.error(f"[{name}] Kynex sweep error: {type(e).__name__}: {e}")
@@ -1074,16 +1076,22 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         mining = st.get("mining") or {}
         if float(mining.get("pending", 0) or 0) > 0:
             await jitter(0.4, 0.8)
-            async with session.post(f"{base_url}/api/claims/mining", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as cr:
-                if cr.status in (200, 201):
-                    c_d = await cr.json()
-                    res["notes"].append(f"claimed_mined_{c_d.get('amount', 0):.2f}")
+            try:
+                async with session.post(f"{base_url}/api/claims/mining", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                    if cr.status in (200, 201):
+                        c_d = await cr.json()
+                        res["notes"].append(f"claimed_mined_{c_d.get('amount', 0):.2f}")
+            except Exception as me:
+                logger.debug(f"[{name}] Diggo claim mining note: {me}")
 
         # 3. Claim referrals
         await jitter(0.4, 0.8)
-        async with session.post(f"{base_url}/api/referrals/claim", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as rr:
-            if rr.status in (200, 201):
-                res["notes"].append("ref_claimed")
+        try:
+            async with session.post(f"{base_url}/api/referrals/claim", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=8)) as rr:
+                if rr.status in (200, 201):
+                    res["notes"].append("ref_claimed")
+        except Exception as re:
+            logger.debug(f"[{name}] Diggo claim ref note: {re}")
 
         # 4. Daily Streak & Day Rewards
         day_rewards = st.get("dayRewards") or []
