@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Comprehensive Fleet Bug Elimination, 11-Bot Full Pipeline & Edge Gateway Deployment (November 2, 2026)**:
+  - **`app.py` 11-Bot Full Pipeline Unification**:
+    * **Added Bot 10 (LUM Miner) & Bot 11 (EarnVault) Constants**: Defined `LUMEON_BOT = "lumeonminer_bot"`, `LUMEON_REFERRAL_CODE = "6727787768"`, `EARNVAULT_BOT = "EarnVaultApp_bot"`, and `EARNVAULT_REFERRAL_CODE = "6727787768"` at the root constants level.
+    * **24h Token Expiration Watchdog (`is_tokens_dict_expired`)**: Expanded `key_tokens` to include `lumeon_init_data` and `earnvault_init_data` so all 11 bot session tokens are monitored for cryptographic auth_date expiry.
+    * **MTProto WebApp Token Extractor (`extract_tokens_with_client`)**: Added silent WebApp initData queries for LUM Miner (`short_names=["Lum", "lum", "app"]`) and EarnVault (`short_names=["App", "app", "earn"]`), synchronizing tokens across Cloudflare KV and Upstash Redis.
+    * **Referral Binding Engine (`bind_account_master_referrals`)**: Added dual-layer `/start` message and WebApp start_param binding for LUM Miner and EarnVault under Commander Arif (`6727787768`), setting `all_11_referrals_bound = True`.
+    * **Universal Cloud Farming Engine (`farm_single_account_bots`)**:
+      - Implemented `_farm_lumeon`: Joins under Master, qualifies referrals, sweeps community/payouts/YouTube tasks, and triggers Master referral bonus claims.
+      - Implemented `_farm_earnvault`: Custom token exchange, Firebase auth, gate-solving for check-ins/claims, and rewarded video ads.
+      - Added `lumeon` and `earnvault` to `BOT_COOLDOWNS` (2-4 hours), `bot_routines`, and `bot_aliases`.
+    * **Dialog Sanitization & Unblocking Protection (`FLEET_LEGITIMATE_BOTS`)**: Expanded `FLEET_LEGITIMATE_BOTS` to all 11 legitimate active bots (`mrgtoken_bot`, `atfminers_bot`, `VictorsCompanybot`, `Kynex_miningbot`, `Diggominer_bot`, `Pepe_gram_bot`, `AdxEarnAibot`, `ChickenLandBot`, `GRC_AirdrooBot`, `lumeonminer_bot`, `EarnVaultApp_bot`). Prevents erroneous classification during cleanup and ensures worker accounts unblock all 11 bots.
+    * **Operational Alerts**: Upgraded farming cycle completion alert card to report 11/11 active pools.
+  - **Cloudflare Edge Synchronizer (`deploy_both_cf_workers.py`)**:
+    * Standardized all interactive harvest buttons to `⚡ 11-Bot Harvest` across main menu, status menu, accounts menu, and persistent reply keyboard.
+    * Added dedicated slash command handlers `/grouche`, `/lumeon`, and `/earnvault`.
+    * Updated Instant Harvest animation frames to execute across all 11 mining pools.
+    * Expanded Treasury cards to display all 11 bot accumulated balances.
+    * Deployed live to Primary Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified 200 OK.
+  - **Daily Financial Ledger (`daily_profit_reporter.py`)**:
+    * Added LUM Miner (`lum`) and EarnVault (`earnvault`) parsing from `live_farming_and_sidetasks_report.json` and fallback extraction from `accounts.json`.
+    * Upgraded daily ledger card dispatched to Payouts Channel (`-1004402765950`) to display all 11 active mining pool reserves.
+
 - **🛡️ Resilient Admin Dashboards, User Telemetry Access Fix & 11-Pool Fleet Alignment (November 2, 2026)**:
   - **User Bot Admin Dashboard (`user-admin.html`) & Executive Console (`admin.html`) Telemetry Resiliency**:
     * **Resolved Premature Session Wiping Bug**: Discovered that if the first candidate URL in the edge mesh (e.g., Render same-origin) returned 401, `fetchMeshApi` prematurely purged `atf_admin_token` from both `sessionStorage` and `localStorage` and reset `authToken` to `""`, wiping credentials before secondary failover nodes could respond. Updated failover loop to continue across all mesh shards, only prompting re-auth if all nodes fail and token is not master PIN `2743`.

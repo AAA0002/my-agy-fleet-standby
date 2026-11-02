@@ -500,6 +500,10 @@ CHICKENLAND_BOT = "ChickenLandBot"
 CHICKENLAND_REFERRAL_CODE = "12668"
 GROUCHEMINE_BOT = "GRC_AirdrooBot"
 GROUCHEMINE_REFERRAL_CODE = "6727787768"
+LUMEON_BOT = "lumeonminer_bot"
+LUMEON_REFERRAL_CODE = "6727787768"
+EARNVAULT_BOT = "EarnVaultApp_bot"
+EARNVAULT_REFERRAL_CODE = "6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -849,11 +853,11 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 14.0) -> bool:
     except Exception:
         return True
 
-    # Check individual token auth_date signatures across all 9 active WebApp Bots
+    # Check individual token auth_date signatures across all 11 active WebApp Bots
     key_tokens = [
         "mrg_init_data", "atf_init_data", "victors_init_data", "kynex_init_data",
         "pepegram_init_data", "adxearn_init_data", "diggo_init_data", "chickenland_init_data",
-        "grouchemine_init_data"
+        "grouchemine_init_data", "lumeon_init_data", "earnvault_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -1145,7 +1149,20 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if grc_tok:
         tokens["grouchemine_init_data"] = grc_tok
 
-    # Active Mining Bots: MRG, ATF, Victor's, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine
+    # 10. LUM Miner (@lumeonminer_bot - Silent WebApp query)
+    lum_param = None if is_master else LUMEON_REFERRAL_CODE
+    lum_tok = await extract_bot_webapp_token(client, LUMEON_BOT, start_param=lum_param, default_url="https://lum-miner.gurmessa747.workers.dev/", candidate_short_names=["Lum", "lum", "app"])
+    if lum_tok:
+        tokens["lumeon_init_data"] = lum_tok
+    await asyncio.sleep(random.uniform(0.3, 0.8))
+
+    # 11. EarnVault (@EarnVaultApp_bot - Silent WebApp query)
+    ev_param = None if is_master else EARNVAULT_REFERRAL_CODE
+    ev_tok = await extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=ev_param, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"])
+    if ev_tok:
+        tokens["earnvault_init_data"] = ev_tok
+
+    # Active Mining Bots: MRG, ATF, Victor's, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault
     return tokens
 
 
@@ -2233,15 +2250,16 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_9_BOT_KEYS = ["mrg", "atf", "victors", "kynex", "diggo", "pepegram", "adxearn", "chickenland", "grouchemine"]
-ALL_8_BOT_KEYS = ALL_9_BOT_KEYS
-ALL_10_BOT_KEYS = ALL_9_BOT_KEYS
+ALL_11_BOT_KEYS = ["mrg", "atf", "victors", "kynex", "diggo", "pepegram", "adxearn", "chickenland", "grouchemine", "lumeon", "earnvault"]
+ALL_9_BOT_KEYS = ALL_11_BOT_KEYS
+ALL_8_BOT_KEYS = ALL_11_BOT_KEYS
+ALL_10_BOT_KEYS = ALL_11_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
-    if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_10_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 11 active fleet bots."""
+    if acc_entry.get("all_8_referrals_bound") or acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_10_referrals_bound") or acc_entry.get("all_11_referrals_bound"):
         return True
-    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_9_BOT_KEYS)
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_11_BOT_KEYS)
 
 
 
@@ -2537,12 +2555,41 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Grouche Mine referral bind note: {e}")
 
-    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_9_BOT_KEYS):
-        acc_entry["all_9_referrals_bound"] = True
+    # 10. LUM Miner Referral Binding (@lumeonminer_bot)
+    if force or not acc_entry.get("lumeon_referral_bound"):
+        try:
+            try:
+                await client.send_message(LUMEON_BOT, f"/start {LUMEON_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, LUMEON_BOT, start_param=LUMEON_REFERRAL_CODE, default_url="https://lum-miner.gurmessa747.workers.dev/", candidate_short_names=["Lum", "lum", "app"])
+            acc_entry["lumeon_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] LUM Miner referral bind note: {e}")
+
+    # 11. EarnVault Referral Binding (@EarnVaultApp_bot)
+    if force or not acc_entry.get("earnvault_referral_bound"):
+        try:
+            try:
+                await client.send_message(EARNVAULT_BOT, f"/start {EARNVAULT_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
+            tok = await extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=EARNVAULT_REFERRAL_CODE, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"])
+            acc_entry["earnvault_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] EarnVault referral bind note: {e}")
+
+    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_11_BOT_KEYS):
+        acc_entry["all_11_referrals_bound"] = True
         acc_entry["all_10_referrals_bound"] = True
+        acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_8_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 9 active fleet bots successfully bound to Master ID 6727787768!")
+    logger.info(f"[{name}] ✅ All 11 active fleet bots successfully bound to Master ID 6727787768!")
 
     # Wait 1.0s for Telegram bot backends to complete registration
     await asyncio.sleep(1.0)
@@ -6902,7 +6949,170 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["grouchemine"] = f"api_error: {format_error(e)}"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (9 Active Bots)
+    async def _farm_lumeon():
+        lum_init = tokens.get("lumeon_init_data")
+        if not lum_init:
+            status["bots"]["lumeon"] = "skipped (no initData)"
+            return
+        try:
+            base_url = "https://lum-miner.gurmessa747.workers.dev"
+            lum_headers = {
+                "Content-Type": "application/json",
+                "User-Agent": user_agent
+            }
+            # 1. Join under Master if worker
+            if not is_owner:
+                try:
+                    await safe_post(f"{base_url}/referral", json_data={"action": "join", "inviter": "6727787768", "initData": lum_init}, req_headers=lum_headers, timeout_sec=6)
+                except Exception:
+                    pass
+            # 2. Qualify referral
+            try:
+                await safe_post(f"{base_url}/referral", json_data={"action": "qualify", "initData": lum_init}, req_headers=lum_headers, timeout_sec=6)
+            except Exception:
+                pass
+            # 3. Tasks
+            tasks = [("community", 50), ("payouts", 50), ("gramapps", 30), ("grammoney", 30), ("youtube", 40)]
+            t_claimed = 0
+            for tid, rew in tasks:
+                try:
+                    c_st, c_data = await safe_post(f"{base_url}/check-join", json_data={"task": tid, "initData": lum_init}, req_headers=lum_headers, timeout_sec=6)
+                    if c_st == 200 and isinstance(c_data, dict) and c_data.get("ok"):
+                        t_claimed += 1
+                except Exception:
+                    pass
+            # 4. Master Referral Claim
+            ref_cnt = 0
+            if is_owner:
+                try:
+                    c_st, ref_d = await safe_get(f"{base_url}/referral?id=6727787768", req_headers=lum_headers, timeout_sec=6)
+                    if c_st == 200 and isinstance(ref_d, dict):
+                        friends = ref_d.get("friends", [])
+                        ref_cnt = len(friends)
+                        unpaid = [f for f in friends if f.get("qualified") and not f.get("paid")]
+                        if unpaid:
+                            await safe_post(f"{base_url}/referral", json_data={"action": "claim", "initData": lum_init}, req_headers=lum_headers, timeout_sec=6)
+                except Exception:
+                    pass
+            status["bots"]["lumeon"] = f"farmed (tasks: {t_claimed}{f', refs: {ref_cnt}' if is_owner else ''})"
+        except Exception as e:
+            status["bots"]["lumeon"] = f"api_error: {format_error(e)}"
+
+    async def _farm_earnvault():
+        ev_init = tokens.get("earnvault_init_data")
+        if not ev_init:
+            status["bots"]["earnvault"] = "skipped (no initData)"
+            return
+        try:
+            functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
+            ev_headers = {
+                "Content-Type": "application/json",
+                "User-Agent": user_agent
+            }
+            # 1. telegramAuth to get custom token
+            c_st, auth_d = await safe_post(f"{functions_base}/telegramAuth", json_data={"data": {"initData": ev_init}}, req_headers=ev_headers, timeout_sec=8)
+            if c_st != 200 or not isinstance(auth_d, dict):
+                status["bots"]["earnvault"] = f"auth_failed ({c_st})"
+                return
+            custom_tok = auth_d.get("result", {}).get("token")
+            if not custom_tok:
+                status["bots"]["earnvault"] = "no_custom_token"
+                return
+
+            # 2. Exchange for Firebase ID Token
+            ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+            c_st, ex_d = await safe_post(ex_url, json_data={"token": custom_tok, "returnSecureToken": True}, timeout_sec=8)
+            if c_st != 200 or not isinstance(ex_d, dict):
+                status["bots"]["earnvault"] = f"firebase_token_failed ({c_st})"
+                return
+            id_tok = ex_d.get("idToken")
+            if not id_tok:
+                status["bots"]["earnvault"] = "no_id_token"
+                return
+
+            auth_headers = {**ev_headers, "Authorization": f"Bearer {id_tok}"}
+
+            # Gate solver helper
+            async def solve_gate(purpose: str):
+                try:
+                    c_st, sg_d = await safe_post(f"{functions_base}/startGate", json_data={"data": {"purpose": purpose}}, req_headers=auth_headers, timeout_sec=8)
+                    if c_st != 200 or not isinstance(sg_d, dict):
+                        return None
+                    sess_id = sg_d.get("result", {}).get("sessionId")
+                    if not sess_id:
+                        return None
+                    for _ in range(12):
+                        c_st, cg_d = await safe_post(f"{functions_base}/confirmGate", json_data={"data": {"sessionId": sess_id}}, req_headers=auth_headers, timeout_sec=8)
+                        if c_st == 200 and isinstance(cg_d, dict):
+                            res_cg = cg_d.get("result", {})
+                            if res_cg.get("status") in ("ready", "credited"):
+                                return sess_id
+                            wait_ms = res_cg.get("waitMs", 2000)
+                            await asyncio.sleep(min(max(1.0, wait_ms / 1000.0 + 0.3), 4.0))
+                        else:
+                            break
+                except Exception:
+                    pass
+                return None
+
+            # 3. Tasks
+            tasks = [("official", 20), ("glamour", 10)]
+            t_claimed = 0
+            for tid, rew in tasks:
+                try:
+                    await safe_post(f"{functions_base}/startTask", json_data={"data": {"taskId": tid}}, req_headers=auth_headers, timeout_sec=6)
+                    await asyncio.sleep(0.5)
+                    c_st, v_d = await safe_post(f"{functions_base}/verifyTask", json_data={"data": {"taskId": tid}}, req_headers=auth_headers, timeout_sec=6)
+                    if c_st == 200 and isinstance(v_d, dict) and v_d.get("result", {}).get("verified"):
+                        t_claimed += 1
+                except Exception:
+                    pass
+
+            # 4. Dashboard & Daily Checkin & Claim Reward
+            bal_usd = 0.0
+            try:
+                c_st, d_d = await safe_post(f"{functions_base}/getDashboard", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=8)
+                if c_st == 200 and isinstance(d_d, dict):
+                    dash = d_d.get("result", {})
+                    bal_usd = dash.get("balanceCents", 0) / 100.0
+
+                    # Checkin
+                    ci = dash.get("checkin", {})
+                    if not ci.get("doneToday"):
+                        gate_sess = await solve_gate("checkin") if ci.get("gate", {}).get("required") else None
+                        ci_p = {"gateSessionId": gate_sess} if gate_sess else {}
+                        await safe_post(f"{functions_base}/dailyCheckIn", json_data={"data": ci_p}, req_headers=auth_headers, timeout_sec=6)
+
+                    # Claim Reward
+                    cl = dash.get("claim", {})
+                    if cl.get("status") == "ready" or cl.get("remainingMs", 1) <= 0:
+                        gate_sess = await solve_gate("claim") if cl.get("gate", {}).get("required") else None
+                        cl_p = {"idempotencyKey": str(uuid.uuid4())}
+                        if gate_sess:
+                            cl_p["gateSessionId"] = gate_sess
+                        await safe_post(f"{functions_base}/claimReward", json_data={"data": cl_p}, req_headers=auth_headers, timeout_sec=6)
+            except Exception:
+                pass
+
+            # 5. Rewarded Ads (Monetag, Adsgram, etc.)
+            try:
+                c_st, ad_d = await safe_post(f"{functions_base}/getAdState", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=6)
+                if c_st == 200 and isinstance(ad_d, dict):
+                    rem = ad_d.get("result", {}).get("remaining", 0)
+                    for _ in range(min(rem, 3)):
+                        g_s = await solve_gate("rewardedAd")
+                        if g_s:
+                            await safe_post(f"{functions_base}/completeAd", json_data={"data": {"gateSessionId": g_s}}, req_headers=auth_headers, timeout_sec=6)
+                            await asyncio.sleep(1.0)
+            except Exception:
+                pass
+
+            acc["earnvault_balance"] = bal_usd
+            status["bots"]["earnvault"] = f"farmed (bal: ${bal_usd:.2f})"
+        except Exception as e:
+            status["bots"]["earnvault"] = f"api_error: {format_error(e)}"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (11 Active Bots)
     BOT_COOLDOWNS = {
         "atf": (1800, 3600),
         "mrg": (3600, 7200),
@@ -6913,6 +7123,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "diggo": (7200, 14400),
         "chickenland": (21600, 28800),
         "grouchemine": (7200, 14400),
+        "lumeon": (7200, 14400),
+        "earnvault": (7200, 14400),
     }
 
     bot_routines = [
@@ -6925,6 +7137,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
         {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data"))},
         {"name": "grouchemine", "fn": _farm_grouchemine, "has_data": bool(tokens.get("grouchemine_init_data"))},
+        {"name": "lumeon", "fn": _farm_lumeon, "has_data": bool(tokens.get("lumeon_init_data"))},
+        {"name": "earnvault", "fn": _farm_earnvault, "has_data": bool(tokens.get("earnvault_init_data"))},
     ]
 
     for b in bot_routines:
@@ -6939,6 +7153,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "dgo": "diggo", "diggo": "diggo", "diggominer": "diggo",
         "chicken": "chickenland", "chickenland": "chickenland", "chickenlandbot": "chickenland",
         "grouche": "grouchemine", "grouchemine": "grouchemine", "grc": "grouchemine",
+        "lum": "lumeon", "lumeon": "lumeon", "lumeonminer": "lumeon",
+        "ev": "earnvault", "earnvault": "earnvault", "earnvaultapp": "earnvault",
         "atf": "atf", "mrg": "mrg"
     }
     norm_target = bot_aliases.get(target_bot.lower(), target_bot.lower()) if target_bot else "all"
@@ -7167,11 +7383,13 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
     dig_c = bot_stats.get("diggo", 0)
     chk_c = bot_stats.get("chickenland", 0)
     grc_c = bot_stats.get("grouchemine", 0)
+    lum_c = bot_stats.get("lumeon", 0)
+    ev_c = bot_stats.get("earnvault", 0)
 
     card = (
-        f"⚡ <b>Fleet 9-Bot Auto-Farming Complete</b>\n"
+        f"⚡ <b>Fleet 11-Bot Auto-Farming Complete</b>\n"
         f"• <b>Accounts Farmed:</b> <code>{farmed_count}/{total_accounts} Online</code>\n"
-        f"• <b>Active Pools (9/9):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c} • GRC:{grc_c}</code>\n"
+        f"• <b>Active Pools (11/11):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c} • GRC:{grc_c} • LUM:{lum_c} • EV:{ev_c}</code>\n"
         f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>{source} • Render Primary Node 3</code>\n"
         f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
     )
@@ -7297,7 +7515,7 @@ async def api_tasks_sweep_all(request: Request):
             LAST_SWEEP_RUN["output"] = str(e)
 
     asyncio.create_task(_run_sweep())
-    return {"ok": True, "status": "dispatched", "message": "8-Bot fleet side-task sweep dispatched on Render Node 2."}
+    return {"ok": True, "status": "dispatched", "message": "11-Bot fleet side-task sweep dispatched on Render Node 2."}
 
 
 @app.get("/api/tasks/sweep-status")
@@ -8094,13 +8312,14 @@ except Exception:
         "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
     ]
 
-# 8 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 11 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgtoken_bot", "atfminers_bot",
     "VictorsCompanybot",
     "Kynex_miningbot", "Diggominer_bot",
     "Pepe_gram_bot", "AdxEarnAibot",
-    "ChickenLandBot"
+    "ChickenLandBot", "GRC_AirdrooBot",
+    "lumeonminer_bot", "EarnVaultApp_bot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs

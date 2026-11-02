@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 8-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: November 2, 2026 (User Bot & Executive Admin Dashboards Resilient Auth & Universal Proxy, 11-Pool Telemetry, Cloudflare Edge Synchronized)*
+> *Last Updated: November 2, 2026 (11-Bot Pipeline Unification in app.py, Token Watchdogs, Gate Solvers, Resilient Dashboards & Cloudflare Edge Deployed)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*
@@ -15,7 +15,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first** (and consult [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for quick lookups). It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **an elastic multi-account Telegram fleet** (1 Master Account + dynamic Worker Accounts, currently 21 accounts including Account #19 Adil H `8937908003`, Account #20 Asaduzzaman Sarker `8609131528`, and Account #21 Aaaa201 `8669217201`) that dynamically scales up or down, continuously farming yield, satoshis, and tokens across 9 legitimate bot WebApp Mini Apps, while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **an elastic multi-account Telegram fleet** (1 Master Account + dynamic Worker Accounts, currently 21 accounts including Account #19 Adil H `8937908003`, Account #20 Asaduzzaman Sarker `8609131528`, and Account #21 Aaaa201 `8669217201`) that dynamically scales up or down, continuously farming yield, satoshis, and tokens across 11 legitimate bot WebApp Mini Apps, while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.

@@ -168,7 +168,9 @@ async def get_fleet_mining_totals() -> dict:
         "adx": 0.0,
         "chicken_hens": 0,
         "chicken_eggs": 0,
-        "grc": 0.0
+        "grc": 0.0,
+        "lum": 0.0,
+        "earnvault": 0.0
     }
     rep_file = os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json")
     if os.path.exists(rep_file):
@@ -230,20 +232,44 @@ async def get_fleet_mining_totals() -> dict:
                             else:
                                 m = re.search(r"([\d\.]+)\s*GRC", core_str)
                                 if m: totals["grc"] += float(m.group(1))
+
+                        # 10. LUM Miner
+                        elif "LUM" in b_name or "lumeon" in b_name.lower():
+                            if isinstance(core, dict) and "balance" in core:
+                                try: totals["lum"] += float(core["balance"])
+                                except Exception: pass
+                            else:
+                                m = re.search(r"([\d\.]+)\s*LUM", core_str)
+                                if m: totals["lum"] += float(m.group(1))
+
+                        # 11. EarnVault
+                        elif "EarnVault" in b_name or "earnvault" in b_name.lower():
+                            if isinstance(core, dict) and "balance" in core:
+                                try: totals["earnvault"] += float(core["balance"])
+                                except Exception: pass
+                            else:
+                                m = re.search(r"\$([\d\.]+)", core_str)
+                                if m: totals["earnvault"] += float(m.group(1))
         except Exception:
             pass
 
-    # Fallback for Chicken Land if 0
-    if totals["chicken_hens"] == 0:
-        accs_file = os.path.join(BASE_DIR, "accounts.json")
-        if os.path.exists(accs_file):
-            try:
-                with open(accs_file, "r", encoding="utf-8") as f:
-                    accs = json.load(f)
+    # Fallback from accounts.json for any zero balances
+    accs_file = os.path.join(BASE_DIR, "accounts.json")
+    if os.path.exists(accs_file):
+        try:
+            with open(accs_file, "r", encoding="utf-8") as f:
+                accs = json.load(f)
+                if totals["chicken_hens"] == 0:
                     totals["chicken_hens"] = sum(int(a.get("chickenland_hens", 0) or 0) for a in accs)
                     totals["chicken_eggs"] = sum(int(a.get("chickenland_rate", 0) or 0) * 8 for a in accs)
-            except Exception:
-                pass
+                if totals["lum"] == 0.0:
+                    totals["lum"] = sum(float(a.get("lumeon_balance", 0) or 0) for a in accs)
+                if totals["earnvault"] == 0.0:
+                    totals["earnvault"] = sum(float(a.get("earnvault_balance", 0) or 0) for a in accs)
+                if totals["grc"] == 0.0:
+                    totals["grc"] = sum(float(a.get("grouchemine_balance", 0) or 0) for a in accs)
+        except Exception:
+            pass
             
     # Fallback for ATF if 0
     if totals["atf"] == 0.0:
@@ -391,7 +417,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Live On-Chain Balance:* `{wallet_bnb:.6f} BNB` (`~${wallet_usd:.2f} USD` / `~৳{wallet_bdt:.0f} BDT`)\n"
             f"• *Historical Distributions:* `{total_payouts_count} payouts` totaling `{total_payouts_bnb:.6f} BNB`\n"
             f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n\n"
-            f"💎 *2. Multi-Chain 9-Bot Autonomous Mining Treasury:*\n"
+            f"💎 *2. Multi-Chain 11-Bot Autonomous Mining Treasury:*\n"
             f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 180+, Cloud Turnstile Auto-Claim)\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
             f"• *Victor's Company:* {vic_str}\n"
@@ -401,6 +427,8 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *AdxEarn AI:* `{fleet_totals['adx']:,.0f} Points` earned (Daily Check-in Streaks & Tasks)\n"
             f"• *Chicken Land:* `{fleet_totals['chicken_hens']} Hens` active laying `{fleet_totals['chicken_eggs']:,} Eggs` (Autonomous Egg Harvest & Selling)\n"
             f"• *Grouche Mine:* `{fleet_totals['grc']:,.2f} GRC` mined (Cloud Miner Yield, Adsgram Quests & Tasks)\n"
+            f"• *LUM Miner:* `{fleet_totals['lum']:,.2f} LUM` mined (Auto-Referral Mesh & Payout Node)\n"
+            f"• *EarnVault:* `${fleet_totals['earnvault']:,.2f} USD` accumulated (Firebase Gate & Rewarded Ads)\n"
             f"• *On-Chain Target TON:* `{TON_PRIMARY_WALLET}`\n"
             f"• *Live On-Chain TON Balance:* `{wallet_ton:.4f} TON` (`~${wallet_ton_usd:.2f} USD` / `~৳{wallet_ton_bdt:.0f} BDT`)\n"
             f"• *TON Price (TonAPI):* `${ton_price:.2f} USD`\n\n"

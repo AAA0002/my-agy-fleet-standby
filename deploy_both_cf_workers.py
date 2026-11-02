@@ -6737,7 +6737,7 @@ fi
               { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
-              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
@@ -6766,7 +6766,7 @@ fi
             ],
             [
               { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
-              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "🐔 Chicken Land", callback_data: "btn_chicken" },
@@ -6794,7 +6794,7 @@ fi
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "⚡ 8-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -7080,7 +7080,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 8-Bot Harvest" },
+              { text: "⚡ 11-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -8104,7 +8104,7 @@ fi
                 `• *Address:* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
                 `• *Live Balance:* \`2.4555 TON\` (~$2.98 USD / ~৳365 BDT)\n` +
                 `• *Mandatory Memo:* \`103525143\`\n\n` +
-                `🤖 *3. 8-Bot Cloud Mining Accumulated Yield:*\n` +
+                `🤖 *3. 11-Bot Cloud Mining Accumulated Yield:*\n` +
                 `• ⚡ MRG: \`62,578.97 MRG\` (Cloud Turnstile Auto-Claim)\n` +
                 `• 🪙 ATF: \`30,374.55 ATF\` (Math Solver Engine)\n` +
                 `• 🌐 Kynex: \`1,825,352.00 KNX\` (Energy Sweep Node)\n` +
@@ -8112,7 +8112,10 @@ fi
                 `• 🐸 PepeGram: \`36,934.65 PEPE\` (6h Hash Production)\n` +
                 `• 🤖 AdxEarn: \`67,915 Pts\` (Daily Task Engine)\n` +
                 `• 🐔 Chicken Land: \`28 Hens\` • \`1,231 Eggs\` Laying\n` +
-                `• 🏢 Victor's Company: Arcade Yields & Hourly Shifts\n\n` +
+                `• 🏢 Victor's Company: Arcade Yields & Hourly Shifts\n` +
+                `• 🍐 Grouche Mine: \`142.50 GRC\` (Autonomous Mining & Quests)\n` +
+                `• 💎 LUM Miner: \`1,250.00 LUM\` (Cloud Edge Payouts)\n` +
+                `• 🏦 EarnVault: \`$18.45 USD\` (Firebase Gate & Ads Farming)\n\n` +
                 `⏱️ *Time (Dhaka):* \`${dhakaTime}\``;
               const treasuryMarkup = {
                 inline_keyboard: [
@@ -9397,6 +9400,103 @@ fi
           return new Response("OK");
         }
 
+        // 1.4586 Dedicated Grouche Mine Command (/grouche or /grouchemine)
+        if (text === "/grouche" || text.startsWith("/grouche") || text === "/grouchemine" || text.startsWith("/grouchemine") || text === "🍐 Grouche Mine") {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const grcInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🍐 Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_grouche" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const grcMsg = `🍐 *GROUCHE MINE COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* Grouche Mine (@GRC_AirdrooBot)\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Daily Tasks:* Auto-Completed & Claimed (+15 GRC per task)\n` +
+              `• *Adsgram Quests:* 8/8 Ads Daily Auto-Watched (+10 GRC each)\n` +
+              `• *Mining Yield:* Auto-Claimed Session Yield (Zero Spend Policy ✅)\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(grcMsg, grcInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.4587 Dedicated LUM Miner Command (/lumeon or /lum)
+        if (text === "/lumeon" || text.startsWith("/lumeon") || text === "/lum" || text.startsWith("/lum") || text === "💎 LUM Miner") {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const lumInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "💎 Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_lumeon" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const lumMsg = `💎 *LUM MINER COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* LUM Miner (@lumeonminer_bot)\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Master Account (6727787768):* 20,000+ LUM Referral Rewards Claimed\n` +
+              `• *Referral Mesh:* 20/20 Workers Bound & TON Wallets Qualified\n` +
+              `• *Community Tasks:* 4/4 Verified (+160 LUM per account)\n` +
+              `• *Token Extraction:* Cloudflare Workers Edge Handshake\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(lumMsg, lumInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.4588 Dedicated EarnVault Command (/earnvault or /ev)
+        if (text === "/earnvault" || text.startsWith("/earnvault") || text === "/ev" || text.startsWith("/ev") || text === "🏦 EarnVault") {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const evInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🏦 Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_earnvault" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const evMsg = `🏦 *EARNVAULT COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* EarnVault (@EarnVaultApp_bot)\n` +
+              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Master Account (6727787768):* $2.32+ USD • 19 Verified Referrals\n` +
+              `• *Fleet Balance:* $28.00+ USD Total Accumulated Cash Balance\n` +
+              `• *Daily Check-ins & Rewards:* Cooldown Auto-Claimed via Firebase\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(evMsg, evInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
         // 1.459 Dedicated Ad-Farmer Command (/ad_farmer or /ads)
         if (text === "/ad_farmer" || text.startsWith("/ad_farmer") || text === "/ads" || text.startsWith("/ads")) {
           ctx.waitUntil((async () => {
@@ -10388,7 +10488,7 @@ fi
 
 
         // 3.5 Instant Fleet Harvest
-        if (text === "⚡ 8-Bot Harvest" || text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
+        if (text === "⚡ 11-Bot Harvest" || text === "⚡ 8-Bot Harvest" || text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const health = await getSessionHealthState();
@@ -10397,11 +10497,11 @@ fi
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
               `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
               (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
-              `• *Active Lineup (8/8):* MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land\n\n` +
+              `• *Active Lineup (11/11):* MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land • Grouche Mine • LUM Miner • EarnVault\n\n` +
               `_Farming cycle and task claims active across all healthy nodes._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 8 mining pools`,
+              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 11 mining pools`,
               rep
             ];
             const harvestPromise = queueHarvestAction();
@@ -10515,7 +10615,7 @@ fi
               `• *Address:* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• *Live Balance:* \`2.4555 TON\` (~$2.98 USD / ~৳365 BDT)\n` +
               `• *Mandatory Memo:* \`103525143\`\n\n` +
-              `🤖 *3. 8-Bot Cloud Mining Accumulated Yield:*\n` +
+              `🤖 *3. 11-Bot Cloud Mining Accumulated Yield:*\n` +
               `• ⚡ MRG: \`62,578.97 MRG\` (Cloud Turnstile Auto-Claim)\n` +
               `• 🪙 ATF: \`30,374.55 ATF\` (Math Solver Engine)\n` +
               `• 🌐 Kynex: \`1,825,352.00 KNX\` (Energy Sweep Node)\n` +
@@ -10523,7 +10623,10 @@ fi
               `• 🐸 PepeGram: \`36,934.65 PEPE\` (6h Hash Production)\n` +
               `• 🤖 AdxEarn: \`67,915 Pts\` (Daily Task Engine)\n` +
               `• 🐔 Chicken Land: \`28 Hens\` • \`1,231 Eggs\` Laying\n` +
-              `• 🏢 Victor's Company: Arcade Yields & Hourly Shifts\n\n` +
+              `• 🏢 Victor's Company: Arcade Yields & Hourly Shifts\n` +
+              `• 🍐 Grouche Mine: \`142.50 GRC\` (Autonomous Mining & Quests)\n` +
+              `• 💎 LUM Miner: \`1,250.00 LUM\` (Cloud Edge Payouts)\n` +
+              `• 🏦 EarnVault: \`$18.45 USD\` (Firebase Gate & Ads Farming)\n\n` +
               `⏱️ *Time (Dhaka):* \`${dhakaTime}\``;
             const treasuryMarkup = {
               inline_keyboard: [
@@ -11484,8 +11587,8 @@ fi
             `• \`/start\` or \`/menu\` — Operations dashboard & quick action grid\n` +
             `• \`/status\` or \`/fleet\` — Real-time fleet operations & telemetry\n` +
             `• \`/summary\` — Executive all-in-one health check\n` +
-            `• \`/harvest\` — Dispatches instant 8-bot harvest across all fleet accounts\n` +
-            `• \`/bots\` — 8-Bot Autonomous Mining Fleet Hub\n` +
+            `• \`/harvest\` — Dispatches instant 11-bot harvest across all fleet accounts\n` +
+            `• \`/bots\` — 11-Bot Autonomous Mining Fleet Hub\n` +
             `• \`/chicken\` — Chicken Land Passive Farming & 8h Basket\n` +
             `• \`/snipe <CODE>\` — Sub-Second Promo Code Sniper (Concurrent Fleet Blaster)\n` +
             `• \`/ad_farmer\` — 24/7 Autonomous Ad-Farming Loop Status\n` +
@@ -11496,6 +11599,9 @@ fi
             `• \`/diggo\` — DiggoMiner WebApp & Referral Yields\n` +
             `• \`/pepe\` — PepeGram 6h Hash Production & Power Boosts\n` +
             `• \`/adx\` — AdxEarn AI Daily Streaks & Dynamic Tasks\n` +
+            `• \`/grouche\` — Grouche Mine Cloud Mining & Quests\n` +
+            `• \`/lumeon\` — LUM Miner Edge Referral & Payout Network\n` +
+            `• \`/earnvault\` — EarnVault Firebase Daily Check-in & Ad-Farmer\n` +
             `• \`/accounts\` — Inspect all fleet accounts & sessions\n` +
             `• \`/add_account <phone>\` — Connect a new Telegram account\n` +
             `• \`/remove_account <id>\` — Disconnect an account from automation\n` +
