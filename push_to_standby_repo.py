@@ -163,6 +163,9 @@ def push_app():
     arc_file = os.path.join(BASE_DIR, "victors_arcade_solver.py")
     if os.path.exists(arc_file):
         push_file(arc_file, "victors_arcade_solver.py", "feat: Victor's Company Deep Mine arcade solver engine")
+    awm_file = os.path.join(BASE_DIR, "auto_wallet_manager.py")
+    if os.path.exists(awm_file):
+        push_file(awm_file, "auto_wallet_manager.py", "feat: fully autonomous account lifecycle and wallet manager")
     sidetasks_file = os.path.join(BASE_DIR, "finish_all_fleet_sidetasks.py")
     if os.path.exists(sidetasks_file):
         push_file(sidetasks_file, "finish_all_fleet_sidetasks.py", "feat: 11-bot fleet side tasks auto-sweep engine")
