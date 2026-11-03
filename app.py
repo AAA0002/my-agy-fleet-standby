@@ -637,6 +637,54 @@ async def api_fleet_ai_audit():
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+@app.get("/api/fleet/bind-master-referrals")
+@app.post("/api/fleet/bind-master-referrals")
+async def api_fleet_bind_master_referrals(request: Request):
+    """
+    Autonomous Master Referral & Channel Engine:
+    Joins all official bot sponsor channels, permanently mutes them,
+    and completes master referral binding under Commander Arif (6727787768).
+    Can target a single account via ?uid=... or run across all accounts in background.
+    """
+    target_uid = request.query_params.get("uid")
+    force = request.query_params.get("force") == "1"
+    cur_accs = await fetch_accounts_from_cloud()
+    if target_uid:
+        cur_accs = [a for a in cur_accs if str(a.get("user_id")) == str(target_uid)]
+
+    async def _run_bind_task():
+        for acc in cur_accs:
+            uid = str(acc.get("user_id"))
+            if uid == "6727787768":
+                continue
+            sess = acc.get("session_string") or acc.get("session")
+            if not sess:
+                continue
+            locked = await acquire_account_lock(uid, ttl_seconds=60)
+            if not locked:
+                continue
+            cl = None
+            try:
+                cl = create_telethon_client(sess_str=sess, identifier=acc.get("phone") or uid, proxy_val=acc.get("proxy"), timeout=25)
+                await cl.connect()
+                if await cl.is_user_authorized():
+                    await bind_account_master_referrals(cl, acc, force=force)
+            except Exception as e:
+                logger.warning(f"[{acc.get('name')}] Master referral bind error: {e}")
+            finally:
+                if cl:
+                    try: await cl.disconnect()
+                    except Exception: pass
+                await release_account_lock(uid)
+            await asyncio.sleep(2.0)
+
+    asyncio.create_task(_run_bind_task())
+    return {
+        "ok": True,
+        "message": f"Master referral binding and channel joining scheduled for {len(cur_accs)} accounts.",
+        "target_uid": target_uid or "all"
+    }
+
 @app.post("/api/tokens/refresh")
 @app.get("/api/tokens/refresh")
 async def api_proxy_tokens_refresh(request: Request):
@@ -2706,9 +2754,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
 
     logger.info(f"[{name}] 🚀 Initiating silent referral binding for {len(unbound_bots)} unbound bots ({unbound_bots}) to Master ID 6727787768...")
 
-    # 1. MRG Miner (Dual-Layer: Chat /start + WebApp initData handshake)
+    # 1. MRG Miner (Dual-Layer: Channel Join + Chat /start + WebApp initData handshake)
     if force or not acc_entry.get("mrg_referral_bound"):
         try:
+            for s_ch in ["mrgminer", "mrgfun", "mrgwithdrawal", "keepeye_app"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(MRG_BOT, f"/start {MRG_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2737,9 +2790,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] MRG referral bind note: {e}")
 
-    # 2. ATF Miner (Dual-Layer: Chat /start + WebApp login handshake)
+    # 2. ATF Miner (Dual-Layer: Channel Join + Chat /start + WebApp login handshake)
     if force or not acc_entry.get("atf_referral_bound"):
         try:
+            for s_ch in ["AI_TRADING_FOREX", "atfminers"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(ATF_BOT, f"/start {REPORT_CHAT_ID}")
                 await asyncio.sleep(0.5)
@@ -2751,9 +2809,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] ATF referral bind note: {e}")
 
-    # 3. Victor's Company (Dual-Layer: Chat /start + WebApp handshake)
+    # 3. Victor's Company (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("victors_referral_bound"):
         try:
+            for s_ch in ["VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(VICTORS_BOT, f"/start {VICTORS_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2771,9 +2834,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Victor's Company referral bind note: {e}")
 
-    # 4. Kynex Network (Dual-Layer: Chat /start + WebApp handshake)
+    # 4. Kynex Network (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("kynex_referral_bound"):
         try:
+            for s_ch in ["kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(KYNEX_BOT, f"/start {KYNEX_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2796,9 +2864,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    # 5. PepeGram (Dual-Layer: Chat /start + WebApp handshake)
+    # 5. PepeGram (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("pepegram_referral_bound"):
         try:
+            for s_ch in ["pepe_grammmm", "BTCMAKERR", "PaperHouseNFT"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2810,9 +2883,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] PepeGram referral bind note: {e}")
 
-    # 6. AdxEarn AI (Dual-Layer: Chat /start + WebApp handshake)
+    # 6. AdxEarn AI (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("adxearn_referral_bound"):
         try:
+            for s_ch in ["AdxearnAi"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(ADXEARN_BOT, f"/start {ADXEARN_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2824,9 +2902,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] AdxEarn referral bind note: {e}")
 
-    # 7. DiggoMiner (Dual-Layer: Chat /start + WebApp handshake)
+    # 7. DiggoMiner (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("diggo_referral_bound"):
         try:
+            for s_ch in ["diggo_community"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(DIGGO_BOT, f"/start {DIGGO_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2843,9 +2926,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Diggo referral bind note: {e}")
 
-    # 8. Chicken Land (Dual-Layer: Chat /start + WebApp handshake)
+    # 8. Chicken Land (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("chickenland_referral_bound"):
         try:
+            for s_ch in ["LandChickenNews", "ChickenLandPay", "ChickenLandCodes"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(CHICKENLAND_BOT, f"/start {CHICKENLAND_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2857,9 +2945,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Chicken Land referral bind note: {e}")
 
-    # 9. Grouche Mine Referral Binding (@GRC_AirdrooBot)
+    # 9. Grouche Mine Referral Binding (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("grouchemine_referral_bound"):
         try:
+            for s_ch in ["grouchemine", "GroucheCoinEn"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(GROUCHEMINE_BOT, f"/start {GROUCHEMINE_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2871,9 +2964,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Grouche Mine referral bind note: {e}")
 
-    # 10. LUM Miner Referral Binding (@lumeonminer_bot)
+    # 10. LUM Miner Referral Binding (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("lumeon_referral_bound"):
         try:
+            for s_ch in ["lumminercommunity", "lumpayout", "gramminiappsmining", "Grammoneywallet"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(LUMEON_BOT, f"/start {LUMEON_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
@@ -2885,9 +2983,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] LUM Miner referral bind note: {e}")
 
-    # 11. EarnVault Referral Binding (@EarnVaultApp_bot)
+    # 11. EarnVault Referral Binding (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("earnvault_referral_bound"):
         try:
+            for s_ch in ["EarnVaulte"]:
+                try:
+                    await join_tg_target(client, s_ch, name)
+                except Exception:
+                    pass
             try:
                 await client.send_message(EARNVAULT_BOT, f"/start {EARNVAULT_REFERRAL_CODE}")
                 await asyncio.sleep(0.5)
