@@ -9174,6 +9174,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 - Initialized local Git repository with `.gitignore`.
 - Configured project rules and isolation boundary in `AGENTS.md`.
 
+
+## [2.4.0] - 2026-11-03
+### WebApp Token Extractor Telethon TL Deserialization Fix, 11-Bot Full Fleet Audit & 540 Side-Task Harvest
+- **Resolved WebApp Token Extraction Failures for MRG Miner & Victor's Company**:
+  - **Telethon TL Constructor Bug Fix**: Discovered that passing `bot_in` (`InputPeerUser`, constructor `0x4ca5e8dd`) directly into `InputBotAppShortName` caused Telegram's MTProto server to reject requests because schema expects `TypeInputUser` (`InputUser`, constructor `0xc65811f2`). Replaced with `telethon.utils.get_input_user(bot_ent)`.
+  - **Enabled `prefer_direct_url=True`**: Added direct URL fast-path for MRG Miner (`https://app.mrgtoken.xyz/`), Victor's Company (`https://app.victors.company/`), and Kynex Network (`https://kynex.top/telegram-auth.html`) to bypass broken app queries.
+  - **Inline Keyboard MiniApp Parser (Strategy C)**: Enhanced parser to detect `https://t.me/<bot>/<app>` inline buttons and dispatch `RequestAppWebViewRequest` with parsed short name, preventing `URL_INVALID` errors.
+  - **Stale Token Pruning**: Hardened `sync_account_tokens_to_clouds` to filter out cryptographically expired WebApp tokens (`auth_date` > 24 hours old) before merging with Upstash Redis, preventing persistent 401 Unauthorized loops.
+  - **Deep Session Diagnostics**: Upgraded `/api/debug-account-session/{uid}` to return step-by-step diagnostic verification for MRG, Victor's, ATF, and Kynex.
+- **Completed Fleet-Wide Side-Task Harvest Across 21 Accounts**:
+  - Swept and claimed **540 side tasks and ad rewards** across all 21 accounts:
+    - Grouche Mine: 8/8 Adsgram Watch & Click ads claimed across accounts (+80 GRC/account).
+    - EarnVault: Monetag, Giga, and partner ad batches claimed.
+    - LUM Miner: Social, community, and partner channel tasks claimed.
+    - PepeGram, AdxEarn, DiggoMiner, and Kynex: Quests claimed.
+  - Dispatched summary notification to AAA Admin Notification Channel (`-1004358687850`).
+
 ## [2.3.0] - 2026-10-30
 ### Universal Smart Session Resume & Remote Control Daemon Engine
 - **Universal Installer (`setup_smart_agy.sh`)**:

@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 8-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: November 2, 2026 (11-Bot Full Pipeline Unification, Token Watchdogs, Gate Solvers, Resilient Dashboards, State Synchronization & Cloudflare Edge Deployed)*
+> *Last Updated: November 3, 2026 (WebApp Token Extractor Telethon TL Deserialization Fix, Prefer Direct URL Fast-Path, Stale Token Redis Pruning & 540 Side-Task Fleet-Wide Harvest)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*

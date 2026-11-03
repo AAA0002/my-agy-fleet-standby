@@ -962,13 +962,26 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         except Exception:
             pass
 
+    bot_user_in = None
+    try:
+        from telethon import utils as tele_utils
+        bot_user_in = tele_utils.get_input_user(bot_ent)
+    except Exception:
+        pass
+    if not bot_user_in and hasattr(bot_ent, "id") and hasattr(bot_ent, "access_hash"):
+        try:
+            from telethon.tl.types import InputUser
+            bot_user_in = InputUser(bot_ent.id, bot_ent.access_hash)
+        except Exception:
+            pass
+
     # Strategy A: Try RequestAppWebViewRequest with candidate short names
     names_to_try = candidate_short_names or ["openapp", "app", "play", "myapp", "miniapp", "miner", "startapp", "bot", "game"]
     for sn in names_to_try:
         try:
             req_p = {
                 "peer": bot_in,
-                "app": InputBotAppShortName(bot_id=bot_in, short_name=sn),
+                "app": InputBotAppShortName(bot_id=bot_user_in or bot_in, short_name=sn),
                 "platform": "android"
             }
             if start_param:
@@ -1009,8 +1022,8 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                     for b in row:
                         raw_b = getattr(b, "button", b)
                         # 1. Direct web_app attribute
-                        w_url = getattr(getattr(raw_b, "web_app", None), "url", None) or getattr(raw_b, "url", None)
-                        if w_url:
+                        w_url = getattr(getattr(raw_b, "web_app", None), "url", None)
+                        if w_url and not w_url.startswith("https://t.me/"):
                             try:
                                 req_p = {
                                     "peer": bot_ent,
@@ -1027,10 +1040,45 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                             except Exception:
                                 pass
                         b_url = getattr(raw_b, "url", None)
-                        if b_url and "tgWebApp" in b_url:
-                            tok = extract_from_url(b_url)
-                            if tok:
-                                return tok
+                        if b_url:
+                            if "tgWebApp" in b_url:
+                                tok = extract_from_url(b_url)
+                                if tok:
+                                    return tok
+                            # MiniApp link (e.g., https://t.me/VictorsCompanyGame/app or https://t.me/mrgminerbot/app?startapp=...)
+                            if "t.me/" in b_url and "/" in b_url.split("t.me/")[1]:
+                                try:
+                                    clean_part = b_url.split("t.me/")[1].split("?")[0].strip("/")
+                                    parts = clean_part.split("/")
+                                    if len(parts) >= 2:
+                                        t_app = parts[1]
+                                        res = await client(RequestAppWebViewRequest(
+                                            peer=bot_in,
+                                            app=InputBotAppShortName(bot_id=bot_user_in or bot_in, short_name=t_app),
+                                            platform="android",
+                                            start_param=str(start_param) if start_param else None
+                                        ))
+                                        tok = extract_from_url(getattr(res, "url", None))
+                                        if tok:
+                                            return tok
+                                except Exception:
+                                    pass
+                            elif not b_url.startswith("https://t.me/"):
+                                try:
+                                    req_p = {
+                                        "peer": bot_ent,
+                                        "bot": bot_ent,
+                                        "platform": "android",
+                                        "url": b_url
+                                    }
+                                    if start_param:
+                                        req_p["start_param"] = str(start_param)
+                                    res = await client(RequestWebViewRequest(**req_p))
+                                    tok = extract_from_url(getattr(res, "url", None))
+                                    if tok:
+                                        return tok
+                                except Exception:
+                                    pass
                         # Zero-chat policy: Never trigger callback clicks in bot chats! Silent URL extraction only.
                         pass
     except Exception:
@@ -1087,9 +1135,9 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
 
-    # 1. MRG Miner (@mrgtoken_bot)
+    # 1. MRG Miner (@mrgminerbot)
     mrg_param = None if is_master else MRG_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
+    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"], prefer_direct_url=True)
     if tok:
         tokens["mrg_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
@@ -1101,16 +1149,16 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["atf_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 3. Victor's Company (@VictorsCompanybot - Silent WebApp query, zero chat messages)
+    # 3. Victor's Company (@VictorsCompanyGame - Silent WebApp query, zero chat messages)
     v_param = None if is_master else VICTORS_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
+    tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"], prefer_direct_url=True)
     if tok:
         tokens["victors_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 4. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
     ky_param = None if is_master else KYNEX_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
+    tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"], prefer_direct_url=True)
     if tok:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
@@ -2099,7 +2147,20 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                         raw_res = ex_d.get("result")
                         if raw_res:
                             ex_toks = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
-                merged = {**ex_toks, **tokens}
+                # Purge stale tokens older than 24 hours from ex_toks
+                now_s = time.time()
+                valid_ex_toks = {}
+                for k, v in ex_toks.items():
+                    if k.endswith("_init_data") and isinstance(v, str):
+                        try:
+                            qs = urllib.parse.parse_qs(v)
+                            auth_d = int(qs.get("auth_date", [0])[0])
+                            if auth_d > 0 and (now_s - auth_d) > 86400:
+                                continue
+                        except Exception:
+                            pass
+                    valid_ex_toks[k] = v
+                merged = {**valid_ex_toks, **tokens}
                 clean_merged = {k: v for k, v in merged.items() if (k in ("account_id", "name", "synced_at", "updated_at", "phone", "diggo_jwt") or k.endswith("_init_data")) and v}
                 await s.post(
                     f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
@@ -8279,10 +8340,10 @@ async def inspect_bot_chat(uid: str, request: Request):
             return {"ok": False, "uid": uid, "error": "Account is locked by another process"}
         cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
         bots_to_check = [
-            ("mrg", "mrgtoken_bot"),
-            ("atf", "atfminers_bot"),
-            ("victors", "VictorsCompanybot"),
-            ("kynex", "Kynex_miningbot")
+            ("mrg", MRG_BOT),
+            ("atf", ATF_BOT),
+            ("victors", VICTORS_BOT),
+            ("kynex", KYNEX_BOT)
         ]
         chats = {}
         try:
@@ -8398,9 +8459,53 @@ async def debug_account_session(uid: str, request: Request):
             me = await cl.get_me()
             results["me"] = {"id": me.id, "first_name": me.first_name, "username": me.username, "phone": me.phone}
 
-            # Try extracting tokens for all 4 bots
+            # Try extracting tokens for all active bots
             extracted = await extract_tokens_with_client(cl, target_acc)
             results["extracted_tokens"] = {k: (v[:30] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in extracted.items()}
+
+            results["debug_diagnostics"] = {}
+            for test_name, test_bot, test_url, test_sn in [
+                ("mrg", MRG_BOT, "https://app.mrgtoken.xyz/", "app"),
+                ("victors", VICTORS_BOT, "https://app.victors.company/", "app"),
+                ("atf", ATF_BOT, "https://atfminers.asloni.online/miner/index.html?entry=bot_start", "miner"),
+                ("kynex", KYNEX_BOT, "https://kynex.top/telegram-auth.html", "app")
+            ]:
+                d_info = {}
+                try:
+                    t_ent = await cl.get_entity(test_bot)
+                    d_info["entity_resolved"] = True
+                    d_info["bot_id"] = getattr(t_ent, "id", None)
+                    t_in = await cl.get_input_entity(t_ent)
+                    d_info["input_entity_type"] = type(t_in).__name__
+                    u_in = None
+                    try:
+                        from telethon import utils as tu
+                        u_in = tu.get_input_user(t_ent)
+                        d_info["input_user_type"] = type(u_in).__name__
+                    except Exception as ue:
+                        d_info["input_user_error"] = str(ue)
+
+                    # Test direct RequestWebViewRequest
+                    try:
+                        r_wv = await cl(RequestWebViewRequest(peer=t_ent, bot=t_ent, platform="android", url=test_url))
+                        w_url = getattr(r_wv, "url", None)
+                        d_info["RequestWebViewRequest"] = "OK" if w_url else "No url"
+                    except Exception as wve:
+                        d_info["RequestWebViewRequest"] = f"{type(wve).__name__}: {wve}"
+
+                    # Test RequestAppWebViewRequest
+                    try:
+                        app_in = InputBotAppShortName(bot_id=u_in if u_in else t_in, short_name=test_sn)
+                        r_app = await cl(RequestAppWebViewRequest(peer=t_in, app=app_in, platform="android"))
+                        app_url = getattr(r_app, "url", None)
+                        d_info["RequestAppWebViewRequest"] = "OK" if app_url else "No url"
+                    except Exception as ape:
+                        d_info["RequestAppWebViewRequest"] = f"{type(ape).__name__}: {ape}"
+
+                except Exception as ex:
+                    d_info["entity_resolved"] = False
+                    d_info["entity_error"] = f"{type(ex).__name__}: {ex}"
+                results["debug_diagnostics"][test_name] = d_info
             
             # If tokens extracted, sync to Upstash Redis
             if extracted:
