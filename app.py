@@ -1135,13 +1135,24 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         except Exception:
             pass
 
-    # Strategy A: Try RequestAppWebViewRequest with candidate short names
+    # Strategy A: Try RequestAppWebViewRequest with GetBotAppRequest resolution
     names_to_try = candidate_short_names or ["openapp", "app", "play", "myapp", "miniapp", "miner", "startapp", "bot", "game"]
     for sn in names_to_try:
+        target_app = InputBotAppShortName(bot_id=bot_user_in if bot_user_in else bot_in, short_name=sn)
+        try:
+            from telethon.tl.functions.messages import GetBotAppRequest
+            from telethon.tl.types import InputBotAppID
+            app_res = await client(GetBotAppRequest(app=target_app, hash=0))
+            app_ent = getattr(app_res, "app", None)
+            if app_ent and hasattr(app_ent, "id") and hasattr(app_ent, "access_hash"):
+                target_app = InputBotAppID(id=app_ent.id, access_hash=app_ent.access_hash)
+        except Exception:
+            pass
+
         try:
             req_p = {
                 "peer": bot_in,
-                "app": InputBotAppShortName(bot_id=bot_user_in if bot_user_in else bot_in, short_name=sn),
+                "app": target_app,
                 "platform": "android",
                 "write_allowed": True
             }
@@ -1153,6 +1164,36 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 return tok
         except Exception:
             continue
+
+    # Strategy A.1: If BotApp not unlocked, send /start to activate chat and retry BotApp query
+    if start_param and not bot_username.startswith("ATF"):
+        try:
+            await client.send_message(bot_in, f"/start {start_param}")
+            await asyncio.sleep(0.6)
+            for sn in (candidate_short_names or ["app"]):
+                target_app = InputBotAppShortName(bot_id=bot_user_in if bot_user_in else bot_in, short_name=sn)
+                try:
+                    from telethon.tl.functions.messages import GetBotAppRequest
+                    from telethon.tl.types import InputBotAppID
+                    app_res = await client(GetBotAppRequest(app=target_app, hash=0))
+                    app_ent = getattr(app_res, "app", None)
+                    if app_ent and hasattr(app_ent, "id") and hasattr(app_ent, "access_hash"):
+                        target_app = InputBotAppID(id=app_ent.id, access_hash=app_ent.access_hash)
+                except Exception:
+                    pass
+                req_p = {
+                    "peer": bot_in,
+                    "app": target_app,
+                    "platform": "android",
+                    "write_allowed": True,
+                    "start_param": str(start_param)
+                }
+                res = await client(RequestAppWebViewRequest(**req_p))
+                tok = extract_from_url(getattr(res, "url", None))
+                if tok:
+                    return tok
+        except Exception:
+            pass
 
     # Strategy B: Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
     try:
