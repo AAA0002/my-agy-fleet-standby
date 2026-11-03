@@ -17,7 +17,7 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
     "mrg": {
         "id": "mrg",
         "name": "MRG Miner",
-        "bot_username": "mrgminerbot",
+        "bot_username": "mrgtoken_bot",
         "bot_aliases": ["mrgtoken_bot", "mrgminerbot", 8862173167],
         "master_ref_code": "ref_IRN1G3XD",
         "app_url": "https://app.mrgtoken.xyz/",
@@ -31,8 +31,8 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
     "atf": {
         "id": "atf",
         "name": "ATF Miner",
-        "bot_username": "atfminers_bot",
-        "bot_aliases": ["ATF_AIRDROP_bot", "atfminerbot", 7058204689],
+        "bot_username": "ATF_AIRDROP_bot",
+        "bot_aliases": ["atfminers_bot", "atfminerbot", 7058204689],
         "master_ref_code": "6727787768",
         "app_url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "token_key": "atf_init_data",
@@ -45,8 +45,8 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
     "victors": {
         "id": "victors",
         "name": "Victor's Company",
-        "bot_username": "VictorsCompanyGame",
-        "bot_aliases": ["VictorsCompanybot", 8943931170],
+        "bot_username": "VictorsCompanybot",
+        "bot_aliases": ["VictorsCompanyGame", 8943931170],
         "master_ref_code": "ref_A20AA96F18",
         "app_url": "https://app.victors.company/",
         "token_key": "victors_init_data",

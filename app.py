@@ -482,11 +482,11 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgminerbot"
+MRG_BOT = "mrgtoken_bot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
-ATF_BOT = "atfminers_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanyGame"
+VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -933,10 +933,15 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     for cand in candidates:
         try:
-            bot_ent = await client.get_entity(cand)
-            bot_in = await client.get_input_entity(bot_ent)
-            if bot_ent and bot_in:
+            cand_ent = await client.get_entity(cand)
+            cand_in = await client.get_input_entity(cand_ent)
+            if getattr(cand_ent, "bot", False):
+                bot_ent = cand_ent
+                bot_in = cand_in
                 break
+            elif not bot_ent:
+                bot_ent = cand_ent
+                bot_in = cand_in
         except Exception:
             continue
 
