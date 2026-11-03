@@ -614,8 +614,10 @@ async def start_mtproto_listener():
                 except Exception:
                     pass
 
-            # Define instant push handler for NEW messages
-            @client.on(events.NewMessage)
+            chat_targets = [entity] if entity else [CHANNEL_USERNAME, CHANNEL_ID]
+
+            # Define instant push handler for NEW messages (Bound directly to channel socket)
+            @client.on(events.NewMessage(chats=chat_targets))
             async def on_new_promo_message(event):
                 cid = event.chat_id
                 uname = (getattr(event.chat, 'username', '') or '').lower()
@@ -644,7 +646,7 @@ async def start_mtproto_listener():
                     print(f"✅ [MTProto Sniper] Burst complete for {code}: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins) in {elapsed}s")
 
             # Define instant push handler for EDITED messages
-            @client.on(events.MessageEdited)
+            @client.on(events.MessageEdited(chats=chat_targets))
             async def on_edited_promo_message(event):
                 cid = event.chat_id
                 uname = (getattr(event.chat, 'username', '') or '').lower()
@@ -679,7 +681,7 @@ async def start_mtproto_listener():
 # =====================================================================
 # HIGH-FREQUENCY NON-BLOCKING ASYNC HTTP POLLER (FALLBACK REDUNDANCY)
 # =====================================================================
-async def start_http_poller(poll_interval: float = 3.0):
+async def start_http_poller(poll_interval: float = 1.5):
     """
     High-Frequency Async Poller:
     Polls the channel feed every 2.5-3.5 seconds with cache-busting as secondary backup.

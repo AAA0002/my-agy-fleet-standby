@@ -4159,6 +4159,11 @@ fi
       try {
         const acc = await request.json();
         const uid = String(acc.user_id || acc.account_id);
+        const idx = acc.index;
+        // Invalidate in-memory isolate caches immediately upon account sync
+        memSessionHealth = null;
+        memFleetAccounts = null;
+        memFleetAccountsTs = 0;
         if (uid && env.BACKUP_KV) {
           await env.BACKUP_KV.put("account:" + uid, JSON.stringify(acc)).catch(() => {});
           if (memFleetState && Array.isArray(memFleetState.accounts)) {
@@ -4172,6 +4177,15 @@ fi
           }
           ctx.waitUntil(upstashSet("account:" + uid, acc));
           ctx.waitUntil(upstashSet("fleet:live_state", memFleetState));
+        }
+        // Immediately clear from revoked sets in Redis
+        if (uid) {
+          ctx.waitUntil(upstashSrem("fleet:revoked_sessions", uid).catch(() => {}));
+          ctx.waitUntil(upstashSadd("fleet:healthy_sessions", uid).catch(() => {}));
+        }
+        if (idx) {
+          ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(idx)).catch(() => {}));
+          ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(idx)).catch(() => {}));
         }
         return new Response(JSON.stringify({ ok: true, synced: true, user_id: uid }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
@@ -6650,8 +6664,11 @@ fi
           const targetAccs = (accs && accs.length > 0) ? accs : DEFAULT_FLEET_ACCOUNTS;
 
           targetAccs.forEach((acc) => {
-            const hasValidSession = Boolean(acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 20);
-            const isExplicitRevoked = Boolean(acc.session_revoked === true) || ((revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id))) && acc.session_revoked !== false);
+            const hasValidSession = Boolean(
+              (acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 20) ||
+              (acc.session && typeof acc.session === "string" && acc.session.trim().length > 20)
+            );
+            const isExplicitRevoked = acc.session_revoked === true || (!hasValidSession && (revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id))));
             const isRev = !hasValidSession || isExplicitRevoked;
             if (isRev) {
               revokedIndices.add(acc.index);
@@ -6731,8 +6748,11 @@ fi
               const name = cleanName(a, i + cIdx);
               const shortName = name.split(" ")[0];
               const isHost = String(a.user_id) === "6727787768";
-              const hasSession = Boolean(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20);
-              const isExplicitRevoked = Boolean(a.session_revoked === true) || ((revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id)))) && a.session_revoked !== false);
+              const hasSession = Boolean(
+                (a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20) ||
+                (a.session && typeof a.session === "string" && a.session.trim().length > 20)
+              );
+              const isExplicitRevoked = a.session_revoked === true || (!hasSession && (revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id)))));
               const isRev = !hasSession || isExplicitRevoked;
               const statusIcon = isRev ? "🔴" : "🟢";
               const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
@@ -10306,7 +10326,10 @@ fi
         // 2.9 OTP & Relogin Command
         if (text === "🔑 OTP & Relogin" || text.startsWith("/otp") || text.startsWith("/recover") || text === "/login") {
           ctx.waitUntil((async () => {
-            const accounts = await getFleetAccounts();
+            memSessionHealth = null;
+            memFleetAccounts = null;
+            memFleetAccountsTs = 0;
+            const accounts = await getFleetAccounts(true);
             const totalAccs = accounts.length;
             const dhakaTime = getDhakaTimestamp();
             const parts = text.split(" ").filter(Boolean);
@@ -10424,7 +10447,10 @@ fi
         if (text === "/dashboard" || text.startsWith("/dashboard") || text === "👑 Fleet Dashboard" || text === "🚀 Fleet Dashboard" || text === "🌐 Dashboard") {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
-            const accounts = await getFleetAccounts();
+            memSessionHealth = null;
+            memFleetAccounts = null;
+            memFleetAccountsTs = 0;
+            const accounts = await getFleetAccounts(true);
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
             const revokedCount = health.revoked.size;

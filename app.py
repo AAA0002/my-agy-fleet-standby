@@ -1169,6 +1169,77 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         except Exception:
             pass
 
+    # Priority 1: High-Speed Inline Keyboard buttons in existing bot messages (Fastest, zero-spam, <300ms)
+    try:
+        msgs = await client.get_messages(bot_ent, limit=15)
+        for m in msgs:
+            if not m.out and m.buttons:
+                for row in m.buttons:
+                    for b in row:
+                        raw_b = getattr(b, "button", b)
+                        # 1. Direct web_app attribute
+                        w_url = getattr(getattr(raw_b, "web_app", None), "url", None)
+                        if w_url and not w_url.startswith("https://t.me/"):
+                            try:
+                                req_p = {
+                                    "peer": bot_ent,
+                                    "bot": bot_ent,
+                                    "platform": "android",
+                                    "url": w_url
+                                }
+                                if start_param:
+                                    req_p["start_param"] = str(start_param)
+                                res = await client(RequestWebViewRequest(**req_p))
+                                tok = extract_from_url(getattr(res, "url", None))
+                                if tok:
+                                    return tok
+                            except Exception:
+                                pass
+                        b_url = getattr(raw_b, "url", None)
+                        if b_url:
+                            if "tgWebApp" in b_url:
+                                tok = extract_from_url(b_url)
+                                if tok:
+                                    return tok
+                            if "t.me/" in b_url:
+                                tok = await extract_from_tme_link(client, b_url, start_param, chat_peer=bot_in)
+                                if tok:
+                                    return tok
+                            elif not b_url.startswith("https://t.me/"):
+                                try:
+                                    req_p = {
+                                        "peer": bot_ent,
+                                        "bot": bot_ent,
+                                        "platform": "android",
+                                        "url": b_url
+                                    }
+                                    if start_param:
+                                        req_p["start_param"] = str(start_param)
+                                    res = await client(RequestWebViewRequest(**req_p))
+                                    tok = extract_from_url(getattr(res, "url", None))
+                                    if tok:
+                                        return tok
+                                except Exception:
+                                    pass
+                        # 3. Dynamic Callback Button Answer (Emulates user clicking the launch button in chat)
+                        if hasattr(b, "click") and any(w in (b.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                            try:
+                                ans = await asyncio.wait_for(b.click(), timeout=4.0)
+                                if ans:
+                                    ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
+                                    if ans_url:
+                                        if "t.me/" in ans_url:
+                                            tok = await extract_from_tme_link(client, ans_url, start_param, chat_peer=bot_in)
+                                            if tok:
+                                                return tok
+                                        tok = extract_from_url(ans_url)
+                                        if tok:
+                                            return tok
+                            except Exception:
+                                pass
+    except Exception:
+        pass
+
     bot_user_in = None
     try:
         from telethon import utils as tele_utils
@@ -1276,78 +1347,6 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 tok = extract_from_url(getattr(res, "url", None))
                 if tok:
                     return tok
-    except Exception:
-        pass
-
-    # Strategy C: Inline Keyboard buttons in existing bot messages (Zero-spam: never send /start)
-    try:
-        msgs = await client.get_messages(bot_ent, limit=25)
-        for m in msgs:
-            if not m.out and m.buttons:
-                for row in m.buttons:
-                    for b in row:
-                        raw_b = getattr(b, "button", b)
-                        # 1. Direct web_app attribute
-                        w_url = getattr(getattr(raw_b, "web_app", None), "url", None)
-                        if w_url and not w_url.startswith("https://t.me/"):
-                            try:
-                                req_p = {
-                                    "peer": bot_ent,
-                                    "bot": bot_ent,
-                                    "platform": "android",
-                                    "url": w_url
-                                }
-                                if start_param:
-                                    req_p["start_param"] = str(start_param)
-                                res = await client(RequestWebViewRequest(**req_p))
-                                tok = extract_from_url(getattr(res, "url", None))
-                                if tok:
-                                    return tok
-                            except Exception:
-                                pass
-                        b_url = getattr(raw_b, "url", None)
-                        if b_url:
-                            if "tgWebApp" in b_url:
-                                tok = extract_from_url(b_url)
-                                if tok:
-                                    return tok
-                            # MiniApp link (e.g., https://t.me/VictorsCompanyGame/app or https://t.me/mrgminerbot/app?startapp=...)
-                            if "t.me/" in b_url:
-                                tok = await extract_from_tme_link(client, b_url, start_param, chat_peer=bot_in)
-                                if tok:
-                                    return tok
-                            elif not b_url.startswith("https://t.me/"):
-                                try:
-                                    req_p = {
-                                        "peer": bot_ent,
-                                        "bot": bot_ent,
-                                        "platform": "android",
-                                        "url": b_url
-                                    }
-                                    if start_param:
-                                        req_p["start_param"] = str(start_param)
-                                    res = await client(RequestWebViewRequest(**req_p))
-                                    tok = extract_from_url(getattr(res, "url", None))
-                                    if tok:
-                                        return tok
-                                except Exception:
-                                    pass
-                        # 3. Dynamic Callback Button Answer (Emulates user clicking the launch button in chat)
-                        if hasattr(b, "click") and any(w in (b.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
-                            try:
-                                ans = await b.click()
-                                if ans:
-                                    ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
-                                    if ans_url:
-                                        if "t.me/" in ans_url:
-                                            tok = await extract_from_tme_link(client, ans_url, start_param, chat_peer=bot_in)
-                                            if tok:
-                                                return tok
-                                        tok = extract_from_url(ans_url)
-                                        if tok:
-                                            return tok
-                            except Exception:
-                                pass
     except Exception:
         pass
 
@@ -7716,7 +7715,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
             "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
             "7954290138", "8841038141", "8975442879", "8937908003", "8609131528",
-            "8669217201"
+            "8669217201", "9272631973"
         }
         if accounts is None:
             accounts = await fetch_accounts_from_cloud()
