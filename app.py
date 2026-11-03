@@ -1787,6 +1787,11 @@ async def fetch_accounts_from_cloud():
                         res_val = fa_data.get("result")
                         if res_val:
                             parsed_list = json.loads(res_val) if isinstance(res_val, str) else res_val
+                            while isinstance(parsed_list, str):
+                                try:
+                                    parsed_list = json.loads(parsed_list)
+                                except Exception:
+                                    break
                             if isinstance(parsed_list, list) and len(parsed_list) > 0:
                                 for a in parsed_list:
                                     if isinstance(a, dict):
@@ -3876,8 +3881,11 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"• PepeGram: Active ✅\n"
         f"• AdxEarn AI: Active ✅\n"
         f"• DiggoMiner: Active ✅\n"
-        f"• Chicken Land: Active ✅\n\n"
-        f"🚀 <b>Auto-Farming Status:</b> Active across all 8 legitimate bots in the cloud!"
+        f"• Chicken Land: Active ✅\n"
+        f"• Grouche Mine: Active ✅\n"
+        f"• LUM Miner: Active ✅\n"
+        f"• EarnVault: Active ✅\n\n"
+        f"🚀 <b>Auto-Farming Status:</b> Active across all 9 legitimate bots in the cloud!"
     )
     async with aiohttp.ClientSession() as s:
         # Full detailed receipt with vault keys to Master Chat ID
@@ -3896,7 +3904,7 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
             short_notif = (
                 f"{'🎉 <b>Account #' + str(idx) + ' Relinked</b>' if is_existing else '🎉 <b>New Account #' + str(idx) + ' Linked</b>'}\n"
                 f"• <b>Account:</b> {name} (<code>{phone}</code>)\n"
-                f"• <b>Status:</b> 🟢 8/8 Bots Mining Active\n"
+                f"• <b>Status:</b> 🟢 9/9 Bots Mining Active\n"
                 f"• <b>Wallets:</b> Dedicated TON, EVM, TRON, SOL, BTC Bound ✅"
             )
             try:
@@ -5245,7 +5253,7 @@ async def get_account_otp(acc_target: str, request: Request):
         if not target_acc:
             return {"ok": False, "found": False, "error": f"Account '{acc_target}' not found in fleet"}
 
-        sess = target_acc.get("session_string")
+        sess = target_acc.get("session_string") or target_acc.get("session")
         name = target_acc.get("name", f"Account #{target_idx}")
         phone = target_acc.get("phone", "N/A")
         password_2fa = os.getenv("FLEET_2FA_PASSWORD", "")

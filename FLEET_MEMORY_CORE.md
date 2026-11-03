@@ -67,7 +67,7 @@
 | **11** | MD. ARIF HOSSAIN 11 | `None` | `8190649727` | `+8801571089931` | Isolated 24-Word Seed | TON: `UQA_VwI...Jd0` | 🟢 Active |
 | **12** | Sanzida Shimu 12 | `None` | `7487048946` | `+8801774578536` | Isolated 24-Word Seed | TON: `UQCvTzJ...1u_` | 🟢 Active |
 | **13** | Abid (3) 13 | `None` | `8741547543` | `+8801838268380` | Isolated 24-Word Seed | TON: `UQDwT-3...xK-` | 🟢 Active |
-| **14** | Rohan Sharma 14 | `None` | `8727040932` | `+918930504750` | Isolated 24-Word Seed | TON: `UQCfJ0X...r8K` | 🟢 Active |
+| **14** | Rohan Sharma 14 | `None` | `8727040932` | `+918930504750` | Isolated 24-Word Seed | TON: `UQCfJ0X...r8K` | 🔴 Needs Re-link |
 | **15** | Tasnim Farhana 15 | `None` | `7749125802` | `+8801906045479` | Isolated 24-Word Seed | TON: `UQAxL-2...4hV` | 🟢 Active |
 | **16** | Rashedul Islam 16 | `None` | `7954290138` | `+8801304151082` | Isolated 24-Word Seed | TON: `UQDGZ6E...yYx` | 🟢 Active |
 | **17** | Kawsar Mahmud 17 | `None` | `8841038141` | `+8801879273559` | Isolated 24-Word Seed | TON: `UQDjL-9...8bZ` | 🟢 Active |
@@ -76,6 +76,8 @@
 | **20** | **Asaduzzaman Sarker** | `@Asaduzzamansarkar` | `8609131528` | `+8801312863569` | Isolated 24-Word Seed | TON: `UQCdmqN...0DE` | 🟢 Active |
 | **21** | **Aaaa201** | `@AAA201AAA` | `8669217201` | `+8801913962342` | Isolated 24-Word Seed | TON: `UQDH-Fr..._jw` | 🟢 Active |
 | **22** | **AAA 22** | `@aaa022a` | `9272631973` | `+8801732100769` | Isolated 24-Word Seed | TON: `UQDNmNk...HGJ` | 🟢 Active |
+| **23** | **Abid Hasan** | `@aaa023aa` | `9106746905` | `+8801788601627` | Isolated 24-Word Seed | TON: `UQCLQ4H...48B` | 🟢 Active |
+| **24** | **AAA 24** | `@aaa024a` | `8972499908` | `+8801794783852` | Isolated 24-Word Seed | TON: `UQBCmJ8...8Qk` | 🟢 Active |
 
 ---
 
