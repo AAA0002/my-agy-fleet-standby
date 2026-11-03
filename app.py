@@ -8527,6 +8527,41 @@ async def debug_account_session(uid: str, request: Request):
                     except Exception as ape:
                         d_info["RequestAppWebViewRequest"] = f"{type(ape).__name__}: {ape}"
 
+                    # Test GetBotMenuButtonRequest
+                    try:
+                        menu = await cl(functions.bots.GetBotMenuButtonRequest(user_id=t_in))
+                        m_btn = getattr(menu, "button", None)
+                        d_info["menu_button_type"] = type(m_btn).__name__
+                        m_url = getattr(m_btn, "url", None)
+                        d_info["menu_button_url"] = m_url
+                        if m_url:
+                            try:
+                                r_mwv = await cl(RequestWebViewRequest(peer=t_in, bot=u_in or t_in, platform="android", url=m_url, from_bot_menu=True))
+                                d_info["RequestWebView_Menu"] = "OK" if getattr(r_mwv, "url", None) else "No url"
+                            except Exception as m_err:
+                                d_info["RequestWebView_Menu"] = f"{type(m_err).__name__}: {m_err}"
+                    except Exception as me:
+                        d_info["menu_button_error"] = str(me)
+
+                    # Inspect recent messages in chat
+                    try:
+                        c_msgs = await cl.get_messages(t_ent, limit=3)
+                        d_info["chat_messages"] = []
+                        for cm in c_msgs:
+                            b_info = []
+                            if cm.buttons:
+                                for row in cm.buttons:
+                                    for btn in row:
+                                        raw = getattr(btn, "button", btn)
+                                        b_info.append({
+                                            "text": btn.text,
+                                            "type": type(raw).__name__,
+                                            "url": getattr(raw, "url", None) or getattr(getattr(raw, "web_app", None), "url", None)
+                                        })
+                            d_info["chat_messages"].append({"id": cm.id, "text": cm.raw_text[:50] if cm.raw_text else "", "buttons": b_info})
+                    except Exception as cme:
+                        d_info["chat_messages_error"] = str(cme)
+
                 except Exception as ex:
                     d_info["entity_resolved"] = False
                     d_info["entity_error"] = f"{type(ex).__name__}: {ex}"
