@@ -277,3 +277,16 @@
    - **TON Coins** -> Swept to Master Binance TON Vault: `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`
    - **EVM (BSC / Arbitrum / USDT)** -> Swept to Master EVM Vault: `0xfda4182001672b9f0f09e2118242e543e35ed5ce`
 3. **Disaster Recovery**: All keys are secured in `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, and encrypted in disaster recovery archives dispatched to `@myagyai` Telegram vault.
+| 22 | **AAA 22** | `+8801732100769` | `9272631973` | `UQDNmN...EHGJ` | `0x3b5f...2250` | `TFP9LQ...hYK8` | `7JgzCj...Gebc` | `13fbc2...bHnW` |
+
+### 22. AAA 22 (Worker)
+- **Phone Number:** `+8801732100769`
+- **Telegram ID:** `9272631973`
+- **Telegram Username:** `aaa022a`
+- **Account Status:** `active`
+- **TON Wallet (v4r2):** `UQDNmNkZfuonpZ_3G_YZUB8kbNUsHQXOm2mA6YUf3ZqREHGJ`
+- **EVM Wallet (BSC / Arb):** `0x3b5f8d290f09488d2142e10a852af8ed6df82250`
+- **TRON Wallet (TRC-20):** `TFP9LQTL5dFsENoc6W813NyZEXZ2SYhYK8`
+- **Solana Wallet (SOL):** `7JgzCj2TDauNBGJ68rbimEXcPwomMCvnDRK4H5GBGebc`
+- **Bitcoin Wallet (BTC):** `13fbc281E9NFnZS5bLwCyZ71rR3qfAbHnW`
+- **Custody:** `Self-Custody (Gram Wallet / Tonkeeper)`

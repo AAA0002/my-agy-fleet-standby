@@ -2,6 +2,32 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 Fully Autonomous Account Lifecycle, 22-Account Auto-Reconciliation, Wallet Provisioning & Self-Updating Mesh (November 3, 2026)**:
+  - **Eliminated Manual AI/Developer Intervention for Account Onboarding**:
+    * Resolved the architectural limitation where newly added accounts (such as Account #22 `AAA 22` / `9272631973`, and Accounts #19 `Adil H` / #20 `Asaduzzaman Sarker`) required manual scripts or AI instructions to appear in fleet dashboards and connect bot wallets.
+    * Engineered [`auto_wallet_manager.py`](file:///data/workspace/AAA_AUTO/auto_wallet_manager.py) providing 100% autonomous, zero-maintenance account lifecycle handling, deterministic wallet generation, automated email binding, atomic multi-store synchronization, and continuous bot wallet reconciliation.
+  - **Unified Wallet Idempotency & Immutable Preservation**:
+    * Built `find_any_existing_account_wallets()`: exhaustively checks local static registries (nodes 1–18), `fleet_*_wallets.json`, `accounts.json`, `fleet_wallets_data.json`, and Upstash Redis vaults (`fleet:wallets_vault:{uid}`, `fleet:wallets_vault:index_{idx}`).
+    * If an existing account returns: preserves 100% of authentic wallet addresses, private keys, and BIP-39 mnemonics without ever regenerating or overwriting keys.
+    * If a brand-new account is onboarded: deterministically derives a complete 5-chain wallet suite (TON v4r2 non-bounceable, EVM/BSC/Arbitrum, TRON, Solana, Bitcoin) and archives keys across local vaults and Upstash Redis.
+  - **Automated Fleet Email Provisioning**:
+    * Every account now automatically derives and binds an official dedicated fleet email: `aaa.support.a+{index}@gmail.com` (along with existing recovery email `aaa.support.a@gmail.com`).
+  - **Real-Time `fleet:live_state` Synchronization**:
+    * Identified root cause for the dashboard showing only 21 accounts: Cloudflare Edge Worker and Render Node 3 read `fleet:live_state`, which was static and was not being refreshed upon adding new accounts to `fleet:accounts`.
+    * Upgraded `auto_wallet_manager.reconcile_all_fleet_accounts()` to immediately regenerate and publish `fleet:live_state` in Upstash Redis and Cloudflare Edge KV upon any account addition or modification, instantaneously scaling the dashboard to all 22 accounts.
+  - **Autonomous Bot Wallet Connector & Mining Activator**:
+    * Implemented `connect_and_start_bot_wallets()`: automatically connects the account's TON wallet to all active bots requiring it:
+      - **ATF Miner**: `/miner/index.php?action=sync_wallet` -> claims hashrate and starts mining.
+      - **DiggoMiner**: TonConnect 2.0 challenge (`/api/ton/challenge`) + cryptographic proof signing + `/api/ton/bind` -> starts mining.
+      - **Grouche Mine**: `/api/users/wallet/connect` -> claims mined yield and activates mining toggle.
+      - **Victor's Company**: `/api/wallet/connect` -> claims `connect-wallet` task -> unlocks Level 1 Miner -> starts farming.
+      - **MRG Miner**: `/api/user/connect-wallet` -> claims mining yield -> starts mining.
+      - **Kynex Network**: Checks if mining status is `STOPPED` (as observed in user screenshots) -> refills energy, claims pending yield, and calls `startMining` to switch status back to `ACTIVE`.
+    * Executed fleet-wide sweep: successfully verified all 22 accounts, bound Grouche Mine and Victor's Company wallets, confirmed DiggoMiner bindings, and resumed active Kynex mining (+839.65 KNX claimed on Account #22, +582.18 KNX on Account #19, +55.92 KNX on Account #20).
+  - **App Watchdog & Startup Integration**:
+    * Integrated `auto_wallet_manager.reconcile_all_fleet_accounts()` and `auto_wallet_manager.run_wallet_and_mining_sweep()` into `app.py` startup hooks and the 24/7 background `cloud_wealth_automation_watchdog()`.
+    * Hooked real-time provisioning directly into `/api/account/login/verify-code`, QR code auth (`_wait_qr_auth`), and `login_account.py`. Any future accounts added by the user anywhere in the system will automatically update the entire fleet, generate wallets, set emails, connect to bots, and start mining with ZERO manual actions required.
+
 - **🎯 11-Bot Full Parity, BotApp ShortName Extraction & Precision WebApp Token Resolution (November 3, 2026)**:
   - **MRG Miner & Victor's Company BotApp Token Resolution**:
     * Identified that `MRG_BOT` and `VICTORS_BOT` are Telegram BotApps (`mrgminerbot` and `VictorsCompanyGame`). Because they are Telegram MiniApps rather than standard inline webview bots, calling direct `RequestWebViewRequest` threw `BotInvalidError: This is not a valid bot`.

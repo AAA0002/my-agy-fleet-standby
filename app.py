@@ -16,6 +16,7 @@ import traceback
 import uuid
 import struct
 from typing import Any
+import auto_wallet_manager
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 try:
     import ecdsa
@@ -2295,6 +2296,8 @@ async def api_chickenland_snipe(request: Request, code: str = "", buy_hens: bool
 @app.on_event("startup")
 async def on_startup():
     asyncio.create_task(load_fleet_wallets_from_cloud())
+    asyncio.create_task(asyncio.to_thread(auto_wallet_manager.reconcile_all_fleet_accounts))
+    asyncio.create_task(auto_wallet_manager.run_wallet_and_mining_sweep())
     asyncio.create_task(token_health_and_refresh_watchdog())
     asyncio.create_task(cloud_wealth_automation_watchdog())
     asyncio.create_task(autonomous_fleet_ad_farmer_loop())
@@ -4917,49 +4920,26 @@ async def verify_login_code(request: Request):
                     pass
             return res
 
-        # Determine account index & preserve authentic fleet index if re-linking
+        # Fully autonomous account lifecycle, wallet preservation, email & live-state sync
         req_index = data.get("index")
         cur_accs = await fetch_accounts_from_cloud()
-        existing_idx, existing_wallets, existing_name = find_existing_account_wallets(
+        existing_idx, existing_wallets, existing_name = auto_wallet_manager.find_any_existing_account_wallets(
             user_id=user_id,
             phone=phone,
-            index=req_index,
-            cloud_accounts=cur_accs
+            index=req_index
         )
-
-        if existing_wallets:
-            target_idx = existing_idx or (int(req_index) if req_index else 1)
-            acc_name = existing_name or acc_name
-            wallets = existing_wallets
-            is_existing = True
-            logger.info(f"[{acc_name}] 🛡️ Existing account verified (ID {user_id}, Index #{target_idx}). Preserving authentic immutable wallets!")
-        else:
-            # 100% BRAND NEW ACCOUNT: Generate dedicated 5-chain wallet suite!
-            is_existing = False
-            all_indices = [a.get("index", 0) for a in (cur_accs or []) if isinstance(a, dict) and a.get("index")]
-            for s in FLEET_STATIC_REGISTRY:
-                if s.get("index"): all_indices.append(s["index"])
-            max_idx = max(all_indices) if all_indices else 18
-            taken_indices = set(all_indices)
-            if req_index and int(req_index) > 18 and int(req_index) not in taken_indices:
-                target_idx = int(req_index)
-            else:
-                target_idx = max_idx + 1
-            wallets = generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
-            logger.info(f"[{acc_name}] 💎 Brand-new account onboarded (ID {user_id}, Index #{target_idx}). Generated dedicated 5-chain wallets!")
-
+        is_existing = bool(existing_wallets)
         acc_entry.update({
-            "name": acc_name,
-            "index": target_idx,
-            "proxy": None,
-            "evm_wallet": wallets["evm"],
-            "ton_wallet": wallets["ton"],
-            "tron_wallet": wallets["tron"],
-            "solana_wallet": wallets["solana"],
-            "btc_wallet": wallets["btc"],
-            "bnb_wallet": wallets["evm"]["address"]
+            "user_id": user_id,
+            "name": existing_name or acc_name,
+            "phone": phone,
+            "username": uname,
+            "index": existing_idx or (int(req_index) if req_index else None),
+            "proxy": None
         })
-        save_and_archive_account_wallets(acc_entry, wallets)
+        acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
+        auto_wallet_manager.reconcile_all_fleet_accounts()
+        asyncio.create_task(auto_wallet_manager.connect_and_start_bot_wallets(acc_entry))
         asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
 
         # Automatically bind referrals for brand new accounts or accounts with unbound bots (master account excluded)
@@ -5148,45 +5128,26 @@ async def start_qr_login(request: Request):
                         return
 
                     cur_accs = await fetch_accounts_from_cloud()
-                    existing_idx, existing_wallets, existing_name = find_existing_account_wallets(
+                    existing_idx, existing_wallets, existing_name = auto_wallet_manager.find_any_existing_account_wallets(
                         user_id=uid,
                         phone=phone,
-                        index=req_index,
-                        cloud_accounts=cur_accs
+                        index=req_index
                     )
-                    if existing_wallets:
-                        target_idx = existing_idx or (len(cur_accs) + 1)
-                        name = existing_name or name
-                        wallets = existing_wallets
-                        is_existing = True
-                        logger.info(f"[{name}] 🛡️ Existing account verified via QR (ID {uid}, Index #{target_idx}). Preserving authentic immutable wallets!")
-                    else:
-                        all_indices = [a.get("index", 0) for a in (cur_accs or []) if isinstance(a, dict) and a.get("index")]
-                        for s in FLEET_STATIC_REGISTRY:
-                            if s.get("index"): all_indices.append(s["index"])
-                        target_idx = int(req_index) if req_index else ((max(all_indices) + 1) if all_indices else 19)
-                        wallets = generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
-                        is_existing = False
-                        logger.info(f"[{name}] 💎 Brand-new account onboarded via QR (ID {uid}, Index #{target_idx}). Generated dedicated 5-chain wallets!")
-
+                    is_existing = bool(existing_wallets)
                     acc_entry = {
-                        "index": target_idx,
-                        "name": name,
+                        "index": existing_idx or (int(req_index) if req_index else None),
+                        "name": existing_name or name,
                         "username": uname,
                         "user_id": uid,
                         "phone": phone,
                         "session_string": sess_str,
                         "added_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "status": "active",
-                        "proxy": None,
-                        "evm_wallet": wallets["evm"],
-                        "ton_wallet": wallets["ton"],
-                        "tron_wallet": wallets["tron"],
-                        "solana_wallet": wallets["solana"],
-                        "btc_wallet": wallets["btc"],
-                        "bnb_wallet": wallets["evm"]["address"]
+                        "proxy": None
                     }
-                    save_and_archive_account_wallets(acc_entry, wallets)
+                    acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
+                    auto_wallet_manager.reconcile_all_fleet_accounts()
+                    asyncio.create_task(auto_wallet_manager.connect_and_start_bot_wallets(acc_entry))
                     asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
                     needs_referrals = (not is_existing or not is_account_referrals_bound(acc_entry)) and str(uid) != "6727787768"
                     if needs_referrals:
@@ -9505,6 +9466,12 @@ async def cloud_wealth_automation_watchdog():
                 continue
 
             cycle_count += 1
+            # 0. Autonomous account reconciliation, wallet sync & real-time self-healing
+            try:
+                auto_wallet_manager.reconcile_all_fleet_accounts()
+            except Exception as re_err:
+                logger.debug(f"[Cloud Wealth Watchdog] Reconcile note: {re_err}")
+
             accounts = await fetch_accounts_from_cloud()
             if accounts:
                 logger.info(f"[Cloud Wealth Watchdog] ⚡ Running Scheduled Cloud Cycle #{cycle_count} across {len(accounts)} accounts...")

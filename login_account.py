@@ -918,45 +918,24 @@ async def interactive_login():
 
     # Preserve authentic static fleet wallets or generate isolated 5-chain wallets for genuinely new worker account
     try:
-        from fleet_wallet_provisioner import (
-            find_existing_account_wallets,
-            generate_multichain_wallet_suite,
-            save_and_archive_account_wallets
-        )
+        # Fully autonomous account lifecycle, wallet preservation, email & live-state sync
+        import auto_wallet_manager
         cur_accs = load_accounts()
-        existing_idx, existing_wallets, existing_name = find_existing_account_wallets(
-            user_id=me.id,
-            phone=phone,
-            cloud_accounts=cur_accs
-        )
-        if existing_wallets:
-            next_idx = existing_idx or (len(cur_accs) + 1)
-            name = existing_name or name
-            wallets = existing_wallets
-            print(f"🔒 [IMMUTABILITY PRESERVED] Re-using authentic wallet suite for account #{next_idx} ({name})")
-        else:
-            all_indices = [a.get("index", 0) for a in (cur_accs or []) if isinstance(a, dict) and a.get("index")]
-            next_idx = (max(all_indices) + 1) if all_indices else (len(cur_accs) + 1)
-            wallets = generate_multichain_wallet_suite(next_idx, name, me.id, phone, username)
-            print(f"💎 [NEW ACCOUNT ONBOARDED] Generated dedicated 5-chain wallets for account #{next_idx} ({name})")
-
-        acc_entry.update({
-            "name": name,
-            "index": next_idx,
-            "evm_wallet": wallets["evm"],
-            "ton_wallet": wallets["ton"],
-            "tron_wallet": wallets["tron"],
-            "solana_wallet": wallets["solana"],
-            "btc_wallet": wallets["btc"],
-            "bnb_wallet": wallets["evm"]["address"]
-        })
-        save_and_archive_account_wallets(acc_entry, wallets)
-        print(f"💎 Saved & Archived 5-chain isolated wallets for {name}:")
-        print(f"   • TON (v4r2): {wallets['ton']['address']}")
-        print(f"   • EVM (BSC):  {wallets['evm']['address']}")
-        print(f"   • TRON:       {wallets['tron']['address']}")
-        print(f"   • Solana:     {wallets['solana']['address']}")
-        print(f"   • Bitcoin:    {wallets['btc']['address']}")
+        acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
+        wallets = {
+            "ton": acc_entry.get("ton_wallet", {}),
+            "evm": acc_entry.get("evm_wallet", {}),
+            "tron": acc_entry.get("tron_wallet", {}),
+            "solana": acc_entry.get("solana_wallet", {}),
+            "btc": acc_entry.get("btc_wallet", {})
+        }
+        print(f"💎 Verified 5-chain isolated wallets for {acc_entry.get('name')}:")
+        print(f"   • TON (v4r2): {wallets['ton'].get('address')}")
+        print(f"   • EVM (BSC):  {wallets['evm'].get('address')}")
+        print(f"   • TRON:       {wallets['tron'].get('address')}")
+        print(f"   • Solana:     {wallets['solana'].get('address')}")
+        print(f"   • Bitcoin:    {wallets['btc'].get('address')}")
+        print(f"   • Email:      {acc_entry.get('email')}")
     except Exception as we:
         print(f"⚠️ Wallet generation note: {we}")
 
@@ -1051,6 +1030,11 @@ def sync_account_to_clouds_sync(acc_entry: dict):
         with urllib.request.urlopen(pipe_req, timeout=10) as p_resp:
             pass
         print(f"☁️ Successfully synchronized Account #{acc_entry.get('index', len(cur_accs))} ({acc_entry.get('name')}) to Upstash Redis fleet:accounts ({len(cur_accs)} total)!")
+        try:
+            import auto_wallet_manager
+            auto_wallet_manager.reconcile_all_fleet_accounts()
+        except Exception:
+            pass
     except Exception as e:
         print(f"⚠️ Cloud sync note: {e}")
 
