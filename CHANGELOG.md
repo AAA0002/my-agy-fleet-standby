@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Full-Fleet 9-Bot Audit, Telegram Admin Bot Command Deduplication & 24-Account Auto-Farming Self-Healing Hardening (November 3, 2026)**:
+  - **Admin Bot Telegram Descriptions & Commands Cleanup (`deploy_both_cf_workers.py`)**:
+    * **Bot Description Accuracy**: Synchronized `@myagyai` description to declare the canonical 24-account fleet and 9 legitimate bots (ATF, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche Mine, LUM Miner, EarnVault), removing redundant bot repetitions.
+    * **Command Deduplication**: Deduplicated `admin_commands_payload` so `chicken`, `grouche`, and `earnvault` are listed exactly once without duplicate collisions.
+    * **User Bot Commands Synchronization**: Updated `/pools` command description from 11 to 9 supported cloud mining pools.
+    * **Operations Center Telemetry Alignment**: Replaced outdated "11 Legitimate Active Bots" header and duplicate pool listings in `buildOperationsCenterText()` with the clean 9 legitimate active bot matrix.
+    * **Account Name Disambiguation & User ID Fallback**: Enhanced `cleanName()` to look up canonical account names by `user_id` when index is missing, and standardized naming for `AAA 24`, `AAA 22`, and `Abid (3)`.
+  - **Auto Bot Farming & Promo Sniper Background Watchdog Hardening (`app.py`)**:
+    * **Watcher Auto-Recovery Loop**: Wrapped `run_unified_sniper_daemon` in a resilient `while True:` auto-restart loop inside `chickenland_promo_watcher_loop()`, preventing silent termination on transient socket disconnects.
+    * **Multi-Alias Token Key Detection**: Expanded `farm_single_account_bots` and individual bot routines (`_farm_chickenland`, `_farm_grouchemine`, `_farm_lumeon`, `_farm_earnvault`) to recognize all token alias formats (`chickenland_init_data` / `chicken_init_data`, `grouchemine_init_data` / `grc_init_data`, `lumeon_init_data` / `lum_init_data`, `earnvault_init_data` / `ev_init_data`).
+    * **Base Local Accounts Durability**: Integrated local `accounts.json` discovery into `fetch_accounts_from_cloud()` prior to network sync.
+    * **Stale Bot Count Purification**: Corrected docstrings and loggers from 8 bots to 9 legitimate bots across all farming routines and channel management modules.
+  - **Web Dashboard & UI Ground-Truth Consistency (`public/`, `public_admin/`, `dashboard.html`)**:
+    * Updated harvest toasts and pool counters from 8 to 9 pools across `dashboard.html`, `admin.html`, and end-user onboarding screens.
+  - **Cloud State & Edge Deployment Verification**:
+    * Synchronized clean canonical names from `accounts.json` into Upstash Redis `fleet:accounts` and individual `account:{uid}` keys (correcting Account #10 `Tanvir Ahmed`).
+    * Deployed updated Edge Worker to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`), synchronizing webhooks, menus, and bot commands.
+
 - **🐔 Chicken Land Dual-Engine Promo Sniper 24-Account Scale-Up & Auto Bot Farming Pipeline Hardening (November 3, 2026)**:
   - **Auto Promo Sniper 24-Account Universal Support (`chickenland_promo_sniper.py`)**:
     * **Resolved Double-Encoded JSON Root Cause**: Fixed `load_fleet_tokens()` so nested/string-serialized `miniapp_tokens` in Upstash Redis is unwrapped iteratively in a loop, preventing silent `AttributeError` exceptions and premature fallback to outdated local 22-account caches.

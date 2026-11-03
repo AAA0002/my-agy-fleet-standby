@@ -1799,7 +1799,22 @@ async def fetch_accounts_from_cloud():
     global FLEET_ACCOUNTS_CACHE
     accounts_map = {}
     
-    # 1. First check in-memory cache
+    # 0. Base local accounts.json if present
+    acc_local = os.path.join(BASE_DIR, "accounts.json")
+    if os.path.exists(acc_local):
+        try:
+            with open(acc_local, "r", encoding="utf-8") as f:
+                l_accs = json.load(f)
+                if isinstance(l_accs, list):
+                    for a in l_accs:
+                        if isinstance(a, dict):
+                            auid = str(a.get("user_id"))
+                            if auid and auid.isdigit():
+                                accounts_map[auid] = a
+        except Exception:
+            pass
+
+    # 1. Check in-memory cache
     if FLEET_ACCOUNTS_CACHE:
         accounts_map.update(FLEET_ACCOUNTS_CACHE)
 
@@ -1936,7 +1951,7 @@ async def fetch_accounts_from_cloud():
     return merged
 
 async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
-    """Universal 8-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
+    """Universal 9-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
     # 1. First, solve deterministically in 0.001ms with zero network requests
     det_ans = solve_challenge_deterministic(question_text)
     if det_ans != "0" or not any(c.isalpha() for c in question_text):
@@ -2361,11 +2376,13 @@ async def chickenland_promo_watcher_loop():
         return
 
     logger.info("[ChickenLand Promo Sniper] 🐔 24/7 Cloud Dual-Engine Watcher initialized on Render Node 3...")
-    try:
-        from chickenland_promo_sniper import run_unified_sniper_daemon
-        await run_unified_sniper_daemon(poll_interval=2.5)
-    except Exception as e:
-        logger.error(f"[ChickenLand Promo Sniper] Unified daemon crashed: {e}")
+    while True:
+        try:
+            from chickenland_promo_sniper import run_unified_sniper_daemon
+            await run_unified_sniper_daemon(poll_interval=2.5)
+        except Exception as e:
+            logger.error(f"[ChickenLand Promo Sniper] Unified daemon crashed: {e}. Restarting in 5s...")
+            await asyncio.sleep(5)
 
 @app.post("/api/chickenland/snipe")
 @app.get("/api/chickenland/snipe")
@@ -2518,7 +2535,7 @@ async def sync_account_tokens_to_clouds(tokens: dict):
 async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     Kicks off initial WebApp mining, completes referral onboarding finish work,
-    and runs first-cycle claims across all 8 legitimate bots:
+    and runs first-cycle claims across all 9 legitimate bots:
     2. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
     4. Kynex Network (energy sync, tasks)
     5. PepeGram (production start, yield claim, slot spin)
@@ -2528,7 +2545,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", "User")
-    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 8 legitimate bots...")
+    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 9 legitimate bots...")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0"
@@ -3200,7 +3217,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
     """
     STRICT IMMUTABILITY GUARD:
     Finds existing account and authentic multi-chain wallets across:
-    1. Static Fleet Registry (21 Accounts)
+    1. Static Fleet Registry (24 Accounts)
     2. public_admin/fleet_wallets_data.json
     3. fleet_ton_wallets.json / fleet_evm_wallets.json / fleet_tron_wallets.json
     4. accounts.json
@@ -3363,7 +3380,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
     return (None, None, None)
 
 def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str, phone: str = "", username: str = "") -> dict:
-    """Returns official fleet wallets for pre-configured accounts (21 Fleet Accounts), or generates unique isolated wallets for new accounts."""
+    """Returns official fleet wallets for pre-configured accounts (24 Fleet Accounts), or generates unique isolated wallets for new accounts."""
     uid = str(user_id or "").strip()
     matched = get_fleet_static_account(account_index=account_index, user_id=user_id, phone=phone)
     if matched:
@@ -6648,7 +6665,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         status["bots"]["diggo"] = "skipped (no initData)"
 
     async def _farm_chickenland():
-        c_init = tokens.get("chickenland_init_data")
+        c_init = tokens.get("chickenland_init_data") or tokens.get("chicken_init_data")
         if not c_init:
             status["bots"]["chickenland"] = "skipped (no initData)"
             return
@@ -6817,7 +6834,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["chickenland"] = f"api_error: {format_error(e)}"
 
     async def _farm_grouchemine():
-        g_init = tokens.get("grouchemine_init_data")
+        g_init = tokens.get("grouchemine_init_data") or tokens.get("grc_init_data")
         if not g_init:
             status["bots"]["grouchemine"] = "skipped (no initData)"
             return
@@ -6898,7 +6915,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["grouchemine"] = f"api_error: {format_error(e)}"
 
     async def _farm_lumeon():
-        lum_init = tokens.get("lumeon_init_data")
+        lum_init = tokens.get("lumeon_init_data") or tokens.get("lum_init_data")
         if not lum_init:
             status["bots"]["lumeon"] = "skipped (no initData)"
             return
@@ -6947,7 +6964,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["lumeon"] = f"api_error: {format_error(e)}"
 
     async def _farm_earnvault():
-        ev_init = tokens.get("earnvault_init_data")
+        ev_init = tokens.get("earnvault_init_data") or tokens.get("ev_init_data")
         if not ev_init:
             status["bots"]["earnvault"] = "skipped (no initData)"
             return
@@ -7111,10 +7128,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data") or tokens.get("pepe_init_data"))},
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data") or tokens.get("adx_init_data"))},
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
-        {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data"))},
-        {"name": "grouchemine", "fn": _farm_grouchemine, "has_data": bool(tokens.get("grouchemine_init_data"))},
-        {"name": "lumeon", "fn": _farm_lumeon, "has_data": bool(tokens.get("lumeon_init_data"))},
-        {"name": "earnvault", "fn": _farm_earnvault, "has_data": bool(tokens.get("earnvault_init_data"))},
+        {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data") or tokens.get("chicken_init_data"))},
+        {"name": "grouchemine", "fn": _farm_grouchemine, "has_data": bool(tokens.get("grouchemine_init_data") or tokens.get("grc_init_data"))},
+        {"name": "lumeon", "fn": _farm_lumeon, "has_data": bool(tokens.get("lumeon_init_data") or tokens.get("lum_init_data"))},
+        {"name": "earnvault", "fn": _farm_earnvault, "has_data": bool(tokens.get("earnvault_init_data") or tokens.get("ev_init_data"))},
     ]
 
     for b in bot_routines:
@@ -7214,7 +7231,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False, target_bot: str = "all") -> dict:
-    """Executes full autonomous cloud farming and task completions across all 8 legitimate bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 9 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -7381,7 +7398,7 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
 @app.post("/api/farm/cloud-all")
 @app.get("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
-    """Executes on-demand cloud fleet farming cycle across all 8 legitimate bots for accounts."""
+    """Executes on-demand cloud fleet farming cycle across all 9 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -7533,7 +7550,7 @@ async def api_farm_single_account(uid: str, request: Request):
         async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
             tokens_map = await fetch_cloud_miniapp_tokens(session)
             acc_tok = tokens_map.get(str(uid), {})
-            key_tokens = [f"{b}_init_data" for b in ALL_10_BOT_KEYS]
+            key_tokens = [f"{b}_init_data" for b in ALL_9_BOT_KEYS]
             missing_any = not all(k in acc_tok and bool(acc_tok.get(k)) for k in key_tokens)
             now_s = time.time()
             synced_val = acc_tok.get("synced_at", 0) or acc_tok.get("updated_at", 0) or 0
@@ -8499,7 +8516,7 @@ async def channel_status_endpoint(request: Request):
 async def sync_and_verify_channels_endpoint(request: Request):
     """
     Type B Channel & Bot Management Engine:
-    Ensures all fleet accounts join mandatory sponsor channels, unblock all 8 legitimate bots,
+    Ensures all fleet accounts join mandatory sponsor channels, unblock all 9 legitimate bots,
     and permanently mute all channels/bots to prevent notification spam.
     Protects against Telegram's 500-channel limit by leaving unwhitelisted spam channels if dialogs > 400.
     """
@@ -8589,7 +8606,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     except Exception:
                         pass
 
-                # 2. Unblock all 8 legitimate fleet bots - PRIORITY 2
+                # 2. Unblock all 9 legitimate fleet bots - PRIORITY 2
                 for b in FLEET_LEGITIMATE_BOTS:
                     try:
                         await cl(functions.contacts.UnblockRequest(id=b))
@@ -8921,7 +8938,7 @@ async def onboard_new_bots(request: Request):
             uid = str(acc.get("user_id"))
             name = acc.get("name", "User")
             if uid == "6727787768":
-                acc_res = {"uid": uid, "name": name, "status": "master_skipped", "bots": {b: "verified" for b in ALL_10_BOT_KEYS}}
+                acc_res = {"uid": uid, "name": name, "status": "master_skipped", "bots": {b: "verified" for b in ALL_9_BOT_KEYS}}
                 results.append(acc_res)
                 LAST_ONBOARD_STATUS["processed"] += 1
                 continue
@@ -8935,10 +8952,10 @@ async def onboard_new_bots(request: Request):
 
             acc_res = {"uid": uid, "name": name, "bots": {}}
 
-            # Check if all 10 referrals are bound (unless force mode is active)
+            # Check if all 9 referrals are bound (unless force mode is active)
             if not force_mode and is_account_referrals_bound(acc):
-                acc_res["status"] = "already_bound_all_10"
-                for b_name in ALL_10_BOT_KEYS:
+                acc_res["status"] = "already_bound_all_9"
+                for b_name in ALL_9_BOT_KEYS:
                     acc_res["bots"][b_name] = "verified"
                 results.append(acc_res)
                 LAST_ONBOARD_STATUS["processed"] += 1
@@ -8959,17 +8976,17 @@ async def onboard_new_bots(request: Request):
                         results.append(acc_res)
                         continue
 
-                    # Onboard and bind master referrals across all 10 fleet bots
+                    # Onboard and bind master referrals across all 9 fleet bots
                     try:
                         await bind_account_master_referrals(cl, acc, force=force_mode)
-                        for b_name in ALL_10_BOT_KEYS:
+                        for b_name in ALL_9_BOT_KEYS:
                             acc_res["bots"][b_name] = "verified" if acc.get(f"{b_name}_referral_bound") else "pending"
                     except Exception as e:
                         acc_res["error"] = str(e)
 
                     if is_account_referrals_bound(acc):
                         acc["referrals_bound"] = True
-                        acc["all_10_referrals_bound"] = True
+                        acc["all_9_referrals_bound"] = True
                     await sync_new_account_to_clouds(acc)
                 finally:
                     try:

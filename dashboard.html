@@ -1420,7 +1420,7 @@ function App() {
 
   // Instant Harvest
   const handleInstantHarvest = async () => {
-    showToast(`Harvest queued across all ${fleet.length} accounts & 8 mining pools...`, "info");
+    showToast(`Harvest queued across all ${fleet.length} accounts & 9 mining pools...`, "info");
     haptic("heavy");
     try {
       const res = await fetchMeshApi("/api/harvest", { method: "POST" });
@@ -1459,12 +1459,12 @@ function App() {
 
   // Single Account Harvest
   const handleFarmSingleAccount = async (uid, accName) => {
-    showToast(`Harvesting 8 pools for ${accName}... ⚡`, "info");
+    showToast(`Harvesting 9 pools for ${accName}... ⚡`, "info");
     haptic("medium");
     try {
       const res = await fetchMeshApi(`/api/farm/cloud-all?uid=${uid}`, { method: "POST" });
       if (res && res.ok) showToast(`Harvest cycle complete for ${accName}!`, "success");
-      else showToast(`Dispatched 8-pool harvest for ${accName}`, "info");
+      else showToast(`Dispatched 9-pool harvest for ${accName}`, "info");
     } catch (_) {
       showToast(`Dispatched to cloud`, "info");
     }
@@ -1867,7 +1867,7 @@ function App() {
             "Executive Fleet Console",
             React.createElement("span", { className: "px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-[9px] font-mono text-cyan-300" }, "@myagyai")
           ),
-          React.createElement("div", { className: "text-[9px] opacity-75 leading-tight" }, `${fleet.length} MTProto accounts, 8 pools & treasury vaults`)
+          React.createElement("div", { className: "text-[9px] opacity-75 leading-tight" }, `${fleet.length} MTProto accounts, 9 pools & treasury vaults`)
         )
       ),
       React.createElement("a", { href: "/user-admin", className: "px-2 py-1 rounded-xl bg-violet-500/15 border border-violet-500/30 text-[10px] text-violet-400 hover:text-violet-300 font-bold shrink-0 flex items-center gap-1 transition" },

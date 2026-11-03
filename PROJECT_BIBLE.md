@@ -320,12 +320,12 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       * `/llama <prompt>`: Meta Llama 3.2 rapid edge copilot.
       * `/image <prompt>` / `/draw <prompt>`: Stable Diffusion XL binary photo generator with direct Telegram photo upload.
       * `/ai <prompt>`: Native Cloudflare Workers AI edge cascade (`@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`, `@cf/meta/llama-3.2-3b-instruct`). 100% Free, zero external API keys.
-      * `/mrg`, `/atf`, `/victors`, `/kynex`, `/diggo`, `/pepe`, `/adx`, `/chicken`: Dedicated telemetry & command centers for all 8 legitimate active bots.
+      * `/atf`, `/kynex`, `/diggo`, `/pepe`, `/adx`, `/chicken`, `/grouche`, `/lumeon`, `/earnvault`: Dedicated telemetry & command centers for all 9 legitimate active bots.
       * `/treasury`, `/payouts`: Real-time on-chain Binance Master Vault (BEP-20) and TON Master Vault accounting & live ledger.
       * `/models`: Directory of active edge AI models.
     - **Executive Fleet Operations Console (`/admin`)**:
       * Live URL: `https://restore-agy.agorameet.workers.dev/admin` (Primary Cloudflare Edge Node).
-      * Features: All 20 accounts, Multi-Model Ari AI Studio, Dedicated OTP & Relogin Center (#1-20), Multi-Chain Treasury, 5-Node Edge Mesh latency matrix, Obsidian Dark & Clean Light theme.
+      * Features: All 24 accounts, Multi-Model Ari AI Studio, Dedicated OTP & Relogin Center (#1-24), Multi-Chain Treasury, 5-Node Edge Mesh latency matrix, Obsidian Dark & Clean Light theme.
   - **Admin Direct Control Chat**: `REPORT_CHAT_ID: 6727787768` (`@Arif2743aaa`, Phone: `+8801317342850`)
     - Purpose: High-priority operational alerts, Turnstile solver telemetry, and 1-click disaster restore execution.
     - Authorized Admin UIDs: `["6727787768", "8741547543", "7648254021"]`.

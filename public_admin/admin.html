@@ -1471,7 +1471,7 @@ function App() {
 
   // Instant Harvest
   const handleInstantHarvest = async () => {
-    showToast(`Harvest queued across all ${fleet.length} accounts & 8 mining pools...`, "info");
+    showToast(`Harvest queued across all ${fleet.length} accounts & 9 mining pools...`, "info");
     haptic("heavy");
     try {
       const res = await fetchMeshApi("/api/harvest", { method: "POST" });
