@@ -482,12 +482,12 @@ def solve_atf_math(question_text: str) -> str:
     """Safely solves ATF Miner mathematical challenges with local deterministic solver."""
     return solve_challenge_deterministic(question_text)
 
-# Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgminerbot"
+# Active Fleet Mini-App Bots (All 11 Active Legitimate Bots)
+MRG_BOT = "mrgtoken_bot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
-ATF_BOT = "ATF_AIRDROP_bot"
+ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanyGame"
+VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -1295,11 +1295,51 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         except Exception:
             continue
 
-    # Strategy A.1: If BotApp not unlocked, send /start to activate chat and retry BotApp query
-    if start_param and not bot_username.startswith("ATF"):
+    # Strategy A.1: If BotApp not unlocked, send /start to activate chat and retry
+    if start_param and not bot_username.lower().startswith("atf"):
         try:
             await client.send_message(bot_in, f"/start {start_param}")
-            await asyncio.sleep(0.6)
+            await asyncio.sleep(1.0)
+
+            # Check fresh reply message for inline WebApp buttons (Critical for MRG & Victor's)
+            try:
+                fresh_msgs = await client.get_messages(bot_ent, limit=3)
+                for fm in fresh_msgs:
+                    if not fm.out and fm.buttons:
+                        for f_row in fm.buttons:
+                            for fb in f_row:
+                                raw_fb = getattr(fb, "button", fb)
+                                fw_url = getattr(getattr(raw_fb, "web_app", None), "url", None) or getattr(raw_fb, "url", None)
+                                if fw_url and not fw_url.startswith("https://t.me/"):
+                                    try:
+                                        f_req = {
+                                            "peer": bot_ent,
+                                            "bot": bot_ent,
+                                            "platform": "android",
+                                            "url": fw_url
+                                        }
+                                        if start_param:
+                                            f_req["start_param"] = str(start_param)
+                                        f_res = await client(RequestWebViewRequest(**f_req))
+                                        tok = extract_from_url(getattr(f_res, "url", None))
+                                        if tok:
+                                            return tok
+                                    except Exception:
+                                        pass
+                                if hasattr(fb, "click") and any(w in (fb.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                                    try:
+                                        ans = await asyncio.wait_for(fb.click(), timeout=4.0)
+                                        if ans:
+                                            ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
+                                            if ans_url:
+                                                tok = extract_from_url(ans_url)
+                                                if tok:
+                                                    return tok
+                                    except Exception:
+                                        pass
+            except Exception:
+                pass
+
             for sn in (candidate_short_names or ["app"]):
                 target_app = InputBotAppShortName(bot_id=bot_user_in if bot_user_in else bot_in, short_name=sn)
                 try:
@@ -7243,25 +7283,27 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 except Exception:
                     pass
 
-                # 5d. Rewarded Ad Watching & Free Hen Claim ("ads10")
+                # 5d. Rewarded Ad Watching & Free Hen Claim ("ads10") (Dispatched in background so mining cycle is instant)
                 try:
                     ads_info = me_data.get("result", {}).get("ads", {})
                     n_ads = int(ads_info.get("n", 0) or 0)
                     need_ads = int(ads_info.get("need", 10) or 10)
                     if n_ads < need_ads:
-                        st_ad, r_ad = await rpc("/api/ad/start", {})
-                        if st_ad == 200 and isinstance(r_ad, dict) and r_ad.get("ok"):
-                            await asyncio.sleep(25.0)
-                            st_ad_done, r_ad_done = await rpc("/api/ad/done", {})
-                            if st_ad_done == 200 and isinstance(r_ad_done, dict) and r_ad_done.get("ok"):
-                                n_ads = r_ad_done.get("result", {}).get("n", n_ads + 1)
-                    if n_ads >= need_ads and "ads10" not in completed_tasks:
-                        st_h, r_h = await rpc("/api/task", {"id": "ads10"})
-                        if st_h == 200 and isinstance(r_h, dict) and r_h.get("ok"):
-                            completed_tasks.add("ads10")
-                            if r_h.get("result", {}).get("user"):
-                                hens = r_h["result"]["user"].get("hens", hens + 1)
-                                coins = r_h["result"]["user"].get("coins", coins)
+                        async def _chk_bg_ad():
+                            try:
+                                st_ad, r_ad = await rpc("/api/ad/start", {})
+                                if st_ad == 200 and isinstance(r_ad, dict) and r_ad.get("ok"):
+                                    await asyncio.sleep(15.0)
+                                    st_ad_done, r_ad_done = await rpc("/api/ad/done", {})
+                                    if st_ad_done == 200 and isinstance(r_ad_done, dict) and r_ad_done.get("ok"):
+                                        cur_n = r_ad_done.get("result", {}).get("n", n_ads + 1)
+                                        if cur_n >= need_ads:
+                                            await rpc("/api/task", {"id": "ads10"})
+                            except Exception:
+                                pass
+                        bg_tasks.append(asyncio.create_task(_chk_bg_ad()))
+                    elif "ads10" not in completed_tasks:
+                        await rpc("/api/task", {"id": "ads10"})
                 except Exception:
                     pass
 
@@ -7325,7 +7367,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # 2. Daily Claim
             await safe_post(f"{base_url}/users/daily-claim", json_data={}, req_headers=g_headers, timeout_sec=6)
 
-            # 3. Tasks fetch & complete
+            # 3. Tasks fetch & complete (Dispatched in background so mining claim is instant)
             c_st, t_res = await safe_get(f"{base_url}/tasks", req_headers=g_headers, timeout_sec=6)
             if c_st == 200 and isinstance(t_res, dict):
                 tasks = t_res.get("data", [])
@@ -7333,24 +7375,29 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     for t in tasks:
                         if not t.get("completed") and not t.get("isCompleted"):
                             tid = t.get("id") or t.get("_id")
-                            await safe_post(f"{base_url}/tasks/{tid}/open", json_data={}, req_headers=g_headers, timeout_sec=5)
-                            await asyncio.sleep(11)
-                            await safe_post(f"{base_url}/tasks/{tid}/complete", json_data={}, req_headers=g_headers, timeout_sec=6)
+                            if tid:
+                                await safe_post(f"{base_url}/tasks/{tid}/open", json_data={}, req_headers=g_headers, timeout_sec=4)
+                                async def _complete_grc(task_id):
+                                    try:
+                                        await asyncio.sleep(10.0)
+                                        await safe_post(f"{base_url}/tasks/{task_id}/complete", json_data={}, req_headers=g_headers, timeout_sec=5)
+                                    except Exception:
+                                        pass
+                                bg_tasks.append(asyncio.create_task(_complete_grc(tid)))
 
-            # 4. Adsgram Watch & Click (+10 GRC each, up to 8 per 12 hours) - ZERO SPEND
+            # 4. Adsgram Watch & Click (+10 GRC each, up to 2 per cycle in background)
             try:
                 c_st, ads_res = await safe_get(f"{base_url}/users/ads", req_headers=g_headers, timeout_sec=6)
                 if c_st == 200 and isinstance(ads_res, dict):
                     a_data = ads_res.get("data", {})
                     limit = int(a_data.get("limit", 8))
                     watched = int(a_data.get("watched", 0))
-                    remaining = max(0, limit - watched)
+                    remaining = min(2, max(0, limit - watched))
                     for _ in range(remaining):
                         ad_payload = {"clicked": 1, "watchedMs": 15500 + random.randint(100, 2000)}
                         c_st, c_ads = await safe_post(f"{base_url}/users/ads/complete", json_data=ad_payload, req_headers=g_headers, timeout_sec=6)
                         if c_st != 200:
                             break
-                        await asyncio.sleep(1)
             except Exception:
                 pass
 
@@ -7522,9 +7569,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             except Exception:
                 pass
 
-            # 5. Rewarded Watch Ads (Monetag, Adsgram, Adsterra, Giga, QuickMoney)
+            # 5. Rewarded Watch Ads (Dispatched to background task so mining claim is instant)
             try:
-                c_st, ads_res = await safe_post(f"{functions_base}/getAdState", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=6)
+                c_st, ads_res = await safe_post(f"{functions_base}/getAdState", json_data={"data": {}}, req_headers=auth_headers, timeout_sec=5)
                 if c_st == 200 and isinstance(ads_res, dict):
                     ad_data = ads_res.get("result", {})
                     if ad_data.get("enabled") and ad_data.get("eligible"):
@@ -7533,24 +7580,22 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             net_id = net.get("id")
                             left = int(net.get("left", 0))
                             if net.get("ready") and left > 0 and net_id:
-                                # Watch all remaining ads in this network to earn the batch reward ($0.10 for 10 ads)
-                                for _ in range(min(left, 10)):
-                                    c_sa, sa_d = await safe_post(f"{functions_base}/startAd", json_data={"data": {"net": net_id}}, req_headers=auth_headers, timeout_sec=6)
-                                    if c_sa == 200 and isinstance(sa_d, dict):
-                                        sa_res = sa_d.get("result", {})
-                                        sess_id = sa_res.get("sessionId")
-                                        min_watch = int(sa_res.get("minWatchSeconds", 10))
-                                        if sess_id:
-                                            await asyncio.sleep(min_watch + 1)
-                                            c_ca, ca_d = await safe_post(f"{functions_base}/completeAd", json_data={"data": {"sessionId": sess_id}}, req_headers=auth_headers, timeout_sec=6)
-                                            if c_ca == 200 and isinstance(ca_d, dict):
-                                                ca_res = ca_d.get("result", {})
-                                                if ca_res.get("creditedCents"):
-                                                    bal_usd += (ca_res.get("creditedCents") / 100.0)
-                                            else:
-                                                break
-                                    else:
-                                        break
+                                async def _ev_bg_ad(n_id):
+                                    try:
+                                        c_sa, sa_d = await safe_post(f"{functions_base}/startAd", json_data={"data": {"net": n_id}}, req_headers=auth_headers, timeout_sec=5)
+                                        if c_sa == 200 and isinstance(sa_d, dict):
+                                            sa_res = sa_d.get("result", {})
+                                            sess_id = sa_res.get("sessionId")
+                                            min_watch = int(sa_res.get("minWatchSeconds", 10))
+                                            if sess_id:
+                                                await asyncio.sleep(min_watch + 0.5)
+                                                await safe_post(f"{functions_base}/completeAd", json_data={"data": {"sessionId": sess_id}}, req_headers=auth_headers, timeout_sec=5)
+                                    except Exception:
+                                        pass
+                                bg_tasks.append(asyncio.create_task(_ev_bg_ad(net_id)))
+                                break
+            except Exception:
+                pass
             except Exception:
                 pass
 
