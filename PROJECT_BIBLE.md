@@ -1074,6 +1074,33 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
 * **Automated Revocation Auto-Purge (`ensure_account_complete`)**: Whenever an account is onboarded, saved, or verified with a valid session string, it is atomically removed from `fleet:revoked_sessions`, added to `fleet:healthy_sessions`, and its `fleet:revocation_reason:{idx}` key is permanently deleted.
 * **1-Tap Re-link Auto-Promotion (`onAccountRelinkSuccess`)**: When an account session is re-linked via MTProto, its index and user ID are dynamically promoted from `revoked` to `healthy` across all edge nodes, immediately updating the OTP grid, fleet roster, and inspection screens to green `🟢`.
 * **24-Account Fleet Scale**: Canonical registries, edge fallbacks (`DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`), and live states are fully synchronized for all 24 accounts.
+* **Canonical 24-Account Clean Naming Architecture**:
+  - Every account possesses a clean, authentic, non-digit-suffixed name across all registries (`accounts.json`, Upstash Redis `fleet:accounts`, `DEFAULT_FLEET_ACCOUNTS`, `DEFAULT_FLEET_DATA`, and HTML dashboards):
+    1. `Arif Hossain` (Master Host 👑, `6727787768`)
+    2. `Nancy` (`8881914294`)
+    3. `Koram Shah` (`7648254021`)
+    4. `Arif` (`8826375659`)
+    5. `Nadim` (`8450010161`)
+    6. `Kaitlyn` (`8782429452`)
+    7. `Abid Hasan (1)` (`7734849205`)
+    8. `Abid Hasan (2)` (`8025472383`)
+    9. `Naimur Rahman` (`8851426148`)
+    10. `Tanvir Ahmed` (`8203342513`)
+    11. `MD Arif Hossain` (`8190649727`)
+    12. `Sanzida Shimu` (`7487048946`)
+    13. `Abid (3)` (`8741547543`)
+    14. `Rohan Sharma` (`8727040932`)
+    15. `Tasnim Farhana` (`7749125802`)
+    16. `Rashedul Islam` (`7954290138`)
+    17. `Kawsar Mahmud` (`8841038141`)
+    18. `Mehedi Hasan` (`8975442879`)
+    19. `Adil H` (`8937908003`)
+    20. `Asaduzzaman Sarker` (`8609131528`)
+    21. `AAA201` (`8669217201`)
+    22. `AAA 22` (`9272631973`)
+    23. `Abid Hasan (4)` (`9106746905`)
+    24. `AAA 24` (`8972499908`)
+  - **Disambiguated OTP Grid Labels**: `buildOtpMenuKeyboard` dynamically ensures distinct button names (`MD Arif`, `AAA 22`, `AAA 24`, `AAA201`, `Abid (7)`, `Abid (8)`, `Abid (13)`, `Abid (23)`, `Arif (4)`), preventing short-name collisions.
 * **Resilient Multi-Layer Account Removal**: Deletions are mirrored across module RAM cache (`memDeletedAccounts`), Upstash Redis (`fleet:deleted_accounts`), and Cloudflare KV (`fleet_deleted_accounts`), ensuring that hitting Cloudflare KV daily free quotas never causes removed accounts to reappear or screens to stall.
 * **Render-to-Edge Failback Routing**: All outbound calls from Render nodes to Cloudflare Workers query Node 1 (`aaaai2.workers.dev`) first, immediately breaking upon receiving a 200 OK response. Standby nodes (Nodes 2-5) produce 0 scheduled KV writes and maintain cold zero-cost standby posture.
 

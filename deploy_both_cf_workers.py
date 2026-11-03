@@ -331,7 +331,7 @@ const solveChallengeDeterministic = (questionText) => {
   return nums.length > 0 ? String(nums[0]) : "0";
 };
 
-// Universal 8-Bot Challenge & Math Solver with 0 AI Dependency Protection
+// Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
 const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic", env = null) => {
   if (!questionText || typeof questionText !== "string") return "0";
   const detAns = solveChallengeDeterministic(questionText);
@@ -2008,8 +2008,8 @@ async function getFleetTokens(env) {
 
 const DEFAULT_FLEET_DATA = {
   ok: true,
-  count: 21,
-  active: 21,
+  count: 24,
+  active: 24,
   bnb_balance: 0.000812,
   kynex_balance: 4050,
   ton_balance: 1.42,
@@ -2020,21 +2020,24 @@ const DEFAULT_FLEET_DATA = {
     { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
     { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
     { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
-    { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
+    { index: 7, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
     { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
-    { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
-    { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
-    { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
+    { index: 9, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
+    { index: 10, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
+    { index: 11, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
     { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
     { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
-    { index: 14, name: "Raj Thakur Козлов", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
-    { index: 15, name: "Tiffany Тарасов", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 16, name: "Roger Волков", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 14, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
+    { index: 15, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 16, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 17, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 18, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
     { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
     { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+    { index: 21, name: "AAA201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 22, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 23, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -2585,28 +2588,28 @@ const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
 
 const DEFAULT_FLEET_ACCOUNTS = [
   { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-  { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617" },
+  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
   { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
   { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-  { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
-  { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
-  { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+  { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+  { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+  { index: 7, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
   { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-  { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
-  { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
-  { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
+  { index: 9, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
+  { index: 10, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
+  { index: 11, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
   { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
   { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-  { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
-  { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
-  { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
-  { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
-  { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
+  { index: 14, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
+  { index: 15, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
+  { index: 16, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
+  { index: 17, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
+  { index: 18, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
   { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
   { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-  { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" },
-  { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" },
-  { index: 23, name: "Abid Hasan", user_id: 9106746905, phone: "+8801788601627" },
+  { index: 21, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
+  { index: 22, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
+  { index: 23, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
   { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
 ];
 
@@ -2665,17 +2668,29 @@ const KNOWN_PHONES_BY_INDEX = {
 };
 
 const cleanName = (acc, idx) => {
+  const i = (typeof idx === "number" && idx >= 0 && idx < DEFAULT_FLEET_ACCOUNTS.length)
+    ? idx
+    : (acc.index ? Number(acc.index) - 1 : -1);
+  const defName = (i >= 0 && DEFAULT_FLEET_ACCOUNTS[i]) ? DEFAULT_FLEET_ACCOUNTS[i].name : "";
   let n = (acc.name || "").trim();
-  if (n.includes("Никитин")) return "Nathan Miller 5";
-  if (n.includes("Морозов")) return "Kaitlyn Ross 6";
-  if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman 9";
-  if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10")) return "Tanvir Ahmed 10";
-  if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
-  if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
-  if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
-  if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
-  if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
-  return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
+  if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${(i >= 0 ? i : 0) + 1}`;
+  if (n.includes("Никитин") || n.startsWith("Nathan")) return "Nadim";
+  if (n.includes("Морозов") || n.startsWith("Kaitlyn")) return "Kaitlyn";
+  if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman";
+  if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10") || n === "Tanvir Ahmed 10") return "Tanvir Ahmed";
+  if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma";
+  if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana";
+  if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
+  if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
+  if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
+  if (n === "Nancy Davis 2") return "Nancy";
+  if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
+  if (n === "Aaaa201") return "AAA201";
+  if (n === "AAA" && i === 21) return "AAA 22";
+  if (n === "Abid Hasan" && i === 6) return "Abid Hasan (1)";
+  if (n === "Abid Hasan" && i === 7) return "Abid Hasan (2)";
+  if (n === "Abid Hasan" && i === 22) return "Abid Hasan (4)";
+  return n;
 };
 
 const resolveAccountPhone = (targetIdx, targetUid, accList) => {
@@ -5571,7 +5586,7 @@ fi
       });
     }
 
-    // 11.04 8-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
+    // 11.04 9-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
     if (path === "/api/ai/solve" || path === "/api/bot-solve") {
       let q = "";
       let bot = "generic";
@@ -5962,45 +5977,57 @@ fi
 
         const DEFAULT_FLEET_ACCOUNTS = [
           { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-          { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617" },
+          { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
           { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
           { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-          { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
-          { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
-          { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+          { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+          { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 7, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
           { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-          { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
-          { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
-          { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 9, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 10, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 11, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
           { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
           { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-          { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
-          { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
-          { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
-          { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
+          { index: 14, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
+          { index: 15, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
+          { index: 16, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
+          { index: 17, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
+          { index: 18, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
           { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
           { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-          { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" },
-          { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" },
-          { index: 23, name: "Abid Hasan", user_id: 9106746905, phone: "+8801788601627" },
+          { index: 21, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
+          { index: 22, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
+          { index: 23, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
           { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
 
         const cleanName = (acc, idx) => {
+          const i = (typeof idx === "number" && idx >= 0 && idx < DEFAULT_FLEET_ACCOUNTS.length)
+            ? idx
+            : (acc.index ? Number(acc.index) - 1 : -1);
+          const defName = (i >= 0 && DEFAULT_FLEET_ACCOUNTS[i]) ? DEFAULT_FLEET_ACCOUNTS[i].name : "";
           let n = (acc.name || "").trim();
-          if (n.includes("Никитин")) return "Nathan Miller 5";
-          if (n.includes("Морозов")) return "Kaitlyn Ross 6";
-          if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman 9";
-          if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10")) return "Tanvir Ahmed 10";
-          if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
-          if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
-          if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
-          if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
-          if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
-          return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
+          if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${(i >= 0 ? i : 0) + 1}`;
+          if (n.includes("Никитин") || n.startsWith("Nathan")) return "Nadim";
+          if (n.includes("Морозов") || n.startsWith("Kaitlyn")) return "Kaitlyn";
+          if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman";
+          if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10") || n === "Tanvir Ahmed 10") return "Tanvir Ahmed";
+          if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma";
+          if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana";
+          if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
+          if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
+          if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
+          if (n === "Nancy Davis 2") return "Nancy";
+          if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
+          if (n === "Aaaa201") return "AAA201";
+          if (n === "AAA" && i === 21) return "AAA 22";
+          if (n === "Abid Hasan" && i === 6) return "Abid Hasan (1)";
+          if (n === "Abid Hasan" && i === 7) return "Abid Hasan (2)";
+          if (n === "Abid Hasan" && i === 22) return "Abid Hasan (4)";
+          return n;
         };
 
         const resolveAccountPhone = (targetIdx, targetUid, accList) => {
@@ -6408,8 +6435,14 @@ fi
             const chunk = accList.slice(i, i + chunkSize);
             rows.push(chunk.map((a, cIdx) => {
               const idx = a.index || (i + cIdx + 1);
-              const name = cleanName(a, i + cIdx);
-              const shortName = name.split(" ")[0];
+              const cName = cleanName(a, i + cIdx);
+              let shortName = cName.split(" ")[0];
+              if (cName.startsWith("MD")) shortName = "MD Arif";
+              else if (cName.startsWith("AAA 22")) shortName = "AAA 22";
+              else if (cName.startsWith("AAA 24")) shortName = "AAA 24";
+              else if (cName.startsWith("AAA201")) shortName = "AAA201";
+              else if (shortName === "Abid") shortName = `Abid (${idx})`;
+              else if (shortName === "Arif" && String(a.user_id) !== "6727787768") shortName = `Arif (${idx})`;
               const isHost = String(a.user_id) === "6727787768";
               const idxStr = String(idx);
               const uidStr = a.user_id ? String(a.user_id) : "";
@@ -6593,10 +6626,10 @@ fi
             const name = cleanName(a, i);
 
             let statusDetail = isHost
-              ? `  └ 🟢 MTProto Online • 11/11 Active Pools • Master Account 👑`
+              ? `  └ 🟢 MTProto Online • 9/9 Active Mining Pools • Master Account 👑`
               : (isRev
-                ? `  └ 🔴 Needs Re-link • 10/11 Active Pools (REST Active)`
-                : `  └ 🟢 MTProto Online • 11/11 Active Pools`);
+                ? `  └ 🔴 Needs Re-link • 9/9 Active Pools (REST Active)`
+                : `  └ 🟢 MTProto Online • 9/9 Active Mining Pools`);
 
             const header = isHost
               ? `• *#${idx} ${name}*${phoneStr} 👑`
@@ -6617,7 +6650,7 @@ fi
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `💡 *Quick Actions:*\n` +
             `• Tap *🔍 Session Audit* to inspect connection health\n` +
-            `• Tap *🤖 8-Bot Mining Hub* to view pools\n` +
+            `• Tap *🤖 9-Bot Mining Hub* to view pools\n` +
             `• Tap *➕ Add Account* to connect a new account\n` +
             `• Send \`/acc <1-${accounts.length}>\` to inspect individual account details`;
         };

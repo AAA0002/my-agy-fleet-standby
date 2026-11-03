@@ -2,6 +2,49 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Canonical 24-Account Name Purification, Disambiguated OTP Button Grid, and Strict 9-Bot Ground-Truth Telemetry (November 3, 2026)**:
+  - **Comprehensive 24-Account Canonical Name Purification**:
+    * Purged all remaining dummy Russian surnames (`Raj Thakur Козлов`, `Tiffany Тарасов`, `Roger Волков`, `Kevin Смирнов`, `Mary Каримов`) and obsolete generic strings (`Node 9`, `Node 10`, `Aaaa201`, `AAA`, `Nancy Davis 2`, `Tanvir Ahmed 10`, `MD. ARIF HOSSAIN`).
+    * Synchronized all 24 clean, professional names across `accounts.json`, `DEFAULT_FLEET_ACCOUNTS`, `DEFAULT_FLEET_DATA`, `fleet_wallets_data.json`, `public_admin/fleet_wallets_data.json`, `public/fleet_wallets_data.json`, `fleet_evm_wallets.json`, `fleet_tron_wallets.json`, `fleet_btc_wallets.json`, `fleet_solana_wallets.json`, Upstash Redis (`fleet:accounts`, `fleet:live_state`, `account:*`), and web dashboards.
+    * Master canonical roster:
+      1. `Arif Hossain` (Master Host 👑)
+      2. `Nancy`
+      3. `Koram Shah`
+      4. `Arif`
+      5. `Nadim`
+      6. `Kaitlyn`
+      7. `Abid Hasan (1)`
+      8. `Abid Hasan (2)`
+      9. `Naimur Rahman`
+      10. `Tanvir Ahmed`
+      11. `MD Arif Hossain`
+      12. `Sanzida Shimu`
+      13. `Abid (3)`
+      14. `Rohan Sharma`
+      15. `Tasnim Farhana`
+      16. `Rashedul Islam`
+      17. `Kawsar Mahmud`
+      18. `Mehedi Hasan`
+      19. `Adil H`
+      20. `Asaduzzaman Sarker`
+      21. `AAA201`
+      22. `AAA 22`
+      23. `Abid Hasan (4)`
+      24. `AAA 24`
+  - **Disambiguated OTP & Relogin Hub Button Grid (`deploy_both_cf_workers.py`)**:
+    * Resolved button short-name collision where multiple accounts named "Abid" or prefixed with "MD." or "AAA" caused identical button text.
+    * Upgraded `buildOtpMenuKeyboard`: Implemented index-aware distinct label generator (`MD Arif`, `AAA 22`, `AAA 24`, `AAA201`, `Abid (7)`, `Abid (8)`, `Abid (13)`, `Abid (23)`, `Arif (4)`), ensuring instant identification on mobile screens.
+  - **Strict 9-Bot Ground-Truth Text Consistency (`deploy_both_cf_workers.py`)**:
+    * Corrected legacy message templates in `buildAccountsListText`: replaced `11/11 Active Pools` and `10/11 Active Pools (REST Active)` with `9/9 Active Mining Pools`, and `• Tap 🤖 8-Bot Mining Hub to view pools` with `• Tap 🤖 9-Bot Mining Hub to view pools`.
+    * Updated inline comment headers to strictly reference the 9-bot challenge solver.
+  - **Complete 24-Account Registry Integration in Dashboards (`admin.html`, `dashboard.html`)**:
+    * Expanded `KNOWN_PHONES_BY_INDEX` (1..24), `DEFAULT_FLEET` (1..24), and `FLEET_WALLETS_REGISTRY` (1..24) across all 6 HTML dashboard files (`public/admin.html`, `public_admin/admin.html`, `public_admin/index.html`, `public_admin/admin/index.html`, `dashboard.html`, `tgcloud_admin_bot/public/index.html`).
+    * Verified zero private key exposure in public client registries while ensuring full 5-chain address explorer links work out-of-the-box.
+  - **Cloudflare Edge Deployment & Live Verification**:
+    * Uploaded edge worker to primary Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Verified live `/api/fleet/live` endpoint returns all 24 accounts with 100% clean names.
+
+
 - **⚡ Instant Relink Status Update, Master Referral Audit Across 24 Accounts, and Proactive Telegram Session Alerts (November 3, 2026)**:
   - **Full 9-Bot Resilient Inspection Engine (`app.py:inspect_referrals_master`)**:
     * Upgraded master referral inspection endpoint `/api/inspect-referrals-master` from 2 hardcoded bots to all 9 active legitimate bots (ATF, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche Mine, LUM Miner, EarnVault).

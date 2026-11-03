@@ -327,7 +327,7 @@ export function formatWalletDossier(targetIdx) {
   }
 
   if (targetIdx === 10) {
-    return `⭐ <b>Account #10: Tanvir Ahmed 10 (Worker Node)</b>\n` +
+    return `⭐ <b>Account #10: Tanvir Ahmed (Worker Node)</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `🏛️ <b>Custody:</b> Binance Web3 Wallet 2 (AAA)\n` +
       `• Phone: <code>+8801729892810</code> | ID: <code>8203342513</code>\n\n` +
@@ -407,7 +407,7 @@ export function buildWalletsSummaryBanner() {
     `• BEP-20: <code>0xfda4182001672b9f0f09e2118242e543e35ed5ce</code>\n` +
     `• TON Deposit: <code>UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT</code>\n` +
     `• MANDATORY MEMO: <code>103525143</code>\n\n` +
-    `⭐ <b>Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):</b>\n` +
+    `⭐ <b>Binance Web3 Vault (Account #10 - Tanvir Ahmed):</b>\n` +
     `• BEP-20: <code>0x017841f26d5b79cc8c5eb20c65367bb645cc2610</code>\n` +
     `• TON: <code>UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH</code>\n\n` +
     `🔐 <b>16 Self-Custody Worker Wallets (Gram / Tonkeeper):</b>\n` +

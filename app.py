@@ -2195,32 +2195,36 @@ def get_fleet_accounts_map() -> list:
                 pass
 
     return [
-        {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master)"},
-        {"index": 2, "uid": "8881914294", "name": "Nancy Davis 2"},
-        {"index": 3, "uid": "7648254021", "name": "Koram Shah 3"},
-        {"index": 4, "uid": "8826375659", "name": "Arif 4"},
-        {"index": 5, "uid": "8450010161", "name": "Nathan Miller 5"},
-        {"index": 6, "uid": "8782429452", "name": "Kaitlyn Ross 6"},
-        {"index": 7, "uid": "7734849205", "name": "Abid Hasan 7"},
-        {"index": 8, "uid": "8025472383", "name": "Abid Hasan (2) 8"},
-        {"index": 9, "uid": "8851426148", "name": "Naimur Rahman 9"},
-        {"index": 10, "uid": "8203342513", "name": "Tanvir Ahmed 10"},
-        {"index": 11, "uid": "8190649727", "name": "MD. ARIF HOSSAIN 11"},
-        {"index": 12, "uid": "7487048946", "name": "Sanzida Shimu 12"},
-        {"index": 13, "uid": "8741547543", "name": "Abid (3) 13"},
-        {"index": 14, "uid": "8727040932", "name": "Rohan Sharma 14"},
-        {"index": 15, "uid": "7749125802", "name": "Tasnim Farhana 15"},
-        {"index": 16, "uid": "7954290138", "name": "Rashedul Islam 16"},
-        {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud 17"},
-        {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan 18"},
-        {"index": 19, "uid": "8937908003", "name": "Adil H 19"},
-        {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker 20"},
-        {"index": 21, "uid": "8669217201", "name": "Aaaa201"}
+        {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master 👑)"},
+        {"index": 2, "uid": "8881914294", "name": "Nancy"},
+        {"index": 3, "uid": "7648254021", "name": "Koram Shah"},
+        {"index": 4, "uid": "8826375659", "name": "Arif"},
+        {"index": 5, "uid": "8450010161", "name": "Nadim"},
+        {"index": 6, "uid": "8782429452", "name": "Kaitlyn"},
+        {"index": 7, "uid": "7734849205", "name": "Abid Hasan (1)"},
+        {"index": 8, "uid": "8025472383", "name": "Abid Hasan (2)"},
+        {"index": 9, "uid": "8851426148", "name": "Naimur Rahman"},
+        {"index": 10, "uid": "8203342513", "name": "Tanvir Ahmed"},
+        {"index": 11, "uid": "8190649727", "name": "MD Arif Hossain"},
+        {"index": 12, "uid": "7487048946", "name": "Sanzida Shimu"},
+        {"index": 13, "uid": "8741547543", "name": "Abid (3)"},
+        {"index": 14, "uid": "8727040932", "name": "Rohan Sharma"},
+        {"index": 15, "uid": "7749125802", "name": "Tasnim Farhana"},
+        {"index": 16, "uid": "7954290138", "name": "Rashedul Islam"},
+        {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud"},
+        {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan"},
+        {"index": 19, "uid": "8937908003", "name": "Adil H"},
+        {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker"},
+        {"index": 21, "uid": "8669217201", "name": "AAA201"},
+        {"index": 22, "uid": "9272631973", "name": "AAA 22"},
+        {"index": 23, "uid": "9106746905", "name": "Abid Hasan (4)"},
+        {"index": 24, "uid": "8972499908", "name": "AAA 24"}
     ]
 
-FLEET_21_ACCOUNTS_MAP = get_fleet_accounts_map()
-FLEET_20_ACCOUNTS_MAP = FLEET_21_ACCOUNTS_MAP
-FLEET_18_ACCOUNTS_MAP = FLEET_21_ACCOUNTS_MAP
+FLEET_24_ACCOUNTS_MAP = get_fleet_accounts_map()
+FLEET_21_ACCOUNTS_MAP = FLEET_24_ACCOUNTS_MAP
+FLEET_20_ACCOUNTS_MAP = FLEET_24_ACCOUNTS_MAP
+FLEET_18_ACCOUNTS_MAP = FLEET_24_ACCOUNTS_MAP
 
 FLEET_AD_FARMER_STATE = {
     "status": "starting",
@@ -3136,11 +3140,11 @@ def build_suite_from_static(m: dict) -> dict:
         }
     if uid == "8203342513" or (idx == 10 and not uid):
         return {
-            "ton": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "mnemonic": None, "wallet_type": "binance_web3_wallet_2"},
-            "evm": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "private_key": None, "wallet_type": "binance_web3_wallet_2"},
-            "tron": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP", "private_key": None, "network": "TRON (TRX / TRC-20)"},
-            "solana": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q", "private_key": None, "network": "Solana (SOL)"},
-            "btc": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2", "private_key": None, "network": "Bitcoin (BTC)"}
+            "ton": {"account_index": 10, "name": "Tanvir Ahmed", "user_id": "8203342513", "address": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "mnemonic": None, "wallet_type": "binance_web3_wallet_2"},
+            "evm": {"account_index": 10, "name": "Tanvir Ahmed", "user_id": "8203342513", "address": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "private_key": None, "wallet_type": "binance_web3_wallet_2"},
+            "tron": {"account_index": 10, "name": "Tanvir Ahmed", "user_id": "8203342513", "address": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP", "private_key": None, "network": "TRON (TRX / TRC-20)"},
+            "solana": {"account_index": 10, "name": "Tanvir Ahmed", "user_id": "8203342513", "address": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q", "private_key": None, "network": "Solana (SOL)"},
+            "btc": {"account_index": 10, "name": "Tanvir Ahmed", "user_id": "8203342513", "address": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2", "private_key": None, "network": "Bitcoin (BTC)"}
         }
 
     ton_mnemonic = m.get("ton_mnemonic", "")
