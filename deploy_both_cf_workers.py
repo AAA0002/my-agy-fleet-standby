@@ -2508,6 +2508,12 @@ async function upstashSet(key, value) {
   try {
     if (value === null || value === undefined) {
       UPSTASH_GET_CACHE.delete(key);
+      if (typeof caches !== "undefined" && caches.default) {
+        try {
+          const cacheUrl = `https://edge-cache.internal/${encodeURIComponent(key)}`;
+          caches.default.delete(cacheUrl).catch(() => {});
+        } catch (_) {}
+      }
       await fetch(`${UPSTASH_URL}/del/${key}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
@@ -2522,6 +2528,21 @@ async function upstashSet(key, value) {
       return;
     }
     UPSTASH_GET_CACHE.set(key, { val: valStr, ts: Date.now() });
+
+    // Cloudflare Edge Cache API (caches.default) for infinite, zero-cost reads
+    if (typeof caches !== "undefined" && caches.default) {
+      try {
+        const cacheUrl = `https://edge-cache.internal/${encodeURIComponent(key)}`;
+        const ttlSec = key.startsWith("fleet:") ? 60 : 3600;
+        const cacheResp = new Response(valStr, {
+          headers: {
+            "Cache-Control": `public, max-age=${ttlSec}`,
+            "Content-Type": "application/json"
+          }
+        });
+        caches.default.put(cacheUrl, cacheResp).catch(() => {});
+      } catch (_) {}
+    }
 
     // Primary: Upstash Redis
     let upstashOk = false;
@@ -2547,6 +2568,12 @@ async function upstashSet(key, value) {
 async function upstashDel(key) {
   try {
     UPSTASH_GET_CACHE.delete(key);
+    if (typeof caches !== "undefined" && caches.default) {
+      try {
+        const cacheUrl = `https://edge-cache.internal/${encodeURIComponent(key)}`;
+        caches.default.delete(cacheUrl).catch(() => {});
+      } catch (_) {}
+    }
     await fetch(`${UPSTASH_URL}/del/${key}`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
@@ -2589,6 +2616,21 @@ async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache 
   const cached = UPSTASH_GET_CACHE.get(key);
   if (maxAgeMs > 0 && cached && (Date.now() - cached.ts) < maxAgeMs) {
     return cached.val;
+  }
+
+  // 0. Cloudflare Edge Cache API (caches.default) for infinite, zero-cost reads
+  if (maxAgeMs > 0 && typeof caches !== "undefined" && caches.default) {
+    try {
+      const cacheUrl = `https://edge-cache.internal/${encodeURIComponent(key)}`;
+      const matched = await caches.default.match(cacheUrl);
+      if (matched) {
+        const val = await matched.text();
+        if (val) {
+          UPSTASH_GET_CACHE.set(key, { val, ts: Date.now() });
+          return val;
+        }
+      }
+    } catch (_) {}
   }
 
   // 1. Try Upstash Redis

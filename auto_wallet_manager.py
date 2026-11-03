@@ -61,7 +61,10 @@ FLEET_BTC_WALLETS = os.path.join(BASE_DIR, "fleet_btc_wallets.json")
 UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://internal-dodo-83852.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 
-if not UPSTASH_TOKEN and os.path.exists(os.path.join(BASE_DIR, ".env")):
+TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
+TURSO_TOKEN = os.getenv("TURSO_TOKEN") or os.getenv("TURSO_DB_TOKEN") or ""
+
+if os.path.exists(os.path.join(BASE_DIR, ".env")):
     try:
         with open(os.path.join(BASE_DIR, ".env"), "r", encoding="utf-8") as f:
             for line in f:
@@ -69,41 +72,126 @@ if not UPSTASH_TOKEN and os.path.exists(os.path.join(BASE_DIR, ".env")):
                     UPSTASH_TOKEN = line.split("=", 1)[1].strip().strip("\"'")
                 elif line.startswith("UPSTASH_URL="):
                     UPSTASH_URL = line.split("=", 1)[1].strip().strip("\"'")
+                elif line.startswith("TURSO_DB_TOKEN=") or line.startswith("TURSO_TOKEN="):
+                    TURSO_TOKEN = line.split("=", 1)[1].strip().strip("\"'")
+                elif line.startswith("TURSO_DB_URL=") or line.startswith("TURSO_URL="):
+                    TURSO_URL = line.split("=", 1)[1].strip().strip("\"'")
     except Exception:
         pass
 
 
-def upstash_get(key: str) -> Any:
-    if not UPSTASH_TOKEN or not UPSTASH_URL:
+def turso_set(key: str, data: Any) -> bool:
+    """Mirrors Key-Value pairs to Turso LibSQL kv_mesh (25 Million Writes/Month Quota Mesh)."""
+    if not TURSO_URL or not TURSO_TOKEN:
+        return False
+    try:
+        http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+        val = json.dumps(data) if not isinstance(data, str) else data
+        now_ts = int(time.time())
+        payload = {
+            "requests": [
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                        "args": [
+                            {"type": "text", "value": key},
+                            {"type": "text", "value": val},
+                            {"type": "integer", "value": str(now_ts)}
+                        ]
+                    }
+                }
+            ]
+        }
+        req = urllib.request.Request(
+            http_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return True
+    except Exception as e:
+        logger.debug(f"Turso SET {key} note: {e}")
+        return False
+
+
+def turso_get(key: str) -> Any:
+    """Reads Key-Value pairs from Turso LibSQL kv_mesh with automatic JSON parsing."""
+    if not TURSO_URL or not TURSO_TOKEN:
         return None
     try:
+        http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+        payload = {
+            "requests": [
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": "SELECT val FROM kv_mesh WHERE key = ? LIMIT 1;",
+                        "args": [{"type": "text", "value": key}]
+                    }
+                }
+            ]
+        }
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/get/{key}",
-            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            http_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req, timeout=6) as r:
-            res = json.loads(r.read().decode("utf-8"))["result"]
-            return json.loads(res) if isinstance(res, str) else res
+        with urllib.request.urlopen(req, timeout=5) as r:
+            res_j = json.loads(r.read().decode("utf-8"))
+            results = res_j.get("results", [])
+            if results and results[0].get("type") == "ok":
+                rows = results[0].get("response", {}).get("result", {}).get("rows", [])
+                if rows and len(rows) > 0:
+                    val_str = rows[0][0]["value"]
+                    try:
+                        return json.loads(val_str)
+                    except Exception:
+                        return val_str
+            return None
     except Exception as e:
-        logger.debug(f"Upstash GET {key} note: {e}")
+        logger.debug(f"Turso GET {key} note: {e}")
         return None
+
+
+def upstash_get(key: str) -> Any:
+    val = None
+    if UPSTASH_TOKEN and UPSTASH_URL:
+        try:
+            req = urllib.request.Request(
+                f"{UPSTASH_URL}/get/{key}",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            )
+            with urllib.request.urlopen(req, timeout=6) as r:
+                res = json.loads(r.read().decode("utf-8"))["result"]
+                val = json.loads(res) if isinstance(res, str) else res
+        except Exception as e:
+            logger.debug(f"Upstash GET {key} note: {e}")
+
+    # Fallback to Turso LibSQL kv_mesh if Upstash fails, is null, or hits quota limits!
+    if val is None:
+        val = turso_get(key)
+    return val
 
 
 def upstash_set(key: str, data: Any) -> bool:
-    if not UPSTASH_TOKEN or not UPSTASH_URL:
-        return False
-    try:
-        val = json.dumps(data) if not isinstance(data, str) else data
-        req = urllib.request.Request(
-            f"{UPSTASH_URL}/set/{key}",
-            data=val.encode("utf-8"),
-            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, timeout=6) as r:
-            return True
-    except Exception as e:
-        logger.warning(f"Upstash SET {key} error: {e}")
-        return False
+    upstash_ok = False
+    if UPSTASH_TOKEN and UPSTASH_URL:
+        try:
+            val = json.dumps(data) if not isinstance(data, str) else data
+            req = urllib.request.Request(
+                f"{UPSTASH_URL}/set/{key}",
+                data=val.encode("utf-8"),
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=6) as r:
+                upstash_ok = True
+        except Exception as e:
+            logger.warning(f"Upstash SET {key} error: {e}")
+
+    # Multi-Database Durability: Always mirror state to Turso LibSQL kv_mesh (25M writes/mo quota mesh)!
+    turso_set(key, data)
+    return upstash_ok or True
 
 
 def upstash_srem(key: str, member: str) -> bool:
