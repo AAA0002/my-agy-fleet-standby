@@ -2605,7 +2605,9 @@ const DEFAULT_FLEET_ACCOUNTS = [
   { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
   { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
   { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" },
-  { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" }
+  { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" },
+  { index: 23, name: "Abid Hasan", user_id: 9106746905, phone: "+8801788601627" },
+  { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
 ];
 
 const KNOWN_PHONES = {
@@ -2630,7 +2632,9 @@ const KNOWN_PHONES = {
   "8937908003": "+8801804723069",
   "8609131528": "+8801312863569",
   "8669217201": "+8801913962342",
-  "9272631973": "+8801732100769"
+  "9272631973": "+8801732100769",
+  "9106746905": "+8801788601627",
+  "8972499908": "+8801794783852"
 };
 
 const KNOWN_PHONES_BY_INDEX = {
@@ -2655,7 +2659,9 @@ const KNOWN_PHONES_BY_INDEX = {
   19: "+8801804723069",
   20: "+8801312863569",
   21: "+8801913962342",
-  22: "+8801732100769"
+  22: "+8801732100769",
+  23: "+8801788601627",
+  24: "+8801794783852"
 };
 
 const cleanName = (acc, idx) => {
@@ -3130,7 +3136,9 @@ export default {
       19: "+8801804723069",
       20: "+8801312863569",
       21: "+8801913962342",
-      22: "+8801732100769"
+      22: "+8801732100769",
+      23: "+8801788601627",
+      24: "+8801794783852"
     };
 
     const fetchFleetOtp = async (targetIdx) => {
@@ -3257,23 +3265,23 @@ export default {
         "CRITICAL RULES:\n" +
         "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE.\n" +
         "- When asked what this bot can do, how it works, or what bots are supported, showcase the 9 verified mining pools with their names and links:\n" +
-                "  2. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n" +
-        "  4. 🌐 [Kynex Network](https://t.me/Kynex_miningbot?start=6727787768) — Decentralized TON edge node mining (12h cycle)\n" +
-        "  5. ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — High-hashrate block mining (3h cycle)\n" +
-        "  6. 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — Meme token cloud mining (3h cycle)\n" +
-        "  7. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — AI computational mining node (3h cycle)\n" +
-        "  8. 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling (8h cycle)\n" +
-        "  9. 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — High-yield cloud miner & Adsgram quests (12h cycle)\n" +
-        "  10. 💎 [LUM Miner](https://t.me/lumeonminer_bot/Lum?startapp=6727787768) — LUM mining, referral bonuses & daily tasks (4h cycle)\n" +
-        "  11. 🏦 [EarnVault](https://t.me/EarnVaultApp_bot/App?startapp=6727787768) — Rewarded video ads & USD claims (2h cycle)\n" +
-        "- Explain that the bot automatically farms and claims all 11 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
+        "  1. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n" +
+        "  2. 🌐 [Kynex Network](https://t.me/Kynex_miningbot?start=6727787768) — Decentralized TON edge node mining (12h cycle)\n" +
+        "  3. ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — High-hashrate block mining (3h cycle)\n" +
+        "  4. 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — Meme token cloud mining (3h cycle)\n" +
+        "  5. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — AI computational mining node (3h cycle)\n" +
+        "  6. 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling (8h cycle)\n" +
+        "  7. 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — High-yield cloud miner & Adsgram quests (12h cycle)\n" +
+        "  8. 💎 [LUM Miner](https://t.me/lumeonminer_bot/Lum?startapp=6727787768) — LUM mining, referral bonuses & daily tasks (4h cycle)\n" +
+        "  9. 🏦 [EarnVault](https://t.me/EarnVaultApp_bot/App?startapp=6727787768) — Rewarded video ads & USD claims (2h cycle)\n" +
+        "- Explain that the bot automatically farms and claims all 9 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
         "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
         "• Creator: Created and engineered by AAA.\n" +
-        "• What the bot does: Automatically farms 11 Telegram crypto bots 24/7 in the cloud.\n" +
+        "• What the bot does: Automatically farms 9 Telegram crypto bots 24/7 in the cloud.\n" +
         "• How to connect: Tap '➕ Connect Account' -> '⚡ 1-Tap Link My Account' to connect instantly, or connect via phone or numeric Telegram ID.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
@@ -3338,18 +3346,18 @@ export default {
           `• *Supported Bots:* Auto-farms 9 Telegram crypto bots 24/7 (ATF, Kynex, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 11 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
-          `🤖 *The 11 Automated Mining Pools & Links:*\n` +
-                    `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-          `4️⃣ 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n` +
-          `5️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — Decentralized automated block mining\n` +
-          `6️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — PEPE meme token community mining & daily rewards\n` +
-          `7️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — Neural token mining, daily streaks & task rewards\n` +
-          `8️⃣ 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling\n` +
-          `9️⃣ 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — Cloud miner yield & Adsgram rewards\n` +
-          `🔟 💎 [LUM Miner](https://t.me/lumeonminer_bot/Lum?startapp=6727787768) — Daily mining, referral bonuses & tasks\n` +
-          `1️⃣1️⃣ 🏦 [EarnVault](https://t.me/EarnVaultApp_bot/App?startapp=6727787768) — Rewarded video ads & USD claims\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 11 pools 24/7 in the cloud!`;
+          `This bot **automatically mines 9 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
+          `🤖 *The 9 Automated Mining Pools & Links:*\n` +
+          `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+          `2️⃣ 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n` +
+          `3️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — Decentralized automated block mining\n` +
+          `4️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — PEPE meme token community mining & daily rewards\n` +
+          `5️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — Neural token mining, daily streaks & task rewards\n` +
+          `6️⃣ 🐔 [Chicken Land](https://t.me/ChickenLandBot?start=12668) — Passive egg laying & autonomous market selling\n` +
+          `7️⃣ 🍐 [Grouche Mine](https://t.me/GRC_AirdrooBot?start=6727787768) — Cloud miner yield & Adsgram rewards\n` +
+          `8️⃣ 💎 [LUM Miner](https://t.me/lumeonminer_bot/Lum?startapp=6727787768) — Daily mining, referral bonuses & tasks\n` +
+          `9️⃣ 🏦 [EarnVault](https://t.me/EarnVaultApp_bot/App?startapp=6727787768) — Rewarded video ads & USD claims\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 9 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -3357,7 +3365,7 @@ export default {
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 11 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 9 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -5865,7 +5873,7 @@ fi
           status: "online",
           version: "5.0-executive",
           fleet_size: memFleetAccounts?.length || DEFAULT_FLEET_ACCOUNTS.length,
-          active_bots: 11,
+          active_bots: 9,
           supported_bots: [
             "ATF Miner (@ATF_AIRDROP_bot)",
             "Kynex Network (@Kynex_miningbot)",
@@ -5912,7 +5920,10 @@ fi
           "8975442879": "+8801839716506",
           "8937908003": "+8801804723069",
           "8609131528": "+8801312863569",
-          "8669217201": "+8801913962342"
+          "8669217201": "+8801913962342",
+          "9272631973": "+8801732100769",
+          "9106746905": "+8801788601627",
+          "8972499908": "+8801794783852"
         };
 
         const KNOWN_PHONES_BY_INDEX = {
@@ -5937,7 +5948,9 @@ fi
           19: "+8801804723069",
           20: "+8801312863569",
           21: "+8801913962342",
-          22: "+8801732100769"
+          22: "+8801732100769",
+          23: "+8801788601627",
+          24: "+8801794783852"
         };
 
         const DEFAULT_FLEET_ACCOUNTS = [
@@ -5962,7 +5975,9 @@ fi
           { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
           { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
           { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" },
-          { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" }
+          { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" },
+          { index: 23, name: "Abid Hasan", user_id: 9106746905, phone: "+8801788601627" },
+          { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
@@ -6307,20 +6322,24 @@ fi
           };
         };
 
-        const onAccountRelinkSuccess = async (targetIdx) => {
+        const onAccountRelinkSuccess = async (targetIdx, optUserId = null) => {
           const numIdx = Number(targetIdx);
-          if (!numIdx) return;
           memSessionHealth = null;
           memFleetAccounts = null;
           memFleetAccountsTs = 0;
           UPSTASH_GET_CACHE.clear();
           UPSTASH_MEMBERS_CACHE.clear();
-          const allAccs = await getFleetAccounts(true);
-          const acc = allAccs.find(a => a.index === numIdx);
-          const uidStr = acc ? String(acc.user_id) : "";
-          await upstashSadd("fleet:healthy_sessions", String(numIdx));
-          await upstashSrem("fleet:revoked_sessions", String(numIdx));
-          await upstashDel("fleet:revocation_reason:" + numIdx);
+          let uidStr = optUserId ? String(optUserId).trim() : "";
+          if (!uidStr && numIdx) {
+            const allAccs = await getFleetAccounts(true);
+            const acc = allAccs.find(a => a.index === numIdx);
+            if (acc && acc.user_id) uidStr = String(acc.user_id).trim();
+          }
+          if (numIdx) {
+            await upstashSadd("fleet:healthy_sessions", String(numIdx));
+            await upstashSrem("fleet:revoked_sessions", String(numIdx));
+            await upstashDel("fleet:revocation_reason:" + numIdx);
+          }
           if (uidStr) {
             await upstashSrem("fleet:revoked_sessions", uidStr);
             await upstashSadd("fleet:healthy_sessions", uidStr);
@@ -6940,18 +6959,23 @@ fi
                     });
                     if (res2fa && res2fa.ok) {
                       memLoginFlow.delete(String(chatId));
-                      ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-                      if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
-                      ctx.waitUntil(unBlacklistAccount(res2fa.user_id, res2fa.phone || phoneToRelink, res2fa.name || "User"));
-                      ctx.waitUntil(saveFleetAccountDynamic(res2fa, phoneToRelink));
-                      ctx.waitUntil(onAccountRelinkSuccess(targetIdx));
+                      await upstashSet("login_flow:" + chatId, null);
+                      if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+                      await unBlacklistAccount(res2fa.user_id, res2fa.phone || phoneToRelink, res2fa.name || "User");
+                      await saveFleetAccountDynamic(res2fa, phoneToRelink);
+                      await onAccountRelinkSuccess(targetIdx, res2fa.user_id);
+                      memSessionHealth = null;
+                      memFleetAccounts = null;
+                      memFleetAccountsTs = 0;
+                      UPSTASH_GET_CACHE.clear();
+                      UPSTASH_MEMBERS_CACHE.clear();
                       const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
                         `• *Name:* ${res2fa.name || "User"}\n` +
                         `• *Username:* @${res2fa.username || "None"}\n` +
                         `• *User ID:* \`${res2fa.user_id}\`\n` +
                         `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
                         `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
-                        `✅ *100% Cloud MTProto Active!*\nAll 11 autonomous farming bots are online 24/7 in the cloud.`;
+                        `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                       await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                       return new Response("OK");
                     }
@@ -6984,16 +7008,18 @@ fi
                   if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
                   await unBlacklistAccount(res.user_id, res.phone || phoneToRelink, res.name || "User");
                   await saveFleetAccountDynamic(res, phoneToRelink);
-                  await onAccountRelinkSuccess(targetIdx);
+                  await onAccountRelinkSuccess(targetIdx, res.user_id);
                   memSessionHealth = null;
                   memFleetAccounts = null;
                   memFleetAccountsTs = 0;
+                  UPSTASH_GET_CACHE.clear();
+                  UPSTASH_MEMBERS_CACHE.clear();
                   const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
                     `• *Name:* ${res.name || "User"}\n` +
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
                     `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
-                    `✅ *100% Cloud MTProto Active!*\nAll 11 autonomous farming bots are online 24/7 in the cloud.`;
+                    `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
                 }
@@ -9537,14 +9563,19 @@ fi
                 if (res2fa && res2fa.ok) {
                   authed2fa = true;
                   memLoginFlow.delete(String(chatId));
-                  ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-                  if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
-                  ctx.waitUntil(unBlacklistAccount(res2fa.user_id, res2fa.phone || phone, res2fa.name || "User"));
-                  ctx.waitUntil(saveFleetAccountDynamic(res2fa, phone));
+                  await upstashSet("login_flow:" + chatId, null);
+                  if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+                  await unBlacklistAccount(res2fa.user_id, res2fa.phone || phone, res2fa.name || "User");
+                  await saveFleetAccountDynamic(res2fa, phone);
                   const finalIdx = targetRelinkIdx || res2fa.index;
                   if (finalIdx) {
-                    ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+                    await onAccountRelinkSuccess(finalIdx, res2fa.user_id);
                   }
+                  memSessionHealth = null;
+                  memFleetAccounts = null;
+                  memFleetAccountsTs = 0;
+                  UPSTASH_GET_CACHE.clear();
+                  UPSTASH_MEMBERS_CACHE.clear();
                   const succMsg = `🎉 *Account Connected Successfully!* 🟢\n\n` +
                     (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} (Restored to Active)\n` : "") +
                     `• *Name:* ${res2fa.name || "User"}\n` +
@@ -9572,14 +9603,19 @@ fi
               await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
             } else if (res && res.ok) {
               memLoginFlow.delete(String(chatId));
-              ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-              if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
-              ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
-              ctx.waitUntil(saveFleetAccountDynamic(res, phone));
+              await upstashSet("login_flow:" + chatId, null);
+              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              await unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User");
+              await saveFleetAccountDynamic(res, phone);
               const finalIdx = targetRelinkIdx || res.index;
               if (finalIdx) {
-                ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+                await onAccountRelinkSuccess(finalIdx, res.user_id);
               }
+              memSessionHealth = null;
+              memFleetAccounts = null;
+              memFleetAccountsTs = 0;
+              UPSTASH_GET_CACHE.clear();
+              UPSTASH_MEMBERS_CACHE.clear();
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
                 (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} 🟢 (Restored to Active)\n` : "") +
                 `• *Name:* ${res.name || "User"}\n` +
@@ -9646,20 +9682,25 @@ fi
             const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url, index: targetRelinkIdx, is_user_bot: false });
             if (res && res.ok) {
               memLoginFlow.delete(String(chatId));
-              ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-              if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
-              ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
-              ctx.waitUntil(saveFleetAccountDynamic(res, phone));
+              await upstashSet("login_flow:" + chatId, null);
+              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              await unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User");
+              await saveFleetAccountDynamic(res, phone);
               const finalIdx = targetRelinkIdx || res.index;
               if (finalIdx) {
-                ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+                await onAccountRelinkSuccess(finalIdx, res.user_id);
                 // Auto-memorize working custom 2FA password in Upstash for future relinks
-                ctx.waitUntil(upstashSet(`fleet:custom_2fa:${finalIdx}`, trimmed));
+                await upstashSet(`fleet:custom_2fa:${finalIdx}`, trimmed);
                 if (phone) {
                   const cleanPh = phone.replace(/\D/g, "");
-                  if (cleanPh) ctx.waitUntil(upstashSet(`fleet:custom_2fa:${cleanPh}`, trimmed));
+                  if (cleanPh) await upstashSet(`fleet:custom_2fa:${cleanPh}`, trimmed);
                 }
               }
+              memSessionHealth = null;
+              memFleetAccounts = null;
+              memFleetAccountsTs = 0;
+              UPSTASH_GET_CACHE.clear();
+              UPSTASH_MEMBERS_CACHE.clear();
               const succMsg = `🎉 *Account Connected Successfully with 2FA!* 🟢\n\n` +
                 (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} 🟢 (Restored to Active)\n` : "") +
                 `• *Name:* ${res.name || "User"}\n` +
@@ -10060,7 +10101,7 @@ fi
               `_Farming cycle and task claims active across all healthy nodes._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 11 mining pools`,
+              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 9 mining pools`,
               rep
             ];
             const harvestPromise = queueHarvestAction();
@@ -11144,7 +11185,7 @@ fi
             `• \`/start\` or \`/menu\` — Operations dashboard & quick action grid\n` +
             `• \`/status\` or \`/fleet\` — Real-time fleet operations & telemetry\n` +
             `• \`/summary\` — Executive all-in-one health check\n` +
-            `• \`/harvest\` — Dispatches instant 11-bot harvest across all fleet accounts\n` +
+            `• \`/harvest\` — Dispatches instant 9-bot harvest across all fleet accounts\n` +
             `• \`/bots\` — 9-Bot Autonomous Mining Fleet Hub\n` +
             `• \`/chicken\` — Chicken Land Passive Farming & 8h Basket\n` +
             `• \`/snipe <CODE>\` — Sub-Second Promo Code Sniper (Concurrent Fleet Blaster)\n` +
@@ -16774,7 +16815,7 @@ async def main():
                 "• LUM Miner • EarnVault\n\n"
                 "🛡️ 100% Cloud-Powered • Zero Phone Load • Multi-Edge Mesh"
             )
-            admin_short_desc = "👑 MY AGY AI Operations Console — Multi-Account Fleet & 11 Mining Bots across Multi-Cloud Edge."
+            admin_short_desc = "👑 MY AGY AI Operations Console — Multi-Account Fleet & 9 Mining Bots across Multi-Cloud Edge."
             try:
                 async with session.post(
                     f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyDescription",
@@ -16837,7 +16878,7 @@ async def main():
                     {"command": "fleet", "description": "📊 Fleet Operations & Telemetry"},
                     {"command": "treasury", "description": "💰 On-Chain Treasury & Live Payouts Ledger"},
                     {"command": "payouts", "description": "💳 Daily Financial Accounting & Ledger"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 11-Bot Multi-Cloud Harvest"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
                     {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
                     {"command": "chicken", "description": "🐔 Chicken Land Passive Egg Laying & Farm"},
                     {"command": "grouche", "description": "🍐 Grouche Mine Yield & Adsgram Hub"},

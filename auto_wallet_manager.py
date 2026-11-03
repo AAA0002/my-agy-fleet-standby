@@ -142,10 +142,17 @@ def turso_get(key: str) -> Any:
                 rows = results[0].get("response", {}).get("result", {}).get("rows", [])
                 if rows and len(rows) > 0:
                     val_str = rows[0][0]["value"]
-                    try:
-                        return json.loads(val_str)
-                    except Exception:
-                        return val_str
+                    val = val_str
+                    while isinstance(val, str):
+                        s_trimmed = val.strip()
+                        if (s_trimmed.startswith("{") and s_trimmed.endswith("}")) or (s_trimmed.startswith("[") and s_trimmed.endswith("]")):
+                            try:
+                                val = json.loads(val)
+                            except Exception:
+                                break
+                        else:
+                            break
+                    return val
             return None
     except Exception as e:
         logger.debug(f"Turso GET {key} note: {e}")
@@ -162,13 +169,31 @@ def upstash_get(key: str) -> Any:
             )
             with urllib.request.urlopen(req, timeout=6) as r:
                 res = json.loads(r.read().decode("utf-8"))["result"]
-                val = json.loads(res) if isinstance(res, str) else res
+                val = res
+                while isinstance(val, str):
+                    s_trimmed = val.strip()
+                    if (s_trimmed.startswith("{") and s_trimmed.endswith("}")) or (s_trimmed.startswith("[") and s_trimmed.endswith("]")):
+                        try:
+                            val = json.loads(val)
+                        except Exception:
+                            break
+                    else:
+                        break
         except Exception as e:
             logger.debug(f"Upstash GET {key} note: {e}")
 
     # Fallback to Turso LibSQL kv_mesh if Upstash fails, is null, or hits quota limits!
     if val is None:
         val = turso_get(key)
+    while isinstance(val, str):
+        s_trimmed = val.strip()
+        if (s_trimmed.startswith("{") and s_trimmed.endswith("}")) or (s_trimmed.startswith("[") and s_trimmed.endswith("]")):
+            try:
+                val = json.loads(val)
+            except Exception:
+                break
+        else:
+            break
     return val
 
 
@@ -484,7 +509,9 @@ def reconcile_all_fleet_accounts() -> List[Dict[str, Any]]:
                     if uid in accounts_by_uid:
                         # Merge fields
                         for k, v in ca.items():
-                            if v is not None and (k not in accounts_by_uid[uid] or not accounts_by_uid[uid].get(k)):
+                            if k == "session_string" and isinstance(v, str) and len(v) > 50:
+                                accounts_by_uid[uid][k] = v
+                            elif v is not None and (k not in accounts_by_uid[uid] or not accounts_by_uid[uid].get(k)):
                                 accounts_by_uid[uid][k] = v
                     else:
                         accounts_by_uid[uid] = ca
@@ -518,6 +545,10 @@ def reconcile_all_fleet_accounts() -> List[Dict[str, Any]]:
 
     state_accounts = []
     tokens_map = upstash_get("miniapp_tokens") or {}
+    if not isinstance(tokens_map, dict):
+        tokens_map = {}
+    if not isinstance(tokens_map, dict):
+        tokens_map = {}
 
     for a in reconciled:
         uid_s = str(a.get("user_id"))
@@ -565,6 +596,10 @@ async def connect_and_start_bot_wallets(acc_entry: dict, tokens: dict = None, se
 
     if not tokens:
         tokens_map = upstash_get("miniapp_tokens") or {}
+    if not isinstance(tokens_map, dict):
+        tokens_map = {}
+        if not isinstance(tokens_map, dict):
+            tokens_map = {}
         tokens = tokens_map.get(uid) or {}
         if not tokens:
             tokens = upstash_get(f"fleet:tokens:{uid}") or {}
@@ -706,6 +741,8 @@ async def run_wallet_and_mining_sweep():
     accounts = reconcile_all_fleet_accounts()
     logger.info(f"🚀 Launching autonomous wallet connection & mining sweep across {len(accounts)} accounts...")
     tokens_map = upstash_get("miniapp_tokens") or {}
+    if not isinstance(tokens_map, dict):
+        tokens_map = {}
 
     async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"}) as session:
         for acc in accounts:

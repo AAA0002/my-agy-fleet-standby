@@ -290,3 +290,31 @@
 - **Solana Wallet (SOL):** `7JgzCj2TDauNBGJ68rbimEXcPwomMCvnDRK4H5GBGebc`
 - **Bitcoin Wallet (BTC):** `13fbc281E9NFnZS5bLwCyZ71rR3qfAbHnW`
 - **Custody:** `Self-Custody (Gram Wallet / Tonkeeper)`
+
+| 23 | **Abid Hasan** | `+8801788601627` | `9106746905` | `UQAvTw...akWI` | `0x06a3...3d72` | `N/A` | `N/A` | `N/A` |
+
+### 23. Abid Hasan (Worker)
+- **Phone Number:** `+8801788601627`
+- **Telegram ID:** `9106746905`
+- **Telegram Username:** `aaa023aa`
+- **Account Status:** `active`
+- **TON Wallet (v4r2):** `UQAvTw1aMotTR57mfSw_RyKHqvj5qUEc93OxtoRA6BXtakWI`
+- **EVM Wallet (BSC / Arb):** `0x06a3d142d53edc32821183dc76b4439d911d3d72`
+- **TRON Wallet (TRC-20):** ``
+- **Solana Wallet (SOL):** ``
+- **Bitcoin Wallet (BTC):** ``
+- **Custody:** `Self-Custody (Gram Wallet / Tonkeeper)`
+
+| 24 | **AAA 24** | `+8801794783852` | `8972499908` | `UQDxJ5...idIN` | `0x4e6f...b872` | `TH7vtJ...3H9T` | `5tsDog...vJtu` | `1LZkNF...6mXq` |
+
+### 24. AAA 24 (Worker)
+- **Phone Number:** `+8801794783852`
+- **Telegram ID:** `8972499908`
+- **Telegram Username:** `aaa024a`
+- **Account Status:** `active`
+- **TON Wallet (v4r2):** `UQDxJ5Ruplspt0sR8eRfQSh1kErhRO5jie8xGuzF57Y-idIN`
+- **EVM Wallet (BSC / Arb):** `0x4e6f2bb82682fabeb8ffba351ae9225b8dfeb872`
+- **TRON Wallet (TRC-20):** `TH7vtJXB1TRtiJT1nVcuLwVgzZigvk3H9T`
+- **Solana Wallet (SOL):** `5tsDogMp4WRgBA7TW8jUMaTXBEycCgcTTXPSdxG4vJtu`
+- **Bitcoin Wallet (BTC):** `1LZkNF5JjuwyFVcVWT2gJpV5xBYg676mXq`
+- **Custody:** `Self-Custody (Gram Wallet / Tonkeeper)`

@@ -7,7 +7,7 @@ Calculates:
 - Total BNB farmed & withdrawn today
 - Real-time fiat valuation (USD $ and BDT ৳) via Binance API
 - Live On-Chain Wallet Balance from Binance Smart Chain
-- Cloudflare Edge Mini-App Yield (8 Active Mining Bots: MRG, ATF, Victor's, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land)
+- Cloudflare Edge Mini-App Yield (9 Active Mining Bots: ATF, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche, LUM, EarnVault)
 Broadcasts report to Telegram Payout Channel (-1004402765950) & Admin DM (6727787768).
 """
 
@@ -159,9 +159,7 @@ import re
 
 async def get_fleet_mining_totals() -> dict:
     totals = {
-        "mrg": 0.0,
         "atf": 0.0,
-        "vic": 0.0,
         "knx": 0.0,
         "diggo": 0.0,
         "pepe": 0.0,
@@ -183,22 +181,12 @@ async def get_fleet_mining_totals() -> dict:
                         core = b_data.get("core", {})
                         core_str = str(core)
 
-                        # 1. MRG Miner
-                        if "MRG" in b_name:
-                            m = re.search(r"([\d\.]+)\s*MRG", core_str)
-                            if m: totals["mrg"] += float(m.group(1))
-
-                        # 2. ATF Miner
-                        elif "ATF" in b_name:
+                        # 1. ATF Miner
+                        if "ATF" in b_name:
                             m = re.search(r"([\d\.]+)\s*ATF", core_str)
                             if m: totals["atf"] += float(m.group(1))
 
-                        # 3. Victor's Company
-                        elif "Victor" in b_name:
-                            m = re.search(r"([\d\.]+)\s*VIC", core_str)
-                            if m: totals["vic"] += float(m.group(1))
-
-                        # 4. Kynex Network
+                        # 2. Kynex Network
                         elif "Kynex" in b_name:
                             m = re.search(r"([\d\.]+)\s*KNX", core_str)
                             if m: totals["knx"] += float(m.group(1))
@@ -305,21 +293,17 @@ async def get_fleet_mining_totals() -> dict:
                             totals["atf"] += float(a.get("atf_balance", 0) or 0)
                         if totals["chicken_hens"] == 0:
                             totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
-                        if totals["vic"] == 0.0:
-                            totals["vic"] += float(a.get("victors_balance", 0) or 0)
         except Exception:
             pass
 
     # Fallback to accounts.json if still 0
-    if totals["vic"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0:
+    if totals["atf"] == 0.0 or totals["chicken_hens"] == 0:
         accs_file = os.path.join(BASE_DIR, "accounts.json")
         if os.path.exists(accs_file):
             try:
                 with open(accs_file, "r", encoding="utf-8") as f:
                     accs = json.load(f)
                     for a in accs:
-                        if totals["vic"] == 0.0:
-                            totals["vic"] += float(a.get("victors_balance", 0) or 0)
                         if totals["atf"] == 0.0:
                             totals["atf"] += float(a.get("atf_balance", 0) or 0)
                         if totals["chicken_hens"] == 0:
@@ -420,10 +404,8 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Live On-Chain Balance:* `{wallet_bnb:.6f} BNB` (`~${wallet_usd:.2f} USD` / `~৳{wallet_bdt:.0f} BDT`)\n"
             f"• *Historical Distributions:* `{total_payouts_count} payouts` totaling `{total_payouts_bnb:.6f} BNB`\n"
             f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n\n"
-            f"💎 *2. Multi-Chain 11-Bot Autonomous Mining Treasury:*\n"
-            f"• *MRG Miner:* `{fleet_totals['mrg']:,.2f} MRG` mined (Levels up to 180+, Cloud Turnstile Auto-Claim)\n"
+            f"💎 *2. Multi-Chain 9-Bot Autonomous Mining Treasury:*\n"
             f"• *ATF Miner:* `{fleet_totals['atf']:,.2f} ATF` mined (Levels up to 160+, Deterministic Math Solver)\n"
-            f"• *Victor's Company:* {vic_str}\n"
             f"• *Kynex Network:* `{fleet_totals['knx']:,.2f} KNX` mined (Firebase RTDB Node Auto-Claim)\n"
             f"• *DiggoMiner:* `{fleet_totals['diggo']:,.2f} DIGGO` mined (Decentralized Block Mining & JWT)\n"
             f"• *PepeGram:* `{fleet_totals['pepe']:,.2f} PEPE` mined (6h Cycles & Power Boosts)\n"
@@ -439,7 +421,7 @@ async def generate_and_send_report(dry_run: bool = False):
             f"• *Cloudflare 5x Mesh:* APAC + Global edge nodes (Nodes 1, 2, 3, 4, 5)\n"
             f"• *Cloudflare Workers AI:* Serverless Llama 3.2 & DeepSeek R1 edge intelligence (0 keys)\n"
             f"• *Cloudflare D1 & R2:* Serverless SQL audit trail & zero-egress backup storage\n"
-            f"• *Render Standby:* Node 2 (Frankfurt, Active) & Node 3 (Oregon, Standby)\n"
+            f"• *Render Standby:* Node 3 (Oregon, Active Coordinator)\n"
             f"• *Supabase & Upstash:* Cloud PostgreSQL + Redis live state replication\n\n"
             f"🤖 *4. AI Fleet Intelligence & Strategy (Cloudflare Workers AI):*\n"
             f"_{ai_briefing}_\n\n"

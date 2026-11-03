@@ -217,71 +217,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
     }
 
     async with aiohttp.ClientSession(headers=headers) as session:
-        # 1. MRG Miner
-        mrg_init = tokens.get("mrg_init_data")
-        if mrg_init:
-            m_h = {**headers, "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                # Core: claim mining (with cached turnstile pass from Redis)
-                mrg_pass = None
-                if UPSTASH_URL and UPSTASH_TOKEN:
-                    try:
-                        async with session.get(f"{UPSTASH_URL}/get/mrg:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as pr:
-                            if pr.status == 200:
-                                pd = await pr.json()
-                                if pd.get("result"):
-                                    parsed_p = json.loads(pd["result"]) if isinstance(pd["result"], str) and pd["result"].startswith("{") else pd["result"]
-                                    mrg_pass = parsed_p.get("turnstileToken") if isinstance(parsed_p, dict) else parsed_p
-                    except Exception:
-                        pass
-                claim_body = {"initData": mrg_init}
-                if mrg_pass:
-                    claim_body["turnstileToken"] = mrg_pass
-                async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json=claim_body, headers=m_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    cld = {}
-                    try:
-                        cld = await r.json()
-                    except Exception:
-                        pass
-                    if r.status == 200 and cld.get("success"):
-                        b_rep["core"]["claim"] = f"Auto-Claimed {float(cld.get('claimedAmount', 0)):.2f} MRG ✅"
-                    elif r.status in (400, 403) or cld.get("code") == "HUMAN_CHECK_REQUIRED" or "human" in json.dumps(cld).lower():
-                        b_rep["core"]["claim"] = "Accumulating (Headful Cloud Turnstile Active) 🛡️"
-                    else:
-                        b_rep["core"]["claim"] = f"HTTP {r.status} - {cld.get('message', 'ok')}"
-
-                # State & Side Tasks
-                async with session.post("https://mrg.up.railway.app/api/user/me", json={"initData": mrg_init}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        med = await r.json()
-                        u_obj = med.get("user", {})
-                        in_bal = u_obj.get("inAppBalance", 0)
-                        cur_lvl = u_obj.get("peakLevel") or u_obj.get("manualUnlockedLevel") or 1
-                        b_rep["core"]["balance"] = f"{in_bal} MRG (Miner Level: {cur_lvl}/203)"
-                        
-                        tasks = med.get("tasks", [])
-                        comp_ids = set(med.get("completedTaskIds", []))
-                        pending_cnt = len([t for t in tasks if t.get("taskId") not in comp_ids])
-                        b_rep["side_tasks"].append(f"Tasks: {len(comp_ids)} Completed, {pending_cnt} Pending")
-                        
-                        ton_conn = u_obj.get("isTonConnected")
-                        ton_addr = u_obj.get("tonWalletAddress", "None")
-                        b_rep["side_tasks"].append(f"TON Wallet: {'Connected: ' + ton_addr[:8] + '...' if ton_conn else 'Unbound'}")
-                        
-                        # Master Referral Commission
-                        if is_owner:
-                            async with session.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": mrg_init}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                                b_rep["side_tasks"].append(f"Master Referral Commission Claim: HTTP {cr.status}")
-                    else:
-                        b_rep["core"]["balance"] = f"HTTP {r.status}"
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["1. MRG Miner"] = b_rep
-        else:
-            report["bots"]["1. MRG Miner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
-
-        # 2. ATF Miner
+# 2. ATF Miner
         atf_init = tokens.get("atf_init_data")
         if atf_init:
             atf_h = {
@@ -324,78 +260,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         else:
             report["bots"]["2. ATF Miner"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
 
-        # 3. Victor's Company
-        vic_init = tokens.get("victors_init_data")
-        if vic_init:
-            v_h = {
-                **headers,
-                "Authorization": f"tma {vic_init}",
-                "Origin": "https://app.victors.company",
-                "Referer": "https://app.victors.company/"
-            }
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                # Query Upstash Redis for Victor's Company humanPass
-                vic_pass = None
-                if UPSTASH_URL and UPSTASH_TOKEN:
-                    try:
-                        async with session.get(f"{UPSTASH_URL}/get/victors:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as vr:
-                            if vr.status == 200:
-                                vd = await vr.json()
-                                if vd.get("result"):
-                                    parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
-                                    vic_pass = parsed_v.get("humanPass") if isinstance(parsed_v, dict) else parsed_v
-                    except Exception:
-                        pass
-                if vic_pass:
-                    v_h["x-human-pass"] = str(vic_pass)
-
-                # Me
-                async with session.get("https://server.victors.company/api/me", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    cld = {}
-                    try:
-                        cld = await r.json()
-                    except Exception:
-                        pass
-                    if r.status == 200:
-                        me = cld
-                        st = me.get("state", {}) if isinstance(me, dict) else {}
-                        u = st.get("user", {}) if st else (me.get("user") or me)
-                        m = st.get("mining", {}) if st else {}
-                        lvl = m.get("level") or u.get("peakLevel") or u.get("manualUnlockedLevel") or 1
-                        bal = float(u.get("inAppBalance") or 0.0)
-                        b_rep["core"]["login"] = "Authenticated ✅"
-                        b_rep["core"]["balance"] = f"Level {lvl}, Bal: {bal:.2f} VIC"
-                    elif r.status in (401, 403) or cld.get("code") == "HUMAN_REQUIRED" or "human" in json.dumps(cld).lower():
-                        b_rep["core"]["login"] = "Turnstile Required (Headless Cloud Solver Active) 🛡️"
-                    else:
-                        b_rep["core"]["login"] = f"HTTP {r.status} - {cld.get('error', 'error')}"
-
-                # Checkin
-                async with session.post("https://server.victors.company/api/checkin", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    b_rep["side_tasks"].append(f"Daily Checkin: HTTP {r.status}")
-
-                # Mining claim
-                async with session.post("https://server.victors.company/api/mining/claim", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    cld = {}
-                    try:
-                        cld = await r.json()
-                    except Exception:
-                        pass
-                    if r.status == 200:
-                        b_rep["core"]["claim"] = "Yield Claimed ✅"
-                    elif r.status in (401, 403) or cld.get("code") == "HUMAN_REQUIRED" or "human" in json.dumps(cld).lower():
-                        b_rep["core"]["claim"] = "Accumulating (Headless Cloud Turnstile Active) 🛡️"
-                    else:
-                        b_rep["core"]["claim"] = f"HTTP {r.status}"
-
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["3. Victor's Company"] = b_rep
-        else:
-            report["bots"]["3. Victor's Company"] = {"core": {"status": "Missing Token ⚠️"}, "side_tasks": []}
-
-        # 4. Kynex Network
+# 4. Kynex Network
         kynex_init = tokens.get("kynex_init_data")
         if kynex_init:
             k_h = {**headers, "Content-Type": "application/json", "Origin": "https://kynex.top", "Referer": "https://kynex.top/"}
@@ -878,7 +743,6 @@ async def main():
 
     # Calculate Fleet-Wide Accumulated Asset Totals
     totals = {
-        "mrg": 0.0,
         "atf": 0.0,
         "knx": 0.0,
         "pepe": 0.0,
@@ -895,12 +759,6 @@ async def main():
     }
     for rep in fleet_reports.values():
         bots = rep.get("bots", {})
-        # MRG
-        mrg_bal = str(bots.get("1. MRG Miner", {}).get("core", {}).get("balance", ""))
-        m_mrg = re.search(r"([\d\.]+)\s*MRG", mrg_bal)
-        if m_mrg:
-            try: totals["mrg"] += float(m_mrg.group(1))
-            except Exception: pass
         # ATF
         atf_st = str(bots.get("2. ATF Miner", {}).get("core", {}).get("status", ""))
         m_atf = re.search(r"([\d,]+(?:\.\d+)?)\s*ATF", atf_st)
@@ -953,7 +811,6 @@ async def main():
     print("\n" + "="*80)
     print("💎 FLEET-WIDE 21-ACCOUNT ACCUMULATED ASSET TOTALS:")
     print("="*80)
-    print(f"  • ⚡ MRG Miner:       {totals['mrg']:,.2f} MRG")
     print(f"  • 🪙 ATF Miner:       {totals['atf']:,.2f} ATF")
     print(f"  • 🌐 Kynex Network:   {totals['knx']:,.2f} KNX")
     print(f"  • 🐸 PepeGram:        {totals['pepe']:,.2f} PEPE")
@@ -978,7 +835,7 @@ async def main():
             f"• <b>Operational Nodes:</b> <code>{healthy_accounts}/{len(fleet_reports)} Healthy</code>\n"
             f"• <b>Active Protocols:</b> <code>11/11 Legitimate Mining Pools</code>\n"
             f"• <b>Accumulated Yields:</b>\n"
-            f"  ⚡ <code>{totals['mrg']:,.1f} MRG</code> • 🪙 <code>{totals['atf']:,.1f} ATF</code>\n"
+            f"🪙 <code>{totals['atf']:,.1f} ATF</code>\n"
             f"  🌐 <code>{totals['knx']:,.0f} KNX</code> • 🐸 <code>{totals['pepe']:,.0f} PEPE</code>\n"
             f"  🤖 <code>{totals['adx']:,} ADX</code> • ⛏️ <code>{totals['diggo']:,.1f} DIGGO</code>\n"
             f"  🐔 <code>{totals['chicken_hens']} Hens • {totals['chicken_eggs']:,} Eggs</code>\n"

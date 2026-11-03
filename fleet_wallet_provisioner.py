@@ -10,7 +10,7 @@ Guarantees:
 2. Pure Python bit-exact cryptographic derivations (Zero C compilation required).
 3. Immediate atomic persistence into accounts.json, fleet_*_wallets.json,
    FLEET_WALLETS_SECRETS_MASTER_VAULT.txt, and Upstash Redis.
-4. Autonomous bot wallet binding across MRG, ATF, Victor's Company.
+4. Autonomous bot wallet binding across ATF Miner.
 =============================================================================
 """
 
@@ -38,6 +38,7 @@ import logging
 try:
     import aiohttp
 except ImportError:
+    aiohttp = None
     aiohttp = None
 
 logger = logging.getLogger("WalletProvisioner")
@@ -777,60 +778,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception:
             pass
 
-    # 1. MRG Miner TON Binding
-    if tokens.get("mrg_init_data") and target_ton:
-        try:
-            m_init = tokens["mrg_init_data"]
-            m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz"}
-            timeout_cfg = aiohttp.ClientTimeout(total=8) if (aiohttp and hasattr(aiohttp, "ClientTimeout")) else 8
-            ton_proof_payload = None
-            if raw_m:
-                try:
-                    async with http_session.post("https://mrg.up.railway.app/api/user/ton-proof-payload", json={"initData": m_init}, headers=m_headers, timeout=timeout_cfg) as pr_res:
-                        if pr_res.status in (200, 201):
-                            pr_d = await pr_res.json()
-                            nonce = pr_d.get("payload")
-                            if nonce:
-                                from tonsdk.contract.wallet import Wallets, WalletVersionEnum
-                                from nacl.signing import SigningKey
-                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                                _, pub_k_b, priv_k_b, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-                                state_init_res = w_contract.create_state_init()
-                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                                t_addr = w_contract.address
-                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
-                                domain_b = b"app.mrgtoken.xyz"
-                                ts_now = int(time.time())
-                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                                sig = SigningKey(priv_k_b[:32]).sign(digest).signature
-                                sig_b64 = base64.b64encode(sig).decode("utf-8")
-                                ton_proof_payload = {
-                                    "address": raw_addr,
-                                    "walletStateInit": state_init_b64,
-                                    "proof": {
-                                        "timestamp": ts_now,
-                                        "domain": {"lengthBytes": len(domain_b), "value": "app.mrgtoken.xyz"},
-                                        "signature": sig_b64,
-                                        "payload": nonce
-                                    }
-                                }
-                except Exception as p_err:
-                    logger.debug(f"[{name}] MRG tonProof note: {p_err}")
-            conn_body = {"initData": m_init, "address": target_ton, "balance": 0}
-            if ton_proof_payload:
-                conn_body["tonProof"] = ton_proof_payload
-            await http_session.post(
-                "https://mrg.up.railway.app/api/user/connect-wallet",
-                json=conn_body,
-                headers=m_headers,
-                timeout=timeout_cfg
-            )
-            logger.info(f"[{name}] 💎 Bound MRG Miner TON wallet with TonConnect proof: {target_ton[:12]}...")
-        except Exception as me:
-            logger.debug(f"[{name}] MRG wallet bind note: {me}")
-
-    # 2. ATF Miner TON Binding
+# 2. ATF Miner TON Binding
     if tokens.get("atf_init_data") and target_ton:
         try:
             atf_init = tokens["atf_init_data"]
@@ -858,38 +806,3 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as ae:
             logger.debug(f"[{name}] ATF wallet bind note: {ae}")
 
-    # 3. Victor's Company TON Wallet Binding & Level 1 Miner Unlock
-    if tokens.get("victors_init_data") and target_ton:
-        try:
-            v_init = tokens["victors_init_data"]
-            v_h = {
-                "Content-Type": "application/json",
-                "Authorization": f"tma {v_init}",
-                "Origin": "https://app.victors.company",
-                "Referer": "https://app.victors.company/"
-            }
-            timeout_cfg = aiohttp.ClientTimeout(total=8) if (aiohttp and hasattr(aiohttp, "ClientTimeout")) else 8
-            # Connect TON wallet
-            await http_session.post(
-                "https://server.victors.company/api/wallet/connect",
-                json={"address": target_ton},
-                headers=v_h,
-                timeout=timeout_cfg
-            )
-            # Claim connect-wallet task
-            await http_session.post(
-                "https://server.victors.company/api/tasks/claim",
-                json={"taskId": "connect-wallet"},
-                headers=v_h,
-                timeout=aiohttp.ClientTimeout(total=6) if (aiohttp and hasattr(aiohttp, "ClientTimeout")) else 6
-            )
-            # Unlock Level 1 Miner to start mining & remove home.noJob
-            await http_session.post(
-                "https://server.victors.company/api/levels/unlock",
-                json={"level": 1},
-                headers=v_h,
-                timeout=aiohttp.ClientTimeout(total=6) if (aiohttp and hasattr(aiohttp, "ClientTimeout")) else 6
-            )
-            logger.info(f"[{name}] 💎 Bound Victor's Company TON wallet: {target_ton[:12]}... & unlocked Level 1 Miner!")
-        except Exception as ve:
-            logger.debug(f"[{name}] Victor's wallet bind note: {ve}")

@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Comprehensive Codebase Bug Resolution, 24-Account Auto-Reconciliation Engine Fix, and Instant Dynamic Relink Status (November 3, 2026)**:
+  - **Resolution of `AttributeError` in `auto_wallet_manager.py` (Line 527)**:
+    * Discovered and resolved fatal runtime crash where `upstash_get("miniapp_tokens")` returned a double-encoded JSON string (`<class 'str'>`), causing `tokens_map.get(uid_s)` to crash with `AttributeError: 'str' object has no attribute 'get'`.
+    * Implemented recursive JSON unpacking loop in `upstash_get` and `turso_get` so double-encoded payloads are decoded down to pure dictionaries/arrays.
+    * Added defensive dictionary guards `if not isinstance(tokens_map, dict): tokens_map = {}` across lines 547, 595, and 739, allowing `reconcile_all_fleet_accounts()` to run smoothly and update `fleet:live_state` and `fleet:accounts` with all 24 accounts.
+  - **Instant Dynamic Status Update on Relink (`deploy_both_cf_workers.py`)**:
+    * Resolved UI race condition where newly relinked accounts (e.g. Account #21 `8669217201`) continued displaying `🔴` immediately after connecting.
+    * Converted unawaited background promises `ctx.waitUntil(...)` for `unBlacklistAccount`, `saveFleetAccountDynamic`, and `onAccountRelinkSuccess` to fully `await`ed promises in both 2FA and non-2FA verification paths.
+    * Upgraded `onAccountRelinkSuccess(targetIdx, optUserId)` to accept both index and explicit `user_id`, ensuring both `fleet:revoked_sessions` entries are atomically deleted (`SREM`) and added to `fleet:healthy_sessions` (`SADD`).
+    * Immediate cache invalidation on relink: `memSessionHealth = null`, `memFleetAccounts = null`, `UPSTASH_GET_CACHE.clear()`, and `UPSTASH_MEMBERS_CACHE.clear()` force fresh reads on subsequent OTP grid renders.
+  - **24-Account Roster Alignment in Cloudflare Worker**:
+    * Added expansion Accounts #23 (Abid Hasan `9106746905` `+8801788601627`) and #24 (AAA 24 `8972499908` `+8801794783852`) to `DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, and `KNOWN_PHONES_BY_INDEX` across all worker entry points.
+    * Edge worker `/telegram-webhook` verified live reporting `fleet_size: 24`, `active_bots: 9`, with all 9 legitimate active bots.
+  - **Clean Codebase & Static Analysis Bug Fixes**:
+    * Fixed `NameError: name 'all_11_keys' is not defined` in `login_account.py:682` by updating to `all_9_keys`.
+    * Cleaned `daily_profit_reporter.py`: Completely removed MRG Miner and Victor's Company from mining totals dict, regex parsers, and financial statement template. Verified `python3 -m py_compile daily_profit_reporter.py` passed with 0 errors.
+    * Cleaned `audit_bots_and_sidetasks.py`: Removed orphaned `except Exception: pass` syntax error and purged 47 MRG/Victor occurrences.
+    * Cleaned `fleet_wallet_provisioner.py`: Fixed `aiohttp = None` fallback in except block and purged dead wallet binding routines.
+    * Cleaned `backup_manager.py`: Removed deleted runner scripts (`mrg_turnstile_solver.py`, `victors_arcade_solver.py`, `victors_sb_solver.py`) from `CRITICAL_FILES`.
+    * Cleaned all remaining "11-Bot" and "11 mining pools" references in `deploy_both_cf_workers.py` to strictly reflect the 9 active legitimate bots.
+  - **Cloudflare Edge Deployment**:
+    * Successfully redeployed Node 4 (`https://restore-agy.agorameet.workers.dev`) with synchronized commands, description, and webhook.
+
+
 - **💎 Complete MRG & Victor's Eradication Across All Code, Dashboards & Databases, 24-Account Ground-Truth Session Synchronization (November 3, 2026)**:
   - **100% Elimination of MRG Miner and Victor's Company**:
     * Cleaned `deploy_both_cf_workers.py`: Eradicated all 16 occurrences of MRG and 26 occurrences of Victor's Company across commands, aliases, SQLite D1 schemas, AI prompts, telemetry strings, and User Bot mining pools. Verified 0 occurrences remaining (`Node --check` passed).

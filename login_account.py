@@ -679,19 +679,13 @@ async def bind_referrals(client, me, acc_entry):
         "lumeon_referral_bound",
         "earnvault_referral_bound"
     ]
-    bound_count = sum(1 for k in all_11_keys if acc_entry.get(k))
-    if bound_count == len(all_11_keys):
+    bound_count = sum(1 for k in all_9_keys if acc_entry.get(k))
+    if bound_count == len(all_9_keys):
         acc_entry["all_9_referrals_bound"] = True
-        acc_entry["all_10_referrals_bound"] = True
-        acc_entry["all_9_referrals_bound"] = True
-        acc_entry["all_8_referrals_bound"] = True
-        acc_entry["all_5_referrals_bound"] = True
-        acc_entry["all_4_referrals_bound"] = True
-        acc_entry["all_17_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 11/11 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 9/9 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/11 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/9 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 
