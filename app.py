@@ -7876,6 +7876,7 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
 
 
 @app.post("/api/farm/cloud-all")
+@app.get("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
     """Executes on-demand cloud fleet farming cycle across all 8 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""

@@ -6679,7 +6679,7 @@ fi
 
           targetAccs.forEach((acc) => {
             const hasValidSession = Boolean(acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 20);
-            const isExplicitRevoked = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id)) || Boolean(acc.session_revoked);
+            const isExplicitRevoked = Boolean(acc.session_revoked === true) || ((revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id))) && acc.session_revoked !== false);
             const isRev = !hasValidSession || isExplicitRevoked;
             if (isRev) {
               revokedIndices.add(acc.index);
@@ -6713,18 +6713,18 @@ fi
         const onAccountRelinkSuccess = async (targetIdx) => {
           const numIdx = Number(targetIdx);
           if (!numIdx) return;
-          const allAccs = await getFleetAccounts();
+          memSessionHealth = null;
+          memFleetAccounts = null;
+          memFleetAccountsTs = 0;
+          const allAccs = await getFleetAccounts(true);
           const acc = allAccs.find(a => a.index === numIdx);
           const uidStr = acc ? String(acc.user_id) : "";
-          if (!memSessionHealth.healthy.includes(numIdx)) memSessionHealth.healthy.push(numIdx);
-          memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== numIdx);
-          memSessionHealth.lastCheck = Date.now();
-          ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(numIdx)));
-          ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(numIdx)));
-          ctx.waitUntil(upstashDel("fleet:revocation_reason:" + numIdx));
+          await upstashSadd("fleet:healthy_sessions", String(numIdx));
+          await upstashSrem("fleet:revoked_sessions", String(numIdx));
+          await upstashDel("fleet:revocation_reason:" + numIdx);
           if (uidStr) {
-            ctx.waitUntil(upstashSrem("fleet:revoked_sessions", uidStr));
-            ctx.waitUntil(upstashSadd("fleet:healthy_sessions", uidStr));
+            await upstashSrem("fleet:revoked_sessions", uidStr);
+            await upstashSadd("fleet:healthy_sessions", uidStr);
           }
         };
 
@@ -6760,7 +6760,8 @@ fi
               const shortName = name.split(" ")[0];
               const isHost = String(a.user_id) === "6727787768";
               const hasSession = Boolean(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20);
-              const isRev = !hasSession || revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id))) || Boolean(a.session_revoked);
+              const isExplicitRevoked = Boolean(a.session_revoked === true) || ((revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id)))) && a.session_revoked !== false);
+              const isRev = !hasSession || isExplicitRevoked;
               const statusIcon = isRev ? "🔴" : "🟢";
               const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
               return {
@@ -7400,11 +7401,14 @@ fi
 
                 if (res && res.ok) {
                   memLoginFlow.delete(String(chatId));
-                  ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-                  if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
-                  ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phoneToRelink, res.name || "User"));
-                  ctx.waitUntil(saveFleetAccountDynamic(res, phoneToRelink));
-                  ctx.waitUntil(onAccountRelinkSuccess(targetIdx));
+                  await upstashSet("login_flow:" + chatId, null);
+                  if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+                  await unBlacklistAccount(res.user_id, res.phone || phoneToRelink, res.name || "User");
+                  await saveFleetAccountDynamic(res, phoneToRelink);
+                  await onAccountRelinkSuccess(targetIdx);
+                  memSessionHealth = null;
+                  memFleetAccounts = null;
+                  memFleetAccountsTs = 0;
                   const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
                     `• *Name:* ${res.name || "User"}\n` +
                     `• *Username:* @${res.username || "None"}\n` +
@@ -7675,7 +7679,10 @@ fi
               const rep = `❌ *Login Session Cancelled*\n\nReturning to Main Fleet Hub.`;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, mainInlineKeyboard);
             } else if (cbData === "btn_otp_menu") {
-              const accounts = await getFleetAccounts();
+              memSessionHealth = null;
+              memFleetAccounts = null;
+              memFleetAccountsTs = 0;
+              const accounts = await getFleetAccounts(true);
               const health = await getSessionHealthState();
               const dhakaTime = getDhakaTimestamp();
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
