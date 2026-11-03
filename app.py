@@ -8536,8 +8536,10 @@ async def debug_account_session(uid: str, request: Request):
             results["me"] = {"id": me.id, "first_name": me.first_name, "username": me.username, "phone": me.phone}
 
             # Try extracting tokens for all active bots
-            extracted = await extract_tokens_with_client(cl, target_acc)
-            results["extracted_tokens"] = {k: (v[:30] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in extracted.items()}
+            extracted = {}
+            if request.query_params.get("skip_extract") != "1":
+                extracted = await extract_tokens_with_client(cl, target_acc)
+                results["extracted_tokens"] = {k: (v[:30] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in extracted.items()}
 
             try:
                 dlgs = await cl.get_dialogs(limit=60)
@@ -8632,10 +8634,16 @@ async def debug_account_session(uid: str, request: Request):
                                         if any(w in (btn.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
                                             try:
                                                 ans = await btn.click()
+                                                ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
                                                 btn_entry["click_result"] = {
                                                     "ans_type": type(ans).__name__,
-                                                    "url": getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
+                                                    "url": ans_url
                                                 }
+                                                if ans_url and "t.me/" in ans_url:
+                                                    tok_res = await _extract_from_tme_link(ans_url)
+                                                    btn_entry["tme_token_extracted"] = bool(tok_res)
+                                                    if tok_res:
+                                                        btn_entry["sample_token"] = tok_res[:30] + "..."
                                             except Exception as be:
                                                 btn_entry["click_error"] = str(be)
                                         b_info.append(btn_entry)
