@@ -8468,10 +8468,27 @@ async def debug_account_session(uid: str, request: Request):
             extracted = await extract_tokens_with_client(cl, target_acc)
             results["extracted_tokens"] = {k: (v[:30] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in extracted.items()}
 
+            try:
+                dlgs = await cl.get_dialogs(limit=60)
+                results["dialog_bots"] = [
+                    {
+                        "id": getattr(d.entity, "id", None),
+                        "name": d.name,
+                        "username": getattr(d.entity, "username", None),
+                        "is_bot": getattr(d.entity, "bot", False),
+                        "type": type(d.entity).__name__
+                    }
+                    for d in dlgs if getattr(d.entity, "bot", False) or any(w in (d.name or "").lower() for w in ["mrg", "vic", "atf", "kynex", "mine", "earn", "gram", "cloud"])
+                ]
+            except Exception as de:
+                results["dialog_bots_error"] = str(de)
+
             results["debug_diagnostics"] = {}
             for test_name, test_bot, test_url, test_sn in [
-                ("mrg", MRG_BOT, "https://app.mrgtoken.xyz/", "app"),
-                ("victors", VICTORS_BOT, "https://app.victors.company/", "app"),
+                ("mrg_minerbot", "mrgminerbot", "https://app.mrgtoken.xyz/", "app"),
+                ("mrg_token_bot", "mrgtoken_bot", "https://app.mrgtoken.xyz/", "app"),
+                ("victors_bot", "VictorsCompanybot", "https://app.victors.company/", "app"),
+                ("victors_game", "VictorsCompanyGame", "https://app.victors.company/", "app"),
                 ("atf", ATF_BOT, "https://atfminers.asloni.online/miner/index.html?entry=bot_start", "miner"),
                 ("kynex", KYNEX_BOT, "https://kynex.top/telegram-auth.html", "app")
             ]:
@@ -8480,6 +8497,9 @@ async def debug_account_session(uid: str, request: Request):
                     t_ent = await cl.get_entity(test_bot)
                     d_info["entity_resolved"] = True
                     d_info["bot_id"] = getattr(t_ent, "id", None)
+                    d_info["entity_class"] = type(t_ent).__name__
+                    d_info["is_bot"] = getattr(t_ent, "bot", False)
+                    d_info["username"] = getattr(t_ent, "username", None)
                     t_in = await cl.get_input_entity(t_ent)
                     d_info["input_entity_type"] = type(t_in).__name__
                     u_in = None
@@ -8492,7 +8512,7 @@ async def debug_account_session(uid: str, request: Request):
 
                     # Test direct RequestWebViewRequest
                     try:
-                        r_wv = await cl(RequestWebViewRequest(peer=t_ent, bot=t_ent, platform="android", url=test_url))
+                        r_wv = await cl(RequestWebViewRequest(peer=t_in, bot=u_in or t_in, platform="android", url=test_url))
                         w_url = getattr(r_wv, "url", None)
                         d_info["RequestWebViewRequest"] = "OK" if w_url else "No url"
                     except Exception as wve:
@@ -8501,7 +8521,7 @@ async def debug_account_session(uid: str, request: Request):
                     # Test RequestAppWebViewRequest
                     try:
                         app_in = InputBotAppShortName(bot_id=u_in if u_in else t_in, short_name=test_sn)
-                        r_app = await cl(RequestAppWebViewRequest(peer=t_in, app=app_in, platform="android"))
+                        r_app = await cl(RequestAppWebViewRequest(peer=t_in, app=app_in, platform="android", write_allowed=True))
                         app_url = getattr(r_app, "url", None)
                         d_info["RequestAppWebViewRequest"] = "OK" if app_url else "No url"
                     except Exception as ape:
