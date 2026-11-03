@@ -107,9 +107,9 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Master Directory Reference**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for complete technical architecture and cheat sheet.
 15. **🎯 Zero Fake Data & Ground-Truth 11-Bot Policy ("Strict 11-Bot Integrity")**:
     - The farming fleet exclusively operates across and monitors the **11 active legitimate bots**:
-      1. ⚡ **MRG Miner** (`@mrgminerbot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
-      2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot` / `atfminers.asloni.online`)
-      3. 🏢 **Victor's Company** (`@VictorsCompanyGame` / `app.victors.company` / `server.victors.company`)
+      1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
+      2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
+      3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
       4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
       5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
       6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)

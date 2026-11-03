@@ -188,7 +188,13 @@ async def test_live_11_bots_probe():
                     async with s.post("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", json={"data": {"initData": tok, "referral": "6727787768"}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "pepegram" in tok_key:
-                    async with s.post(b_url, json={"initData": tok, "tid": 1449}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    pepe_headers = {
+                        "Content-Type": "application/json",
+                        "Origin": "https://app.miniempire.app",
+                        "Referer": "https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en",
+                        "User-Agent": "Mozilla/5.0"
+                    }
+                    async with s.post(b_url, json={"initData": tok, "tid": 1449}, headers=pepe_headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "adxearn" in tok_key:
                     async with s.post(b_url, json={"initData": tok, "fp": "fp_6727787768"}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:

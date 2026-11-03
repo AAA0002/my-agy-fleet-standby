@@ -482,11 +482,11 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgminerbot"
+MRG_BOT = "mrgtoken_bot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanyGame"
+VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -928,23 +928,34 @@ async def extract_from_tme_link(client: TelegramClient, target_link: str, fallba
             try:
                 t_ent = await client.get_entity(target_bot)
             except Exception:
-                if target_bot in BOT_ALIASES:
-                    for alt in BOT_ALIASES[target_bot]:
-                        try:
-                            t_ent = await client.get_entity(alt)
-                            if t_ent:
-                                break
-                        except Exception:
-                            pass
-            if not t_ent and chat_peer:
-                t_ent = chat_peer
+                pass
 
-            if not t_ent:
+            # Ensure we resolve to an authentic Bot user entity (not a BotApp or user alias)
+            bot_user_ent = None
+            if t_ent and getattr(t_ent, "bot", False):
+                bot_user_ent = t_ent
+            elif chat_peer and getattr(chat_peer, "bot", False):
+                bot_user_ent = chat_peer
+
+            if not bot_user_ent and target_bot in BOT_ALIASES:
+                for alt in BOT_ALIASES[target_bot]:
+                    try:
+                        cand = await client.get_entity(alt)
+                        if getattr(cand, "bot", False):
+                            bot_user_ent = cand
+                            break
+                    except Exception:
+                        pass
+
+            if not bot_user_ent:
+                bot_user_ent = chat_peer or t_ent
+
+            if not bot_user_ent:
                 return None
 
-            t_in = await client.get_input_entity(t_ent)
+            t_in = await client.get_input_entity(bot_user_ent)
             from telethon import utils as tu
-            t_user = tu.get_input_user(t_ent)
+            t_user = tu.get_input_user(bot_user_ent)
 
             # Strategy 1: messages.GetBotAppRequest to resolve the real BotApp
             bot_app_obj = None
@@ -994,6 +1005,34 @@ async def extract_from_tme_link(client: TelegramClient, target_link: str, fallba
                         return t
             except Exception as me:
                 logger.debug(f"RequestMainWebViewRequest for {target_bot}: {me}")
+
+            # Strategy 4: Fallback direct RequestWebViewRequest with known domain if available
+            default_url = None
+            if "mrg" in str(target_bot).lower():
+                default_url = "https://app.mrgtoken.xyz/"
+            elif "vic" in str(target_bot).lower():
+                default_url = "https://app.victors.company/"
+            elif "pepe" in str(target_bot).lower():
+                default_url = "https://app.miniempire.app/miniapp/"
+
+            if default_url:
+                try:
+                    req_p = {
+                        "peer": chat_peer or t_in,
+                        "bot": t_user or t_in,
+                        "platform": "android",
+                        "url": default_url
+                    }
+                    if sp:
+                        req_p["start_param"] = str(sp)
+                    res = await client(RequestWebViewRequest(**req_p))
+                    w_url = getattr(res, "url", None)
+                    if w_url:
+                        t = extract_from_url(w_url)
+                        if t:
+                            return t
+                except Exception as de:
+                    logger.debug(f"Strategy 4 fallback for {target_bot}: {de}")
     except Exception as e:
         logger.debug(f"Failed to extract from t.me link {target_link}: {e}")
     return None
@@ -1279,8 +1318,8 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 5. PepeGram (@Pepe_gram_bot - Silent WebApp query)
-    pepe_tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
+    # 5. PepeGram (@Pepe_gram_bot - Silent WebApp query with prefer_direct_url=True)
+    pepe_tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"], prefer_direct_url=True)
     if pepe_tok:
         tokens["pepegram_init_data"] = pepe_tok
     await asyncio.sleep(random.uniform(0.3, 0.8))
@@ -8597,13 +8636,15 @@ async def debug_account_session(uid: str, request: Request):
                 results["dialog_bots_error"] = str(de)
 
             results["debug_diagnostics"] = {}
+            skip_clicks = (request.query_params.get("skip_extract") == "1")
             for test_name, test_bot, test_url, test_sn in [
-                ("mrg_id", 8862173167, "https://app.mrgtoken.xyz/", "app"),
+                ("mrg_token_bot", "mrgtoken_bot", "https://app.mrgtoken.xyz/", "app"),
                 ("mrg_minerbot", "mrgminerbot", "https://app.mrgtoken.xyz/", "app"),
-                ("victors_id", 8943931170, "https://app.victors.company/", "app"),
                 ("victors_bot", "VictorsCompanybot", "https://app.victors.company/", "app"),
+                ("victors_game", "VictorsCompanyGame", "https://app.victors.company/", "app"),
                 ("atf", ATF_BOT, "https://atfminers.asloni.online/miner/index.html?entry=bot_start", "miner"),
-                ("kynex", KYNEX_BOT, "https://kynex.top/telegram-auth.html", "app")
+                ("kynex", KYNEX_BOT, "https://kynex.top/telegram-auth.html", "app"),
+                ("pepe", PEPEGRAM_BOT, "https://app.miniempire.app/miniapp/", "app")
             ]:
                 d_info = {}
                 try:
@@ -8656,7 +8697,7 @@ async def debug_account_session(uid: str, request: Request):
                     except Exception as me:
                         d_info["menu_button_error"] = str(me)
 
-                    # Inspect recent messages in chat & test button click
+                    # Inspect recent messages in chat & test button click if not skipped
                     try:
                         c_msgs = await cl.get_messages(t_ent, limit=3)
                         d_info["chat_messages"] = []
@@ -8671,9 +8712,9 @@ async def debug_account_session(uid: str, request: Request):
                                             "type": type(raw).__name__,
                                             "url": getattr(raw, "url", None) or getattr(getattr(raw, "web_app", None), "url", None)
                                         }
-                                        if any(w in (btn.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                                        if not skip_clicks and any(w in (btn.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
                                             try:
-                                                ans = await btn.click()
+                                                ans = await asyncio.wait_for(btn.click(), timeout=3.5)
                                                 ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
                                                 btn_entry["click_result"] = {
                                                     "ans_type": type(ans).__name__,

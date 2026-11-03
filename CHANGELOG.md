@@ -2,7 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🚀 Headless MiniApp `t.me` Callback Link Resolution, Telegram MTProto Webview Parity & Kynex 1-Hour Mining Verification (November 3, 2026)**:
+- **🚀 Telegram Bot User Entity Parity, Strategy 4 WebApp Fallback & PepeGram Direct Hash Validation (November 3, 2026)**:
+  - **Authentic Bot User Entity Restoration**:
+    * Identified that setting `MRG_BOT = "mrgminerbot"` and `VICTORS_BOT = "VictorsCompanyGame"` caused Telethon entity lookups to resolve non-bot BotApp entities (`bot=False`), triggering `BotInvalidError: This is not a valid bot` across Telegram MTProto webview requests.
+    * Restored canonical bot users `MRG_BOT = "mrgtoken_bot"` and `VICTORS_BOT = "VictorsCompanybot"` across `app.py` and `PROJECT_BIBLE.md`.
+  - **Dynamic MiniApp Link & Strategy 4 Fallback Engine**:
+    * Hardened `extract_from_tme_link()` in `app.py` to resolve genuine bot users from `BOT_ALIASES` and `chat_peer` when parsing `t.me/<bot>/<short_name>` callback links.
+    * Added Strategy 4 direct `RequestWebViewRequest` fallback using known bot domains (`https://app.mrgtoken.xyz/` and `https://app.victors.company/`).
+  - **PepeGram Direct WebApp Query Parity**:
+    * Enabled `prefer_direct_url=True` for PepeGram token extraction in `app.py`, ensuring generation of genuine `query_id=` tokens required by MiniEmpire's backend validator (`/miniapp/auth?tid=1449`).
+    * Added HTTP request headers (`Origin`, `Referer`, `Content-Type`) to `check_system_health.py` for PepeGram health verification.
+  - **Diagnostics Resilience & Hang Elimination**:
+    * Wrapped button clicks in `debug_account_session` with `asyncio.wait_for(btn.click(), timeout=3.5)` and enabled `skip_clicks` guard when `skip_extract=1` is passed, eliminating 60s HTTP read timeouts.
   - **Dynamic Callback Link to WebApp Bridge**:
     * Resolved token extraction failure for MRG Miner and Victor's Company where clicking chat launch buttons returned `https://t.me/<bot>/<short_name>` callback links rather than direct WebApp hashes.
     * Implemented `_extract_from_tme_link()` in `app.py`: automatically parses `target_bot`, `short_name`, and `startapp` query params from any `t.me` link, resolves the target bot entity, and dispatches `RequestAppWebViewRequest(peer=t_in, app=InputBotAppShortName(bot_id=t_user, short_name=short_name), write_allowed=True)` to extract valid, cryptographically signed `initData`.
