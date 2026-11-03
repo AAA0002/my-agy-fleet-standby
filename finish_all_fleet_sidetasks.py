@@ -2,19 +2,20 @@
 """
 finish_all_fleet_sidetasks.py
 =============================================================================
-COMPREHENSIVE MULTI-BOT FLEET SIDE-TASK HARVESTER & AUTOMATION ENGINE
+COMPREHENSIVE 9-BOT FLEET SIDE-TASK HARVESTER & AUTOMATION ENGINE
 =============================================================================
 Sweeps and completes all available side-tasks, daily check-ins, social joins,
 cooldown missions, wallet verifications, and referral commission claims across
-all dynamic accounts in the fleet for all 8 legitimate bots:
-  1. MRG Miner (@mrgtoken_bot)
-  2. ATF Miner (@atfminers_bot)
-  3. Victor's Company (@VictorsCompanybot)
-  4. Kynex Network (@Kynex_miningbot)
-  5. PepeGram (@Pepe_gram_bot)
-  6. AdxEarn AI (@AdxEarnAibot)
-  7. DiggoMiner (@Diggominer_bot)
-  8. Chicken Land (@ChickenLandBot)
+all dynamic accounts in the fleet for all 9 legitimate bots:
+  1. ATF Miner (@atfminers_bot)
+  2. Kynex Network (@Kynex_miningbot)
+  3. PepeGram (@Pepe_gram_bot)
+  4. AdxEarn AI (@AdxEarnAibot)
+  5. DiggoMiner (@Diggominer_bot)
+  6. Chicken Land (@ChickenLandBot)
+  7. Grouche Mine (@GRC_AirdrooBot)
+  8. LUM Miner (@lumeonminer_bot)
+  9. EarnVault (@EarnVaultApp_bot)
 
 Zero Phone Load (Rule 4): Runs once as a clean batch script in cloud/container,
 exits cleanly, and persists updated tokens to Upstash Redis and Cloudflare Edge.
@@ -154,41 +155,6 @@ def get_ton_wallet_address(acc: dict, uid: str) -> str:
     if isinstance(w_entry, dict) and w_entry.get("address"):
         return w_entry["address"]
     return ""
-
-
-def create_mrg_ton_proof(wallet_entry: dict, nonce: str) -> dict:
-    """Signs TonConnect 2.0 cryptographic proof for MRG Miner."""
-    try:
-        from nacl.signing import SigningKey
-        from tonsdk.contract.wallet import Wallets, WalletVersionEnum
-        words = wallet_entry["mnemonic"].split() if isinstance(wallet_entry["mnemonic"], str) else wallet_entry["mnemonic"]
-        _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-        state_init_res = wallet_contract.create_state_init()
-        state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-        t_addr = wallet_contract.address
-        wc = t_addr.wc
-        addr_hash = t_addr.hash_part
-        raw_addr = f"{wc}:{addr_hash.hex()}"
-        domain = "app.mrgtoken.xyz"
-        domain_b = domain.encode("utf-8")
-        ts_now = int(time.time())
-        msg = b"ton-proof-item-v2/" + struct.pack(">i", wc) + addr_hash + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-        digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-        sig = SigningKey(priv_k[:32]).sign(digest).signature
-        sig_b64 = base64.b64encode(sig).decode("utf-8")
-        return {
-            "address": raw_addr,
-            "walletStateInit": state_init_b64,
-            "proof": {
-                "timestamp": ts_now,
-                "domain": {"lengthBytes": len(domain_b), "value": domain},
-                "signature": sig_b64,
-                "payload": nonce
-            }
-        }
-    except Exception as e:
-        logger.debug(f"MRG proof creation error: {e}")
-        return None
 
 
 def create_atf_ton_proof(wallet_entry: dict, nonce: str) -> dict:
@@ -398,184 +364,6 @@ async def sync_token_to_cf(session: aiohttp.ClientSession, uid: str, token_dict:
 # 2. INDIVIDUAL BOT SIDE-TASK HANDLERS
 # =============================================================================
 
-async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m_init: str, acc: dict) -> Dict[str, Any]:
-    """Sweeps MRG Miner tasks, level upgrades, and wallet bindings."""
-    res = {"bot": "MRG Miner", "tasks_claimed": 0, "notes": [], "success": False}
-    if not m_init:
-        res["notes"].append("no_init_data")
-        return res
-
-    m_headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-        "Content-Type": "application/json",
-        "Origin": "https://app.mrgtoken.xyz",
-        "Referer": "https://app.mrgtoken.xyz/"
-    }
-
-    try:
-        # 1. State lookup
-        async with session.post("https://mrg.up.railway.app/api/user/me", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
-            if r.status != 200:
-                res["notes"].append(f"me_status_{r.status}")
-                return res
-            me_d = await r.json()
-
-        res["success"] = True
-        u_obj = me_d.get("user", {})
-        cur_lvl = u_obj.get("peakLevel") or u_obj.get("manualUnlockedLevel") or 1
-        in_bal = float(u_obj.get("inAppBalance", 0) or 0)
-        res["balance"] = in_bal
-        res["level"] = cur_lvl
-
-        # 1.5. MRG Daily Check-in (+5 to +15 MRG daily streak)
-        try:
-            mrg_tok = None
-            if UPSTASH_URL and UPSTASH_TOKEN:
-                try:
-                    async with session.get(f"{UPSTASH_URL}/get/mrg:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as mpr:
-                        if mpr.status == 200:
-                            mpd = await mpr.json()
-                            if mpd.get("result"):
-                                try:
-                                    parsed = json.loads(mpd["result"]) if isinstance(mpd["result"], str) else mpd["result"]
-                                except Exception:
-                                    parsed = mpd["result"]
-                                mrg_tok = parsed.get("turnstileToken") if isinstance(parsed, dict) else str(parsed)
-                except Exception:
-                    pass
-
-            checkin_payload = {"initData": m_init}
-            if mrg_tok and str(mrg_tok).strip() not in ("null", "nil", "None", ""):
-                checkin_payload["turnstileToken"] = str(mrg_tok).strip()
-
-            async with session.post("https://mrg.up.railway.app/api/user/daily-checkin", json=checkin_payload, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as dcr:
-                if dcr.status == 200:
-                    dcd = await dcr.json()
-                    if dcd.get("success"):
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"checkin_reward_{dcd.get('reward', 5)}_streak_{dcd.get('streak', 1)}")
-        except Exception as ce:
-            logger.debug(f"[{name}] MRG checkin note: {ce}")
-
-        # 2. Bind TON Wallet with TonConnect 2.0 Proof
-        is_ton_conn = u_obj.get("isTonConnected", False)
-        target_ton_w = get_ton_wallet_address(acc, uid)
-        if target_ton_w and not is_ton_conn:
-            w_entry = ton_wallets.get(str(uid)) or (acc.get("ton_wallet") if isinstance(acc.get("ton_wallet"), dict) else {})
-            ton_proof_payload = None
-            if w_entry and w_entry.get("mnemonic"):
-                try:
-                    async with session.post("https://mrg.up.railway.app/api/user/ton-proof-payload", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as npr:
-                        if npr.status == 200:
-                            np_d = await npr.json()
-                            nonce = np_d.get("payload") if isinstance(np_d, dict) else None
-                            if nonce:
-                                ton_proof_payload = create_mrg_ton_proof(w_entry, nonce)
-                except Exception as p_err:
-                    logger.debug(f"[{name}] MRG nonce fetch note: {p_err}")
-
-            conn_body = {"initData": m_init, "address": target_ton_w, "balance": 0}
-            if ton_proof_payload:
-                conn_body["tonProof"] = ton_proof_payload
-
-            async with session.post("https://mrg.up.railway.app/api/user/connect-wallet", json=conn_body, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                if cr.status in (200, 201):
-                    res["notes"].append("ton_wallet_bound")
-
-        # 3. Tasks Completion (including recurring 24h/12h/6h tasks)
-        completed = set(me_d.get("completedTaskIds", []))
-        tasks = me_d.get("tasks", [])
-        for t in tasks:
-            tid = t.get("taskId")
-            t_type = str(t.get("taskType") or "")
-            is_rec = "recurring" in t_type
-            if tid and (tid not in completed or is_rec):
-                # Claim task
-                await jitter(0.8, 1.8)
-                async with session.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cl_resp:
-                    cld = await cl_resp.json() if cl_resp.status == 200 else {}
-                    if cld.get("success"):
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"claimed_{tid}")
-                    elif "wait" in json.dumps(cld).lower() or "second" in json.dumps(cld).lower():
-                        await asyncio.sleep(15)
-                        async with session.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as r2:
-                            cld2 = await r2.json() if r2.status == 200 else {}
-                            if cld2.get("success"):
-                                res["tasks_claimed"] += 1
-                                res["notes"].append(f"claimed_wait_{tid}")
-
-        # 3.5. Instant REST Claim if human pass is active or Turnstile pass cached
-        unclaimed_mined = float(u_obj.get("unclaimedMiningBalance", 0) or 0)
-        human_until = u_obj.get("humanVerifiedUntil")
-        pass_active = False
-        if human_until:
-            try:
-                from datetime import datetime, timezone
-                dt = datetime.fromisoformat(human_until.replace("Z", "+00:00"))
-                pass_active = (dt - datetime.now(timezone.utc)).total_seconds() > 300
-            except Exception:
-                pass
-
-        if unclaimed_mined > 0.05 and (pass_active or mrg_tok):
-            try:
-                claim_payload = {
-                    "initData": m_init,
-                    "deviceInfo": {
-                        "model": "SM-S928B", "ram": 12, "screen": "1080x2340",
-                        "vendor": "Google Inc. (Qualcomm)", "renderer": "ANGLE (Qualcomm, Adreno (TM) 750, OpenGL ES 3.2)",
-                        "cores": 8
-                    }
-                }
-                if mrg_tok:
-                    claim_payload["turnstileToken"] = str(mrg_tok).strip()
-                async with session.post("https://mrg.up.railway.app/api/user/claim-mining", json=claim_payload, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
-                    if clr.status == 200:
-                        res["notes"].append(f"claimed_mined_{unclaimed_mined:.2f}")
-                        in_bal += unclaimed_mined
-                        res["balance"] = in_bal
-            except Exception:
-                pass
-
-        # 4. Level Auto-Upgrade (if enough balance, including TON wallet balance)
-        ton_holding = float(u_obj.get("tonWalletBalance", 0) or 0)
-        total_mrg_bal = in_bal + ton_holding
-        if total_mrg_bal >= 100:
-            def wp_calc(e):
-                if e <= 0: return 0
-                if e == 1: return 100
-                if e <= 203: return round(100 + 9900 * (((e - 1) / 202.0) ** 1.8))
-                return 10000
-            lo, hi, target_lvl = 1, 203, cur_lvl
-            while lo <= hi:
-                mid = (lo + hi) // 2
-                if total_mrg_bal >= wp_calc(mid):
-                    target_lvl = mid
-                    lo = mid + 1
-                else:
-                    hi = mid - 1
-            if target_lvl > cur_lvl:
-                async with session.post("https://mrg.up.railway.app/api/user/unlock-level", json={"initData": m_init, "level": target_lvl}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as ul:
-                    if ul.status == 200:
-                        res["notes"].append(f"upgraded_lvl_{target_lvl}")
-                        res["level"] = target_lvl
-
-        # 5. Master Referral Commission & One-Time Bonus
-        if str(uid) == MASTER_UID:
-            async with session.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                if cr.status == 200:
-                    res["notes"].append("master_commission_claimed")
-            async with session.post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as br:
-                if br.status == 200:
-                    res["notes"].append("master_one_time_bonus_claimed")
-
-    except Exception as e:
-        logger.error(f"[{name}] MRG sweep error: {type(e).__name__}: {e}")
-        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
-
-    return res
-
-
 async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, atf_init: str, acc: dict) -> Dict[str, Any]:
     """Sweeps ATF Miner daily tasks, boost, math challenges, and team claims."""
     res = {"bot": "ATF Miner", "tasks_claimed": 0, "notes": [], "success": False}
@@ -725,167 +513,6 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
     
     except Exception as e:
         logger.error(f"[{name}] ATF sweep error: {type(e).__name__}: {e}")
-        res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
-
-    return res
-
-
-async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: str, vic_init: str, acc: dict) -> Dict[str, Any]:
-    """Sweeps Victor's Company tasks, daily check-in, tutorial, wallet connect, and arcade."""
-    res = {"bot": "Victor's Company", "tasks_claimed": 0, "notes": [], "success": False}
-    if not vic_init:
-        res["notes"].append("no_init_data")
-        return res
-
-    v_h = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-        "Authorization": f"tma {vic_init}",
-        "Origin": "https://app.victors.company",
-        "Referer": "https://app.victors.company/"
-    }
-
-    # Fetch cached Turnstile pass
-    vic_pass = None
-    try:
-        async with session.get(f"{UPSTASH_URL}/get/victors:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as vr:
-            if vr.status == 200:
-                vd = await vr.json()
-                raw_v = vd.get("result")
-                if raw_v:
-                    parsed_v = json.loads(raw_v) if isinstance(raw_v, str) else raw_v
-                    vic_pass = parsed_v.get("humanPass") if isinstance(parsed_v, dict) else parsed_v
-    except Exception:
-        pass
-
-    if vic_pass:
-        v_h["x-human-pass"] = str(vic_pass)
-
-    try:
-        # 1. State lookup
-        async with session.get("https://server.victors.company/api/me", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-            if r.status != 200:
-                res["notes"].append(f"me_status_{r.status} (pass: {bool(vic_pass)})")
-                return res
-            m_d = await r.json()
-
-        res["success"] = True
-        st = m_d.get("state", {}) if isinstance(m_d, dict) else {}
-        me = st.get("user") or m_d.get("user") or m_d
-        cur_level = me.get("peakLevel") or st.get("mining", {}).get("level") or me.get("level", 0)
-        res["level"] = cur_level
-        res["balance"] = round(float(me.get("inAppBalance") or st.get("holding") or me.get("miningBalance", 0) or 0), 2)
-
-        # 2. Tutorial
-        if not me.get("tutorialDone"):
-            async with session.post("https://server.victors.company/api/me/tutorial", json={}, headers=v_h) as tr:
-                if tr.status == 200: res["notes"].append("tutorial_done")
-
-        # 3. Daily check-in
-        async with session.post("https://server.victors.company/api/checkin", json={}, headers=v_h) as cr:
-            if cr.status == 200: res["notes"].append("checkin_done")
-
-        # 4. Level 1 Miner Unlock (Continuous +100 V/day passive yield)
-        if cur_level < 1:
-            try:
-                async with session.post("https://server.victors.company/api/levels/unlock", json={"level": 1}, headers=v_h) as lr:
-                    if lr.status in (200, 201):
-                        res["notes"].append("miner_lvl1_unlocked")
-            except Exception:
-                pass
-
-        # 5. Claim Accumulated Mining Balance
-        try:
-            async with session.post("https://server.victors.company/api/mining/claim", json={}, headers=v_h) as mr:
-                if mr.status in (200, 201):
-                    m_claim = await mr.json()
-                    claimed_amt = m_claim.get("claimed", 0) if isinstance(m_claim, dict) else 0
-                    if claimed_amt > 0:
-                        res["notes"].append(f"mined_+{claimed_amt:.1f}VIC")
-        except Exception:
-            pass
-
-        # 6. Connect TON wallet if needed (TonConnect 2.0 Proof-of-Ownership)
-        ton_addr = get_ton_wallet_address(acc, uid)
-        if ton_addr and (not me.get("walletAddress") or not me.get("walletOwned")):
-            connected = False
-            try:
-                from victors_sb_solver import create_victors_ton_proof, load_fleet_ton_wallets
-                tw = load_fleet_ton_wallets()
-                w_entry = tw.get(str(uid)) or tw.get(int(uid) if uid.isdigit() else uid) or acc.get("ton_wallet")
-                if w_entry and isinstance(w_entry, dict) and w_entry.get("mnemonic"):
-                    async with session.get("https://server.victors.company/api/wallet/proof-payload", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as npr:
-                        if npr.status == 200:
-                            np_d = await npr.json()
-                            nonce = np_d.get("payload") if isinstance(np_d, dict) else None
-                            if nonce:
-                                proof_item, state_init_b64, pub_key_hex, friendly_addr = create_victors_ton_proof(w_entry, nonce)
-                                if proof_item:
-                                    conn_body = {
-                                        "address": friendly_addr,
-                                        "proof": proof_item,
-                                        "stateInit": state_init_b64,
-                                        "publicKey": pub_key_hex
-                                    }
-                                    async with session.post("https://server.victors.company/api/wallet/connect", json=conn_body, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as cwr:
-                                        if cwr.status in (200, 201):
-                                             connected = True
-                                             res["notes"].append("ton_wallet_proof_connected")
-            except Exception as pe:
-                logger.debug(f"[{name}] Victor's proof connect note: {pe}")
-
-            if not connected:
-                async with session.post("https://server.victors.company/api/wallet/connect", json={"address": ton_addr}, headers=v_h) as wr:
-                    if wr.status == 200:
-                        connected = True
-                        res["notes"].append("ton_wallet_connected")
-
-            if connected:
-                async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": "connect-wallet"}, headers=v_h) as twr:
-                    if twr.status == 200: res["notes"].append("wallet_task_claimed")
-
-        # 7. Discover & Claim Jobs Board Tasks (with unified 4.2s link verification debounce)
-        async with session.get("https://server.victors.company/api/tasks", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as tr:
-            if tr.status == 200:
-                t_d = await tr.json()
-                tasks = t_d.get("tasks", []) if isinstance(t_d, dict) else []
-                claimable_tasks = []
-                needs_debounce = False
-                for t in tasks:
-                    if isinstance(t, dict):
-                        tid = t.get("taskId") or t.get("id")
-                        t_kind = t.get("kind", "")
-                        if tid and (t.get("status") == "open" or not t.get("claimed")):
-                            claimable_tasks.append(tid)
-                            if t_kind in ("link_visit", "telegram_channel", "partner_api") or t.get("url"):
-                                needs_debounce = True
-                if needs_debounce:
-                    await asyncio.sleep(4.2)
-                for tid in claimable_tasks:
-                    await jitter(0.2, 0.4)
-                    async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": tid}, headers=v_h) as tcr:
-                        if tcr.status in (200, 201):
-                            res["tasks_claimed"] += 1
-                            res["notes"].append(f"task_{tid}")
-
-        # 8. Referral claims (Hiring Bonus + Commission)
-        if str(uid) == MASTER_UID or vic_pass:
-            async with session.post("https://server.victors.company/api/referral/claim-bonus", json={}, headers=v_h) as rbr:
-                if rbr.status == 200: res["notes"].append("ref_bonus_claimed")
-            async with session.post("https://server.victors.company/api/referral/claim-commission", json={}, headers=v_h) as rcr:
-                if rcr.status == 200: res["notes"].append("ref_commission_claimed")
-
-        # 9. Deep Mine Arcade Expeditions & Arcade Mode Discovery
-        try:
-            import victors_arcade_solver
-            arc_res = await victors_arcade_solver.solve_deep_mine_expeditions(session, v_h, name, max_runs=10)
-            if arc_res.get("runs_played", 0) > 0:
-                net_profit = arc_res.get("net_vic", 0.0)
-                res["notes"].append(f"arcade_{arc_res['runs_played']}runs_{net_profit:+.1f}VIC")
-        except Exception as e:
-            logger.debug(f"[{name}] Victor's arcade solver note: {e}")
-
-    except Exception as e:
-        logger.error(f"[{name}] Victor's sweep error: {type(e).__name__}: {e}")
         res["notes"].append(f"err: {type(e).__name__}: {str(e)[:50]}")
 
     return res
@@ -2099,44 +1726,44 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
             "results": {}
         }
 
-        # 2. ATF Miner
+        # 1. ATF Miner
         atf_res = await sweep_atf_tasks(session, uid, name, acc_toks.get("atf_init_data", ""), acc)
         account_report["results"]["atf"] = atf_res
 
-        # 4. Kynex Network
+        # 2. Kynex Network
         kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
         account_report["results"]["kynex"] = kynex_res
 
-        # 5. PepeGram
+        # 3. PepeGram
         pepe_init = acc_toks.get("pepegram_init_data") or acc_toks.get("pepe_init_data", "")
         pepe_res = await sweep_pepegram_tasks(session, uid, name, pepe_init, acc)
         account_report["results"]["pepegram"] = pepe_res
 
-        # 6. AdxEarn AI
+        # 4. AdxEarn AI
         adx_init = acc_toks.get("adxearn_init_data") or acc_toks.get("adx_init_data", "")
         adx_res = await sweep_adxearn_tasks(session, uid, name, adx_init, acc)
         account_report["results"]["adxearn"] = adx_res
 
-        # 7. DiggoMiner
+        # 5. DiggoMiner
         diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), {**acc, **acc_toks})
         account_report["results"]["diggo"] = diggo_res
 
-        # 8. Chicken Land
+        # 6. Chicken Land
         chk_init = acc_toks.get("chickenland_init_data") or acc.get("chickenland_init_data") or acc_toks.get("chicken_init_data", "")
         chicken_res = await sweep_chickenland_tasks(session, uid, name, chk_init, acc)
         account_report["results"]["chickenland"] = chicken_res
 
-        # 9. Grouche Mine
+        # 7. Grouche Mine
         grc_init = acc_toks.get("grouchemine_init_data") or acc.get("grouchemine_init_data") or acc_toks.get("grc_init_data", "")
         grc_res = await sweep_grouchemine_tasks(session, uid, name, grc_init, {**acc, **acc_toks})
         account_report["results"]["grouchemine"] = grc_res
 
-        # 10. LUM Miner
+        # 8. LUM Miner
         lum_init = acc_toks.get("lumeon_init_data") or acc.get("lumeon_init_data", "")
         lum_res = await sweep_lumeon_tasks(session, uid, name, lum_init, acc)
         account_report["results"]["lumeon"] = lum_res
 
-        # 11. EarnVault
+        # 9. EarnVault
         ev_init = acc_toks.get("earnvault_init_data") or acc.get("earnvault_init_data", "")
         ev_res = await sweep_earnvault_tasks(session, uid, name, ev_init, acc)
         account_report["results"]["earnvault"] = ev_res
@@ -2151,7 +1778,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info(f"🎯 STARTING COMPLETE 11-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
+    logger.info(f"🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST ({len(ACCOUNTS)} ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -2167,7 +1794,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 80)
-        logger.info(f"📊 11-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
+        logger.info(f"📊 9-BOT FLEET ALL SIDE-TASKS HARVEST SUMMARY ({len(ACCOUNTS)} ACCOUNTS)")
         logger.info("=" * 80)
         total_tasks = 0
         for rep in reports:

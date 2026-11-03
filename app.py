@@ -2552,16 +2552,16 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
 ALL_ACTIVE_BOT_KEYS = ["atf", "kynex", "diggo", "pepegram", "adxearn", "chickenland", "grouchemine", "lumeon", "earnvault"]
-ALL_11_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
 ALL_9_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
+ALL_11_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
 ALL_8_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
 ALL_10_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 11 active fleet bots."""
-    if acc_entry.get("all_11_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
+    if acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_11_referrals_bound"):
         return True
-    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_11_BOT_KEYS)
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_9_BOT_KEYS)
 
 
 
@@ -2673,10 +2673,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
             await sync_account_tokens_to_clouds(tokens)
         return
 
-    # Check if all 8 bots already bound
-    unbound_bots = [b for b in ALL_8_BOT_KEYS if not acc_entry.get(f"{b}_referral_bound")]
+    # Check if all 9 bots already bound
+    unbound_bots = [b for b in ALL_9_BOT_KEYS if not acc_entry.get(f"{b}_referral_bound")]
     if not unbound_bots and not force:
-        logger.info(f"[{name}] Existing fleet account ({uid}) has all 8 bots bound. Extracting latest tokens...")
+        logger.info(f"[{name}] Existing fleet account ({uid}) has all 9 bots bound. Extracting latest tokens...")
         tokens = {}
         try:
             if not client.is_connected():
@@ -2914,13 +2914,13 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 8-bot farming finished!")
+                logger.info(f"[{name}] ✅ Complete initial 9-bot farming finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
     # Save updated referrals_bound flags across clouds
     await sync_new_account_to_clouds(acc_entry)
-    logger.info(f"[{name}] 🚀 Master Fleet Onboarding Active (8/8 Bots) for account {uid}")
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding Active (9/9 Bots) for account {uid}")
 
 
 
@@ -4354,7 +4354,7 @@ async def check_user_bot_session(user_id: str, sess_str: str, chat_id: str = Non
             alert_text = (
                 f"⚠️ *Telegram Session Terminated / Revoked* 🔴\n\n"
                 f"Your connected account session for *{name}* was disconnected or terminated from Telegram Settings > Devices.\n\n"
-                f"🛑 *Cloud auto-mining has paused* across all 8 bots to protect your account.\n\n"
+                f"🛑 *Cloud auto-mining has paused* across all 9 bots to protect your account.\n\n"
                 f"👉 *Tap below to reconnect via 1-Tap QR Login or Phone Login to resume your 24/7 cloud earnings!*"
             )
             try:
@@ -4842,7 +4842,7 @@ async def verify_login_code(request: Request):
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (8/8 Active Bots)...",
+            "referrals": "Binding to Master Fleet (9/9 Active Bots)...",
             "message": f"Account #{target_idx} connected successfully! Restored to active cloud fleet."
         }
 
@@ -7119,18 +7119,18 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         created_session = True
 
     try:
-        FLEET_21_SET = {
+        FLEET_24_SET = {
             "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
             "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
             "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
             "7954290138", "8841038141", "8975442879", "8937908003", "8609131528",
-            "8669217201", "9272631973"
+            "8669217201", "9272631973", "9106746905", "8972499908"
         }
         if accounts is None:
             accounts = await fetch_accounts_from_cloud()
         accounts = [
             a for a in (accounts or [])
-            if str(a.get("user_id")) in FLEET_21_SET or a.get("session_string") or a.get("session") or a.get("miniapp_tokens_synced")
+            if str(a.get("user_id")) in FLEET_24_SET or a.get("session_string") or a.get("session") or a.get("miniapp_tokens_synced")
         ]
         if not accounts:
             return {"ok": False, "message": "No accounts found for farming cycle", "farmed_count": 0}
@@ -7343,7 +7343,7 @@ async def api_farm_cloud_all(request: Request):
         "ok": True,
         "status": "dispatched",
         "shard": shard_param,
-        "message": f"Full 8-bot cloud farming cycle dispatched for Shard {shard_param}.",
+        "message": f"Full 9-bot cloud farming cycle dispatched for Shard {shard_param}.",
         "timestamp": time.time()
     }
 
@@ -7360,7 +7360,7 @@ LAST_SWEEP_RUN = {"status": "idle", "timestamp": 0, "output": ""}
 @app.get("/api/tasks/sweep-all")
 @app.post("/api/tasks/sweep-all")
 async def api_tasks_sweep_all(request: Request):
-    """Executes on-demand cloud side-tasks sweep across all 8 bots on Render Node 2."""
+    """Executes on-demand cloud side-tasks sweep across all 9 bots on Render Node 3 (Oregon)."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -7384,12 +7384,12 @@ async def api_tasks_sweep_all(request: Request):
             LAST_SWEEP_RUN["output"] = str(e)
 
     asyncio.create_task(_run_sweep())
-    return {"ok": True, "status": "dispatched", "message": "11-Bot fleet side-task sweep dispatched on Render Node 2."}
+    return {"ok": True, "status": "dispatched", "message": "9-Bot fleet side-task sweep dispatched on Render Node 3."}
 
 
 @app.get("/api/tasks/sweep-status")
 async def api_tasks_sweep_status():
-    """Returns the latest status of the 8-bot side-task sweep."""
+    """Returns the latest status of the 9-bot side-task sweep."""
     return {"ok": True, "last_sweep_run": LAST_SWEEP_RUN}
 
 
@@ -8972,10 +8972,10 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
-                    # 4. Autonomous 8-Bot Side-Tasks Sweeper (Runs every 3 hours)
+                    # 4. Autonomous 9-Bot Side-Tasks Sweeper (Runs every 3 hours)
                     if (now_ts - LAST_SIDE_TASKS_SWEEP_TS) > 10800:
                         try:
-                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 8-bot side-task sweep in cloud...")
+                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 9-bot side-task sweep in cloud...")
                             asyncio.create_task(asyncio.create_subprocess_exec(
                                 sys.executable, "finish_all_fleet_sidetasks.py",
                                 stdout=asyncio.subprocess.DEVNULL,

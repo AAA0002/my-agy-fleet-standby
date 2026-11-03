@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Complete 9-Bot Auto-Farming System Verification, Persistent Reply Keyboard Refresh & Zero Dead-Bot Cleanup (November 3, 2026)**:
+  - **Full Ground-Truth MTProto Audit Across All 24 Fleet Accounts**:
+    * Executed direct cryptographic MTProto authorization checks across all 24 fleet accounts via active StringSessions.
+    * 23 out of 24 accounts (Accounts #1 through #13, and #15 through #24) verified 100% active, authenticated, and healthy (`🟢`).
+    * Account #14 (`Raj Thakur Козлов`, UID `8727040932`) identified as the sole revoked session (`🔴`) due to permanent `AuthKeyDuplicatedError` caused by past multi-node IP collisions.
+    * Aligned Upstash Redis session health sets: `fleet:healthy_sessions` updated with 46 valid keys (all 23 accounts by index and UID), and `fleet:revoked_sessions` cleaned to strictly `['14', '8727040932']`.
+  - **Autonomous Cloud Auto-Farming System Verified Live on Render Node 3 (Oregon)**:
+    * Verified live on-demand cloud farming (`/api/farm/cloud-all` and `/api/farm/status`): All 24 accounts processed concurrently across all 9 legitimate bots (ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+    * Active farming cooldown timers running continuously in the cloud for all accounts with zero phone load.
+    * Autonomous token collection triggered via `/collect-tokens` on Render Node 3 across all 24 accounts for fresh 24h WebApp `initData`.
+  - **Eradication of MRG Miner and Victor's Company from `finish_all_fleet_sidetasks.py`**:
+    * Purged orphaned definitions `sweep_mrg_tasks` and `sweep_victors_tasks` (lines 366–541 and 698–859) along with dead references to deleted solvers (`victors_sb_solver`, `victors_arcade_solver`).
+    * Aligned file header, task runner sequence, summary logs, and alert cards to strictly 9 legitimate bots (`ATF`, `KYNEX`, `PEPEGRAM`, `ADXEARN`, `DIGGO`, `CHICKENLAND`, `GROUCHEMINE`, `LUMEON`, `EARNVAULT`).
+  - **Standardized `app.py` 9-Bot Architecture & Fleet Sets**:
+    * Updated `FLEET_21_SET` to `FLEET_24_SET` incorporating expansion Accounts #23 (`9106746905`) and #24 (`8972499908`).
+    * Standardized all remaining "8-bot" and "11-bot" log strings and function signatures (`bind_account_master_referrals`, `is_account_referrals_bound`, `api_farm_cloud_all`, `api_tasks_sweep_all`, and `cloud_wealth_automation_watchdog`) to strictly 9 bots.
+  - **Persistent Reply Keyboard Refresh in Admin Bot (`deploy_both_cf_workers.py`)**:
+    * Resolved issue where user's Telegram client retained the cached persistent keyboard (`⚡ 11-Bot Harvest`) by explicitly sending `mainKeyboard` with `⚡ 9-Bot Harvest` on `/start`, `/menu`, `/keyboard`, and `/sync`.
+    * Added fallback matcher for `⚡ 11-Bot Harvest` in command handler to gracefully accept legacy button clicks while returning the new 9-bot reply keyboard.
+    * Re-deployed Cloudflare Worker Node 4 (`restore-agy.agorameet.workers.dev`) and synchronized bot commands and menu buttons.
+
 - **💎 Comprehensive Codebase Bug Resolution, 24-Account Auto-Reconciliation Engine Fix, and Instant Dynamic Relink Status (November 3, 2026)**:
   - **Resolution of `AttributeError` in `auto_wallet_manager.py` (Line 527)**:
     * Discovered and resolved fatal runtime crash where `upstash_get("miniapp_tokens")` returned a double-encoded JSON string (`<class 'str'>`), causing `tokens_map.get(uid_s)` to crash with `AttributeError: 'str' object has no attribute 'get'`.

@@ -8645,12 +8645,13 @@ fi
         };
 
         // 1. Start & Menu Command (Redesigned Unified Single Message)
-        if (text === "/start" || text === "/menu" || text.startsWith("/start") || text.includes("Refresh Menu") || text === "🔄 Refresh Menu") {
+        if (text === "/start" || text === "/menu" || text.startsWith("/start") || text.includes("Refresh Menu") || text === "🔄 Refresh Menu" || text === "/keyboard" || text === "/sync") {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const dhakaTime = getDhakaTimestamp();
             const welcome = await renderMainMenuText(dhakaTime);
-            // Send single authoritative message with inline actions & update persistent keyboard
+            // Update persistent bottom reply keyboard with 9-Bot Harvest and render main menu
+            await sendResilientMessage(chatId, "👑 *MY AGY AI Executive Hub* • Active 9-Bot Keyboard Synced ✅", mainKeyboard, "Markdown");
             await sendResilientMessage(chatId, welcome, mainInlineKeyboard, "Markdown");
           })());
           return new Response("OK");
@@ -10088,7 +10089,7 @@ fi
 
 
         // 3.5 Instant Fleet Harvest
-        if (text === "⚡ 9-Bot Harvest" || text === "⚡ 8-Bot Harvest" || text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
+        if (text === "⚡ 9-Bot Harvest" || text === "⚡ 11-Bot Harvest" || text === "⚡ 8-Bot Harvest" || text === "⚡ 10-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const health = await getSessionHealthState();
