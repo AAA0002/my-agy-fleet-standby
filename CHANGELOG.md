@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Headless MiniApp `t.me` Callback Link Resolution, Telegram MTProto Webview Parity & Kynex 1-Hour Mining Verification (November 3, 2026)**:
+  - **Dynamic Callback Link to WebApp Bridge**:
+    * Resolved token extraction failure for MRG Miner and Victor's Company where clicking chat launch buttons returned `https://t.me/<bot>/<short_name>` callback links rather than direct WebApp hashes.
+    * Implemented `_extract_from_tme_link()` in `app.py`: automatically parses `target_bot`, `short_name`, and `startapp` query params from any `t.me` link, resolves the target bot entity, and dispatches `RequestAppWebViewRequest(peer=t_in, app=InputBotAppShortName(bot_id=t_user, short_name=short_name), write_allowed=True)` to extract valid, cryptographically signed `initData`.
+    * Upgraded `MRG_BOT` to canonical `mrgminerbot` and `VICTORS_BOT` to canonical `VictorsCompanyGame` across `app.py`.
+    * Enabled `write_allowed=True` across `RequestAppWebViewRequest` queries.
+  - **Kynex Network Live Yield & Mining Re-activation**:
+    * Verified live execution of `kynex_miner.farm_kynex_account` for master account `6727787768`.
+    * Successfully claimed pending mining yield (`+16.97 KNX`), boosted balance to `139,217.37 KNX`, refreshed energy to `49,151s` (>13.6h), and restarted mining session (`mining_active: True`).
+  - **Grouche Mine & EarnVault Ground-Truth Verification**:
+    * Verified live API status: Grouche Mine has completed all 8/8 Adsgram watch & click ads (`watched: 8`), and EarnVault has completed the full Monetag 10-ad batch (`done: 10, left: 0`) and credited daily earnings to `$2.82 USD` balance.
+
+
 - **🛡️ Cloudflare Edge Mesh D1 Token Sanitization, Pruning & Kynex Cooldown Harmonization (November 2, 2026)**:
   - **D1 Edge Token Sanitization & Silent Stripping Eliminated**:
     * Discovered that `ALLOWED_FLEET_BOTS` and `sanitizeFleetTokensObject` in `deploy_both_cf_workers.py` omitted `grouchemine`, `lumeon`, and `earnvault`, causing Cloudflare Edge in-memory token reconstruction to silently drop these 3 bots.

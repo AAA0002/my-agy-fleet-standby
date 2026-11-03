@@ -482,11 +482,11 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgtoken_bot"
+MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanybot"
+VICTORS_BOT = "VictorsCompanyGame"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -996,6 +996,39 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         except Exception:
             pass
 
+    # Helper: Resolve t.me MiniApp links directly to WebApp hashes via RequestAppWebViewRequest
+    async def _extract_from_tme_link(target_link, fallback_param=None):
+        if not target_link or "t.me/" not in target_link:
+            return None
+        try:
+            clean_p = target_link.split("t.me/")[1].split("?")[0].strip("/")
+            parts = clean_p.split("/")
+            if len(parts) >= 2:
+                target_bot = parts[0]
+                short_name = parts[1]
+                qs = urllib.parse.parse_qs(urllib.parse.urlparse(target_link).query)
+                sp = qs.get("startapp", [None])[0] or qs.get("start_param", [None])[0] or qs.get("start", [None])[0] or fallback_param
+                t_ent = await client.get_entity(target_bot)
+                t_in = await client.get_input_entity(t_ent)
+                from telethon import utils as tu
+                t_user = tu.get_input_user(t_ent)
+                req = RequestAppWebViewRequest(
+                    peer=t_in,
+                    app=InputBotAppShortName(bot_id=t_user or t_in, short_name=short_name),
+                    platform="android",
+                    start_param=str(sp) if sp else None,
+                    write_allowed=True
+                )
+                res = await client(req)
+                w_url = getattr(res, "url", None)
+                if w_url:
+                    t = extract_from_url(w_url)
+                    if t:
+                        return t
+        except Exception as e:
+            logger.debug(f"Failed to extract from t.me link {target_link}: {e}")
+        return None
+
     # Strategy A: Try RequestAppWebViewRequest with candidate short names
     names_to_try = candidate_short_names or ["openapp", "app", "play", "myapp", "miniapp", "miner", "startapp", "bot", "game"]
     for sn in names_to_try:
@@ -1003,7 +1036,8 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             req_p = {
                 "peer": bot_in,
                 "app": InputBotAppShortName(bot_id=bot_user_in or bot_in, short_name=sn),
-                "platform": "android"
+                "platform": "android",
+                "write_allowed": True
             }
             if start_param:
                 req_p["start_param"] = str(start_param)
@@ -1019,18 +1053,23 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         menu = await client(functions.bots.GetBotMenuButtonRequest(user_id=bot_in))
         menu_btn = getattr(menu, "button", None)
         if menu_btn and hasattr(menu_btn, "url") and menu_btn.url:
-            req_p = {
-                "peer": bot_ent,
-                "bot": bot_ent,
-                "platform": "android",
-                "url": menu_btn.url
-            }
-            if start_param:
-                req_p["start_param"] = str(start_param)
-            res = await client(RequestWebViewRequest(**req_p))
-            tok = extract_from_url(getattr(res, "url", None))
-            if tok:
-                return tok
+            if "t.me/" in menu_btn.url:
+                tok = await _extract_from_tme_link(menu_btn.url, start_param)
+                if tok:
+                    return tok
+            elif not menu_btn.url.startswith("https://t.me/"):
+                req_p = {
+                    "peer": bot_ent,
+                    "bot": bot_ent,
+                    "platform": "android",
+                    "url": menu_btn.url
+                }
+                if start_param:
+                    req_p["start_param"] = str(start_param)
+                res = await client(RequestWebViewRequest(**req_p))
+                tok = extract_from_url(getattr(res, "url", None))
+                if tok:
+                    return tok
     except Exception:
         pass
 
@@ -1067,23 +1106,10 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                 if tok:
                                     return tok
                             # MiniApp link (e.g., https://t.me/VictorsCompanyGame/app or https://t.me/mrgminerbot/app?startapp=...)
-                            if "t.me/" in b_url and "/" in b_url.split("t.me/")[1]:
-                                try:
-                                    clean_part = b_url.split("t.me/")[1].split("?")[0].strip("/")
-                                    parts = clean_part.split("/")
-                                    if len(parts) >= 2:
-                                        t_app = parts[1]
-                                        res = await client(RequestAppWebViewRequest(
-                                            peer=bot_in,
-                                            app=InputBotAppShortName(bot_id=bot_user_in or bot_in, short_name=t_app),
-                                            platform="android",
-                                            start_param=str(start_param) if start_param else None
-                                        ))
-                                        tok = extract_from_url(getattr(res, "url", None))
-                                        if tok:
-                                            return tok
-                                except Exception:
-                                    pass
+                            if "t.me/" in b_url:
+                                tok = await _extract_from_tme_link(b_url, start_param)
+                                if tok:
+                                    return tok
                             elif not b_url.startswith("https://t.me/"):
                                 try:
                                     req_p = {
@@ -1107,6 +1133,10 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                 if ans:
                                     ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
                                     if ans_url:
+                                        if "t.me/" in ans_url:
+                                            tok = await _extract_from_tme_link(ans_url, start_param)
+                                            if tok:
+                                                return tok
                                         tok = extract_from_url(ans_url)
                                         if tok:
                                             return tok
