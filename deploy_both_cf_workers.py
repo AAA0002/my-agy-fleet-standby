@@ -361,22 +361,8 @@ const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generi
 };
 
 async function getRenderUrls() {
-  let active = "node3";
-  try {
-    const cached = await upstashGet("fleet:active_render_node", 30000);
-    if (cached === "node2" || cached === "node3") {
-      active = cached;
-    }
-  } catch (_) {}
-  if (active === "node2") {
-    return [
-      "https://my-agy-fleet-standby-node2.onrender.com",
-      "https://my-agy-fleet-standby-node3.onrender.com"
-    ];
-  }
   return [
-    "https://my-agy-fleet-standby-node3.onrender.com",
-    "https://my-agy-fleet-standby-node2.onrender.com"
+    "https://my-agy-fleet-standby-node3.onrender.com"
   ];
 }
 
@@ -3372,22 +3358,8 @@ export default {
     }
 
     const getRenderUrls = async () => {
-      let active = "node3";
-      try {
-        const cached = await upstashGet("fleet:active_render_node", 30000);
-        if (cached === "node2" || cached === "node3") {
-          active = cached;
-        }
-      } catch (_) {}
-      if (active === "node2") {
-        return [
-          "https://my-agy-fleet-standby-node2.onrender.com",
-          "https://my-agy-fleet-standby-node3.onrender.com"
-        ];
-      }
       return [
-        "https://my-agy-fleet-standby-node3.onrender.com",
-        "https://my-agy-fleet-standby-node2.onrender.com"
+        "https://my-agy-fleet-standby-node3.onrender.com"
       ];
     };
 
