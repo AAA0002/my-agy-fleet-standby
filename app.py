@@ -1008,12 +1008,27 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 short_name = parts[1]
                 qs = urllib.parse.parse_qs(urllib.parse.urlparse(target_link).query)
                 sp = qs.get("startapp", [None])[0] or qs.get("start_param", [None])[0] or qs.get("start", [None])[0] or fallback_param
-                t_ent = await client.get_entity(target_bot)
+                
+                t_ent = None
+                try:
+                    t_ent = await client.get_entity(target_bot)
+                except Exception:
+                    if target_bot in BOT_ALIASES:
+                        for alt in BOT_ALIASES[target_bot]:
+                            try:
+                                t_ent = await client.get_entity(alt)
+                                if t_ent:
+                                    break
+                            except Exception:
+                                pass
+                if not t_ent:
+                    t_ent = bot_ent
+
                 t_in = await client.get_input_entity(t_ent)
                 from telethon import utils as tu
                 t_user = tu.get_input_user(t_ent)
                 req = RequestAppWebViewRequest(
-                    peer=t_in,
+                    peer=bot_in or t_in,
                     app=InputBotAppShortName(bot_id=t_user or t_in, short_name=short_name),
                     platform="android",
                     start_param=str(sp) if sp else None,
@@ -1075,7 +1090,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     # Strategy C: Inline Keyboard buttons in existing bot messages (Zero-spam: never send /start)
     try:
-        msgs = await client.get_messages(bot_ent, limit=5)
+        msgs = await client.get_messages(bot_ent, limit=25)
         for m in msgs:
             if not m.out and m.buttons:
                 for row in m.buttons:
