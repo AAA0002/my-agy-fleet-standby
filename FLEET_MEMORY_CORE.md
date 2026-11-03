@@ -50,7 +50,7 @@
 
 ---
 
-## 2. 👥 Active Accounts Roster (21 Accounts)
+## 2. 👥 Active Accounts Roster (22 Accounts)
 
 | Index | Name | Username | Telegram ID | Phone | Custody Type | Primary Wallet | Status |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- | :---: |
@@ -75,6 +75,7 @@
 | **19** | **Adil H** | `@AdilHassain` | `8937908003` | `+8801804723069` | Isolated 24-Word Seed | TON: `UQCrEZr...w8D` | 🟢 Active |
 | **20** | **Asaduzzaman Sarker** | `@Asaduzzamansarkar` | `8609131528` | `+8801312863569` | Isolated 24-Word Seed | TON: `UQCdmqN...0DE` | 🟢 Active |
 | **21** | **Aaaa201** | `@AAA201AAA` | `8669217201` | `+8801913962342` | Isolated 24-Word Seed | TON: `UQDH-Fr..._jw` | 🟢 Active |
+| **22** | **AAA 22** | `@aaa022a` | `9272631973` | `+8801732100769` | Isolated 24-Word Seed | TON: `UQDNmNk...HGJ` | 🟢 Active |
 
 ---
 
@@ -166,10 +167,52 @@ When a new account connects, the system immediately binds its dedicated wallets 
 ```
 
 - **Cloudflare Edge**: Node 4 (`restore-agy.agorameet.workers.dev`) handles all webhook routing, PIN pad state, dynamic account rosters, and admin callbacks.
-- **Render Standby Node 2**: `https://my-agy-fleet-standby-node2.onrender.com` runs Telethon MTProto client for cloud logins, token extraction, and 24/7 background mining.
-- **GitHub Sync**: `python3 push_to_standby_repo.py` synchronizes `render_standby_app.py` as `app.py` to `AAA0002/my-agy-fleet-standby` and triggers auto-deploy on Render Node 2.
+- **Render Standby Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com` runs Telethon MTProto client for cloud logins, token extraction, and 24/7 background mining.
+- **GitHub Sync**: `python3 push_to_standby_repo.py` synchronizes `app.py` to `AAA0002/my-agy-fleet-standby` and triggers auto-deploy on Render Node 3.
 - **Cloudflare Sync**: `python3 deploy_both_cf_workers.py` deploys the worker script and syncs bot menus.
 - **Disaster Recovery**: `python3 backup_manager.py` creates complete disaster recovery archives and streams them to Telegram (`@myagyai`).
+
+---
+
+## 7. 🗄️ Master Fleet Infrastructure & Cloud Assets Registry (147 Keys)
+
+### 7.1 Multi-Cloud Compute & Serverless Edge
+- **Cloudflare Workers (5 Accounts / Nodes)**: Node 1 (`aaaai2`), Node 2 (`aaa-bot`), Node 3 (`aaa222`), Node 4 (`agorameet` - Primary Active Webhook), Node 5 (`aaaai`). Plus Secondary & UserBot accounts.
+- **Cloudflare Pages**: `https://atf-miner-app.pages.dev/` (Dedicated Ads Portal).
+- **Cloudflare Cache API (`caches.default`)**: Zero-cost, infinite read/write RAM cache bypassing KV limits.
+- **Render (3 Service Nodes)**: Node 1 Singapore (`srv-d9n...`), Node 2 Frankfurt (`srv-dan...`), Node 3 Oregon (`srv-db437o3tqb8s73dt4erg` - Active Coordinator).
+- **Deno Deploy**: `https://my-agy-fleet-deno.aaa222.deno.net` (Deno edge mesh sentinel).
+- **Vercel Edge**: `https://agy-aaa000.vercel.app` (Serverless Node).
+- **Puzl Kubernetes Cloud**: `https://k8s.eu-finland-1.clusters.puzl.cloud` (Namespace: `root-bhwgczyd9lu5uusfyg7xkvdcu491oh1y6f1lf8pdfzo3z`).
+- **UbiCloud VMs**: Open Cloud compute runners via `UBICLOUD_PAT_ID`.
+- **CircleCI**: Free automated cloud pipeline runners (`CIRCLECI_TOKEN`).
+- **GitHub Actions**: Public runner `cloud-fleet-solver` for unlimited free Turnstile solving.
+
+### 7.2 Multi-Database, Caching & Decentralized Storage
+- **Turso LibSQL**: `https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io` (Table `kv_mesh`, 25,000,000 operations/month free tier).
+- **Upstash Redis**: Dual-store clusters (`UPSTASH_URL`, `UPSTASH_STANDBY_URL`, `UPSTASH_API_KEY_JMF`, `UPSTASH_API_KEY_AAAFREEAI`).
+- **Supabase PostgreSQL**: Database, REST API, Auth & Storage (`SUPABASE_URL`).
+- **Qdrant Vector Cloud**: 3 distinct Qdrant clusters configured in `QDRANT_KEYS` for semantic memory and AI embeddings.
+- **Layerbase**: Configured in `LAYERBASE_KEYS`.
+- **Pinata IPFS**: Decentralized pinning for immutable wallet and system snapshots (`PINATA_JWT`).
+- **Cloudflare D1 & KV**: `CF_D1_DATABASE_ID_USERBOT`, `CF_KV_CACHE_ID_USERBOT`, `CF_KV_MINER_ID_SECONDARY`.
+
+### 7.3 Web3, RPC Nodes & On-Chain Gateways
+- **TON Blockchain**: `TONAPI_KEY` (TonAPI) + `TONCENTER_API_KEY` (Toncenter high-speed indexing).
+- **EVM (BSC / Arbitrum / Ethereum)**: `DRPC_BSC_RPC`, `DRPC_ARBITRUM_RPC` (dRPC decentralized nodes) + `BINANCE_OFFICIAL_RPC` + `ALCHEMY_ETH_RPC` (Alchemy) + `ETHERSCAN_API_KEY`.
+- **TRON Blockchain**: Native TRC-20 derivation and balance tracking.
+- **Solana Blockchain**: Ed25519 base58 key derivation.
+- **Bitcoin Blockchain**: P2PKH / Taproot derivation.
+
+### 7.4 Network, Proxies & Observability
+- **Webshare Rotating Proxy Pool**: 7 verified Webshare accounts (`WEBSHARE_KEY_1` to `WEBSHARE_KEY_7`), expanding pool to 70 rotating proxies.
+- **IPInfo API**: Geolocation verification & IP hygiene (`IPINFO_TOKEN`).
+- **Cron-Job.org**: Automated scheduling (`CRONJOB_API_KEY`), 10 jobs registered (Keep-Alive, Farm, Token Harvester).
+- **BetterStack**: Uptime heartbeat monitoring (`BETTERSTACK_HEARTBEAT_URL`).
+- **Sentry**: Real-time error tracking and telemetry (`SENTRY_DSN`).
+- **Hookdeck**: Webhook reliability queue (`HOOKDECK_API_KEY`).
+- **Walrus Memory**: Autonomous persistent agent memory key (`WALRUS_MEMORY_KEY`).
+- **DigitalPlat & Cloudflare Email Routing**: Custom domain email forwarding & Google App Password automation.
 
 ---
 *End of Memory Core. Keep this file updated whenever accounts, pools, or architecture evolve.*
