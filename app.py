@@ -7538,8 +7538,15 @@ async def inspect_referrals_master(request: Request):
     sess_str = master_acc.get("session_string") or master_acc.get("session")
     cl = create_telethon_client(sess_str=sess_str, identifier=master_acc.get("phone") or "Master", proxy_val=master_acc.get("proxy"))
     bots_to_query = [
-        ("atf", "atfminers_bot", ["/start"]),
-        ("kynex", "Kynex_miningbot", ["/start"])
+        ("atf", ["ATF_AIRDROP_bot", "atfminers_bot", 7058204689]),
+        ("kynex", ["Kynex_miningbot", "kynexnetworkbot", 7421882583]),
+        ("diggo", ["Diggominer_bot"]),
+        ("pepegram", ["Pepe_gram_bot", "pepegram_bot", 7639148332]),
+        ("adxearn", ["AdxEarnAibot"]),
+        ("chickenland", ["ChickenLandBot"]),
+        ("grouchemine", ["GRC_AirdrooBot"]),
+        ("lumeon", ["lumeonminer_bot"]),
+        ("earnvault", ["EarnVaultApp_bot"])
     ]
     results = {}
     try:
@@ -7547,10 +7554,24 @@ async def inspect_referrals_master(request: Request):
         if not await cl.is_user_authorized():
             return {"ok": False, "error": "Master session not authorized"}
         
-        for name, b_user, cmds in bots_to_query:
+        for name, candidates in bots_to_query:
+            b_ent = None
+            resolved_target = str(candidates[0])
+            for cand in candidates:
+                try:
+                    b_ent = await cl.get_entity(cand)
+                    if b_ent:
+                        resolved_target = str(cand)
+                        break
+                except Exception:
+                    continue
+
+            if not b_ent:
+                results[name] = {"bot": resolved_target, "error": "Entity resolution failed"}
+                continue
+
             try:
-                b_ent = await cl.get_entity(b_user)
-                # Zero-chat policy: do NOT send /start into bot chats! Read existing messages silently.
+                # Zero-chat policy: read existing messages silently without spamming /start
                 msgs = await cl.get_messages(b_ent, limit=5)
                 replies = []
                 for m in msgs:
@@ -7560,11 +7581,14 @@ async def inspect_referrals_master(request: Request):
                             for row in m.buttons:
                                 btns.append([b.text for b in row])
                         replies.append({"text": m.raw_text, "buttons": btns})
-                results[name] = {"bot": b_user, "replies": replies}
+                results[name] = {"bot": resolved_target, "replies": replies}
             except Exception as ex:
-                results[name] = {"bot": b_user, "error": str(ex)}
+                results[name] = {"bot": resolved_target, "error": str(ex)}
     finally:
-        await cl.disconnect()
+        try:
+            await cl.disconnect()
+        except Exception:
+            pass
 
     return {"ok": True, "master_id": "6727787768", "bots": results}
 

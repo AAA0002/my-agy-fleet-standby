@@ -3,6 +3,9 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **⚡ Instant Relink Status Update, Master Referral Audit Across 24 Accounts, and Proactive Telegram Session Alerts (November 3, 2026)**:
+  - **Full 9-Bot Resilient Inspection Engine (`app.py:inspect_referrals_master`)**:
+    * Upgraded master referral inspection endpoint `/api/inspect-referrals-master` from 2 hardcoded bots to all 9 active legitimate bots (ATF, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+    * Integrated candidate resolution with `BOT_ALIASES` (e.g. resolving `ATF_AIRDROP_bot`, `atfminers_bot`, and UID `7058204689`), preventing "No user has atfminers_bot as username" Telethon entity errors.
   - **Dynamic Relink UI Bug Resolution (`deploy_both_cf_workers.py`)**:
     * Identified root cause of newly authenticated accounts displaying red (🔴) in OTP & Relogin Hub: `buildOtpMenuKeyboard` and `getSessionHealthState()` previously enforced `!hasSession` check which evaluated to `true` whenever session strings were omitted from lightweight database queries or KV caches.
     * Refactored health status evaluation to strictly cross-reference live Upstash Redis sets: `healthyRawSet` (`fleet:healthy_sessions`) vs `revokedRawSet` (`fleet:revoked_sessions`). Relinked accounts now immediately render green (`🟢`) upon completion of OTP/2FA verification.
