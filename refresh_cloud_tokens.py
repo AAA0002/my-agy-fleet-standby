@@ -6,7 +6,7 @@ refresh_cloud_tokens.py
 =============================================================================
 Runs on GitHub Actions, Render, Deno, or ephemeral cloud runners.
 Connects briefly via MTProto to extract fresh 24h WebApp initData session tokens
-across all 8 legitimate active bots and auto-joins required sponsor channels.
+across all 9 legitimate active bots and auto-joins required sponsor channels.
 
 Pushes extracted tokens to both:
   1. 5x Cloudflare Edge Workers & KV
@@ -46,7 +46,7 @@ CF_NODES = [
     "https://restore-agy.aaaai.workers.dev"
 ]
 
-# 8 Active Legitimate Fleet Bots & Referral Codes
+# 9 Active Legitimate Fleet Bots & Referral Codes
 try:
     from bot_registry import get_all_sponsor_channels
     MANDATORY_SPONSOR_CHANNELS = get_all_sponsor_channels()
@@ -54,13 +54,10 @@ except Exception:
     MANDATORY_SPONSOR_CHANNELS = [
         "AI_TRADING_FOREX", "AdxearnAi", "BTCMAKERR", "ChickenLandCodes", "ChickenLandPay",
         "DurovKidney", "EarnVaulte", "LandChickenNews", "PaperHouseNFT", "PickaxeEmpire",
-        "TheBoss_Victor", "VICWithdrawals", "VictorsCompany", "Web3Primeteam", "keepeye_app",
-        "kynex_mining", "mrgminer", "mrgwithdrawal", "pepe_grammmm", "solanamemes001", "victors_company"
+        "Web3Primeteam", "keepeye_app", "kynex_mining", "pepe_grammmm", "solanamemes001"
     ]
 
-MRG_BOT = "mrgminerbot"
 ATF_BOT = "atfminers_bot"
-VICTORS_BOT = "VictorsCompanyGame"
 KYNEX_BOT = "Kynex_miningbot"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 ADXEARN_BOT = "AdxEarnAibot"
@@ -70,9 +67,7 @@ GROUCHEMINE_BOT = "GRC_AirdrooBot"
 LUMEON_BOT = "lumeonminer_bot"
 EARNVAULT_BOT = "EarnVaultApp_bot"
 
-MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
-VICTORS_REF = "ref_A20AA96F18"
 KYNEX_REF = "6727787768"
 PEPEGRAM_REF = "1449"
 ADXEARN_REF = "ref_6727787768"
@@ -221,10 +216,6 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
     bot_in = None
     candidates = [bot_username]
     BOT_ALIASES = {
-        "mrgtoken_bot": ["mrgminerbot", 8862173167],
-        "mrgminerbot": ["mrgtoken_bot", 8862173167],
-        "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
-        "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
         "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
         "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
         "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
@@ -375,15 +366,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
 
         tokens = {}
 
-        # 1. MRG Miner
-        mrg_p = None if is_master else MRG_REF
-        tok = await extract_bot_webapp_token(cl, MRG_BOT, start_param=mrg_p, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
-        if tok:
-            tokens["mrg_init_data"] = tok
-            print(f"  ⛏️ MRG Miner: Collected")
-        await asyncio.sleep(0.5)
-
-        # 2. ATF Miner
+        # 1. ATF Miner
         atf_p = None if is_master else str(REPORT_CHAT_ID)
         tok = await extract_bot_webapp_token(cl, ATF_BOT, start_param=atf_p, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
         if tok:
@@ -391,15 +374,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
             print(f"  🪙 ATF Miner: Collected")
         await asyncio.sleep(0.5)
 
-        # 3. Victor's Company
-        vic_p = None if is_master else VICTORS_REF
-        tok = await extract_bot_webapp_token(cl, VICTORS_BOT, start_param=vic_p, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
-        if tok:
-            tokens["victors_init_data"] = tok
-            print(f"  🏢 Victor's Company: Collected")
-        await asyncio.sleep(0.5)
-
-        # 4. Kynex Network (@Kynex_miningbot)
+        # 2. Kynex Network (@Kynex_miningbot)
         ky_p = None if is_master else KYNEX_REF
         tok = await extract_bot_webapp_token(cl, KYNEX_BOT, start_param=ky_p, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
         if tok:

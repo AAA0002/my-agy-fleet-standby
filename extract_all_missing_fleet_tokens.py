@@ -151,12 +151,10 @@ async def process_account(acc, idx, total, tokens_data):
             b_title = bot_info["name"]
 
             BOT_ALIASES = {
-                "mrgtoken_bot": ["mrgminerbot", 8862173167],
-                "mrgminerbot": ["mrgtoken_bot", 8862173167],
-                "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
-                "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
                 "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
                 "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
+                "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
+                "Pepe_gram_bot": ["pepegram_bot", 7639148332],
             }
             candidates = [b_username]
             if b_username in BOT_ALIASES:

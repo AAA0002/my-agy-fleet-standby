@@ -2,9 +2,9 @@
 """
 sync_fleet_all_tokens.py
 =============================================================================
-BIDIRECTIONAL 11-BOT TOKEN SYNCHRONIZER & STATE UNIFIER
+BIDIRECTIONAL 9-BOT TOKEN SYNCHRONIZER & STATE UNIFIER
 =============================================================================
-Synchronizes all 11 bot initData tokens across all 21 accounts between:
+Synchronizes all 9 bot initData tokens across all 24 accounts between:
   1. Upstash Redis `fleet:tokens:{uid}` (individual account keys)
   2. Upstash Redis `miniapp_tokens` & `fleet_miniapp_tokens` (master aggregated dictionaries)
   3. Local `accounts.json`

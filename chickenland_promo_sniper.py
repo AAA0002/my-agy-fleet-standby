@@ -46,7 +46,7 @@ REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID") or "6727787768"
 ADMIN_NOTIF_CHANNEL = os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID", "-1004358687850")
 
 API_ID = int(os.getenv("API_ID") or os.getenv("TELEGRAM_API_ID") or 2040)
-API_HASH = os.getenv("API_HASH") or os.getenv("TELEGRAM_API_HASH") or ""
+API_HASH = os.getenv("API_HASH") or os.getenv("TELEGRAM_API_HASH") or "5cd9e5bbfb572a4429a0c54774153b47"
 
 USER_AGENT = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
 SCRAPER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -65,31 +65,41 @@ def redis_command(cmd: str, *args) -> Any:
     """Synchronous Redis helper for initial startup loading."""
     if not UPSTASH_URL or not UPSTASH_TOKEN:
         return None
-    url = f"{UPSTASH_URL.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
-    req = urllib.request.Request(
-        url,
-        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-    )
+    headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
     try:
+        req = urllib.request.Request(UPSTASH_URL, data=json.dumps([cmd, *args]).encode('utf-8'), headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=4) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             return data.get("result")
     except Exception:
-        return None
+        try:
+            url = f"{UPSTASH_URL.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
+            req_get = urllib.request.Request(url, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+            with urllib.request.urlopen(req_get, timeout=4) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                return data.get("result")
+        except Exception:
+            return None
 
 async def async_redis_command(session: aiohttp.ClientSession, cmd: str, *args) -> Any:
     """Non-blocking async Redis helper for post-burst persistence."""
     if not UPSTASH_URL or not UPSTASH_TOKEN:
         return None
-    url = f"{UPSTASH_URL.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
-    headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+    headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
     try:
-        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=3)) as resp:
+        async with session.post(UPSTASH_URL, json=[cmd, *args], headers=headers, timeout=aiohttp.ClientTimeout(total=3)) as resp:
             if resp.status == 200:
                 data = await resp.json()
                 return data.get("result")
     except Exception:
-        pass
+        try:
+            url = f"{UPSTASH_URL.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
+            async with session.get(url, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as resp2:
+                if resp2.status == 200:
+                    data2 = await resp2.json()
+                    return data2.get("result")
+        except Exception:
+            pass
     return None
 
 def is_code_seen(code: str) -> bool:
@@ -193,7 +203,7 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
                         break
                 if isinstance(tok_map, dict):
                     for uid, toks in tok_map.items():
-                        tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                        tok = (toks.get("chickenland_init_data") or toks.get("chicken_init_data")) if isinstance(toks, dict) else None
                         if tok:
                             fleet[str(uid)] = {
                                 "user_id": str(uid),
@@ -217,7 +227,7 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
                         except Exception:
                             break
                     if isinstance(u_toks, dict):
-                        tok = u_toks.get("chickenland_init_data")
+                        tok = u_toks.get("chickenland_init_data") or u_toks.get("chicken_init_data")
                         if tok:
                             fleet[str(uid)] = {
                                 "user_id": str(uid),
@@ -231,7 +241,7 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
     for acc in accounts_list:
         uid = str(acc.get("user_id", ""))
         if uid and uid not in fleet:
-            tok = acc.get("chickenland_init_data")
+            tok = acc.get("chickenland_init_data") or acc.get("chicken_init_data")
             if tok and isinstance(tok, str):
                 fleet[str(uid)] = {
                     "user_id": str(uid),
@@ -251,7 +261,7 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
                         break
                 if isinstance(data, dict):
                     for uid, toks in data.items():
-                        tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                        tok = (toks.get("chickenland_init_data") or toks.get("chicken_init_data")) if isinstance(toks, dict) else None
                         if tok and str(uid) not in fleet:
                             fleet[str(uid)] = {
                                 "user_id": str(uid),
@@ -833,10 +843,11 @@ async def run_unified_sniper_daemon(poll_interval: float = 3.0):
     except Exception as e:
         print(f"[Sniper Startup Scrape]: {e}")
 
-    # Launch both engines concurrently
+    # Launch both engines concurrently with resilient exception handling
     await asyncio.gather(
         start_mtproto_listener(),
-        start_http_poller(poll_interval=poll_interval)
+        start_http_poller(poll_interval=poll_interval),
+        return_exceptions=True
     )
 
 if __name__ == "__main__":

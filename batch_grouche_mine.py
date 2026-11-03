@@ -255,7 +255,7 @@ async def run_fleet():
         accounts = json.load(f)
 
     logger.info("=" * 75)
-    logger.info("🚀 GROUCHE MINE 🍐 ($GRC) FLEET-WIDE 21-ACCOUNT FARMING CYCLE")
+    logger.info("🚀 GROUCHE MINE 🍐 ($GRC) FLEET-WIDE 24-ACCOUNT FARMING CYCLE")
     logger.info(f"Target Bot: @{BOT_USERNAME} | Master UID: {MASTER_UID}")
     logger.info("=" * 75)
 

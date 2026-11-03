@@ -352,7 +352,7 @@ async def sync_token_to_cf(session: aiohttp.ClientSession, uid: str, token_dict:
         "account_id": str(uid),
         **token_dict
     }
-    for cf_url in CF_WORKERS[:2]:
+    for cf_url in ["https://restore-agy.agorameet.workers.dev"] + [u for u in CF_WORKERS if "agorameet" not in u]:
         try:
             async with session.post(
                 f"{cf_url}/api/miniapp/tokens/sync",

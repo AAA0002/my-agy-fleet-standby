@@ -151,5 +151,5 @@ def get_all_sponsor_channels() -> List[str]:
     return sorted(list(channels))
 
 def get_token_keys() -> List[str]:
-    """Returns the list of token keys (e.g. ['mrg_init_data', ...]) for active bots."""
+    """Returns the list of token keys (e.g. ['atf_init_data', ...]) for active bots."""
     return [b["token_key"] for b in ACTIVE_BOTS.values() if b.get("is_active", True)]

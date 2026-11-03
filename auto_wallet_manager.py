@@ -592,14 +592,22 @@ async def connect_and_start_bot_wallets(acc_entry: dict, tokens: dict = None, se
     mnemonic = ton_wallet.get("mnemonic") or ton_wallet.get("mnemonic_words")
 
     if not tokens:
-        tokens_map = upstash_get("miniapp_tokens") or {}
-    if not isinstance(tokens_map, dict):
-        tokens_map = {}
-        if not isinstance(tokens_map, dict):
-            tokens_map = {}
+        raw_tm = upstash_get("miniapp_tokens")
+        while isinstance(raw_tm, str):
+            try:
+                raw_tm = json.loads(raw_tm)
+            except Exception:
+                break
+        tokens_map = raw_tm if isinstance(raw_tm, dict) else {}
         tokens = tokens_map.get(uid) or {}
         if not tokens:
-            tokens = upstash_get(f"fleet:tokens:{uid}") or {}
+            raw_t = upstash_get(f"fleet:tokens:{uid}")
+            while isinstance(raw_t, str):
+                try:
+                    raw_t = json.loads(raw_t)
+                except Exception:
+                    break
+            tokens = raw_t if isinstance(raw_t, dict) else {}
 
     res = {"uid": uid, "name": name, "connected": [], "started": [], "errors": []}
     if not ton_addr:
@@ -700,9 +708,9 @@ async def connect_and_start_bot_wallets(acc_entry: dict, tokens: dict = None, se
                 logger.debug(f"[{name}] Diggo connect note: {e_diggo}")
 
         # 3. Grouche Mine: Connect wallet & toggle mining
-        if tokens.get("grouchemine_init_data"):
+        g_init = tokens.get("grouchemine_init_data") or tokens.get("grc_init_data")
+        if g_init:
             try:
-                g_init = tokens["grouchemine_init_data"]
                 g_h = {"Content-Type": "application/json", "X-Telegram-Init-Data": g_init}
                 # Connect wallet
                 await session.post("https://grouchemine.world/api/users/wallet/connect", json={"address": ton_addr}, headers=g_h, timeout=aiohttp.ClientTimeout(total=8))
@@ -734,12 +742,16 @@ async def connect_and_start_bot_wallets(acc_entry: dict, tokens: dict = None, se
 
 
 async def run_wallet_and_mining_sweep():
-    """Sweeps across all 22+ accounts, connects wallets, and activates mining."""
+    """Sweeps across all 24 accounts, connects wallets, and activates mining."""
     accounts = reconcile_all_fleet_accounts()
     logger.info(f"🚀 Launching autonomous wallet connection & mining sweep across {len(accounts)} accounts...")
-    tokens_map = upstash_get("miniapp_tokens") or {}
-    if not isinstance(tokens_map, dict):
-        tokens_map = {}
+    raw_tm = upstash_get("miniapp_tokens")
+    while isinstance(raw_tm, str):
+        try:
+            raw_tm = json.loads(raw_tm)
+        except Exception:
+            break
+    tokens_map = raw_tm if isinstance(raw_tm, dict) else {}
 
     async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36"}) as session:
         for acc in accounts:
@@ -758,8 +770,10 @@ async def query_cloudflare_ai(prompt: str, system_prompt: str = "You are the per
     """Queries free Cloudflare Workers Edge AI across the active edge mesh."""
     for cf_url in [
         "https://restore-agy.agorameet.workers.dev/api/ai",
-        "https://restore-node2.koramshah2.workers.dev/api/ai",
-        "https://restore-node3.coz1gameh3.workers.dev/api/ai"
+        "https://restore-agy.aaaai2.workers.dev/api/ai",
+        "https://restore-agy.aaa-bot.workers.dev/api/ai",
+        "https://restore-agy.aaa222.workers.dev/api/ai",
+        "https://restore-agy.aaaai.workers.dev/api/ai"
     ]:
         try:
             async with aiohttp.ClientSession() as s:

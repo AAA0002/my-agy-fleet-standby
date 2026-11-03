@@ -2,6 +2,32 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Comprehensive Full-Fleet 9-Bot Ground-Truth Alignment, Node 3 Coordinator Fix & End-to-End Dashboard Synchronization (November 3, 2026)**:
+  - **Node 3 Active Coordinator & Distributed Lock Fix (`app.py`)**:
+    * **Node Role Detection**: Updated `IS_PRIMARY_HOST` to recognize Render Oregon Node 3 (`db437o3tqb8s73dt4erg`) alongside Node 2.
+    * **Distributed Lock Recognition**: Fixed `acquire_coordinator_lock()` to recognize `node3` in `cur_holder` and properly refresh coordinator locks on Node 3, preventing watchdogs (`cloud_wealth_automation_watchdog`, `token_health_and_refresh_watchdog`) from falsely entering standby idling.
+    * **Default Active Node**: Set `active_n = 3` default across all Render node checks.
+  - **User Bot Mini App Dashboard Missing Bot Fix & Protocol Synchronization (`public/miner/index.html`, `public_ads/miner/index.html`, `public/app/index.html`, `public/index.html`)**:
+    * **Resolved Missing Protocol 5 (LUM Miner)**: Added full Protocol 5: LUM Miner card (`pool-lumeon-count`, harvest action button `harvestSingleBot('lumeon')`, deep-link `https://t.me/lumeonminer_bot/Lum?startapp=6727787768`).
+    * **Purged Defunct Bots from `public_ads/miner/`**: Eliminated obsolete references to MRG Miner and Victor's Company that were still served to users from the `public_ads` directory.
+    * **Unified Protocol Grid**: Updated header, badges, and counters from "8 Supported Protocols" / "8 Pools" to "9 Supported Mining Protocols" / "9 Pools" across all HTML files.
+    * **Target Pool Selector & Labels**: Added `lumeon` chip (`💎 LUM`) to interactive target pool chip bar and mapped `lumeon: 'LUM Miner Selected'` / `lumeon: '💎 LUM Miner'` in account lists.
+  - **Cloudflare Edge Worker Bug Fixes & Live Deployment (`deploy_both_cf_workers.py`)**:
+    * **Fixed Object Key Collision in `MINING_POOLS`**: Resolved duplicate definitions of `grouchemine` and `earnvault` that previously collapsed the pool dictionary to 8 keys.
+    * **Fixed `renderMiningPoolsMenu`**: Added counters, list item #8 (LUM Miner), and inline keyboard buttons for all 9 unique legitimate mining pools.
+    * **Keyboard & String Normalization**: Updated all inline keyboard callbacks and button text from "8 Mining Pools" to "9 Mining Pools" across the User Bot flow.
+    * **Live Deployment**: Deployed updated worker to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified live `/miner` endpoint returns all 9 legitimate protocols with zero defunct bot references.
+  - **Defunct Bot Extraction Purge from Refresher Scripts (`refresh_cloud_tokens.py`, `login_account.py`, `clean_up_system.py`, `extract_all_missing_fleet_tokens.py`, `check_system_health.py`)**:
+    * **`refresh_cloud_tokens.py`**: Removed extraction routines, sponsor channel checks, and aliases for MRG Miner and Victor's Company.
+    * **`login_account.py`**: Corrected referral binding step numbering from `[2/8] ... [11/11]` to sequential `[1/9]` through `[9/9]`.
+    * **`clean_up_system.py`**: Added `fleet:mrg:*` and `fleet:victors:*` to Redis dead key purge patterns under Strict 9-Bot Integrity.
+    * **`check_system_health.py`**: Updated health check suite to test exclusively the 9 legitimate bots with token alias fallbacks.
+    * **`refresh_fleet_tokens.py`**: Modernized to wrap `refresh_cloud_tokens.py` directly, preventing diverging logic.
+  - **24-Account Auto-Farming & Promo Sniper Hardening (`auto_wallet_manager.py`, `chickenland_promo_sniper.py`, `batch_*.py`)**:
+    * **JSON Unwrapping**: Added safe recursive string unwrapping to `connect_and_start_bot_wallets` and `run_wallet_and_mining_sweep` in `auto_wallet_manager.py`.
+    * **Sniper Resilience**: Upgraded Upstash Redis command helpers in `chickenland_promo_sniper.py` to POST format with GET fallback, added `API_HASH` default, and wrapped background engines in resilient restart loops.
+    * **Batch Farming Scripts**: Synchronized `batch_earnvault_mine.py`, `batch_grouche_mine.py`, and `batch_lumeon_mine.py` to all 24 accounts.
+
 - **🛡️ Full-Fleet 9-Bot Audit, Telegram Admin Bot Command Deduplication & 24-Account Auto-Farming Self-Healing Hardening (November 3, 2026)**:
   - **Admin Bot Telegram Descriptions & Commands Cleanup (`deploy_both_cf_workers.py`)**:
     * **Bot Description Accuracy**: Synchronized `@myagyai` description to declare the canonical 24-account fleet and 9 legitimate bots (ATF, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche Mine, LUM Miner, EarnVault), removing redundant bot repetitions.

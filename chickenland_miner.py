@@ -392,7 +392,7 @@ def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
                             break
                     if isinstance(raw_toks, dict):
                         for uid, toks in raw_toks.items():
-                            c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                            c_tok = (toks.get("chickenland_init_data") or toks.get("chicken_init_data")) if isinstance(toks, dict) else None
                             if c_tok:
                                 tokens_map[str(uid)] = {
                                     "user_id": str(uid),
@@ -416,7 +416,7 @@ def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
                             break
                     if isinstance(data, dict):
                         for uid, toks in data.items():
-                            c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                            c_tok = (toks.get("chickenland_init_data") or toks.get("chicken_init_data")) if isinstance(toks, dict) else None
                             if c_tok and str(uid) not in tokens_map:
                                 tokens_map[str(uid)] = {
                                     "user_id": str(uid),
@@ -431,7 +431,7 @@ def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
             with open(accs_file, "r", encoding="utf-8") as f:
                 for a in json.load(f):
                     uid = str(a.get("user_id", ""))
-                    c_tok = a.get("chickenland_init_data")
+                    c_tok = a.get("chickenland_init_data") or a.get("chicken_init_data")
                     if uid and c_tok and uid not in tokens_map:
                         tokens_map[uid] = {
                             "user_id": uid,

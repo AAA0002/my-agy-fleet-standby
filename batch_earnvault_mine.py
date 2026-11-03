@@ -12,7 +12,7 @@ Bot: @EarnVaultApp_bot | MiniApp: https://eearnvault.top/
 5. Joins official channels (EarnVaulte, Nexpaychanel).
 6. Starts and verifies social tasks (official +20¢, glamour +10¢).
 7. Executes daily check-in (dailyCheckIn) and claims available rewards (claimReward).
-8. Strict Ground-Truth Execution: Real cryptographic responses across all 21 accounts.
+8. Strict Ground-Truth Execution: Real cryptographic responses across all 24 accounts.
 =============================================================================
 """
 
@@ -285,7 +285,7 @@ async def run_fleet():
         accounts = json.load(f)
 
     logger.info("=" * 75)
-    logger.info("🚀 EARNVAULT 🏦 ($USD) FLEET-WIDE 21-ACCOUNT FARMING CYCLE")
+    logger.info("🚀 EARNVAULT 🏦 ($USD) FLEET-WIDE 24-ACCOUNT FARMING CYCLE")
     logger.info(f"Target Bot: @{BOT_USERNAME} | Master UID: {MASTER_UID}")
     logger.info("=" * 75)
 

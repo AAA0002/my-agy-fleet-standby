@@ -139,17 +139,15 @@ async def test_live_11_bots_probe():
             pass
 
     bots_to_test = [
-        ("1. MRG Miner", "https://mrg.up.railway.app/user", "mrg_init_data"),
-        ("2. ATF Miner", "https://atfminers.asloni.online/miner/index.php?action=login", "atf_init_data"),
-        ("3. Victor's Company", "https://server.victors.company/api/me", "victors_init_data"),
-        ("4. Kynex Network", "https://us-central1-keynex-e9511.cloudfunctions.net/telegramAuth", "kynex_init_data"),
-        ("5. PepeGram", "https://app.miniempire.app/miniapp/auth?tid=1449", "pepegram_init_data"),
-        ("6. AdxEarn AI", "https://api.adxearnai.xyz/api/user/session", "adxearn_init_data"),
-        ("7. DiggoMiner", "https://diggo.linkpc.net/api/state", "diggo_jwt"),
-        ("8. Chicken Land", "https://app8968434282.tgcloud.ai/api/rpc", "chickenland_init_data"),
-        ("9. Grouche Mine", "https://grouchemine.world/api/auth/login", "grouchemine_init_data"),
-        ("10. LUM Miner", "https://lum-miner.gurmessa747.workers.dev/referral?id=6727787768", "lumeon_init_data"),
-        ("11. EarnVault", "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth", "earnvault_init_data")
+        ("1. ATF Miner", "https://atfminers.asloni.online/miner/index.php?action=login", "atf_init_data"),
+        ("2. Kynex Network", "https://us-central1-keynex-e9511.cloudfunctions.net/telegramAuth", "kynex_init_data"),
+        ("3. DiggoMiner", "https://diggo.linkpc.net/api/state", "diggo_jwt"),
+        ("4. PepeGram", "https://app.miniempire.app/miniapp/auth?tid=1449", "pepegram_init_data"),
+        ("5. AdxEarn AI", "https://api.adxearnai.xyz/api/user/session", "adxearn_init_data"),
+        ("6. Chicken Land", "https://app8968434282.tgcloud.ai/api/rpc", "chickenland_init_data"),
+        ("7. Grouche Mine", "https://grouchemine.world/api/auth/login", "grouchemine_init_data"),
+        ("8. LUM Miner", "https://lum-miner.gurmessa747.workers.dev/referral?id=6727787768", "lumeon_init_data"),
+        ("9. EarnVault", "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth", "earnvault_init_data")
     ]
 
     async with aiohttp.ClientSession() as s:
@@ -157,6 +155,14 @@ async def test_live_11_bots_probe():
             tok = live_tokens.get(tok_key) or master_acc.get(tok_key) or worker_acc.get(tok_key)
             if not tok and tok_key == "diggo_jwt":
                 tok = live_tokens.get("diggo_init_data") or master_acc.get("diggo_init_data")
+            if not tok and tok_key == "chickenland_init_data":
+                tok = live_tokens.get("chicken_init_data") or master_acc.get("chicken_init_data")
+            if not tok and tok_key == "grouchemine_init_data":
+                tok = live_tokens.get("grc_init_data") or master_acc.get("grc_init_data")
+            if not tok and tok_key == "lumeon_init_data":
+                tok = live_tokens.get("lum_init_data") or master_acc.get("lum_init_data")
+            if not tok and tok_key == "earnvault_init_data":
+                tok = live_tokens.get("ev_init_data") or master_acc.get("ev_init_data")
             if not tok:
                 print(f"  ⚠️ {b_name}: Token {tok_key} missing")
                 continue
@@ -164,25 +170,8 @@ async def test_live_11_bots_probe():
                 # Custom request payload per bot
                 t0 = time.time()
                 r_status = None
-                if "mrg" in tok_key:
-                    m_h = {"User-Agent": "Mozilla/5.0", "Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
-                    async with s.post("https://mrg.up.railway.app/api/user/me", json={"initData": tok}, headers=m_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        r_status = r.status
-                elif "atf" in tok_key:
+                if "atf" in tok_key:
                     async with s.post(b_url, data={"initData": tok, "ref": "6727787768"}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        r_status = r.status
-                elif "victors" in tok_key:
-                    v_h = {"Authorization": f"tma {tok}", "User-Agent": "Mozilla/5.0", "Origin": "https://app.victors.company", "Referer": "https://app.victors.company/"}
-                    if UPSTASH_URL and UPSTASH_TOKEN:
-                        try:
-                            async with s.get(f"{UPSTASH_URL}/get/victors:pass:6727787768", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}) as pr:
-                                if pr.status == 200:
-                                    raw_p = (await pr.json()).get("result")
-                                    if raw_p:
-                                        p_val = json.loads(raw_p) if isinstance(raw_p, str) else raw_p
-                                        v_h["x-human-pass"] = str(p_val.get("humanPass") if isinstance(p_val, dict) else p_val)
-                        except Exception: pass
-                    async with s.get(b_url, headers=v_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "kynex" in tok_key:
                     async with s.post("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", json={"data": {"initData": tok, "referral": "6727787768"}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:

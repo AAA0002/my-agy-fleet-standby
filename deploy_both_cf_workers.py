@@ -10347,7 +10347,7 @@ fi
               `• *Status:* Mining rewards, hashrate, and tokens are safely accumulating in the cloud.`;
             const frames = [
               "💼 *Querying Fleet Wealth & Hashrate Balances...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Scanning On-Chain Vaults & Balances",
-              "💼 *Verifying Security Policy...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking 18 Fleet Nodes & Compounding Status",
+              "💼 *Verifying Security Policy...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking 24 Fleet Accounts & Compounding Status",
               rep
             ];
             await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 320);
@@ -12152,17 +12152,8 @@ Reply to Arif naturally:`;
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // Supported Mining Pools Architecture (Modeled after @Allbottesting_bot)
+    // Supported Mining Pools Architecture (Exact 9 Verified Active Pools)
     const MINING_POOLS = {
-      grouchemine: {
-        id: "grouchemine",
-        name: "Grouche Mine",
-        icon: "🍐",
-        username: "GRC_AirdrooBot",
-        ref_url: "https://t.me/GRC_AirdrooBot?start=6727787768",
-        description: "High-yield cloud miner & Adsgram rewards",
-        cycle: "8 hours"
-      },
       atf: {
         id: "atf",
         name: "ATF Miner",
@@ -12171,15 +12162,6 @@ Reply to Arif naturally:`;
         ref_url: "https://t.me/ATF_AIRDROP_bot?start=6727787768",
         description: "Auto 24h mining & daily task claiming",
         cycle: "24 hours"
-      },
-      earnvault: {
-        id: "earnvault",
-        name: "EarnVault",
-        icon: "🏦",
-        username: "EarnVaultApp_bot",
-        ref_url: "https://t.me/EarnVaultApp_bot/App?startapp=6727787768",
-        description: "Rewarded video ads & USD claims",
-        cycle: "2 hours"
       },
       kynex: {
         id: "kynex",
@@ -12211,7 +12193,7 @@ Reply to Arif naturally:`;
       adxearn: {
         id: "adxearn",
         name: "AdxEarn AI",
-        icon: "💎",
+        icon: "🤖",
         username: "AdxEarnAibot",
         ref_url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768",
         description: "High-yield AdxEarn AI neural token mining & airdrop",
@@ -12232,8 +12214,8 @@ Reply to Arif naturally:`;
         icon: "🍐",
         username: "GRC_AirdrooBot",
         ref_url: "https://t.me/GRC_AirdrooBot?start=6727787768",
-        description: "Autonomous cloud mining yield & Adsgram quests",
-        cycle: "12 hours"
+        description: "High-yield cloud miner & Adsgram rewards",
+        cycle: "8 hours"
       },
       lumeon: {
         id: "lumeon",
@@ -13331,7 +13313,7 @@ Reply to Arif naturally:`;
                 { text: "🚀 Open Web App Mining Console (v6.0) ⚡", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }
               ],
               [
-                { text: "⛏️ 8 Mining Pools", callback_data: "ub_pools" },
+                { text: "⛏️ 9 Mining Pools", callback_data: "ub_pools" },
                 { text: "➕ Connect Account", callback_data: "ub_add_acc" }
               ],
               [
@@ -13351,36 +13333,32 @@ Reply to Arif naturally:`;
         // Render Supported Pools Menu
         const renderMiningPoolsMenu = (profile) => {
           const accs = profile.accounts || [];
-          const grcAccs = accs.filter(a => a.pool === "grouchemine" || a.pool === "all" || !a.pool).length;
           const atfAccs = accs.filter(a => a.pool === "atf" || a.pool === "all" || !a.pool).length;
-          const vaultAccs = accs.filter(a => a.pool === "earnvault" || a.pool === "all" || !a.pool).length;
           const kynexAccs = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
           const diggoAccs = accs.filter(a => a.pool === "diggo" || a.pool === "all" || !a.pool).length;
           const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
           const adxearnAccs = accs.filter(a => a.pool === "adxearn" || a.pool === "all" || !a.pool).length;
           const chickenlandAccs = accs.filter(a => a.pool === "chickenland" || a.pool === "all" || !a.pool).length;
-          const grouchemineAccs = accs.filter(a => a.pool === "grouchemine" || a.pool === "all" || !a.pool).length;
+          const grcAccs = accs.filter(a => a.pool === "grouchemine" || a.pool === "all" || !a.pool).length;
+          const lumAccs = accs.filter(a => a.pool === "lumeon" || a.pool === "all" || !a.pool).length;
+          const vaultAccs = accs.filter(a => a.pool === "earnvault" || a.pool === "all" || !a.pool).length;
 
           const txt = `⛏️ *Cloud Mining Pools (9/9)*\n\n` +
-            `1. 🍐 Grouche (8h) • @GRC_AirdrooBot\n` +
-            `2. 🪙 ATF (24h) • @ATF_AIRDROP_bot\n` +
-            `3. 🏦 EarnVault (12h) • @EarnVaultApp_bot\n` +
-            `4. 🌐 Kynex (12h) • @Kynex_miningbot\n` +
-            `5. ⛏️ Diggo (3h) • @Diggominer_bot\n` +
-            `6. 🐸 PepeGram (3h) • @Pepe_gram_bot\n` +
-            `7. 💎 AdxEarn (3h) • @AdxEarnAibot\n` +
-            `8. 🐔 Chicken Land (8h) • @ChickenLandBot\n` +
-            `9. 🍐 Grouche Mine (12h) • @GRC_AirdrooBot\n\n` +
+            `1. 🪙 ATF Miner (24h) • @ATF_AIRDROP_bot\n` +
+            `2. 🌐 Kynex Network (12h) • @Kynex_miningbot\n` +
+            `3. ⛏️ DiggoMiner (3h) • @Diggominer_bot\n` +
+            `4. 🐸 PepeGram (3h) • @Pepe_gram_bot\n` +
+            `5. 🤖 AdxEarn AI (3h) • @AdxEarnAibot\n` +
+            `6. 🐔 Chicken Land (8h) • @ChickenLandBot\n` +
+            `7. 🍐 Grouche Mine (8h) • @GRC_AirdrooBot\n` +
+            `8. 💎 LUM Miner (4h) • @lumeonminer_bot\n` +
+            `9. 🏦 EarnVault (4h) • @EarnVaultApp_bot\n\n` +
             `_Tap a pool below to manage or connect:_`;
 
           const btns = {
             inline_keyboard: [
               [
-                { text: `🍐 Grouche (${grcAccs})`, callback_data: "ub_pool_grouchemine" },
-                { text: `🪙 ATF (${atfAccs})`, callback_data: "ub_pool_atf" }
-              ],
-              [
-                { text: `🏦 EarnVault (${vaultAccs})`, callback_data: "ub_pool_earnvault" },
+                { text: `🪙 ATF (${atfAccs})`, callback_data: "ub_pool_atf" },
                 { text: `🌐 Kynex (${kynexAccs})`, callback_data: "ub_pool_kynex" }
               ],
               [
@@ -13388,11 +13366,15 @@ Reply to Arif naturally:`;
                 { text: `🐸 PepeGram (${pepegramAccs})`, callback_data: "ub_pool_pepegram" }
               ],
               [
-                { text: `💎 AdxEarn (${adxearnAccs})`, callback_data: "ub_pool_adxearn" },
+                { text: `🤖 AdxEarn (${adxearnAccs})`, callback_data: "ub_pool_adxearn" },
                 { text: `🐔 Chicken Land (${chickenlandAccs})`, callback_data: "ub_pool_chickenland" }
               ],
               [
-                { text: `🍐 Grouche Mine (${grouchemineAccs})`, callback_data: "ub_pool_grouchemine" }
+                { text: `🍐 Grouche (${grcAccs})`, callback_data: "ub_pool_grouchemine" },
+                { text: `💎 LUM Miner (${lumAccs})`, callback_data: "ub_pool_lumeon" }
+              ],
+              [
+                { text: `🏦 EarnVault (${vaultAccs})`, callback_data: "ub_pool_earnvault" }
               ],
               [
                 { text: "➕ Connect Account", callback_data: "ub_add_acc" },
@@ -13847,7 +13829,7 @@ Reply to Arif naturally:`;
               inline_keyboard: [
                 [{ text: "🔑 Show Private Keys & Mnemonic", callback_data: "ub_show_keys" }],
                 [{ text: customWallet ? "🔌 Change Personal Wallet" : "🔌 Disconnect & Add Custom Wallet", callback_data: "ub_custom_wallet" }],
-                [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/miner?v=6.0" } }]
+                [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/miner?v=6.0" } }]
               ]
             };
             ctx.waitUntil(sendCqReply(walletMsg, walletKb));
@@ -14202,7 +14184,7 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.6 8 Supported Mining Pools & Auto-Farming Guide
+          // C2.6 9 Supported Mining Pools & Auto-Farming Guide
           if (cqData === "ub_withdraw" || cqData === "ub_pools") {
             const profile = await getUserProfile(cqChatId, cq.from);
             const poolsMenu = renderMiningPoolsMenu(profile);
@@ -14564,7 +14546,7 @@ Reply to Arif naturally:`;
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
             inlineBtns.push(
-              [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+              [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
               [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             );
             ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
@@ -14984,7 +14966,7 @@ Reply to Arif naturally:`;
               const bindKb = {
                 inline_keyboard: [
                   [{ text: "💎 View My Wallets", callback_data: "ub_wallets" }],
-                  [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }]
+                  [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }]
                 ]
               };
               await sendUserReply(succBindMsg, bindKb);
@@ -15591,7 +15573,7 @@ Reply to Arif naturally:`;
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
             inlineBtns.push(
-              [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+              [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
               [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner?v=6.0" } }]
             );
             await sendUserReply(accMsg, { inline_keyboard: inlineBtns });
@@ -15847,7 +15829,7 @@ Reply to Arif naturally:`;
               inline_keyboard: [
                 [{ text: "🔑 Show Private Keys & Mnemonic", callback_data: "ub_show_keys" }],
                 [{ text: customWallet ? "🔌 Change Personal Wallet" : "🔌 Disconnect & Add Custom Wallet", callback_data: "ub_custom_wallet" }],
-                [{ text: "⛏️ View 8 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/miner?v=6.0" } }]
+                [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🚀 Open Web App", web_app: { url: "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/miner?v=6.0" } }]
               ]
             };
             await sendUserReply(walletMsg, walletKb);

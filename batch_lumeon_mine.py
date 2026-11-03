@@ -12,7 +12,7 @@ Bot: @lumeonminer_bot | MiniApp: https://lum-miner.gurmessa747.workers.dev/
 5. Joins official channels (lumminercommunity, lumpayout, gramminiappsmining, Grammoneywallet).
 6. Completes and claims all verified tasks (/check-join: community, payouts, gramapps, grammoney).
 7. For Master: Claims all accumulated referral rewards (/referral action=claim, +1000 LUM/ref).
-8. Strict Ground-Truth Execution: Real cryptographic responses across all 21 accounts.
+8. Strict Ground-Truth Execution: Real cryptographic responses across all 24 accounts.
 =============================================================================
 """
 
@@ -195,7 +195,7 @@ async def run_fleet():
         accounts = json.load(f)
 
     logger.info("=" * 75)
-    logger.info("🚀 LUM MINER 💎 ($LUM) FLEET-WIDE 21-ACCOUNT FARMING CYCLE")
+    logger.info("🚀 LUM MINER 💎 ($LUM) FLEET-WIDE 24-ACCOUNT FARMING CYCLE")
     logger.info(f"Target Bot: @{BOT_USERNAME} | Master UID: {MASTER_UID}")
     logger.info("=" * 75)
 

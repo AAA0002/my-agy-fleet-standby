@@ -208,7 +208,9 @@ def get_current_node_number() -> int:
 
 # Determine this node's default role
 IS_PRIMARY_HOST = (
-    "node2" in NODE_INSTANCE_ID.lower()
+    "node3" in NODE_INSTANCE_ID.lower()
+    or "db437o3tqb8s73dt4erg" in NODE_INSTANCE_ID.lower()
+    or "node2" in NODE_INSTANCE_ID.lower()
     or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()
     or os.getenv("IS_PRIMARY_COORDINATOR", "").lower() in ("1", "true")
 )
@@ -221,7 +223,7 @@ async def is_this_node_active() -> bool:
     raw_active = await get_active_render_node()
     active_str = str(raw_active).strip('"').strip("'").lower()
 
-    active_n = 2
+    active_n = 3
     for n in (1, 2, 3):
         if str(n) in active_str:
             active_n = n
@@ -300,6 +302,7 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
                         cur_holder == NODE_INSTANCE_ID
                         or (cur_holder and f"node{cur_node_num}" in str(cur_holder).lower())
                         or (cur_holder and str(cur_holder).lower().strip('"') in (f"node{cur_node_num}", str(cur_node_num)))
+                        or (cur_node_num == 3 and cur_holder and "node3" in str(cur_holder).lower())
                         or (cur_node_num == 2 and cur_holder and "node2" in str(cur_holder).lower())
                     )
                     if is_same_node or (is_this_active and cur_holder in (None, "", "null")):

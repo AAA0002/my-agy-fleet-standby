@@ -348,7 +348,7 @@
           </span>
         </div>
         <p class="text-[11px] text-slate-300 leading-relaxed">
-          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 8 official bots automatically.
+          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 9 official bots automatically.
         </p>
       </div>
 
@@ -361,7 +361,7 @@
           <div class="min-w-0 text-left">
             <div class="font-bold text-xs text-white flex items-center gap-1.5">
               <span>Instant Cloud Harvest</span>
-              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-semibold border border-emerald-500/30">8 Pools</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-semibold border border-emerald-500/30">9 Pools</span>
             </div>
             <div class="text-[10px] text-slate-300 truncate mt-0.5">Claim yields across all connected accounts now</div>
           </div>
@@ -372,10 +372,10 @@
         </button>
       </div>
 
-      <!-- 8 Verified Mining Protocols Grid -->
+      <!-- 9 Verified Mining Protocols Grid -->
       <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">8 Supported Mining Protocols</h2>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">9 Supported Mining Protocols</h2>
           <span class="text-[10px] font-mono text-cyan-400">Multi-Edge Architecture</span>
         </div>
 
@@ -490,6 +490,35 @@
               Connect
             </button>
             <a href="https://t.me/Kynex_miningbot?start=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Protocol 5: LUM Miner -->
+        <div class="card-glass-interactive p-3 rounded-2xl flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 font-black">
+              💎
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">LUM Miner</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">4h cycle</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-bold">Earn LUM</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">Decentralized LUM Token Farming & Referral Yield</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-lumeon-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-lumeon" onclick="harvestSingleBot('lumeon')" class="px-2 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest LUM">
+              ⚡
+            </button>
+            <button onclick="openConnectTab('lumeon')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              Connect
+            </button>
+            <a href="https://t.me/lumeonminer_bot/Lum?startapp=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
@@ -691,6 +720,9 @@
             <button onclick="selectMiningPool('chickenland')" data-pool="chickenland" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
               🐔 Chicken Land
             </button>
+            <button onclick="selectMiningPool('lumeon')" data-pool="lumeon" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              💎 LUM
+            </button>
           </div>
         </div>
 
@@ -795,7 +827,7 @@
               <span class="text-emerald-400">✓</span> <span>Non-Custodial Keys</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="text-emerald-400">✓</span> <span>8 Bots Automated</span>
+              <span class="text-emerald-400">✓</span> <span>9 Bots Automated</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="text-emerald-400">✓</span> <span>Disconnect Anytime</span>
@@ -1837,7 +1869,7 @@
       // Render 7-Day Stepper Nodes
       renderStreakStepper(streakDays, p.can_claim_daily !== false);
 
-      // 8 Pools Badges
+      // 9 Pools Badges
       const accs = p.accounts || [];
       const matchPool = (a, pKey) => a.pool === pKey || a.pool === 'all' || !a.pool;
       const grcC = accs.filter(a => matchPool(a, 'grouchemine')).length;
@@ -1848,6 +1880,7 @@
       const adxearnC = accs.filter(a => matchPool(a, 'adxearn')).length;
       const pepegramC = accs.filter(a => matchPool(a, 'pepegram')).length;
       const chickenlandC = accs.filter(a => matchPool(a, 'chickenland')).length;
+      const lumC = accs.filter(a => matchPool(a, 'lumeon')).length;
 
       const grcEl = document.getElementById('pool-grouchemine-count');
       const atfEl = document.getElementById('pool-atf-count');
@@ -1857,6 +1890,7 @@
       const adxearnEl = document.getElementById('pool-adxearn-count');
       const pepegramEl = document.getElementById('pool-pepegram-count');
       const chickenlandEl = document.getElementById('pool-chickenland-count');
+      const lumEl = document.getElementById('pool-lumeon-count');
 
       if (grcEl) grcEl.textContent = `${grcC} Connected Account${grcC === 1 ? '' : 's'}`;
       if (atfEl) atfEl.textContent = `${atfC} Connected Account${atfC === 1 ? '' : 's'}`;
@@ -1866,6 +1900,7 @@
       if (adxearnEl) adxearnEl.textContent = `${adxearnC} Connected Account${adxearnC === 1 ? '' : 's'}`;
       if (pepegramEl) pepegramEl.textContent = `${pepegramC} Connected Account${pepegramC === 1 ? '' : 's'}`;
       if (chickenlandEl) chickenlandEl.textContent = `${chickenlandC} Connected Account${chickenlandC === 1 ? '' : 's'}`;
+      if (lumEl) lumEl.textContent = `${lumC} Connected Account${lumC === 1 ? '' : 's'}`;
 
       // Ads Milestone Progress
       const adsCount = p.ads_watched || 0;
@@ -2059,7 +2094,8 @@
         diggo: 'DiggoMiner Selected',
         adxearn: 'AdxEarn AI Selected',
         pepegram: 'PepeGram Selected',
-        chickenland: 'Chicken Land Selected'
+        chickenland: 'Chicken Land Selected',
+        lumeon: 'LUM Miner Selected'
       };
       if (labelEl) labelEl.textContent = poolLabels[pKey] || `${pKey.toUpperCase()} Selected`;
 
@@ -2176,6 +2212,7 @@
         adxearn: '💎 AdxEarn AI',
         pepegram: '🐸 PepeGram',
         chickenland: '🐔 Chicken Land',
+        lumeon: '💎 LUM Miner',
         all: '🌐 All 9 Pools'
       };
 
