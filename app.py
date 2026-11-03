@@ -627,6 +627,16 @@ async def api_proxy_status(request: Request):
         pass
     return {"ok": False, "error": "Edge mesh unreachable"}
 
+@app.get("/api/fleet/ai-audit")
+async def api_fleet_ai_audit():
+    """Performs real-time fleet health diagnostic using free Cloudflare Workers Edge AI."""
+    try:
+        cur_accs = await fetch_accounts_from_cloud()
+        audit_res = await auto_wallet_manager.ai_audit_fleet_health(cur_accs)
+        return audit_res
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 @app.post("/api/tokens/refresh")
 @app.get("/api/tokens/refresh")
 async def api_proxy_tokens_refresh(request: Request):
