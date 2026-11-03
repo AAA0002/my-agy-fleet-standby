@@ -77,13 +77,13 @@ def create_telethon_client(sess_str: str = "", identifier: Any = "default", prox
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
-from telethon import TelegramClient, functions
+from telethon import TelegramClient, functions, types
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.account import UpdateNotifySettingsRequest
 from telethon.tl.functions.bots import GetBotMenuButtonRequest
-from telethon.tl.types import InputBotAppShortName, InputNotifyPeer, InputPeerNotifySettings
+from telethon.tl.types import InputBotAppShortName, InputBotAppID, InputUser, InputNotifyPeer, InputPeerNotifySettings
 from telethon.errors import (
     SessionPasswordNeededError,
     PhoneCodeInvalidError,
