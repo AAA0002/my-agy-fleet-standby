@@ -18,16 +18,16 @@
 * **Unified Auto-Farming Architecture**: All 9 active bot connectors share a unified, modular execution engine across cloud infrastructure, parameterized cleanly across bot identities and account contexts.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
 * **9 Active Legitimate Fleet Bots (Strict 9-Bot Integrity)**:
-  1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.
-  2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot` / `atfminers.asloni.online`) — Cloud hash compounding, balance tracking, automatic claim loop.
-  3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`) — HumanPass compounding, deep mining, wallet binding & Level 1 Miner hire.
-  4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`) — 15-Min Energy Sweep & node farming.
-  5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`) — 30-Day JWT Session Mining & dynamic social tasks.
-  6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`) — 6-Hour Production, slot spins, ad rolls & team commissions.
-  7. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`) — Daily Streaks, farming boost & reward sweeps.
-  8. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`) — Egg production, basic hen flock expansion, auto-captcha solving, daily streak & referral commission claims.
-  9. 🍐 **Grouche Mine** (`@GRC_AirdrooBot` / `https://grouchemine.world/`) — Social tasks completion, 12h Adsgram quests (+10 GRC each), TON wallet link, daily streak, mining yield claim. Strict Zero-Spend Policy: NEVER buy miner packages; accumulate 100% of raw GRC/LNX balance.
-  *(Defunct bots VyroDrop, Astra Airdrop, LeafEarn, PumpkinEarn, Stones, AI Lab, UltraWallet, TRX Power permanently purged).*
+  1. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot` / `atfminers.asloni.online`) — Cloud hash compounding, balance tracking, automatic claim loop.
+  2. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`) — 15-Min Energy Sweep & node farming.
+  3. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`) — 30-Day JWT Session Mining & dynamic social tasks.
+  4. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`) — 6-Hour Production, slot spins, ad rolls & team commissions.
+  5. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`) — Daily Streaks, farming boost & reward sweeps.
+  6. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`) — Egg production, basic hen flock expansion, auto-captcha solving, daily streak & referral commission claims.
+  7. 🍐 **Grouche Mine** (`@GRC_AirdrooBot` / `https://grouchemine.world/`) — Social tasks completion, 12h Adsgram quests (+10 GRC each), TON wallet link, daily streak, mining yield claim. Strict Zero-Spend Policy: NEVER buy miner packages; accumulate 100% of raw GRC/LNX balance.
+  8. 💎 **LUM Miner** (`@lumeonminer_bot` / `lum-miner.gurmessa747.workers.dev`) — LUM mining, referral bonuses & daily tasks.
+  9. 🏦 **EarnVault** (`@EarnVaultApp_bot` / `https://eearnvault.top/`) — Rewarded video ads & USD claims.
+  *(Defunct bots MRG Miner, Victor's Company, VyroDrop, Astra Airdrop, LeafEarn, PumpkinEarn, Stones, AI Lab, UltraWallet, TRX Power permanently purged).*
 
 ---
 

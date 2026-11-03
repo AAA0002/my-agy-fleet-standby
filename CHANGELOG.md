@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Complete MRG & Victor's Eradication Across All Code, Dashboards & Databases, 24-Account Ground-Truth Session Synchronization (November 3, 2026)**:
+  - **100% Elimination of MRG Miner and Victor's Company**:
+    * Cleaned `deploy_both_cf_workers.py`: Eradicated all 16 occurrences of MRG and 26 occurrences of Victor's Company across commands, aliases, SQLite D1 schemas, AI prompts, telemetry strings, and User Bot mining pools. Verified 0 occurrences remaining (`Node --check` passed).
+    * Redeployed Cloudflare Worker Node 4 (`https://restore-agy.agorameet.workers.dev`) with active cron trigger and updated Telegram descriptions, commands, and webhooks.
+    * Cleaned `login_account.py`: Removed all MRG & Victor constants, aliases, referral binding routines, and sponsor channels.
+    * Cleaned `app.py`: Removed MRG and Victor bots from `bots_to_check`, startup checks, button clicking heuristics, and receipts.
+    * Cleaned all HTML dashboards: `public/index.html`, `public/app/index.html`, `public/miner/index.html`, `public/user-admin.html`, `public_admin/index.html`, `public_admin/admin/index.html`, `public_admin/users/index.html`, `public_admin/user-admin/index.html`, and `public_admin/user-admin.html` now feature 100% clean 9-bot pools (`Grouche Mine` and `EarnVault` replacing MRG and Victor's).
+    * Cleaned registries: `FLEET_MASTER_REGISTRY.json` and `fleet_miniapp_tokens.json` purged of all 42 MRG & Victor tokens.
+    * Cleaned Upstash Redis: Deleted all 40 `fleet:last_farm:mrg:*` and `fleet:last_farm:victors:*` keys, stripped `mrg_init_data`, `victors_init_data`, and `victors_human_pass` from `miniapp_tokens` and `fleet:accounts`.
+  - **Ground-Truth 24-Account Roster & Session Recovery (`accounts.json`)**:
+    * Identified root cause of Account #19 and #20 showing `🔴` in OTP hub: Local `accounts.json` had truncated `sess_len: 0` for Adil and Asaduzzaman, and was missing expansion accounts #23 and #24.
+    * Reconciled `accounts.json` against Upstash Redis `fleet:accounts`: All 24 accounts now contain valid 353-character MTProto session strings.
+    * Real-time Session Health: 23 of 24 accounts verified active (`🟢`), with only Account #14 requiring routine session relink.
+  - **Strict Single-Node Exclusivity on Render Node 3 (Oregon)**:
+    * Node 3 Oregon (`srv-db437o3tqb8s73dt4erg`) is the sole live coordinator; Node 1 Singapore and Node 2 Frankfurt remain suspended to prevent multi-IP `AuthKeyDuplicatedError` session revocations.
+  - **Disaster Recovery Rule 5 Compliance**:
+    * Full system archive generated and delivered to `@myagyai` Telegram vault channel via `backup_manager.py`.
+
 - **💎 Complete MRG & Victor's Eradication, Non-Blocking Farming Engine & Real-Time Dynamic OTP Hub (November 3, 2026)**:
   - **Complete Removal of MRG Miner and Victor's Company**:
     * Deleted all workflow files: `.github/workflows/mrg_turnstile_solver.yml`, `.github/workflows/victors_cloud_phone_tunnel.yml`, `.github/workflows/victors_sb_solver.yml`.

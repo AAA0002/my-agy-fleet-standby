@@ -1151,7 +1151,6 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 d_name = (d.name or "").lower()
                 d_user = (getattr(d.entity, "username", None) or "").lower()
                 if (target_term in d_name or target_term in d_user or 
-                    ("mrg" in target_term and "mrg" in d_name) or 
                     ("vic" in target_term and "vic" in d_name)):
                     bot_ent = d.entity
                     bot_in = await client.get_input_entity(d.entity)
@@ -1234,7 +1233,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                 except Exception:
                                     pass
                         # 3. Dynamic Callback Button Answer (Emulates user clicking the launch button in chat)
-                        if hasattr(b, "click") and any(w in (b.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                        if hasattr(b, "click") and any(w in (b.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click"]):
                             try:
                                 ans = await asyncio.wait_for(b.click(), timeout=4.0)
                                 if ans:
@@ -1313,7 +1312,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             await client.send_message(bot_in, f"/start {start_param}")
             await asyncio.sleep(1.0)
 
-            # Check fresh reply message for inline WebApp buttons (Critical for MRG & Victor's)
+            # Check fresh reply message for inline WebApp buttons (Critical for WebApp bots)
             try:
                 fresh_msgs = await client.get_messages(bot_ent, limit=3)
                 for fm in fresh_msgs:
@@ -1338,7 +1337,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                             return tok
                                     except Exception:
                                         pass
-                                if hasattr(fb, "click") and any(w in (fb.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                                if hasattr(fb, "click") and any(w in (fb.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click"]):
                                     try:
                                         ans = await asyncio.wait_for(fb.click(), timeout=4.0)
                                         if ans:
@@ -1536,7 +1535,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if ev_tok:
         tokens["earnvault_init_data"] = ev_tok
 
-    # Active Mining Bots: MRG, ATF, Victor's, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault
+    # Active Mining Bots: ATF, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault
     return tokens
 
 
@@ -2481,9 +2480,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     Kicks off initial WebApp mining, completes referral onboarding finish work,
     and runs first-cycle claims across all 8 legitimate bots:
-    1. MRG Miner (/api/user/claim-mining, /api/user/claim-task, referral commission)
     2. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
-    3. Victor's Company (/api/users/profile, /api/tasks, deep mining)
     4. Kynex Network (energy sync, tasks)
     5. PepeGram (production start, yield claim, slot spin)
     6. AdxEarn AI (boost, tasks)
@@ -2653,9 +2650,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
     extracts WebApp session tokens, syncs to Cloudflare KV + Upstash,
     and executes referral finish work across all fleet bots:
-    1. MRG: ref_IRN1G3XD
     2. ATF Miner: 6727787768
-    3. Victor's Company: ref_A20AA96F18
     4. Kynex Network: 6727787768
     5. PepeGram: 6727787768
     6. AdxEarn AI: ref_6727787768
@@ -3877,8 +3872,6 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"{keys_section}"
         f"🔗 <b>Mining Bots Linked:</b>\n"
         f"• ATF Miner: TON Connected ✅\n"
-        f"• MRG Miner: TON Connected ✅\n"
-        f"• Victor's Company: Active ✅\n"
         f"• Kynex Network: Active ✅\n"
         f"• PepeGram: Active ✅\n"
         f"• AdxEarn AI: Active ✅\n"
@@ -5938,7 +5931,7 @@ FLEET_LAST_FARM_CACHE = {}
 
 async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict, force: bool = False, target_bot: str = "all") -> dict:
     """
-    Farms all 8 legitimate active bots (MRG, ATF, Victor's Company, Kynex, PepeGram, AdxEarn, Diggo, Chicken Land) for a single account.
+    Farms all 9 legitimate active bots (ATF, Kynex, PepeGram, AdxEarn, Diggo, Chicken Land, Grouche Mine, LUM Miner, EarnVault) for a single account.
     Engineered with:
       - Deterministic mobile device fingerprinting per account (eliminates bot signatures)
       - Realistic human jitter delays
@@ -7857,7 +7850,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
 async def study_bot_endpoint(bot_key: str, request: Request):
     """
     Studies one or all bots in depth using specified account (?uid=) or active authorized worker account.
-    bot_key can be: mrg, atf, victors, kynex, or all.
+    bot_key can be: atf, kynex, or all.
     """
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
@@ -7998,9 +7991,7 @@ async def inspect_bot_chat(uid: str, request: Request):
             return {"ok": False, "uid": uid, "error": "Account is locked by another process"}
         cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
         bots_to_check = [
-            ("mrg", MRG_BOT),
             ("atf", ATF_BOT),
-            ("victors", VICTORS_BOT),
             ("kynex", KYNEX_BOT)
         ]
         chats = {}
@@ -8133,7 +8124,7 @@ async def debug_account_session(uid: str, request: Request):
                         "is_bot": getattr(d.entity, "bot", False),
                         "type": type(d.entity).__name__
                     }
-                    for d in dlgs if getattr(d.entity, "bot", False) or any(w in (d.name or "").lower() for w in ["mrg", "vic", "atf", "kynex", "mine", "earn", "gram", "cloud"])
+                    for d in dlgs if getattr(d.entity, "bot", False) or any(w in (d.name or "").lower() for w in ["atf", "kynex", "mine", "earn", "gram", "cloud"])
                 ]
             except Exception as de:
                 results["dialog_bots_error"] = str(de)
@@ -8211,7 +8202,7 @@ async def debug_account_session(uid: str, request: Request):
                                             "type": type(raw).__name__,
                                             "url": getattr(raw, "url", None) or getattr(getattr(raw, "web_app", None), "url", None)
                                         }
-                                        if not skip_clicks and any(w in (btn.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                                        if not skip_clicks and any(w in (btn.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click"]):
                                             try:
                                                 ans = await asyncio.wait_for(btn.click(), timeout=3.5)
                                                 ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)

@@ -42,20 +42,10 @@ API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
 # All 8 Verified Legitimate Fleet Bots & Referral Codes
-MRG_BOT = "mrgminerbot"
-MRG_REFERRAL_CODE = "ref_IRN1G3XD"
-
 ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
 
-VICTORS_BOT = "VictorsCompanyGame"
-VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
-
 BOT_ALIASES = {
-    "mrgtoken_bot": ["mrgminerbot", 8862173167],
-    "mrgminerbot": ["mrgtoken_bot", 8862173167],
-    "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
-    "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
     "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
     "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
     "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
@@ -336,56 +326,7 @@ async def bind_referrals(client, me, acc_entry):
 
     print(f"\n🔗 Automatically binding account to all 8 verified fleet bots with wallet isolation...")
 
-    # 1. MRG Miner (@mrgtoken_bot) - Referral: ref_IRN1G3XD
-    print(f"  • [1/8] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=MRG_BOT))
-        except Exception:
-            pass
-        b_mrg = (await resolve_bot_entity(client, MRG_BOT)) or (await client.get_entity(MRG_BOT))
-        await mute_peer(client, b_mrg, "mrgminerbot")
-        try:
-            await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
-            await asyncio.sleep(0.5)
-        except Exception:
-            pass
-        await asyncio.sleep(1.0)
-        try:
-            bot_mrg_in = await client.get_input_entity(b_mrg)
-            res_mrg = await client(RequestAppWebViewRequest(
-                peer=bot_mrg_in,
-                app=InputBotAppShortName(bot_id=bot_mrg_in, short_name="app"),
-                platform="android",
-                start_param=MRG_REFERRAL_CODE
-            ))
-            parsed_mrg = urllib.parse.urlparse(res_mrg.url)
-            m_init = urllib.parse.parse_qs(parsed_mrg.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_mrg.query).get("tgWebAppData", [None])[0]
-            if m_init:
-                async with aiohttp.ClientSession() as m_sess:
-                    m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
-                    dev_info = {
-                        "platform": "android",
-                        "userAgent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
-                        "deviceMemory": "4 GB",
-                        "hardwareConcurrency": 8
-                    }
-                    await m_sess.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": MRG_REFERRAL_CODE, "start_param": MRG_REFERRAL_CODE, "deviceInfo": dev_info}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
-                    if ton_wallet:
-                        await m_sess.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": ton_wallet, "balance": 0}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
-        except Exception:
-            pass
-        try:
-            await client(JoinChannelRequest("mrgminer"))
-            await client(JoinChannelRequest("mrgfun"))
-        except Exception:
-            pass
-        acc_entry["mrg_referral_bound"] = True
-        print(f"  ✅ [1/8] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding MRG Miner referral: {e}")
-
-    # 2. ATF Miner (@atfminers_bot) - Referral: 6727787768
+# 2. ATF Miner (@atfminers_bot) - Referral: 6727787768
     print(f"  • [2/8] Connecting to @{ATF_BOT} with referral: {ATF_REFERRAL_CODE}...")
     try:
         try:
@@ -428,44 +369,7 @@ async def bind_referrals(client, me, acc_entry):
     except Exception as e:
         print(f"  ❌ Warning binding ATF referral: {e}")
 
-    # 3. Victor's Company (@VictorsCompanybot) - Referral: ref_A20AA96F18
-    print(f"  • [3/8] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=VICTORS_BOT))
-        except Exception:
-            pass
-        b_vic = (await resolve_bot_entity(client, VICTORS_BOT)) or (await client.get_entity(VICTORS_BOT))
-        await mute_peer(client, b_vic, "VictorsCompanyGame")
-        try:
-            await client.send_message(b_vic, f"/start {VICTORS_REFERRAL_CODE}")
-            await asyncio.sleep(0.5)
-        except Exception:
-            pass
-        await asyncio.sleep(1.0)
-        try:
-            b_vic_in = await client.get_input_entity(b_vic)
-            r_vic = await client(RequestAppWebViewRequest(
-                peer=b_vic_in,
-                app=InputBotAppShortName(bot_id=b_vic_in, short_name="app"),
-                platform="android",
-                start_param=VICTORS_REFERRAL_CODE
-            ))
-            p_vic = urllib.parse.urlparse(getattr(r_vic, 'url', None) or "")
-            vic_init = urllib.parse.parse_qs(p_vic.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_vic.query).get("tgWebAppData", [None])[0]
-            if vic_init:
-                acc_entry["victors_init_data"] = vic_init
-                vic_h = {"Authorization": f"tma {vic_init}", "Content-Type": "application/json", "Origin": "https://app.victors.company", "Referer": "https://app.victors.company/"}
-                async with aiohttp.ClientSession() as vic_s:
-                    await vic_s.post("https://server.victors.company/api/auth/login", json={"startParam": VICTORS_REFERRAL_CODE, "turnstileToken": None}, headers=vic_h, timeout=aiohttp.ClientTimeout(total=8))
-        except Exception:
-            pass
-        acc_entry["victors_referral_bound"] = True
-        print(f"  ✅ [3/8] Successfully bound to Victor's Company ({VICTORS_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding Victor's Company referral: {e}")
-
-    # 4. Kynex Network (@Kynex_miningbot) - Referral: 6727787768
+# 4. Kynex Network (@Kynex_miningbot) - Referral: 6727787768
     print(f"  • [4/8] Connecting to @{KYNEX_BOT} with referral: {KYNEX_REFERRAL_CODE}...")
     try:
         try:
@@ -751,8 +655,7 @@ async def bind_referrals(client, me, acc_entry):
         s_channels = get_all_sponsor_channels()
     except Exception:
         s_channels = [
-            "mrgminer", "mrgwithdrawal", "keepeye_app", "AI_TRADING_FOREX",
-            "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
+            "keepeye_app", "AI_TRADING_FOREX",
             "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
             "PaperHouseNFT", "pepe_grammmm", "BTCMAKERR", "AdxearnAi",
             "LandChickenNews", "ChickenLandPay", "ChickenLandCodes", "DurovKidney", "PickaxeEmpire"
@@ -765,10 +668,8 @@ async def bind_referrals(client, me, acc_entry):
             pass
 
     # Audit final referral status
-    all_11_keys = [
-        "mrg_referral_bound",
+    all_9_keys = [
         "atf_referral_bound",
-        "victors_referral_bound",
         "kynex_referral_bound",
         "diggo_referral_bound",
         "pepegram_referral_bound",
@@ -780,7 +681,7 @@ async def bind_referrals(client, me, acc_entry):
     ]
     bound_count = sum(1 for k in all_11_keys if acc_entry.get(k))
     if bound_count == len(all_11_keys):
-        acc_entry["all_11_referrals_bound"] = True
+        acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_10_referrals_bound"] = True
         acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_8_referrals_bound"] = True

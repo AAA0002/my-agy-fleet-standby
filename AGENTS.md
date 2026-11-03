@@ -1,7 +1,7 @@
 # Antigravity Rules & Directives for AAA AUTO
 
 > 📖 **MANDATORY PROJECT REFERENCE**:
-> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [SESSION_BRIDGE.md](./SESSION_BRIDGE.md) and [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for complete instant handover context, full system architecture, 8 active legitimate bots (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land), 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
+> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [SESSION_BRIDGE.md](./SESSION_BRIDGE.md) and [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for complete instant handover context, full system architecture, 9 active legitimate bots (ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault), 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
 
 ---
 
@@ -71,7 +71,7 @@
 ## 7. 🤖 Strict Separation of Bot Ecosystems, Channels & Admin Dashboards ("Zero Ecosystem Mixing")
 - **Independent Bot Identities & Responsibilities (Full Development Allowed, Zero Mixing)**:
   - Both the Admin Bot and User Bot can be actively maintained, improved, and deployed.
-  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 20 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
+  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 24 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
   - **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Exclusively dedicated to public end-users. Powers community multi-pool mining, points economy, daily check-ins, rewarded ads, Stars VIP access, and public onboarding. Handled via `USER_BOT_TOKEN`.
   - **Zero Contamination**: Never mix user bot code, tokens, or handlers into admin operations, and never expose admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins, server health, private account seeds) to the User Bot.
 - **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
@@ -89,7 +89,7 @@
 - **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
   - **Executive Fleet Operations Console (`admin.html` / `/admin`)**:
     - Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**.
-    - Displays real-time status of the 20 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
+    - Displays real-time status of the 24 MTProto fleet accounts, 9 farming pools, Render Coordinator Node 3 (Oregon), Cloudflare Edge Mesh, Redis key inspect/flush, and automated disaster recovery triggers.
     - Does NOT manage public end-users, ad impressions, or public community points.
   - **User Bot Admin Console (`user-admin.html` / `/user-admin`)**:
     - Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**.
@@ -100,29 +100,27 @@
 
 ---
 
-## 8. 🎯 Zero Fake Data & Ground-Truth 8-Bot Policy ("Strict 8-Bot Integrity")
-- **The 8 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **8 active legitimate bots**:
-  1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
-  2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
-  3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
-  4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
-  5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
-  6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
-  7. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
-  8. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
-- **Zero Fake / Zero Dead Bot Querying**: Truly defunct or purged bots (`VyroDrop`, `Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `Ainovum`, `TRX Power`, `Bitcoin Cloud`, `Tensor`, `Ton Trader`, `USDT QUAD`, `TAC`, `Ominix`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+## 8. 🎯 Zero Fake Data & Ground-Truth 9-Bot Policy ("Strict 9-Bot Integrity")
+- **The 9 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **9 active legitimate bots**:
+  1. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
+  2. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
+  3. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
+  4. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
+  5. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
+  6. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
+  7. 🍐 **Grouche Mine** (`@GRC_AirdrooBot` / `grouchemine.world`)
+  8. 💎 **LUM Miner** (`@lumeonminer_bot` / `lum-miner.gurmessa747.workers.dev`)
+  9. 🏦 **EarnVault** (`@EarnVaultApp_bot` / `eearnvault.top`)
+- **Zero Fake / Zero Dead Bot Querying**: Truly defunct or purged bots (`MRG Miner`, `Victor's Company`, `VyroDrop`, `Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `Ainovum`, `TRX Power`, `Bitcoin Cloud`, `Tensor`, `Ton Trader`, `USDT QUAD`, `TAC`, `Ominix`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values or simulated numbers. Every status reflects a live, cryptographically signed API response.
 
 ---
 
 ## 9. 🔄 24-Hour WebApp Token Lifetime & Autonomous Cloud Refresher
 - **Token Lifespan**: Telegram WebApp `initData` cryptographically expires after 24 hours (`auth_date` validation). Never allow tokens to age past 18 hours.
-- **100% Cloud Token Refresher**: Token collection runs on Render Frankfurt Node 2 (`/collect-tokens`), extracting fresh WebApp hashes via MTProto and simultaneously synchronizing both `fleet:tokens:{uid}` and `miniapp_tokens` in Upstash Redis and Cloudflare KV.
+- **100% Cloud Token Refresher**: Token collection runs on Render Oregon Node 3 (`/collect-tokens`), extracting fresh WebApp hashes via MTProto and simultaneously synchronizing both `fleet:tokens:{uid}` and `miniapp_tokens` in Upstash Redis and Cloudflare KV.
 
 ---
 
 ## 10. 🌐 Strict Multi-Repository Privacy & Runner Architecture
 - **Master Repositories (Strictly 100% PRIVATE)**: `AAA0002/ATL` and `AAA0002/my-agy-fleet-standby` contain core architecture, configurations, and internal scripts. They MUST remain private at all times.
-- **Public Solver Runner (Unlimited Free Minutes)**: `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing ZERO plaintext secrets, zero private keys, and zero sessions. It runs headless Patchright Chromium on GitHub Actions to solve Cloudflare Turnstile challenges and execute multi-bot farming with unlimited free minutes. All runtime secrets are delivered via GitHub Encrypted Secrets (`secrets.UPSTASH_TOKEN`, etc.).
-- **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
-
-
+- **Public Solver Runner (Unlimited Free Minutes)**: `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing ZERO plaintext secrets, zero private keys, and zero sessions. It runs headless Patchright Chromium on GitHub Actions with unlimited free minutes. All runtime secrets are delivered via GitHub Encrypted Secrets (`secrets.UPSTASH_TOKEN`, etc.).

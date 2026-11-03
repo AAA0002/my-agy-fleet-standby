@@ -224,24 +224,49 @@
   },
   "active_mining_bots": [
     {
-      "name": "MRG Miner",
-      "bot": "mrgminerbot",
-      "policy": "Mining claims, task reaction claims, hash rate upgrades, TON wallet verification"
-    },
-    {
       "name": "ATF Miner",
       "bot": "ATF_AIRDROP_bot",
       "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS, auto math solver"
     },
     {
-      "name": "Victor's Company",
-      "bot": "VictorsCompanybot",
-      "policy": "GameFi continuous revenue, Cloudflare Turnstile humanPass, recruit bonus compounding"
-    },
-    {
       "name": "Kynex Network",
       "bot": "Kynex_miningbot",
       "policy": "Cloud Functions callable mining, energy cycles, daily checkin, and social tasks"
+    },
+    {
+      "name": "DiggoMiner",
+      "bot": "Diggominer_bot",
+      "policy": "Automated block mining, hash claims, and energy replenishment"
+    },
+    {
+      "name": "PepeGram",
+      "bot": "Pepe_gram_bot",
+      "policy": "Meme token cloud mining and daily task rewards"
+    },
+    {
+      "name": "AdxEarn AI",
+      "bot": "AdxEarnAibot",
+      "policy": "AI computational node mining, streaks, and rewarded tasks"
+    },
+    {
+      "name": "Chicken Land",
+      "bot": "ChickenLandBot",
+      "policy": "Egg laying cycles and autonomous market selling"
+    },
+    {
+      "name": "Grouche Mine",
+      "bot": "GRC_AirdrooBot",
+      "policy": "High-yield cloud miner and Adsgram quests"
+    },
+    {
+      "name": "LUM Miner",
+      "bot": "lumeonminer_bot",
+      "policy": "LUM cloud mining, referral compounding, and task claims"
+    },
+    {
+      "name": "EarnVault",
+      "bot": "EarnVaultApp_bot",
+      "policy": "Multi-currency cloud staking and liquidity pool claims"
     }
   ],
   "cron_job_org_jobs": [
