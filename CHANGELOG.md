@@ -19,6 +19,14 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Redeployed Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) with synchronized webhooks, menu buttons, and cron triggers.
     * Verified `/api/fleet/live?fresh=1` reflects all 24 accounts with canonical names.
 
+  - **Instant Session Re-link Health Synchronization & Alert Key De-duplication**:
+    * **Automatic Healthy State Assertion**: Integrated `sync_account_health_state(is_healthy=True)` directly into `verify_login_code` in `app.py`. The instant an account signs in or relinks, it automatically purges `fleet:revoked_sessions`, adds to `fleet:healthy_sessions`, and removes lingering revocation reasons.
+    * **Alert Deduplication Reset**: Enhanced `onAccountRelinkSuccess` in `deploy_both_cf_workers.py` to delete `fleet:alert_sent:revoked:{idx}` and `fleet:alert_sent:revoked:{uid}`, guaranteeing that a relinked session never keeps false revocation alarms active.
+  - **Full-Fleet Side-Task & Standalone Miner Hardening**:
+    * **`chickenland_miner.py`**: Upgraded `load_fleet_chickenland_tokens` to recursively unwrap JSON strings and fall back to `accounts.json`, loading all 24 accounts.
+    * **`finish_all_fleet_sidetasks.py`**: Hardened token parsing with recursive string unwrapping across all 9 bots and 24 accounts.
+    * **100% Verified Master Referral Completeness**: Audited all 23 worker accounts across all 9 legitimate mining pools — verified zero missing referrals across the entire fleet.
+
 - **💎 Canonical 24-Account Name Purification, Disambiguated OTP Button Grid, and Strict 9-Bot Ground-Truth Telemetry (November 3, 2026)**:
   - **Comprehensive 24-Account Canonical Name Purification**:
     * Purged all remaining dummy Russian surnames (`Raj Thakur Козлов`, `Tiffany Тарасов`, `Roger Волков`, `Kevin Смирнов`, `Mary Каримов`) and obsolete generic strings (`Node 9`, `Node 10`, `Aaaa201`, `AAA`, `Nancy Davis 2`, `Tanvir Ahmed 10`, `MD. ARIF HOSSAIN`).

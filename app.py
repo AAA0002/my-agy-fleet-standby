@@ -4845,6 +4845,12 @@ async def verify_login_code(request: Request):
             acc_entry["login_email"] = existing_email
         acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
         auto_wallet_manager.reconcile_all_fleet_accounts()
+        target_health_idx = existing_idx or req_index or acc_entry.get("index")
+        if target_health_idx:
+            try:
+                await sync_account_health_state(int(target_health_idx), is_healthy=True)
+            except Exception:
+                pass
         asyncio.create_task(auto_wallet_manager.connect_and_start_bot_wallets(acc_entry))
         asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
 

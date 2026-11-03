@@ -332,6 +332,11 @@ async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str
                     raw = d.get("result")
                     if raw:
                         parsed = json.loads(raw) if isinstance(raw, str) else raw
+                        while isinstance(parsed, str):
+                            try:
+                                parsed = json.loads(parsed)
+                            except Exception:
+                                break
                         if isinstance(parsed, dict):
                             existing = tokens_db.setdefault(uid, {})
                             existing.update(parsed)

@@ -385,25 +385,36 @@ def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
                 res = data.get("result")
                 if res:
                     raw_toks = json.loads(res) if isinstance(res, str) else res
-                    for uid, toks in raw_toks.items():
-                        c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
-                        if c_tok:
-                            tokens_map[str(uid)] = {
-                                "user_id": str(uid),
-                                "name": names.get(str(uid), f"Account {uid}"),
-                                "token": c_tok
-                            }
+                    while isinstance(raw_toks, str):
+                        try:
+                            raw_toks = json.loads(raw_toks)
+                        except Exception:
+                            break
+                    if isinstance(raw_toks, dict):
+                        for uid, toks in raw_toks.items():
+                            c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                            if c_tok:
+                                tokens_map[str(uid)] = {
+                                    "user_id": str(uid),
+                                    "name": names.get(str(uid), f"Account {uid}"),
+                                    "token": c_tok
+                                }
         except Exception:
             pass
 
-    # Fallback to local tokens files
-    if not tokens_map:
-        for fpath in ["fleet_miniapp_tokens.json", "miniapp_tokens.json"]:
-            full_p = os.path.join(base_dir, fpath)
-            if os.path.exists(full_p):
-                try:
-                    with open(full_p, "r", encoding="utf-8") as f:
-                        data = json.load(f)
+    # Fallback to local tokens files and accounts.json
+    for fpath in ["fleet_miniapp_tokens.json", "miniapp_tokens.json"]:
+        full_p = os.path.join(base_dir, fpath)
+        if os.path.exists(full_p):
+            try:
+                with open(full_p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    while isinstance(data, str):
+                        try:
+                            data = json.loads(data)
+                        except Exception:
+                            break
+                    if isinstance(data, dict):
                         for uid, toks in data.items():
                             c_tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
                             if c_tok and str(uid) not in tokens_map:
@@ -412,8 +423,23 @@ def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
                                     "name": names.get(str(uid), f"Account {uid}"),
                                     "token": c_tok
                                 }
-                except Exception:
-                    pass
+            except Exception:
+                pass
+
+    if os.path.exists(accs_file):
+        try:
+            with open(accs_file, "r", encoding="utf-8") as f:
+                for a in json.load(f):
+                    uid = str(a.get("user_id", ""))
+                    c_tok = a.get("chickenland_init_data")
+                    if uid and c_tok and uid not in tokens_map:
+                        tokens_map[uid] = {
+                            "user_id": uid,
+                            "name": names.get(uid, f"Account {uid}"),
+                            "token": c_tok
+                        }
+        except Exception:
+            pass
 
     return tokens_map
 

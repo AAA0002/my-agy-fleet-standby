@@ -6399,11 +6399,13 @@ fi
             await upstashSadd("fleet:healthy_sessions", String(numIdx));
             await upstashSrem("fleet:revoked_sessions", String(numIdx));
             await upstashDel("fleet:revocation_reason:" + numIdx);
+            await upstashDel("fleet:alert_sent:revoked:" + numIdx);
           }
           if (uidStr) {
             await upstashSrem("fleet:revoked_sessions", uidStr);
             await upstashSadd("fleet:healthy_sessions", uidStr);
             await upstashDel("fleet:revocation_reason:" + uidStr);
+            await upstashDel("fleet:alert_sent:revoked:" + uidStr);
           }
           if (typeof caches !== "undefined" && caches.default) {
             try {
