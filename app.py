@@ -1662,6 +1662,15 @@ async def collect_tokens(request: Request):
             except Exception:
                 pass
 
+    if not any(a.get("session_string") or a.get("session") for a in accounts):
+        try:
+            cloud_accs = await fetch_accounts_from_cloud()
+            if cloud_accs and any(a.get("session_string") or a.get("session") for a in cloud_accs):
+                accounts = cloud_accs
+                logger.info(f"Loaded {len(accounts)} accounts with sessions from Upstash Redis cloud.")
+        except Exception as ce:
+            logger.warning(f"Could not load accounts from Upstash: {ce}")
+
     if not (await is_this_node_active()) and not request.query_params.get("force") == "1":
         cur_n = get_current_node_number()
         act_n = await get_active_render_node()
