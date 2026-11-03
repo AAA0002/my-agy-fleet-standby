@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ End-to-End Autonomous Fleet Auto-Farming & Cloud Token Engine Overhaul (November 3, 2026)**:
+  - **Auto-Farming Bot Execution Pipeline Optimization (`app.py`)**:
+    * Diagnosed and fixed the root cause of fleet auto-farming timeouts: EarnVault (`_farm_earnvault`) ran a synchronous nested loop watching up to 10 rewarded ads for 11 seconds each (110s+), Chicken Land (`_farm_chickenland`) had a 25s inline sleep, and Grouche Mine (`_farm_grouchemine`) had an 11s sleep per task, causing accounts to exceed the 90s/180s timeouts.
+    * Converted all ad watching and external task completion dwells into non-blocking background tasks (`bg_tasks.append(asyncio.create_task(...))`), allowing all active mining pools to claim and compound in 2–5 seconds per account.
+    * Verified live in production on Render Node 3: Account #13 successfully claimed and compounded rewards across all active pools (`grouchemine: 790.00 GRC`, `chickenland: 23 hens, 90 coins`, `lumeon: 4 tasks`, `diggo: lvl 71, 1060.71 DIGGO`, `kynex: 126050.8 KNX`, `pepegram: 3162.20 hashes`, `atf: lvl 46, 309.8 ATF`, `earnvault: $1.72`, `adxearn: 12425 points`).
+  - **Canonical Bot Usernames & Post-Start Reply Extraction (`app.py`, `extract_all_missing_fleet_tokens.py`)**:
+    * Corrected bot usernames to official production bots: `MRG_BOT = "mrgtoken_bot"` (was `mrgminerbot`), `ATF_BOT = "atfminers_bot"` (was `ATF_AIRDROP_bot`), and `VICTORS_BOT = "VictorsCompanybot"` (was `VictorsCompanyGame`).
+    * Added post-`/start` reply inspection to `extract_bot_webapp_token`: Telethon now captures the immediate reply message after `/start` and extracts the inline `🚀 Start MRG in 1 Click` and `⛏ Start mining` WebApp URLs without failing BotApp calls.
+    * Updated `/collect-tokens` on Render Node 3 to automatically load all 22 fleet accounts from Upstash Redis (`fetch_accounts_from_cloud()`).
+  - **Dynamic Edge Worker Session Health & Ghost Revoke Eradication (`deploy_both_cf_workers.py`)**:
+    * Purged in-memory edge caches (`memSessionHealth = null`, `memFleetAccounts = null`) on `/api/fleet/sync_account` and forced fresh reads in `OTP & Relogin` and `/dashboard`.
+    * Upgraded `getSessionHealthState()` and `buildOtpMenuKeyboard()`: Any account with a valid 353-char session string is strictly displayed as green (`🟢`); stale Redis revoked sets can never override live active sessions.
+  - **Single Render Node Exclusivity**:
+    * Strictly enforced single-node architecture on Render Node 3 (Oregon, `srv-db437o3tqb8s73dt4erg`). Render Node 1 and Node 2 remain suspended to permanently eliminate `AuthKeyDuplicatedError` multi-IP session revocations.
+  - **Disaster Recovery Backup**:
+    * Successfully generated and delivered fresh disaster recovery archive to `@myagyai` Telegram vault channel via `backup_manager.py` (Rule 5 compliance).
+
 - **🚀 Ground-Truth Dynamic Session Health Audit & Sub-Second Sniper Hardening (November 3, 2026)**:
   - **Eradication of Fake Green Dots in OTP & Relogin Menu (`deploy_both_cf_workers.py`)**:
     * Resolved critical UI flaw where Account #21 (and #14, #19, #20) displayed green `🟢` in the Admin Bot (`@myagyai`) OTP & Relogin grid even when their sessions were missing or invalidated with `AuthKeyDuplicatedError`.
