@@ -482,11 +482,11 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 8 Bots)
-MRG_BOT = "mrgtoken_bot"
+MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanybot"
+VICTORS_BOT = "VictorsCompanyGame"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -1116,10 +1116,22 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         bot_user_in = tele_utils.get_input_user(bot_ent)
     except Exception:
         pass
+    if not bot_user_in and bot_in:
+        try:
+            from telethon import utils as tele_utils
+            bot_user_in = tele_utils.get_input_user(bot_in)
+        except Exception:
+            pass
     if not bot_user_in and hasattr(bot_ent, "id") and hasattr(bot_ent, "access_hash"):
         try:
             from telethon.tl.types import InputUser
             bot_user_in = InputUser(bot_ent.id, bot_ent.access_hash)
+        except Exception:
+            pass
+    if not bot_user_in and hasattr(bot_in, "user_id") and hasattr(bot_in, "access_hash"):
+        try:
+            from telethon.tl.types import InputUser
+            bot_user_in = InputUser(bot_in.user_id, bot_in.access_hash)
         except Exception:
             pass
 
@@ -1129,7 +1141,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         try:
             req_p = {
                 "peer": bot_in,
-                "app": InputBotAppShortName(bot_id=bot_user_in or bot_in, short_name=sn),
+                "app": InputBotAppShortName(bot_id=bot_user_in if bot_user_in else bot_in, short_name=sn),
                 "platform": "android",
                 "write_allowed": True
             }
@@ -1290,9 +1302,9 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
 
-    # 1. MRG Miner (@mrgminerbot)
-    mrg_param = None if is_master else MRG_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"], prefer_direct_url=True)
+    # 1. MRG Miner (@mrgminerbot - BotApp query with short_name="app")
+    mrg_param = MRG_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"], prefer_direct_url=False)
     if tok:
         tokens["mrg_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
@@ -1304,9 +1316,9 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["atf_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 3. Victor's Company (@VictorsCompanyGame - Silent WebApp query, zero chat messages)
-    v_param = None if is_master else VICTORS_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"], prefer_direct_url=True)
+    # 3. Victor's Company (@VictorsCompanyGame - BotApp query with short_name="app")
+    v_param = VICTORS_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"], prefer_direct_url=False)
     if tok:
         tokens["victors_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))

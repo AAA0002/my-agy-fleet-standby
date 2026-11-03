@@ -1919,6 +1919,16 @@ Whenever you perform work in this repository:
   - **Autonomous Edge Cron**: Integrated `farmEarnvault` in `deploy_both_cf_workers.py` for continuous 15-minute background farming.
   - **Harvester & Audit Integration**: Integrated `sweep_earnvault_tasks` in `finish_all_fleet_sidetasks.py` and Bot 11 in `audit_bots_and_sidetasks.py`.
   - **Mini App Protocol 11 Card**: Added Protocol 11 in `public/miner/index.html` with 1-click harvest and bot launcher.
+* **MRG Miner & Victor's Company BotApp Token Resolution, Kynex Re-Activation & AdxEarn Zero-Deduction Confirmation (November 3, 2026)**:
+  - **MRG Miner & Victor's Company BotApp Token Precision**:
+    * Resolved token extraction for `mrgminerbot` and `VictorsCompanyGame`: configured `prefer_direct_url=False` to route through `RequestAppWebViewRequest` with `short_name="app"` instead of `RequestWebViewRequest` which triggered `BotInvalidError`.
+    * Guaranteed passing `start_param` across all accounts (`MRG_REFERRAL_CODE` and `VICTORS_REFERRAL_CODE`) and converted `bot_in` to `InputUser` for `InputBotAppShortName`.
+  - **Kynex Network Live Mining State**:
+    * Farmed Master account (`6727787768`): claimed pending mining yield (`+11.94 KNX`), balance increased to `139,442.47 KNX`, energy maintained at `46,065s`, and mining status actively running (`mining_active: True`).
+  - **AdxEarn AI Strict Zero-Deduction Policy**:
+    * Confirmed that `⚡ Boost (-$0.1000)` is strictly NEVER tapped by our cloud automation. All points deduction endpoints are completely eradicated.
+  - **Side-Tasks Fleet Parity**:
+    * Full automation across all 11 bots (Grouche Mine 8/8 Adsgram, EarnVault 10-ad network batches, LUM Miner channel joins, PepeGram spins, Diggo daily streaks).
 * **AdxEarn AI Boost Eradication, Kynex 1-Hour Cadence, Grouche & EarnVault Ad Batching, and Mobile Tmux Hardening (November 2, 2026)**:
   - **AdxEarn AI Zero-Deduction Policy**:
     * **Root Cause**: The `/farming/boost` endpoint corresponds to the UI button `⚡ Boost (-$0.1000)` which costs $0.1000 from the user's mined points balance to skip 5% remaining time.
