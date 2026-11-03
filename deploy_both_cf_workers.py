@@ -1951,8 +1951,15 @@ async function getFleetTokens(env) {
     if (uResp && uResp.ok) {
       const uD = await uResp.json().catch(() => ({}));
       if (uD.result) {
-        const parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
-        if (parsed && Object.keys(parsed).length > 0) {
+        let parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
+        while (typeof parsed === "string") {
+          try {
+            const nxt = JSON.parse(parsed);
+            if (nxt === parsed) break;
+            parsed = nxt;
+          } catch (_) { break; }
+        }
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
           memTokens = sanitizeFleetTokensObject(parsed);
           return memTokens;
         }
@@ -6303,7 +6310,7 @@ fi
 
         const getSessionHealthState = async () => {
           if (memSessionHealth && (Date.now() - memSessionHealth.lastCheck < 15000)) {
-            const memTotal = memSessionHealth.total || (memSessionHealth.healthy?.length || 0) + (memSessionHealth.revoked?.length || 0) || (memFleetAccounts?.length || 21);
+            const memTotal = memSessionHealth.total || (memSessionHealth.healthy?.length || 0) + (memSessionHealth.revoked?.length || 0) || (memFleetAccounts?.length || 24);
             return {
               healthy: new Set(memSessionHealth.healthy),
               revoked: new Set(memSessionHealth.revoked),
@@ -7171,10 +7178,10 @@ fi
                 `• BEP-20 (BSC): \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
                 `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
                 `🔐 *Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
-                `• Nodes 2 to ${accounts.length || 21}\n` +
+                `• Nodes 2 to ${accounts.length || 24}\n` +
                 `• 100% Isolated 24-word recovery seeds for anti-sybil pool protection.\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `💡 _Tip: Send \`/wallet <1-${accounts.length || 21}>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
+                `💡 _Tip: Send \`/wallet <1-${accounts.length || 24}>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
               const walletMarkup = {
                 inline_keyboard: [
                   [
@@ -7787,13 +7794,13 @@ fi
                   if (res && res.ok) {
                     const data = await res.json();
                     const rep = data.report || {};
-                    const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 21} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
+                    const msg = `🎉 *PROMO CODE \`${foundCode}\` SNIPED SUCCESSFULLY!*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Claimed:* ${rep.claimed_count || 0}/${rep.total_accounts || 24} Accounts ✅\n• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
                     await editOrSendResilientMessage(chatId, cbMsgId, msg, statusInlineKeyboard);
                     return;
                   }
                 } catch (_) {}
               }
-              const reportMsg = `ℹ️ *CHICKEN LAND PROMO CODE AUDIT*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Source:* https://t.me/ChickenLandCodes\n• *Latest Drop:* \`${lastCode}\` (❌ ALL CLAIMED)\n• *Status:* 100% of historical codes have reached player capacity limits.\n• *Continuous Sniper:* 🟢 Active 24/7 on Render Node 2 (8s loop) & Cloudflare Edge — the moment the channel posts a new code, the fleet will auto-redeem it within sub-seconds!`;
+              const reportMsg = `ℹ️ *CHICKEN LAND PROMO CODE AUDIT*\n━━━━━━━━━━━━━━━━━━━━━━\n• *Source:* https://t.me/ChickenLandCodes\n• *Latest Drop:* \`${lastCode}\` (❌ ALL CLAIMED)\n• *Status:* 100% of historical codes have reached player capacity limits.\n• *Continuous Sniper:* 🟢 Active 24/7 on Render Oregon Node 3 & Cloudflare Edge — the moment the channel posts a new code, the fleet will auto-redeem it within sub-seconds!`;
               await editOrSendResilientMessage(chatId, cbMsgId, reportMsg, chickenKeyboard);
             } else if (cbData === "btn_treasury" || cbData === "btn_payouts") {
               const dhakaTime = getDhakaTimestamp();
@@ -8743,7 +8750,7 @@ fi
         if (text === "/relink" || text.startsWith("/relink")) {
           ctx.waitUntil((async () => {
             const curAccs = await getFleetAccounts();
-            const totalCount = curAccs.length || 21;
+            const totalCount = curAccs.length || 24;
             const parts = text.split(" ").filter(Boolean);
             const reqIdx = parts.length > 1 ? parseInt(parts[1], 10) : null;
             if (reqIdx && reqIdx >= 1 && reqIdx <= totalCount) {
@@ -10241,7 +10248,7 @@ fi
                 const data = await res.json();
                 const rep = data.report || {};
                 const curAccs = await getFleetAccounts();
-                const totalFleetAccs = rep.total_accounts || curAccs.length || 21;
+                const totalFleetAccs = rep.total_accounts || curAccs.length || 24;
                 await sendReply(`🐔 *Chicken Land Promo Snipe Results:*\n\n` +
                   `• *Code:* \`${promoCode}\`\n` +
                   `• *Claimed:* ${rep.claimed_count || 0}/${totalFleetAccs} Accounts ✅\n` +
@@ -10420,7 +10427,7 @@ fi
               }
             } catch (_) {}
             const accounts = await getFleetAccounts();
-            const totalAccCount = accounts.length || 21;
+            const totalAccCount = accounts.length || 24;
             const workerCount = Math.max(0, totalAccCount - 2);
             const rep = `💼 *Multi-Chain Verified Destination Wallets*\n\n` +
               `👑 *Binance Main Vault (Account #1 - Arif Hossain):*\n` +
@@ -16386,8 +16393,8 @@ Reply to Arif naturally:`;
         }
 
         const tokenEntries = Object.entries(tokens);
-        // Farm ALL 21 accounts concurrently in non-blocking batches of 5 so 100% finish within limits
-        const BATCH_SIZE = 5;
+        // Farm ALL 24 accounts concurrently in non-blocking batches of 6 so 100% finish within limits
+        const BATCH_SIZE = 6;
         for (let i = 0; i < tokenEntries.length; i += BATCH_SIZE) {
           const batch = tokenEntries.slice(i, i + BATCH_SIZE);
           await Promise.allSettled(batch.map(([uid, accData]) => farmSingleAccountAllBots(uid, accData, env, ctx)));

@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐔 Chicken Land Dual-Engine Promo Sniper 24-Account Scale-Up & Auto Bot Farming Pipeline Hardening (November 3, 2026)**:
+  - **Auto Promo Sniper 24-Account Universal Support (`chickenland_promo_sniper.py`)**:
+    * **Resolved Double-Encoded JSON Root Cause**: Fixed `load_fleet_tokens()` so nested/string-serialized `miniapp_tokens` in Upstash Redis is unwrapped iteratively in a loop, preventing silent `AttributeError` exceptions and premature fallback to outdated local 22-account caches.
+    * **Full 24-Account Coverage**: Expanded token discovery to query `miniapp_tokens`, individual `fleet:tokens:{uid}` keys, `accounts.json`, and `fleet_miniapp_tokens.json`.
+    * **Sub-Second Performance**: Verified burst engine redeems promo codes across all 24 accounts in 0.562s (562ms) with 23/24 accounts reporting `PROMO_USED` and Account 14 awaiting OTP relink.
+    * **Token Synchronization**: Synchronized all 24 verified WebApp tokens into `fleet_miniapp_tokens.json` and `accounts.json` for resilient offline/local fallback.
+  - **Auto Bot Farming Hardening across all 9 Legitimate Pools (`app.py`, `deploy_both_cf_workers.py`)**:
+    * **Token Expiry Auto-Refresh Trigger**: Updated `api_farm_single_account` to trigger Telethon session token extraction (`extract_tokens_for_account`) not only on `token_expired` but also on `auth_failed`, `unauthorized`, or `401` HTTP statuses, ensuring automatic self-healing.
+    * **Clean Syntax & Redundancy Removal**: Removed duplicate `except Exception: pass` block at lines 7008-7011 in `app.py`.
+    * **Non-Blocking Async Promo Check**: Replaced synchronous blocking `requests.get` and `urllib.request.urlopen` in `_farm_chickenland` with `fetch_channel_codes_async` and `async_redis_command`, preventing event-loop thread starvation during farming cycles.
+    * **Resilient Multi-Tier Token Fallback in `fetch_cloud_miniapp_tokens`**: Unwrapped nested JSON strings and added fallback to local `fleet_miniapp_tokens.json` and `accounts.json`, ensuring token maps are never empty.
+    * **Cloudflare Edge Worker Fallback & Scheduled Farming Scale-Up**: Updated `deploy_both_cf_workers.py` `getFleetTokens` to handle double-encoded JSON, bumped default fleet size fallback from 21 to 24, and tuned batch size from 5 to 6 for scheduled cron runs.
+    * **Verified Live Farming on Render Node 3**: Verified live multi-pool farming on Render Oregon Node 3 across multiple accounts (Account 1 Arif Hossain, Account 2 Nancy, Account 20 Asaduzzaman Sarker, Account 24 AAA 24), all returning genuine data across all 9 bots.
+  - **Live Edge Deployment**:
+    * Redeployed Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) with synchronized webhooks, menu buttons, and cron triggers.
+    * Verified `/api/fleet/live?fresh=1` reflects all 24 accounts with canonical names.
+
 - **💎 Canonical 24-Account Name Purification, Disambiguated OTP Button Grid, and Strict 9-Bot Ground-Truth Telemetry (November 3, 2026)**:
   - **Comprehensive 24-Account Canonical Name Purification**:
     * Purged all remaining dummy Russian surnames (`Raj Thakur Козлов`, `Tiffany Тарасов`, `Roger Волков`, `Kevin Смирнов`, `Mary Каримов`) and obsolete generic strings (`Node 9`, `Node 10`, `Aaaa201`, `AAA`, `Nancy Davis 2`, `Tanvir Ahmed 10`, `MD. ARIF HOSSAIN`).

@@ -7,7 +7,7 @@ CHICKEN LAND DUAL-ENGINE SUB-SECOND FLEET PROMO CODE SNIPER & AUTO-COMPOUNDER
 Combines:
 1. Real-Time MTProto Telegram Push Socket Listener (0ms push latency via Telethon)
 2. High-Frequency Non-Blocking Async HTTP Poller (2.5s fallback with cache-busting)
-3. Sub-Second Concurrent aiohttp Parallel Burst Engine across all 22 fleet accounts (~300-450ms)
+3. Sub-Second Concurrent aiohttp Parallel Burst Engine across all 24 fleet accounts (~300-450ms)
 4. Non-Blocking In-Memory State & Background Upstash Redis Persistence
 5. Autonomous Flock Reinvestment: buys basic hens automatically when coins >= 1000
 6. Cloud-Native: Zero Phone Load (designed to run 24/7 on Render Node 3)
@@ -155,8 +155,8 @@ def get_b64_token(init_data: str) -> str:
 
 def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
     """
-    Loads all active Chicken Land WebApp authorization tokens across all 22 accounts.
-    Prioritizes Upstash Redis `miniapp_tokens`, then `fleet_miniapp_tokens.json`.
+    Loads all active Chicken Land WebApp authorization tokens across all 24 accounts.
+    Prioritizes Upstash Redis `miniapp_tokens`, then `fleet:tokens:{uid}`, then `accounts.json`, then `fleet_miniapp_tokens.json`.
     """
     global CACHED_FLEET_TOKENS
     if CACHED_FLEET_TOKENS and not force_refresh:
@@ -168,10 +168,12 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
 
     fleet = {}
     names = {}
+    accounts_list = []
     if os.path.exists(accs_path):
         try:
             with open(accs_path, "r", encoding="utf-8") as f:
-                for acc in json.load(f):
+                accounts_list = json.load(f)
+                for acc in accounts_list:
                     uid = str(acc.get("user_id", ""))
                     if uid:
                         names[uid] = acc.get("name", f"Account {uid}")
@@ -184,30 +186,78 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
             res = redis_command("GET", "miniapp_tokens")
             if res:
                 tok_map = json.loads(res) if isinstance(res, str) else res
-                for uid, toks in tok_map.items():
-                    tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
-                    if tok:
-                        fleet[str(uid)] = {
-                            "user_id": str(uid),
-                            "name": names.get(str(uid), f"User {uid}"),
-                            "b64_token": get_b64_token(tok)
-                        }
-        except Exception:
+                while isinstance(tok_map, str):
+                    try:
+                        tok_map = json.loads(tok_map)
+                    except Exception:
+                        break
+                if isinstance(tok_map, dict):
+                    for uid, toks in tok_map.items():
+                        tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                        if tok:
+                            fleet[str(uid)] = {
+                                "user_id": str(uid),
+                                "name": names.get(str(uid), f"User {uid}"),
+                                "b64_token": get_b64_token(tok)
+                            }
+        except Exception as e:
             pass
 
-    # 2. Local fallback if Upstash incomplete
+    # 2. Check individual keys `fleet:tokens:{uid}` for any missing accounts
+    for acc in accounts_list:
+        uid = str(acc.get("user_id", ""))
+        if uid and uid not in fleet and UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                res = redis_command("GET", f"fleet:tokens:{uid}")
+                if res:
+                    u_toks = json.loads(res) if isinstance(res, str) else res
+                    while isinstance(u_toks, str):
+                        try:
+                            u_toks = json.loads(u_toks)
+                        except Exception:
+                            break
+                    if isinstance(u_toks, dict):
+                        tok = u_toks.get("chickenland_init_data")
+                        if tok:
+                            fleet[str(uid)] = {
+                                "user_id": str(uid),
+                                "name": names.get(str(uid), f"User {uid}"),
+                                "b64_token": get_b64_token(tok)
+                            }
+            except Exception:
+                pass
+
+    # 3. Fallback to accounts.json
+    for acc in accounts_list:
+        uid = str(acc.get("user_id", ""))
+        if uid and uid not in fleet:
+            tok = acc.get("chickenland_init_data")
+            if tok and isinstance(tok, str):
+                fleet[str(uid)] = {
+                    "user_id": str(uid),
+                    "name": names.get(str(uid), f"User {uid}"),
+                    "b64_token": get_b64_token(tok)
+                }
+
+    # 4. Fallback to fleet_miniapp_tokens.json
     if os.path.exists(tokens_path):
         try:
             with open(tokens_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                for uid, toks in data.items():
-                    tok = toks.get("chickenland_init_data")
-                    if tok and str(uid) not in fleet:
-                        fleet[str(uid)] = {
-                            "user_id": str(uid),
-                            "name": names.get(str(uid), f"User {uid}"),
-                            "b64_token": get_b64_token(tok)
-                        }
+                while isinstance(data, str):
+                    try:
+                        data = json.loads(data)
+                    except Exception:
+                        break
+                if isinstance(data, dict):
+                    for uid, toks in data.items():
+                        tok = toks.get("chickenland_init_data") if isinstance(toks, dict) else None
+                        if tok and str(uid) not in fleet:
+                            fleet[str(uid)] = {
+                                "user_id": str(uid),
+                                "name": names.get(str(uid), f"User {uid}"),
+                                "b64_token": get_b64_token(tok)
+                            }
         except Exception:
             pass
 
@@ -742,7 +792,7 @@ async def start_http_poller(poll_interval: float = 1.5):
 async def run_unified_sniper_daemon(poll_interval: float = 3.0):
     """
     Unified 24/7 Cloud Sniper Coordinator:
-    1. Pre-loads all 22 fleet tokens and historical codes into memory.
+    1. Pre-loads all 24 fleet tokens and historical codes into memory.
     2. Runs startup check to instantly snipe any unexhausted active code.
     3. Launches MTProto Push Socket Listener (0ms latency).
     4. Launches Secondary Async HTTP Poller (fallback redundancy).

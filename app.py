@@ -2598,7 +2598,12 @@ ALL_10_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
     """Checks whether an account already has its master referrals bound across all 9 active fleet bots."""
-    if acc_entry.get("all_9_referrals_bound") or acc_entry.get("all_11_referrals_bound"):
+    if (
+        acc_entry.get("all_9_referrals_bound")
+        or acc_entry.get("all_10_referrals_bound")
+        or acc_entry.get("all_11_referrals_bound")
+        or acc_entry.get("referrals_bound")
+    ):
         return True
     return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_9_BOT_KEYS)
 
@@ -5933,6 +5938,11 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                     raw_m = md.get("result")
                     if raw_m:
                         parsed_m = json.loads(raw_m) if isinstance(raw_m, str) else raw_m
+                        while isinstance(parsed_m, str):
+                            try:
+                                parsed_m = json.loads(parsed_m)
+                            except Exception:
+                                break
                         if isinstance(parsed_m, dict):
                             for acc_id, t_obj in parsed_m.items():
                                 if acc_id.isdigit() and isinstance(t_obj, dict):
@@ -5964,6 +5974,50 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                                 tokens_map[k][tk] = tv
             except Exception:
                 pass
+
+    # 3. Fallback to local fleet_miniapp_tokens.json and accounts.json for full durability
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    loc_tokens_path = os.path.join(base_dir, "fleet_miniapp_tokens.json")
+    if os.path.exists(loc_tokens_path):
+        try:
+            with open(loc_tokens_path, "r", encoding="utf-8") as f:
+                loc_toks = json.load(f)
+                while isinstance(loc_toks, str):
+                    try:
+                        loc_toks = json.loads(loc_toks)
+                    except Exception:
+                        break
+                if isinstance(loc_toks, dict):
+                    for acc_id, t_obj in loc_toks.items():
+                        if str(acc_id).isdigit() and isinstance(t_obj, dict):
+                            if str(acc_id) not in tokens_map:
+                                tokens_map[str(acc_id)] = t_obj
+                            else:
+                                for tk, tv in t_obj.items():
+                                    if tk not in tokens_map[str(acc_id)] or not tokens_map[str(acc_id)][tk]:
+                                        tokens_map[str(acc_id)][tk] = tv
+        except Exception:
+            pass
+
+    accs_path = os.path.join(base_dir, "accounts.json")
+    if os.path.exists(accs_path):
+        try:
+            with open(accs_path, "r", encoding="utf-8") as f:
+                acc_list = json.load(f)
+                if isinstance(acc_list, list):
+                    for acc in acc_list:
+                        u = str(acc.get("user_id", ""))
+                        if u and u.isdigit():
+                            if u not in tokens_map:
+                                tokens_map[u] = {}
+                            for b in ALL_ACTIVE_BOT_KEYS:
+                                tk = f"{b}_init_data"
+                                if tk not in tokens_map[u] or not tokens_map[u][tk]:
+                                    val = acc.get(tk)
+                                    if val:
+                                        tokens_map[u][tk] = val
+        except Exception:
+            pass
 
     return tokens_map
 
@@ -6668,14 +6722,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
                 # 5c. Autonomous Promo Code Redemption from @ChickenLandCodes
                 try:
-                    from chickenland_promo_sniper import fetch_channel_codes, redis_command
-                    for it in fetch_channel_codes():
+                    from chickenland_promo_sniper import fetch_channel_codes_async, async_redis_command, EXHAUSTED_CODES
+                    codes_list = await fetch_channel_codes_async(session)
+                    for it in codes_list:
                         c_code_val = it.get("code")
-                        if not c_code_val or it.get("is_exhausted"):
+                        if not c_code_val or it.get("is_exhausted") or c_code_val in EXHAUSTED_CODES:
                             continue
                         if uid:
-                            already = redis_command("SISMEMBER", f"chickenland:claimed:{uid}", c_code_val)
-                            if already == 1:
+                            already = await async_redis_command(session, "SISMEMBER", f"chickenland:claimed:{uid}", c_code_val)
+                            if already == 1 or already is True:
                                 continue
                         _, pr_res = await rpc("/api/promo", {"code": c_code_val.strip()})
                         if isinstance(pr_res, dict):
@@ -6683,14 +6738,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             param_code = pr_res.get("parameters", {}).get("code", "")
                             if pr_res.get("ok"):
                                 if uid:
-                                    redis_command("SADD", f"chickenland:claimed:{uid}", c_code_val)
+                                    await async_redis_command(session, "SADD", f"chickenland:claimed:{uid}", c_code_val)
                                 if pr_res.get("result", {}).get("user"):
                                     coins = pr_res["result"]["user"].get("coins", coins)
                             elif "already" in desc or "claimed" in desc or param_code == "ALREADY_CLAIMED":
                                 if uid:
-                                    redis_command("SADD", f"chickenland:claimed:{uid}", c_code_val)
+                                    await async_redis_command(session, "SADD", f"chickenland:claimed:{uid}", c_code_val)
                             elif "expired" in desc or "limit" in desc or param_code == "PROMO_FULL":
-                                redis_command("SADD", "chickenland:seen_codes", c_code_val)
+                                await async_redis_command(session, "SADD", "chickenland:seen_codes", c_code_val)
+                                EXHAUSTED_CODES.add(c_code_val)
                 except Exception:
                     pass
 
@@ -7005,8 +7061,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                         pass
                                 bg_tasks.append(asyncio.create_task(_ev_bg_ad(net_id)))
                                 break
-            except Exception:
-                pass
             except Exception:
                 pass
 
@@ -7509,7 +7563,7 @@ async def api_farm_single_account(uid: str, request: Request):
                 logger.debug(f"[{target_acc.get('name', uid)}] Pre-farm wallet bind note: {bwe}")
 
             res = await farm_single_account_bots(session, target_acc, acc_tok, force=force_mode)
-            if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower()) for v in res.get("bots", {}).values()):
+            if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower() or "auth_failed" in str(v).lower() or "unauthorized" in str(v).lower() or "401" in str(v).lower()) for v in res.get("bots", {}).values()):
                 fresh = await extract_tokens_for_account(target_acc)
                 if fresh:
                     acc_tok = {**acc_tok, **fresh}
