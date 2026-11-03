@@ -946,6 +946,22 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             continue
 
     if not bot_ent or not bot_in:
+        try:
+            dlgs = await client.get_dialogs(limit=50)
+            target_term = str(bot_username).lower()
+            for d in dlgs:
+                d_name = (d.name or "").lower()
+                d_user = (getattr(d.entity, "username", None) or "").lower()
+                if (target_term in d_name or target_term in d_user or 
+                    ("mrg" in target_term and "mrg" in d_name) or 
+                    ("vic" in target_term and "vic" in d_name)):
+                    bot_ent = d.entity
+                    bot_in = await client.get_input_entity(d.entity)
+                    break
+        except Exception:
+            pass
+
+    if not bot_ent or not bot_in:
         logger.debug(f"Entity resolution failed for {bot_username} (candidates: {candidates})")
         return None
 
@@ -1084,8 +1100,18 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                         return tok
                                 except Exception:
                                     pass
-                        # Zero-chat policy: Never trigger callback clicks in bot chats! Silent URL extraction only.
-                        pass
+                        # 3. Dynamic Callback Button Answer (Emulates user clicking the launch button in chat)
+                        if hasattr(b, "click") and any(w in (b.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                            try:
+                                ans = await b.click()
+                                if ans:
+                                    ans_url = getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
+                                    if ans_url:
+                                        tok = extract_from_url(ans_url)
+                                        if tok:
+                                            return tok
+                            except Exception:
+                                pass
     except Exception:
         pass
 
@@ -8485,10 +8511,10 @@ async def debug_account_session(uid: str, request: Request):
 
             results["debug_diagnostics"] = {}
             for test_name, test_bot, test_url, test_sn in [
+                ("mrg_id", 8862173167, "https://app.mrgtoken.xyz/", "app"),
                 ("mrg_minerbot", "mrgminerbot", "https://app.mrgtoken.xyz/", "app"),
-                ("mrg_token_bot", "mrgtoken_bot", "https://app.mrgtoken.xyz/", "app"),
+                ("victors_id", 8943931170, "https://app.victors.company/", "app"),
                 ("victors_bot", "VictorsCompanybot", "https://app.victors.company/", "app"),
-                ("victors_game", "VictorsCompanyGame", "https://app.victors.company/", "app"),
                 ("atf", ATF_BOT, "https://atfminers.asloni.online/miner/index.html?entry=bot_start", "miner"),
                 ("kynex", KYNEX_BOT, "https://kynex.top/telegram-auth.html", "app")
             ]:
@@ -8543,7 +8569,7 @@ async def debug_account_session(uid: str, request: Request):
                     except Exception as me:
                         d_info["menu_button_error"] = str(me)
 
-                    # Inspect recent messages in chat
+                    # Inspect recent messages in chat & test button click
                     try:
                         c_msgs = await cl.get_messages(t_ent, limit=3)
                         d_info["chat_messages"] = []
@@ -8553,11 +8579,21 @@ async def debug_account_session(uid: str, request: Request):
                                 for row in cm.buttons:
                                     for btn in row:
                                         raw = getattr(btn, "button", btn)
-                                        b_info.append({
+                                        btn_entry = {
                                             "text": btn.text,
                                             "type": type(raw).__name__,
                                             "url": getattr(raw, "url", None) or getattr(getattr(raw, "web_app", None), "url", None)
-                                        })
+                                        }
+                                        if any(w in (btn.text or "").lower() for w in ["start", "mine", "mining", "play", "open", "launch", "app", "click", "mrg", "vic"]):
+                                            try:
+                                                ans = await btn.click()
+                                                btn_entry["click_result"] = {
+                                                    "ans_type": type(ans).__name__,
+                                                    "url": getattr(ans, "url", None) or (ans if isinstance(ans, str) and ans.startswith("http") else None)
+                                                }
+                                            except Exception as be:
+                                                btn_entry["click_error"] = str(be)
+                                        b_info.append(btn_entry)
                             d_info["chat_messages"].append({"id": cm.id, "text": cm.raw_text[:50] if cm.raw_text else "", "buttons": b_info})
                     except Exception as cme:
                         d_info["chat_messages_error"] = str(cme)
