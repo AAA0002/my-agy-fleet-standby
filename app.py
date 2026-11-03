@@ -928,7 +928,10 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 14.0) -> bool:
         try:
             parsed = urllib.parse.parse_qs(str(tok_val))
             ad = parsed.get("auth_date", [None])[0]
-            if ad and ad.isdigit():
+            if not ad:
+                parsed = urllib.parse.parse_qs(urllib.parse.unquote(str(tok_val)))
+                ad = parsed.get("auth_date", [None])[0]
+            if ad and str(ad).isdigit():
                 tok_age = now_ts - float(ad)
                 max_bot_age = (10.0 * 3600.0) if kt == "diggo_init_data" else (max_age_hours * 3600.0)
                 if tok_age > max_bot_age:
@@ -944,17 +947,38 @@ def extract_from_url(url_str):
     if not url_str:
         return None
     try:
-        p = urllib.parse.urlparse(str(url_str))
-        frag = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0]
-        if frag:
-            if frag.startswith("user%3D") or "%257B" in frag or "%2522" in frag:
-                frag = urllib.parse.unquote(frag)
-            return frag
-        query = urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
-        if query:
-            if query.startswith("user%3D") or "%257B" in query or "%2522" in query:
-                query = urllib.parse.unquote(query)
-            return query
+        s = str(url_str).strip()
+        if s.startswith("http://") or s.startswith("https://"):
+            if "#tgWebAppData=" in s:
+                part = s.split("#tgWebAppData=", 1)[1].split("&tgWebAppVersion=", 1)[0]
+                if part:
+                    if part.startswith("user%3D") or "%257B" in part or "%2522" in part:
+                        part = urllib.parse.unquote(part)
+                    return part
+            if "?tgWebAppData=" in s or "&tgWebAppData=" in s:
+                split_marker = "?tgWebAppData=" if "?tgWebAppData=" in s else "&tgWebAppData="
+                part = s.split(split_marker, 1)[1].split("&tgWebAppVersion=", 1)[0].split("#", 1)[0]
+                if part:
+                    if part.startswith("user%3D") or "%257B" in part or "%2522" in part:
+                        part = urllib.parse.unquote(part)
+                    return part
+            p = urllib.parse.urlparse(s)
+            frag = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0]
+            if frag:
+                if frag.startswith("user%3D") or "%257B" in frag or "%2522" in frag:
+                    frag = urllib.parse.unquote(frag)
+                return frag
+            query = urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
+            if query:
+                if query.startswith("user%3D") or "%257B" in query or "%2522" in query:
+                    query = urllib.parse.unquote(query)
+                return query
+        if "hash=" in s and ("auth_date=" in s or "user=" in s):
+            if s.startswith("tgWebAppData="):
+                s = s[len("tgWebAppData="):]
+            if s.startswith("user%3D") or "%257B" in s or "%2522" in s:
+                s = urllib.parse.unquote(s)
+            return s
     except Exception:
         pass
     return None
