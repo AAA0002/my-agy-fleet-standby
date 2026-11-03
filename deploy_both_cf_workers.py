@@ -6740,8 +6740,8 @@ fi
           return `👑 *MY AGY AI — OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
             `${statusLine}\n` +
-            `🤖 *8 Active Mining Pools:* MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn AI • Chicken Land\n` +
-            `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • Render Coordinator Node 2\n` +
+            `🤖 *11 Active Mining Pools:* MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn AI • Chicken Land • Grouche • LUM • EarnVault\n` +
+            `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • Render Coordinator Node 3 (Oregon)\n` +
             `🛡️ *Zero Phone Load:* 100% Cloud-First • Pure Accumulation Mode\n` +
             `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -7369,7 +7369,7 @@ fi
                         `• *User ID:* \`${res2fa.user_id}\`\n` +
                         `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
                         `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
-                        `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
+                        `✅ *100% Cloud MTProto Active!*\nAll 11 autonomous farming bots are online 24/7 in the cloud.`;
                       await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                       return new Response("OK");
                     }
@@ -7408,7 +7408,7 @@ fi
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
                     `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
-                    `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
+                    `✅ *100% Cloud MTProto Active!*\nAll 11 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
                 }
@@ -7416,7 +7416,10 @@ fi
                 flowData.pinDigits = "";
                 memLoginFlow.set(String(chatId), flowData);
                 ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
-                const errDetail = res ? (res.error || res.message) : "Verification code rejected";
+                let errDetail = res ? (res.error || res.message) : "Verification code rejected";
+                if (String(errDetail).includes("too many values to unpack")) {
+                  errDetail = "System synchronization updated. Please re-enter the 5 digits on the keypad.";
+                }
                 const isExpiredOrInvalidated = String(errDetail).toLowerCase().includes("expired") || 
                                               String(errDetail).toLowerCase().includes("invalidat") || 
                                               String(errDetail).toLowerCase().includes("shared") ||
@@ -7443,7 +7446,7 @@ fi
                 }
 
                 const failRep = `❌ *Verification Failed*\n\n` +
-                  `*Error:* ${errDetail}\n\n` +
+                  `*Status:* ${errDetail}\n\n` +
                   `• *Target Phone:* \`${phoneToRelink}\`\n\n` +
                   `Please check the code on your phone and tap digits on the PIN Pad below to try again:`;
                 await editOrSendResilientMessage(chatId, cbMsgId, failRep, buildPinPadKeyboard("", targetIdx));

@@ -5036,11 +5036,15 @@ async def verify_login_code(request: Request):
         # Fully autonomous account lifecycle, wallet preservation, email & live-state sync
         req_index = data.get("index")
         cur_accs = await fetch_accounts_from_cloud()
-        existing_idx, existing_wallets, existing_name = auto_wallet_manager.find_any_existing_account_wallets(
+        wallets_res = auto_wallet_manager.find_any_existing_account_wallets(
             user_id=user_id,
             phone=phone,
             index=req_index
         )
+        existing_idx = wallets_res[0] if wallets_res else None
+        existing_wallets = wallets_res[1] if wallets_res else None
+        existing_name = wallets_res[2] if wallets_res else None
+        existing_email = wallets_res[3] if wallets_res and len(wallets_res) > 3 else None
         is_existing = bool(existing_wallets)
         acc_entry.update({
             "user_id": user_id,
@@ -5050,6 +5054,9 @@ async def verify_login_code(request: Request):
             "index": existing_idx or (int(req_index) if req_index else None),
             "proxy": None
         })
+        if existing_email:
+            acc_entry["email"] = existing_email
+            acc_entry["login_email"] = existing_email
         acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
         auto_wallet_manager.reconcile_all_fleet_accounts()
         asyncio.create_task(auto_wallet_manager.connect_and_start_bot_wallets(acc_entry))
@@ -5241,11 +5248,15 @@ async def start_qr_login(request: Request):
                         return
 
                     cur_accs = await fetch_accounts_from_cloud()
-                    existing_idx, existing_wallets, existing_name = auto_wallet_manager.find_any_existing_account_wallets(
+                    wallets_res = auto_wallet_manager.find_any_existing_account_wallets(
                         user_id=uid,
                         phone=phone,
                         index=req_index
                     )
+                    existing_idx = wallets_res[0] if wallets_res else None
+                    existing_wallets = wallets_res[1] if wallets_res else None
+                    existing_name = wallets_res[2] if wallets_res else None
+                    existing_email = wallets_res[3] if wallets_res and len(wallets_res) > 3 else None
                     is_existing = bool(existing_wallets)
                     acc_entry = {
                         "index": existing_idx or (int(req_index) if req_index else None),
@@ -5258,6 +5269,9 @@ async def start_qr_login(request: Request):
                         "status": "active",
                         "proxy": None
                     }
+                    if existing_email:
+                        acc_entry["email"] = existing_email
+                        acc_entry["login_email"] = existing_email
                     acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
                     auto_wallet_manager.reconcile_all_fleet_accounts()
                     asyncio.create_task(auto_wallet_manager.connect_and_start_bot_wallets(acc_entry))

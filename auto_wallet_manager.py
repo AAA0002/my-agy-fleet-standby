@@ -374,9 +374,13 @@ def ensure_account_complete(acc_entry: dict, all_accounts: list = None) -> dict:
     req_index = acc_entry.get("index")
 
     # 1. Check for existing authentic wallets & identity
-    ex_idx, ex_wallets, ex_name, ex_email = find_any_existing_account_wallets(
+    res_ex = find_any_existing_account_wallets(
         user_id=uid_str, phone=phone, index=req_index
     )
+    ex_idx = res_ex[0] if res_ex else None
+    ex_wallets = res_ex[1] if res_ex else None
+    ex_name = res_ex[2] if res_ex else None
+    ex_email = res_ex[3] if res_ex and len(res_ex) > 3 else None
 
     if ex_wallets and ex_wallets.get("ton", {}).get("address"):
         # EXISTING ACCOUNT: Retain immutable authentic wallets!
