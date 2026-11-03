@@ -2099,17 +2099,9 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
             "results": {}
         }
 
-        # 1. MRG Miner
-        mrg_res = await sweep_mrg_tasks(session, uid, name, acc_toks.get("mrg_init_data", ""), acc)
-        account_report["results"]["mrg"] = mrg_res
-
         # 2. ATF Miner
         atf_res = await sweep_atf_tasks(session, uid, name, acc_toks.get("atf_init_data", ""), acc)
         account_report["results"]["atf"] = atf_res
-
-        # 3. Victor's Company
-        vic_res = await sweep_victors_tasks(session, uid, name, acc_toks.get("victors_init_data", ""), acc)
-        account_report["results"]["victors"] = vic_res
 
         # 4. Kynex Network
         kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
@@ -2181,9 +2173,7 @@ async def main():
         for rep in reports:
             acc_name = rep["account"]
             res = rep["results"]
-            mrg_cl = res.get("mrg", {}).get("tasks_claimed", 0)
             atf_cl = res.get("atf", {}).get("tasks_claimed", 0)
-            vic_cl = res.get("victors", {}).get("tasks_claimed", 0)
             kyn_cl = res.get("kynex", {}).get("tasks_claimed", 0)
             pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
             adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
@@ -2192,9 +2182,9 @@ async def main():
             grc_cl = res.get("grouchemine", {}).get("tasks_claimed", 0)
             lum_cl = res.get("lumeon", {}).get("tasks_claimed", 0)
             ev_cl = res.get("earnvault", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl + grc_cl + lum_cl + ev_cl
+            acc_total = atf_cl + kyn_cl + pep_cl + adx_cl + dig_cl + chk_cl + grc_cl + lum_cl + ev_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} GRC:{grc_cl} LUM:{lum_cl} EV:{ev_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | ATF:{atf_cl} KYN:{kyn_cl} PEP:{pep_cl} ADX:{adx_cl} DIG:{dig_cl} CHK:{chk_cl} GRC:{grc_cl} LUM:{lum_cl} EV:{ev_cl} | Tot: {acc_total}")
 
         logger.info("=" * 80)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
@@ -2203,9 +2193,7 @@ async def main():
         # Dispatch concise ground-truth alert to AAA Admin notification channel (-1004358687850)
         bot_token = env.get("ADMIN_BOT_TOKEN") or env.get("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or os.getenv("REPORT_BOT_TOKEN") or ""
         notif_channel = env.get("ADMIN_NOTIFICATION_CHANNEL_ID") or os.getenv("ADMIN_NOTIFICATION_CHANNEL_ID") or "-1004358687850"
-        mrg_tot = sum(r["results"].get("mrg", {}).get("tasks_claimed", 0) for r in reports)
         atf_tot = sum(r["results"].get("atf", {}).get("tasks_claimed", 0) for r in reports)
-        vic_tot = sum(r["results"].get("victors", {}).get("tasks_claimed", 0) for r in reports)
         kyn_tot = sum(r["results"].get("kynex", {}).get("tasks_claimed", 0) for r in reports)
         pep_tot = sum(r["results"].get("pepegram", {}).get("tasks_claimed", 0) for r in reports)
         adx_tot = sum(r["results"].get("adxearn", {}).get("tasks_claimed", 0) for r in reports)
@@ -2218,10 +2206,10 @@ async def main():
 
         if bot_token and notif_channel:
             short_card = (
-                f"⚡ <b>Fleet 11-Bot Auto-Harvest Complete</b>\n"
+                f"⚡ <b>Fleet 9-Bot Auto-Harvest Complete</b>\n"
                 f"• <b>Accounts Farmed:</b> <code>{len(ACCOUNTS)}/{len(ACCOUNTS)} Online</code>\n"
                 f"• <b>Tasks & Rewards Claimed:</b> <code>{total_tasks} Total Claimed</code>\n"
-                f"• <b>Pools Claimed (11/11):</b> <code>MRG:{mrg_tot} • ATF:{atf_tot} • VIC:{vic_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot} • GRC:{grc_tot} • LUM:{lum_tot} • EV:{ev_tot}</code>\n"
+                f"• <b>Pools Claimed (9/9):</b> <code>ATF:{atf_tot} • KYN:{kyn_tot} • PEP:{pep_tot} • ADX:{adx_tot} • DIG:{dig_tot} • CHK:{chk_tot} • GRC:{grc_tot} • LUM:{lum_tot} • EV:{ev_tot}</code>\n"
                 f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>Render Cloud Mesh</code>\n"
                 f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
             )

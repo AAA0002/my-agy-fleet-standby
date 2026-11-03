@@ -482,13 +482,9 @@ def solve_atf_math(question_text: str) -> str:
     """Safely solves ATF Miner mathematical challenges with local deterministic solver."""
     return solve_challenge_deterministic(question_text)
 
-# Active Fleet Mini-App Bots (All 11 Active Legitimate Bots)
-MRG_BOT = "mrgtoken_bot"
-MRG_REFERRAL_CODE = "ref_IRN1G3XD"
+# Active Fleet Mini-App Bots (All 9 Active Legitimate Bots)
 ATF_BOT = "atfminers_bot"
 ATF_REFERRAL_CODE = "6727787768"
-VICTORS_BOT = "VictorsCompanybot"
-VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
 DIGGO_BOT = "Diggominer_bot"
@@ -914,7 +910,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 14.0) -> bool:
 
     # Check individual token auth_date signatures across all 11 active WebApp Bots
     key_tokens = [
-        "mrg_init_data", "atf_init_data", "victors_init_data", "kynex_init_data",
+        "atf_init_data", "kynex_init_data",
         "pepegram_init_data", "adxearn_init_data", "diggo_init_data", "chickenland_init_data",
         "grouchemine_init_data", "lumeon_init_data", "earnvault_init_data"
     ]
@@ -984,10 +980,6 @@ def extract_from_url(url_str):
     return None
 
 BOT_ALIASES = {
-    "mrgtoken_bot": ["mrgminerbot", 8862173167],
-    "mrgminerbot": ["mrgtoken_bot", 8862173167],
-    "VictorsCompanybot": ["VictorsCompanyGame", 8943931170],
-    "VictorsCompanyGame": ["VictorsCompanybot", 8943931170],
     "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
     "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
     "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
@@ -1091,11 +1083,7 @@ async def extract_from_tme_link(client: TelegramClient, target_link: str, fallba
 
             # Strategy 4: Fallback direct RequestWebViewRequest with known domain if available
             default_url = None
-            if "mrg" in str(target_bot).lower():
-                default_url = "https://app.mrgtoken.xyz/"
-            elif "vic" in str(target_bot).lower():
-                default_url = "https://app.victors.company/"
-            elif "pepe" in str(target_bot).lower():
+            if "pepe" in str(target_bot).lower():
                 default_url = "https://app.miniempire.app/miniapp/"
 
             if default_url:
@@ -1465,28 +1453,14 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
 
-    # 1. MRG Miner (@mrgminerbot - BotApp query with short_name="app")
-    mrg_param = MRG_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"], prefer_direct_url=False)
-    if tok:
-        tokens["mrg_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 2. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
+    # 1. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
     atf_param = None if is_master else ATF_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"], prefer_direct_url=True)
     if tok:
         tokens["atf_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
-    # 3. Victor's Company (@VictorsCompanyGame - BotApp query with short_name="app")
-    v_param = VICTORS_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"], prefer_direct_url=False)
-    if tok:
-        tokens["victors_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 4. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
+    # 2. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
     ky_param = None if is_master else KYNEX_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"], prefer_direct_url=True)
     if tok:
@@ -2126,12 +2100,10 @@ async def token_health_and_refresh_watchdog():
                         # Dynamic WebApp Session Freshness Guard:
                         # Proactively refresh tokens if missing or older than 4 hours (14400s).
                         has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in tok.items())
-                        has_mrg = bool(tok.get("mrg_init_data"))
                         has_atf = bool(tok.get("atf_init_data"))
-                        has_victors = bool(tok.get("victors_init_data"))
                         has_kynex = bool(tok.get("kynex_init_data"))
                         has_chicken = bool(tok.get("chickenland_init_data"))
-                        has_all_active = (has_mrg and has_atf and has_victors and has_kynex and has_chicken)
+                        has_all_active = (has_atf and has_kynex and has_chicken)
                         is_stale = (now - synced_ts > 14400) or ((not has_all_active) and (now - synced_ts > 1800))
                         if not tok or not has_any_token or is_stale:
                             stale_or_missing_accs.append(acc)
@@ -2527,70 +2499,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     }
 
     async with aiohttp.ClientSession(headers=headers) as http:
-        # 1. MRG Miner
-        if tokens.get("mrg_init_data"):
-            try:
-                m_init = tokens["mrg_init_data"]
-                target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
-                if target_ton:
-                    await http.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": target_ton, "balance": 0}, timeout=aiohttp.ClientTimeout(total=8))
-                if uid != "6727787768":
-                    dev_info = {
-                        "platform": "android",
-                        "userAgent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
-                        "deviceMemory": "4 GB",
-                        "hardwareConcurrency": 8
-                    }
-                    await http.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": MRG_REFERRAL_CODE, "start_param": MRG_REFERRAL_CODE, "deviceInfo": dev_info}, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=8))
-                try:
-                    async with http.post("https://mrg.up.railway.app/api/user/me", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=6)) as me_r:
-                        if me_r.status == 200:
-                            me_d = await me_r.json()
-                            completed = set(me_d.get("completedTaskIds", []))
-                            for t in me_d.get("tasks", []):
-                                tid = t.get("taskId")
-                                if tid and tid not in completed:
-                                    await http.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, timeout=aiohttp.ClientTimeout(total=5))
-                            # Auto-unlock Level in MRG if balance permits
-                            u_obj = me_d.get("user", {})
-                            in_bal = float(u_obj.get("inAppBalance", 0) or 0)
-                            cur_lvl = int(u_obj.get("peakLevel") or u_obj.get("manualUnlockedLevel") or 1)
-                            if in_bal >= 100:
-                                def wp_calc(e):
-                                    if e <= 0: return 0
-                                    if e == 1: return 100
-                                    if e <= 203: return round(100 + 9900 * (((e - 1) / 202.0) ** 1.8))
-                                    return 10000
-                                lo, hi, target_lvl = 1, 203, cur_lvl
-                                while lo <= hi:
-                                    mid = (lo + hi) // 2
-                                    if in_bal >= wp_calc(mid):
-                                        target_lvl = mid
-                                        lo = mid + 1
-                                    else:
-                                        hi = mid - 1
-                                if target_lvl > cur_lvl:
-                                    await http.post("https://mrg.up.railway.app/api/user/unlock-level", json={"initData": m_init, "level": target_lvl}, timeout=aiohttp.ClientTimeout(total=5))
-                except Exception:
-                    pass
-                if uid == "6727787768":
-                    await http.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5))
-                    try:
-                        async with http.post("https://mrg.up.railway.app/api/user/friends", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5)) as fr_r:
-                            if fr_r.status == 200:
-                                fr_d = await fr_r.json()
-                                if (fr_d.get("teamStats", {}).get("unclaimedOneTimeBonusMRG", 0) or 0) > 0:
-                                    await http.post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5))
-                    except Exception:
-                        pass
-                logger.info(f"[{name}] ✅ MRG initial mining started & tasks claimed")
-            except Exception as e:
-                logger.debug(f"[{name}] MRG bootstrap note: {e}")
-
-
-
-        # 5. ATF Miner (Comprehensive Referral Finish Work: Login, Math Challenge Solve, Start Mine, Tasks, Boost)
+        # 1. ATF Miner (Comprehensive Referral Finish Work: Login, Math Challenge Solve, Start Mine, Tasks, Boost)
         if tokens.get("atf_init_data"):
             try:
                 atf_init = tokens["atf_init_data"]
@@ -2645,10 +2554,11 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_11_BOT_KEYS = ["mrg", "atf", "victors", "kynex", "diggo", "pepegram", "adxearn", "chickenland", "grouchemine", "lumeon", "earnvault"]
-ALL_9_BOT_KEYS = ALL_11_BOT_KEYS
-ALL_8_BOT_KEYS = ALL_11_BOT_KEYS
-ALL_10_BOT_KEYS = ALL_11_BOT_KEYS
+ALL_ACTIVE_BOT_KEYS = ["atf", "kynex", "diggo", "pepegram", "adxearn", "chickenland", "grouchemine", "lumeon", "earnvault"]
+ALL_11_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
+ALL_9_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
+ALL_8_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
+ALL_10_BOT_KEYS = ALL_ACTIVE_BOT_KEYS
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
     """Checks whether an account already has its master referrals bound across all 11 active fleet bots."""
@@ -2785,43 +2695,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
 
     logger.info(f"[{name}] 🚀 Initiating silent referral binding for {len(unbound_bots)} unbound bots ({unbound_bots}) to Master ID 6727787768...")
 
-    # 1. MRG Miner (Dual-Layer: Channel Join + Chat /start + WebApp initData handshake)
-    if force or not acc_entry.get("mrg_referral_bound"):
-        try:
-            for s_ch in ["mrgminer", "mrgfun", "mrgwithdrawal", "keepeye_app"]:
-                try:
-                    await join_tg_target(client, s_ch, name)
-                except Exception:
-                    pass
-            try:
-                await client.send_message(MRG_BOT, f"/start {MRG_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            b_mrg_in = await client.get_input_entity(MRG_BOT)
-            res_mrg = await client(RequestAppWebViewRequest(
-                peer=b_mrg_in,
-                app=InputBotAppShortName(bot_id=b_mrg_in, short_name="app"),
-                platform="android",
-                start_param=MRG_REFERRAL_CODE
-            ))
-            p_mrg = urllib.parse.urlparse(res_mrg.url)
-            mrg_init = urllib.parse.parse_qs(p_mrg.fragment).get("tgWebAppData", [None])[0]
-            if mrg_init:
-                async with aiohttp.ClientSession() as hs:
-                    dev_info = {
-                        "platform": "android",
-                        "userAgent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
-                        "deviceMemory": "4 GB",
-                        "hardwareConcurrency": 8
-                    }
-                    await hs.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": mrg_init, "startParam": MRG_REFERRAL_CODE, "start_param": MRG_REFERRAL_CODE, "deviceInfo": dev_info}, timeout=aiohttp.ClientTimeout(total=8))
-            acc_entry["mrg_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] MRG referral bind note: {e}")
-
-    # 2. ATF Miner (Dual-Layer: Channel Join + Chat /start + WebApp login handshake)
+    # 1. ATF Miner (Dual-Layer: Channel Join + Chat /start + WebApp login handshake)
     if force or not acc_entry.get("atf_referral_bound"):
         try:
             for s_ch in ["AI_TRADING_FOREX", "atfminers"]:
@@ -2840,32 +2714,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] ATF referral bind note: {e}")
 
-    # 3. Victor's Company (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
-    if force or not acc_entry.get("victors_referral_bound"):
-        try:
-            for s_ch in ["VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire"]:
-                try:
-                    await join_tg_target(client, s_ch, name)
-                except Exception:
-                    pass
-            try:
-                await client.send_message(VICTORS_BOT, f"/start {VICTORS_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            b_vic_in = await client.get_input_entity(VICTORS_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_vic_in,
-                app=InputBotAppShortName(bot_id=b_vic_in, short_name="app"),
-                platform="android",
-                start_param=VICTORS_REFERRAL_CODE
-            ))
-            acc_entry["victors_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] Victor's Company referral bind note: {e}")
-
-    # 4. Kynex Network (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
+    # 2. Kynex Network (Dual-Layer: Channel Join + Chat /start + WebApp handshake)
     if force or not acc_entry.get("kynex_referral_bound"):
         try:
             for s_ch in ["kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"]:
@@ -3871,60 +3720,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception:
             pass
 
-    # 1. MRG Miner TON Binding
-    if tokens.get("mrg_init_data") and target_ton:
-        try:
-            m_init = tokens["mrg_init_data"]
-            m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz"}
-            ton_proof_payload = None
-            if raw_m and HAS_TONSDK:
-                try:
-                    async with http_session.post("https://mrg.up.railway.app/api/user/ton-proof-payload", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=6)) as pr:
-                        if pr.status == 200:
-                            pd = await pr.json()
-                            nonce = pd.get("payload")
-                            if nonce:
-                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                                _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-                                state_init_res = wallet_contract.create_state_init()
-                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                                t_addr = wallet_contract.address
-                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
-                                domain = "app.mrgtoken.xyz"
-                                domain_b = domain.encode("utf-8")
-                                ts_now = int(time.time())
-                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                                from nacl.signing import SigningKey
-                                sig = SigningKey(priv_k[:32]).sign(digest).signature
-                                sig_b64 = base64.b64encode(sig).decode("utf-8")
-                                ton_proof_payload = {
-                                    "address": raw_addr,
-                                    "walletStateInit": state_init_b64,
-                                    "proof": {
-                                        "timestamp": ts_now,
-                                        "domain": {"lengthBytes": len(domain_b), "value": domain},
-                                        "signature": sig_b64,
-                                        "payload": nonce
-                                    }
-                                }
-                except Exception as m_pr_err:
-                    logger.debug(f"[{name}] MRG tonProof bind note: {m_pr_err}")
-
-            conn_body = {"initData": m_init, "address": target_ton, "balance": 0}
-            if ton_proof_payload:
-                conn_body["tonProof"] = ton_proof_payload
-            await http_session.post(
-                "https://mrg.up.railway.app/api/user/connect-wallet",
-                json=conn_body,
-                headers=m_headers,
-                timeout=aiohttp.ClientTimeout(total=8)
-            )
-            logger.info(f"[{name}] 💎 Bound MRG Miner TON wallet: {target_ton[:12]}...")
-        except Exception as me:
-            logger.debug(f"[{name}] MRG wallet bind note: {me}")
-
-    # 2. ATF Miner TON Binding
+    # 1. ATF Miner TON Binding
     if tokens.get("atf_init_data") and target_ton:
         try:
             atf_init = tokens["atf_init_data"]
@@ -3951,88 +3747,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as ae:
             logger.debug(f"[{name}] ATF wallet bind note: {ae}")
 
-    # 3. Victor's Company TON Wallet Binding & Level 1 Miner Unlock
-    if tokens.get("victors_init_data") and target_ton:
-        try:
-            v_init = tokens["victors_init_data"]
-            v_h = {
-                "Content-Type": "application/json",
-                "Authorization": f"tma {v_init}",
-                "Origin": "https://app.victors.company",
-                "Referer": "https://app.victors.company/"
-            }
-            v_pass = get_cached_upstash_pass(f"victors:pass:{uid}")
-            if v_pass:
-                v_h["x-human-pass"] = str(v_pass)
-
-            # Try TonConnect 2.0 Proof connection
-            ton_connected = False
-            if raw_m and HAS_TONSDK:
-                try:
-                    async with http_session.get("https://server.victors.company/api/wallet/proof-payload", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as npr:
-                        if npr.status == 200:
-                            np_d = await npr.json()
-                            nonce = np_d.get("payload")
-                            if nonce:
-                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                                _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
-                                    mnemonics=words, version=WalletVersionEnum.v4r2
-                                )
-                                state_init_res = wallet_contract.create_state_init()
-                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                                t_addr = wallet_contract.address
-                                friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
-                                domain_bytes = b"app.victors.company"
-                                ts_now = int(time.time())
-                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_bytes)) + domain_bytes + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                                from nacl.signing import SigningKey
-                                sig = SigningKey(priv_key_bytes[:32]).sign(digest).signature
-                                sig_b64 = base64.b64encode(sig).decode("utf-8")
-                                conn_body = {
-                                    "address": friendly_addr,
-                                    "proof": {
-                                        "timestamp": ts_now,
-                                        "domain": {"lengthBytes": len(domain_bytes), "value": "app.victors.company"},
-                                        "signature": sig_b64,
-                                        "payload": nonce
-                                    },
-                                    "stateInit": state_init_b64,
-                                    "publicKey": pub_key_bytes.hex()
-                                }
-                                async with http_session.post("https://server.victors.company/api/wallet/connect", json=conn_body, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as cwr:
-                                    if cwr.status in (200, 201):
-                                        ton_connected = True
-                except Exception as vp_err:
-                    logger.debug(f"[{name}] Victor's tonProof note: {vp_err}")
-
-            if not ton_connected:
-                # Fallback to standard connect
-                await http_session.post(
-                    "https://server.victors.company/api/wallet/connect",
-                    json={"address": target_ton},
-                    headers=v_h,
-                    timeout=aiohttp.ClientTimeout(total=8)
-                )
-            # Claim connect-wallet task
-            await http_session.post(
-                "https://server.victors.company/api/tasks/claim",
-                json={"taskId": "connect-wallet"},
-                headers=v_h,
-                timeout=aiohttp.ClientTimeout(total=6)
-            )
-            # Unlock Level 1 Miner so mining actively starts and eliminates home.noJob
-            await http_session.post(
-                "https://server.victors.company/api/levels/unlock",
-                json={"level": 1},
-                headers=v_h,
-                timeout=aiohttp.ClientTimeout(total=6)
-            )
-            logger.info(f"[{name}] 💎 Bound Victor's Company TON wallet: {target_ton[:12]}... & unlocked Level 1 Miner!")
-        except Exception as ve:
-            logger.debug(f"[{name}] Victor's wallet bind note: {ve}")
-
-    # 4. DiggoMiner TON Wallet Binding with TonConnect 2.0 Proof
+    # 2. DiggoMiner TON Wallet Binding with TonConnect 2.0 Proof
     diggo_jwt = tokens.get("diggo_jwt")
     if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -6292,190 +6007,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         msg = str(e).strip()
         return f"{type(e).__name__}: {msg}" if msg else type(e).__name__
 
-    # 1. MRG Miner
-    async def _farm_mrg():
-        if not tokens.get("mrg_init_data"):
-            return
-        try:
-            m_init = tokens["mrg_init_data"]
-            if m_init.startswith("user%3D") or "%257B" in m_init or "%2522" in m_init:
-                m_init = urllib.parse.unquote(m_init)
-            m_headers = {
-                **headers,
-                "Origin": "https://app.mrgtoken.xyz",
-                "Referer": "https://app.mrgtoken.xyz/"
-            }
-            num_uid = int(str(uid)[-4:]) if str(uid)[-4:].isdigit() else 0
-            device_info = {
-                "model": ["SM-S928B", "Pixel 8 Pro", "SM-A536B", "23127PN0CG"][num_uid % 4],
-                "ram": [8, 12, 6, 12][num_uid % 4],
-                "cores": 8,
-                "screen": ["1440x3120", "1344x2992", "1080x2400", "1200x2670"][num_uid % 4],
-                "language": "en-US"
-            }
-            await jitter(1.0, 2.2)
-            if not is_owner:
-                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "startParam": "ref_IRN1G3XD", "start_param": "ref_IRN1G3XD", "deviceInfo": device_info}, req_headers=m_headers)
-
-            # Query in-memory cache or Upstash Redis for Turnstile security pass
-            mrg_turnstile_tok = get_cached_upstash_pass(f"mrg:pass:{uid}")
-            if mrg_turnstile_tok is None and UPSTASH_URL and UPSTASH_TOKEN:
-                try:
-                    async with session.get(f"{UPSTASH_URL}/get/mrg:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as pr:
-                        if pr.status == 200:
-                            pd = await pr.json()
-                            if pd.get("result"):
-                                try:
-                                    parsed_p = json.loads(pd["result"]) if isinstance(pd["result"], str) else pd["result"]
-                                except Exception:
-                                    parsed_p = pd["result"]
-                                mrg_turnstile_tok = parsed_p.get("turnstileToken") if isinstance(parsed_p, dict) else str(parsed_p)
-                                if mrg_turnstile_tok and str(mrg_turnstile_tok).strip() not in ("null", "nil", "None", ""):
-                                    set_cached_upstash_pass(f"mrg:pass:{uid}", str(mrg_turnstile_tok), ttl=1800)
-                                else:
-                                    mrg_turnstile_tok = None
-                except Exception:
-                    pass
-
-            claim_payload = {"initData": m_init, "deviceInfo": device_info}
-            if mrg_turnstile_tok:
-                # Also submit to verify-human to guarantee humanVerifiedUntil is persisted server-side for 24h
-                await safe_post("https://mrg.up.railway.app/api/user/verify-human", {"initData": m_init, "turnstileToken": mrg_turnstile_tok}, req_headers=m_headers)
-                claim_payload["turnstileToken"] = mrg_turnstile_tok
-            await jitter(1.2, 2.5)
-            _, claim_d = await safe_post("https://mrg.up.railway.app/api/user/claim-mining", claim_payload, req_headers=m_headers)
-
-            # Task completion & level auto-unlock
-            await jitter(1.2, 2.6)
-            _, me_d = await safe_post("https://mrg.up.railway.app/api/user/me", {"initData": m_init}, req_headers=m_headers)
-            if me_d and isinstance(me_d, dict):
-                # Bind dedicated TON wallet if not connected or different
-                u_obj_init = me_d.get("user", {})
-                is_ton_conn = u_obj_init.get("isTonConnected", False)
-                cur_ton_w = u_obj_init.get("tonWalletAddress", "")
-                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
-                if target_ton_w and (not is_ton_conn or not cur_ton_w or cur_ton_w != target_ton_w):
-                    ton_proof_payload = None
-                    w_entry = (acc.get("ton_wallet") or {}) if (acc.get("ton_wallet") or {}).get("mnemonic") else FLEET_TON_CACHE.get(str(uid), {})
-                    if w_entry and w_entry.get("mnemonic") and HAS_TONSDK:
-                        try:
-                            _, np_res = await safe_post("https://mrg.up.railway.app/api/user/ton-proof-payload", {"initData": m_init}, req_headers=m_headers)
-                            if np_res and isinstance(np_res, dict) and np_res.get("payload"):
-                                nonce = np_res["payload"]
-                                words = w_entry["mnemonic"].split() if isinstance(w_entry["mnemonic"], str) else w_entry["mnemonic"]
-                                _, pub_k_b, priv_k_b, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-                                state_init_res = w_contract.create_state_init()
-                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                                t_addr = w_contract.address
-                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
-                                domain = "app.mrgtoken.xyz"
-                                domain_b = domain.encode("utf-8")
-                                ts_now = int(time.time())
-                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                                from nacl.signing import SigningKey
-                                sig = SigningKey(priv_k_b[:32]).sign(digest).signature
-                                sig_b64 = base64.b64encode(sig).decode("utf-8")
-                                ton_proof_payload = {
-                                    "address": raw_addr,
-                                    "walletStateInit": state_init_b64,
-                                    "proof": {
-                                        "timestamp": ts_now,
-                                        "domain": {"lengthBytes": len(domain_b), "value": domain},
-                                        "signature": sig_b64,
-                                        "payload": nonce
-                                    }
-                                }
-                        except Exception as proof_err:
-                            logger.debug(f"[{name}] MRG tonProof note: {proof_err}")
-                    conn_body = {"initData": m_init, "address": target_ton_w, "balance": 0}
-                    if ton_proof_payload:
-                        conn_body["tonProof"] = ton_proof_payload
-                    c_code, c_resp = await safe_post("https://mrg.up.railway.app/api/user/connect-wallet", conn_body, req_headers=m_headers)
-                    logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet with TonConnect proof: {target_ton_w[:10]}... (res: {c_code})")
-
-                # Claim MRG Daily Check-in (+5 to +15 MRG daily streak)
-                checkin_payload = {"initData": m_init}
-                if mrg_turnstile_tok:
-                    checkin_payload["turnstileToken"] = mrg_turnstile_tok
-                chk_code, chk_res = await safe_post("https://mrg.up.railway.app/api/user/daily-checkin", checkin_payload, req_headers=m_headers)
-                if chk_res and isinstance(chk_res, dict) and chk_res.get("success"):
-                    logger.info(f"[{name}] ⛏️ [MRG] Daily check-in claimed! streak: {chk_res.get('streak')}, reward: +{chk_res.get('reward', 5)} MRG")
-
-                completed = set(me_d.get("completedTaskIds", []))
-                for t in me_d.get("tasks", []):
-                    tid = t.get("taskId")
-                    is_rec = "recurring" in str(t.get("taskType", ""))
-                    if tid and (tid not in completed or is_rec):
-                        await jitter(0.4, 0.9)
-                        _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": tid}, req_headers=m_headers)
-                        if cl_d and isinstance(cl_d, dict):
-                            if cl_d.get("success"):
-                                logger.info(f"[{name}] ⛏️ [MRG] Claimed task {tid} ({t.get('title')}) +{t.get('reward')} MRG")
-                                completed.add(tid)
-                            elif "wait" in json.dumps(cl_d).lower() or "second" in json.dumps(cl_d).lower():
-                                async def _mrg_retry_claim(task_id):
-                                    await asyncio.sleep(15)
-                                    await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
-                                bg_tasks.append(asyncio.create_task(_mrg_retry_claim(tid)))
-
-                # Auto-unlock level up to 203
-                u_obj = me_d.get("user", {})
-                in_bal = float(u_obj.get("inAppBalance", 0) or 0)
-                cur_lvl = int(u_obj.get("manualUnlockedLevel") or 0)
-                if cur_lvl == 0:
-                    await safe_post("https://mrg.up.railway.app/api/user/unlock-level", {"initData": m_init, "level": 1}, req_headers=m_headers)
-                    cur_lvl = 1
-                if in_bal >= 100:
-                    def wp_calc(e):
-                        if e <= 0: return 0
-                        if e == 1: return 100
-                        if e <= 203: return round(100 + 9900 * (((e - 1) / 202.0) ** 1.8))
-                        return 10000
-                    lo, hi, target_lvl = 1, 203, cur_lvl
-                    while lo <= hi:
-                        mid = (lo + hi) // 2
-                        if in_bal >= wp_calc(mid):
-                            target_lvl = mid
-                            lo = mid + 1
-                        else:
-                            hi = mid - 1
-                    if target_lvl > cur_lvl:
-                        await safe_post("https://mrg.up.railway.app/api/user/unlock-level", {"initData": m_init, "level": target_lvl}, req_headers=m_headers)
-
-            if is_owner:
-                await safe_post("https://mrg.up.railway.app/api/user/claim-commission", {"initData": m_init}, req_headers=m_headers)
-                _, fr_d = await safe_post("https://mrg.up.railway.app/api/user/friends", {"initData": m_init}, req_headers=m_headers)
-                if fr_d and (fr_d.get("teamStats", {}).get("unclaimedOneTimeBonusMRG", 0) or 0) > 0:
-                    await safe_post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {"initData": m_init}, req_headers=m_headers)
-
-            bal_str = ""
-            unclaimed_val = 0.0
-            if me_d and isinstance(me_d, dict) and me_d.get("user"):
-                u_m = me_d["user"]
-                b_val = float(u_m.get("inAppBalance", 0) or 0)
-                l_val = u_m.get("manualUnlockedLevel") or u_m.get("peakLevel") or 1
-                acc["mrg_balance"] = b_val
-                acc["mrg_level"] = l_val
-                unclaimed_val = float(u_m.get("unclaimedMiningBalance", 0) or 0)
-                bal_str = f" (lvl: {l_val}, bal: {b_val:.1f} MRG)"
-            claim_stat = "farmed"
-            if claim_d and isinstance(claim_d, dict):
-                if claim_d.get("code") == "HUMAN_CHECK_REQUIRED":
-                    claim_stat = f"security_check_needed ({unclaimed_val:.1f} MRG unclaimed)"
-                elif claim_d.get("success"):
-                    claim_stat = f"farmed (auto-claimed {claim_d.get('claimedAmount', 'reward')} MRG)"
-                elif claim_d.get("error"):
-                    claim_stat = f"claim_failed ({claim_d.get('error')})"
-            status["bots"]["mrg"] = f"{claim_stat}{bal_str}"
-        except Exception as e:
-            status["bots"]["mrg"] = f"error: {format_error(e)}"
-
-
-
-
-
-
 
     # 7. ATF Miner
     async def _farm_atf():
@@ -6638,194 +6169,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 
-    # 8. Victor's Company (@VictorsCompanybot)
-    async def _farm_victors():
-        if tokens.get("victors_init_data"):
-            try:
-                v_init = tokens["victors_init_data"]
-                v_h = {
-                    **headers,
-                    "Authorization": f"tma {v_init}",
-                    "Origin": "https://app.victors.company",
-                    "Referer": "https://app.victors.company/"
-                }
-
-                # Query in-memory cache or Upstash Redis for Victor's Company humanPass
-                vic_pass = get_cached_upstash_pass(f"victors:pass:{uid}")
-                if vic_pass is None and UPSTASH_URL and UPSTASH_TOKEN:
-                    try:
-                        async with session.get(f"{UPSTASH_URL}/get/victors:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as vr:
-                            if vr.status == 200:
-                                vd = await vr.json()
-                                if vd.get("result"):
-                                    try:
-                                        parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
-                                    except Exception:
-                                        parsed_v = vd["result"]
-                                    vic_pass = parsed_v.get("humanPass") or parsed_v.get("turnstileToken") if isinstance(parsed_v, dict) else str(parsed_v)
-                                    if vic_pass and str(vic_pass).strip() not in ("null", "nil", "None", ""):
-                                        set_cached_upstash_pass(f"victors:pass:{uid}", str(vic_pass), ttl=1800)
-                                    else:
-                                        vic_pass = None
-                    except Exception:
-                        pass
-                if vic_pass:
-                    v_h["x-human-pass"] = str(vic_pass)
-
-                # 1. Verify profile using humanPass
-                await jitter(0.5, 1.2)
-                m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
-                is_auth_ok = (m_code == 200 and isinstance(m_d, dict) and (m_d.get("success") is True or "state" in m_d or "user" in m_d))
-                st = m_d.get("state", {}) if isinstance(m_d, dict) else {}
-                me = (st.get("user") or m_d.get("user") or m_d) if (is_auth_ok and isinstance(m_d, dict)) else {}
-
-                if not is_auth_ok or not me:
-                    # Attempt silent auth/login with mobile device payload
-                    lg_p = {
-                        "device": {
-                            "platform": "android",
-                            "tgVersion": "8.0",
-                            "screen": "430x932@3",
-                            "ram": 8,
-                            "cpu": 8
-                        }
-                    }
-                    if not is_owner:
-                        lg_p["startParam"] = VICTORS_REFERRAL_CODE
-                    await jitter(0.3, 0.7)
-                    l_code, l_d = await safe_post("https://server.victors.company/api/auth/login", json_data=lg_p, req_headers=v_h)
-                    if l_code in (200, 201) and isinstance(l_d, dict):
-                        new_hp = l_d.get("humanPass") or (l_d.get("data", {}).get("humanPass") if isinstance(l_d.get("data"), dict) else None)
-                        if new_hp:
-                            vic_pass = str(new_hp)
-                            v_h["x-human-pass"] = vic_pass
-                            set_cached_upstash_pass(f"victors:pass:{uid}", vic_pass, ttl=7200)
-                            m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
-                            is_auth_ok = (m_code == 200 and isinstance(m_d, dict) and (m_d.get("success") is True or "state" in m_d or "user" in m_d))
-                            st = m_d.get("state", {}) if isinstance(m_d, dict) else {}
-                            me = (st.get("user") or m_d.get("user") or m_d) if (is_auth_ok and isinstance(m_d, dict)) else {}
-
-                if not is_auth_ok or not me:
-                    if (not vic_pass) or m_code in (401, 403) or (isinstance(m_d, dict) and m_d.get("code") == "HUMAN_REQUIRED"):
-                        set_cached_upstash_pass(f"victors:pass:{uid}", None, ttl=1)
-                        status["bots"]["victors"] = "human_pass_required (Turnstile needed)"
-                    else:
-                        status["bots"]["victors"] = f"auth_failed (code {m_code})"
-                    return
-
-                lvl = me.get("peakLevel") or me.get("level", 1)
-                in_app_bal = me.get("inAppBalance", 0)
-
-                if not me.get("tutorialDone"):
-                    await safe_post("https://server.victors.company/api/me/tutorial", json_data={}, req_headers=v_h)
-
-                # 2. Daily checkin
-                await jitter(0.6, 1.5)
-                await safe_post("https://server.victors.company/api/checkin", json_data={}, req_headers=v_h)
-
-                # 3. Connect TON wallet if not yet connected
-                v_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address")
-                if v_ton_w and (not me.get("walletAddress") or not me.get("walletOwned")):
-                    w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
-                    raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
-                    ton_proof_success = False
-                    if raw_m:
-                        try:
-                            np_code, np_res = await safe_get("https://server.victors.company/api/wallet/proof-payload", req_headers=v_h)
-                            if np_code == 200 and isinstance(np_res, dict) and np_res.get("payload"):
-                                nonce = np_res["payload"]
-                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
-                                _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
-                                    mnemonics=words, version=WalletVersionEnum.v4r2
-                                )
-                                state_init_res = wallet_contract.create_state_init()
-                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
-                                t_addr = wallet_contract.address
-                                friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
-                                domain_bytes = b"app.victors.company"
-                                ts_now = int(time.time())
-                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_bytes)) + domain_bytes + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
-                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
-                                from nacl.signing import SigningKey
-                                sig = SigningKey(priv_key_bytes[:32]).sign(digest).signature
-                                sig_b64 = base64.b64encode(sig).decode("utf-8")
-                                conn_body = {
-                                    "address": friendly_addr,
-                                    "proof": {
-                                        "timestamp": ts_now,
-                                        "domain": {"lengthBytes": len(domain_bytes), "value": "app.victors.company"},
-                                        "signature": sig_b64,
-                                        "payload": nonce
-                                    },
-                                    "stateInit": state_init_b64,
-                                    "publicKey": pub_key_bytes.hex()
-                                }
-                                c_code, c_d = await safe_post("https://server.victors.company/api/wallet/connect", json_data=conn_body, req_headers=v_h)
-                                if c_code in (200, 201):
-                                    ton_proof_success = True
-                                    await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
-                        except Exception:
-                            pass
-                    if not ton_proof_success:
-                        await safe_post("https://server.victors.company/api/wallet/connect", json_data={"address": v_ton_w}, req_headers=v_h)
-                        await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
-
-                # 4. Levels unlock (Hire Level 1 Miner to start mining and eliminate home.noJob)
-                manual_lvl = int(me.get("manualUnlockedLevel") or 0)
-                cur_lvl = int(me.get("level") or me.get("peakLevel") or 0)
-                if manual_lvl < 1 or cur_lvl < 1:
-                    await jitter(0.4, 0.9)
-                    await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": 1}, req_headers=v_h)
-                unlocked = int(me.get("unlockedLevel") or cur_lvl)
-                if unlocked > cur_lvl:
-                    await jitter(0.5, 1.2)
-                    await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
-
-                # 5. Mining claim
-                await jitter(0.8, 1.8)
-                await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
-
-                # 6. Tasks discovery & claim
-                await jitter(0.8, 1.6)
-                _, t_d = await safe_get("https://server.victors.company/api/tasks", req_headers=v_h)
-                if t_d and isinstance(t_d, dict):
-                    tasks = t_d.get("tasks", [])
-                    if isinstance(tasks, list):
-                        for t in tasks:
-                            if isinstance(t, dict):
-                                tid = t.get("taskId") or t.get("id")
-                                if tid and (t.get("status") == "open" or not t.get("claimed")):
-                                    t_kind = t.get("kind", "")
-                                    if t_kind in ("link_visit", "telegram_channel", "partner_api") or t.get("url"):
-                                        await asyncio.sleep(4.2)
-                                    else:
-                                        await jitter(0.4, 0.9)
-                                    await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": tid}, req_headers=v_h)
-
-                # 7. Referral claim bonus & commission
-                await jitter(0.6, 1.4)
-                await safe_post("https://server.victors.company/api/referral/claim-bonus", json_data={}, req_headers=v_h)
-                await safe_post("https://server.victors.company/api/referral/claim-commission", json_data={}, req_headers=v_h)
-
-                # 8. Deep Mine Arcade Minigame Solver
-                try:
-                    from victors_arcade_solver import solve_deep_mine_expeditions
-                    arc_stats = await solve_deep_mine_expeditions(session, v_h, name, max_runs=10)
-                    if arc_stats.get("runs_played", 0) > 0 and arc_stats.get("final_balance") is not None:
-                        in_app_bal = arc_stats["final_balance"]
-                except Exception as arc_e:
-                    logger.debug(f"[{name}] [Victors Arcade] note: {arc_e}")
-
-                acc["victors_balance"] = in_app_bal
-                acc["victors_level"] = lvl
-                bal_str = f" (lvl: {lvl}, bal: {in_app_bal} VIC)"
-                status["bots"]["victors"] = f"farmed{bal_str}"
-                return
-            except Exception as e:
-                status["bots"]["victors"] = f"api_error: {format_error(e)}"
-                return
-
-        status["bots"]["victors"] = "skipped (no initData)"
 
     # 4. Kynex Network (@Kynex_miningbot)
     async def _farm_kynex():
@@ -7654,11 +6997,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["earnvault"] = f"api_error: {format_error(e)}"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (11 Active Bots)
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (9 Active Bots)
     BOT_COOLDOWNS = {
         "atf": (1800, 3600),
-        "mrg": (3600, 7200),
-        "victors": (14400, 28800),
         "kynex": (3600, 4200),
         "pepegram": (21600, 28800),
         "adxearn": (7200, 14400),
@@ -7670,9 +7011,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     }
 
     bot_routines = [
-        {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
-        {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data") or tokens.get("pepe_init_data"))},
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data") or tokens.get("adx_init_data"))},
@@ -7690,14 +7029,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     bot_aliases = {
         "pepe": "pepegram", "pepegram": "pepegram",
         "adx": "adxearn", "adxearn": "adxearn",
-        "vic": "victors", "victor": "victors", "victors": "victors",
         "knx": "kynex", "kynex": "kynex",
         "dgo": "diggo", "diggo": "diggo", "diggominer": "diggo",
         "chicken": "chickenland", "chickenland": "chickenland", "chickenlandbot": "chickenland",
         "grouche": "grouchemine", "grouchemine": "grouchemine", "grc": "grouchemine",
         "lum": "lumeon", "lumeon": "lumeon", "lumeonminer": "lumeon",
         "ev": "earnvault", "earnvault": "earnvault", "earnvaultapp": "earnvault",
-        "atf": "atf", "mrg": "mrg"
+        "atf": "atf"
     }
     norm_target = bot_aliases.get(target_bot.lower(), target_bot.lower()) if target_bot else "all"
 
@@ -7811,53 +7149,48 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             await load_fleet_wallets_from_cloud()
 
         farm_tasks = []
-        farm_sem = asyncio.Semaphore(4)
+        farm_sem = asyncio.Semaphore(6)
 
         async def _farm_with_sem(a_dict, t_dict):
             async with farm_sem:
                 uid_str = str(a_dict.get("user_id"))
-                now_s = time.time()
-                synced_val = t_dict.get("synced_at", 0) or t_dict.get("updated_at", 0) or 0
-                synced_ts = 0
-                if isinstance(synced_val, (int, float)):
-                    synced_ts = float(synced_val)
-                elif isinstance(synced_val, str):
-                    try:
-                        synced_ts = datetime.datetime.fromisoformat(synced_val.replace("Z", "+00:00")).timestamp()
-                    except Exception:
-                        try:
-                            synced_ts = float(synced_val)
-                        except Exception:
-                            synced_ts = 0
-
                 has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
-                needs_refresh = (not has_any_token) or is_token_data_expired(t_dict, max_age_hours=14.0)
+                
+                # If account has zero tokens at all, schedule background extraction without blocking
+                if not has_any_token and (a_dict.get("session_string") or a_dict.get("session")):
+                    asyncio.create_task(extract_tokens_for_account(a_dict))
 
-                if needs_refresh and (a_dict.get("session_string") or a_dict.get("session")):
-                    try:
-                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=90.0)
-                        if fresh_toks:
-                            t_dict.update(fresh_toks)
-                            tokens_map[uid_str] = t_dict
-                            asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
-                    except Exception as ex_e:
-                        logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force, target_bot=target_bot), timeout=180.0)
-                    if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "token_invalid" in str(v).lower() or "unauthorized" in str(v).lower()) for v in res.get("bots", {}).values()):
+                    # Fast concurrent REST farming across all 9 active bots
+                    res = await asyncio.wait_for(
+                        farm_single_account_bots(session, a_dict, t_dict, force=force, target_bot=target_bot),
+                        timeout=50.0
+                    )
+                    # If any bot reported token expiration or unauthorized, schedule non-blocking cloud refresh
+                    if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "token_invalid" in str(v).lower() or "unauthorized" in str(v).lower() or "auth_failed" in str(v).lower()) for v in res.get("bots", {}).values()):
                         if a_dict.get("session_string") or a_dict.get("session"):
-                            try:
-                                fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=90.0)
-                                if fresh_toks:
-                                    t_dict.update(fresh_toks)
-                                    tokens_map[uid_str] = t_dict
-                                    asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
-                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True, target_bot=target_bot), timeout=180.0)
-                            except Exception:
-                                pass
+                            asyncio.create_task(extract_tokens_for_account(a_dict))
+                    
+                    if isinstance(res, dict):
+                        LAST_FARM_RUN["farmed_count"] = LAST_FARM_RUN.get("farmed_count", 0) + 1
+                        if "results" not in LAST_FARM_RUN:
+                            LAST_FARM_RUN["results"] = []
+                        LAST_FARM_RUN["results"].append(res)
                     return res
                 except asyncio.TimeoutError:
-                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_180s"}}
+                    timeout_res = {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_50s"}}
+                    LAST_FARM_RUN["farmed_count"] = LAST_FARM_RUN.get("farmed_count", 0) + 1
+                    if "results" not in LAST_FARM_RUN:
+                        LAST_FARM_RUN["results"] = []
+                    LAST_FARM_RUN["results"].append(timeout_res)
+                    return timeout_res
+                except Exception as ex:
+                    err_res = {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": f"error: {format_error(ex)}"}}
+                    LAST_FARM_RUN["farmed_count"] = LAST_FARM_RUN.get("farmed_count", 0) + 1
+                    if "results" not in LAST_FARM_RUN:
+                        LAST_FARM_RUN["results"] = []
+                    LAST_FARM_RUN["results"].append(err_res)
+                    return err_res
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
@@ -7916,9 +7249,7 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
             if "farmed" in val_str or "success" in val_str or "claimed" in val_str or "ok" in val_str or "tasks" in val_str:
                 bot_stats[b_name] = bot_stats.get(b_name, 0) + 1
 
-    mrg_c = bot_stats.get("mrg", 0)
     atf_c = bot_stats.get("atf", 0)
-    vic_c = bot_stats.get("victors", 0)
     kyn_c = bot_stats.get("kynex", 0)
     pep_c = bot_stats.get("pepegram", 0)
     adx_c = bot_stats.get("adxearn", 0)
@@ -7929,9 +7260,9 @@ async def notify_farming_cycle_completion(result: dict, source: str = "Cloud Mes
     ev_c = bot_stats.get("earnvault", 0)
 
     card = (
-        f"⚡ <b>Fleet 11-Bot Auto-Farming Complete</b>\n"
+        f"⚡ <b>Fleet 9-Bot Auto-Farming Complete</b>\n"
         f"• <b>Accounts Farmed:</b> <code>{farmed_count}/{total_accounts} Online</code>\n"
-        f"• <b>Active Pools (11/11):</b> <code>MRG:{mrg_c} • ATF:{atf_c} • VIC:{vic_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c} • GRC:{grc_c} • LUM:{lum_c} • EV:{ev_c}</code>\n"
+        f"• <b>Active Pools (9/9):</b> <code>ATF:{atf_c} • KYN:{kyn_c} • PEP:{pep_c} • ADX:{adx_c} • DIG:{dig_c} • CHK:{chk_c} • GRC:{grc_c} • LUM:{lum_c} • EV:{ev_c}</code>\n"
         f"• <b>Duration:</b> <code>{elapsed:.1f}s</code> | <b>Node:</b> <code>{source} • Render Primary Node 3</code>\n"
         f"• <b>Status:</b> 🟢 100% Ground-Truth Synced"
     )
@@ -7975,6 +7306,8 @@ async def api_farm_cloud_all(request: Request):
         global LAST_FARM_RUN
         LAST_FARM_RUN["status"] = "running"
         LAST_FARM_RUN["timestamp"] = time.time()
+        LAST_FARM_RUN["farmed_count"] = 0
+        LAST_FARM_RUN["results"] = []
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
                 accounts = await fetch_accounts_from_cloud()
@@ -8121,7 +7454,7 @@ async def api_farm_single_account(uid: str, request: Request):
                     except Exception:
                         synced_ts = 0
 
-            has_active_tokens = any(bool(acc_tok.get(f"{b}_init_data")) for b in ["mrg", "atf", "victors", "kynex"])
+            has_active_tokens = any(bool(acc_tok.get(f"{b}_init_data")) for b in ["atf", "kynex", "chickenland", "diggo"])
             is_stale = (now_s - synced_ts > 14400) or ((not has_active_tokens) and (now_s - synced_ts > 1800))
             missing_tokens = refresh_mode or (not acc_tok) or missing_any or is_stale
             if missing_tokens:
@@ -8174,9 +7507,7 @@ async def inspect_referrals_master(request: Request):
     sess_str = master_acc.get("session_string") or master_acc.get("session")
     cl = create_telethon_client(sess_str=sess_str, identifier=master_acc.get("phone") or "Master", proxy_val=master_acc.get("proxy"))
     bots_to_query = [
-        ("mrg", "mrgtoken_bot", ["/start"]),
         ("atf", "atfminers_bot", ["/start"]),
-        ("victors", "VictorsCompanybot", ["/start"]),
         ("kynex", "Kynex_miningbot", ["/start"])
     ]
     results = {}
@@ -8230,9 +7561,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
         "webapp": {},
         "error": None
     }
-    channel_deps = {
-        "victors": ["VictorsCompany"]
-    }
+    channel_deps = {}
 
     try:
         # Zero-channel policy: Never join channels during bot study!
@@ -8542,9 +7871,7 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         target_acc = next((a for a in accounts if str(a.get("user_id")) == str(req_uid)), None)
 
     bot_map = {
-        "mrg": "mrgtoken_bot",
         "atf": "atfminers_bot",
-        "victors": "VictorsCompanybot",
         "kynex": "Kynex_miningbot"
     }
 
@@ -8595,10 +7922,8 @@ async def mute_all_chats_endpoint(request: Request):
 
     accounts = await fetch_accounts_from_cloud()
     all_targets_to_mute = [
-        "mrgtoken_bot", "mrgminerbot", "mrgminer", "mrgfun", "mrgwithdrawal",
         "atfminers_bot", "ATF_AIRDROP_bot", "atfminers",
         "Kynex_miningbot", "kynex_mining",
-        "VictorsCompanybot", "VictorsCompany",
         "Diggominer_bot", "diggo_community",
         "Pepe_gram_bot",
         "AdxEarnAibot"
@@ -8816,10 +8141,6 @@ async def debug_account_session(uid: str, request: Request):
             results["debug_diagnostics"] = {}
             skip_clicks = (request.query_params.get("skip_extract") == "1")
             for test_name, test_bot, test_url, test_sn in [
-                ("mrg_token_bot", "mrgtoken_bot", "https://app.mrgtoken.xyz/", "app"),
-                ("mrg_minerbot", "mrgminerbot", "https://app.mrgtoken.xyz/", "app"),
-                ("victors_bot", "VictorsCompanybot", "https://app.victors.company/", "app"),
-                ("victors_game", "VictorsCompanyGame", "https://app.victors.company/", "app"),
                 ("atf", ATF_BOT, "https://atfminers.asloni.online/miner/index.html?entry=bot_start", "miner"),
                 ("kynex", KYNEX_BOT, "https://kynex.top/telegram-auth.html", "app"),
                 ("pepe", PEPEGRAM_BOT, "https://app.miniempire.app/miniapp/", "app")
@@ -8938,14 +8259,6 @@ async def debug_account_session(uid: str, request: Request):
 # Type B Channel & Subscription Engine Definitions
 CHANNEL_WHITELIST = {
     "myagyai",
-    "mrgminer",
-    "mrgfun",
-    "mrgwithdrawal",
-    "DurovKidney",
-    "VictorsCompany",
-    "victors_company",
-    "VICWithdrawals",
-    "TheBoss_Victor",
     "atfminers",
     "kynex_mining",
     "EarnVaulte",
@@ -8958,8 +8271,6 @@ try:
     import bot_registry
     MANDATORY_SPONSOR_CHANNELS = sorted(list(set(
         bot_registry.get_all_sponsor_channels() + [
-            "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney", "keepeye_app",
-            "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire",
             "atfminers", "kynex_mining", "diggo_community",
             "EarnVaulte", "solanamemes001", "Web3Primeteam",
             "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
@@ -8967,17 +8278,14 @@ try:
     )))
 except Exception:
     MANDATORY_SPONSOR_CHANNELS = [
-        "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney", "keepeye_app",
-        "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "PickaxeEmpire",
         "atfminers", "kynex_mining", "diggo_community",
         "EarnVaulte", "solanamemes001", "Web3Primeteam",
         "LandChickenNews", "ChickenLandPay", "ChickenLandCodes"
     ]
 
-# 11 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
-    "mrgtoken_bot", "atfminers_bot",
-    "VictorsCompanybot",
+    "atfminers_bot",
     "Kynex_miningbot", "Diggominer_bot",
     "Pepe_gram_bot", "AdxEarnAibot",
     "ChickenLandBot", "GRC_AirdrooBot",
@@ -8987,6 +8295,10 @@ FLEET_LEGITIMATE_BOTS = [
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
 FLEET_BANNED_SCAMMERS = [
     # Purged per user directive
+    "mrgtoken_bot",
+    "mrgminerbot",
+    "VictorsCompanybot",
+    "VictorsCompanyGame",
     "vyrodrop_bot",
     "ASTRA_AIRDROP_BOT",
     "astra_airdrop_bot",

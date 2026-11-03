@@ -29,25 +29,11 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 
 TARGET_BOTS = [
     {
-        "key": "mrg_init_data",
-        "bot": "mrgtoken_bot",
-        "url": "https://app.mrgtoken.xyz/",
-        "short_names": ["app", "miniapp"],
-        "name": "MRG Miner"
-    },
-    {
         "key": "atf_init_data",
         "bot": "atfminers_bot",
         "url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "short_names": ["app", "miner", "play"],
         "name": "ATF Miner"
-    },
-    {
-        "key": "victors_init_data",
-        "bot": "VictorsCompanybot",
-        "url": "https://app.victors.company/",
-        "short_names": ["app", "play"],
-        "name": "Victor's Company"
     },
     {
         "key": "kynex_init_data",

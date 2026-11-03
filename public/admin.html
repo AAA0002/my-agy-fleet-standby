@@ -1806,10 +1806,8 @@ function App() {
         ),
         React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-1.5" },
           [
-            { name: "MRG Miner", key: "mrg", chain: "TON", icon: "⚡" },
-            { name: "ATF Miner", key: "atf", chain: "TON", icon: "🪙" },
-            { name: "Victor's Co", key: "victors", chain: "TON", icon: "🏢" },
-            { name: "Kynex Net", key: "kynex", chain: "KNX", icon: "💎" },
+                        { name: "ATF Miner", key: "atf", chain: "TON", icon: "🪙" },
+                        { name: "Kynex Net", key: "kynex", chain: "KNX", icon: "💎" },
             { name: "DiggoMiner", key: "diggo", chain: "DGO", icon: "⛏️" },
             { name: "PepeGram", key: "pepegram", chain: "TON", icon: "🐸" },
             { name: "AdxEarn AI", key: "adxearn", chain: "ADX", icon: "🤖" },
@@ -1918,7 +1916,7 @@ function App() {
               )
             ),
             React.createElement("div", { className: "flex flex-wrap gap-1 text-[8px] font-mono font-medium text-center" },
-              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💎 Kynex", "⛏️ Diggo", "🐸 Pepe", "🤖 AdxEarn", "🐔 Chicken", "🍐 Grouche", "💎 LUM", "🏦 EarnVault"].map((botName, bIdx) => React.createElement("div", {
+              ["🪙 ATF", "💎 Kynex", "⛏️ Diggo", "🐸 Pepe", "🤖 AdxEarn", "🐔 Chicken", "🍐 Grouche", "💎 LUM", "🏦 EarnVault"].map((botName, bIdx) => React.createElement("div", {
                 key: bIdx,
                 className: `rounded px-1.5 py-0.5 border ${subCardBg} text-slate-400 truncate`
               }, botName))
@@ -2023,7 +2021,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
               React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, `TON Blockchain (${fleet.length} Accounts Bound)`),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, Kynex, Diggo, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault")
             )
           ),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, `${fleet.length}/${fleet.length} Bound`)
@@ -2193,7 +2191,7 @@ function App() {
         [
           { label: "📊 Fleet Telemetry", cmd: "Summarize the fleet status and token accumulation across all active nodes." },
           { label: "👛 Vault Balances", cmd: "Check BNB vault and multi-chain wallet settlements." },
-          { label: "🌾 Optimize Mining", cmd: "What is the optimal harvest schedule for MRG and ATF?" }
+          { label: "🌾 Optimize Mining", cmd: "What is the optimal harvest schedule across all 9 active pools?" }
         ].map((chip, cIdx) => React.createElement("button", {
           key: cIdx,
           onClick: () => handleAiSubmit(chip.cmd),
@@ -2471,10 +2469,8 @@ function App() {
               React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block" }, "Active Mining Pools (11/11)"),
               React.createElement("div", { className: "grid grid-cols-4 gap-1 text-[8px] font-mono" },
                 [
-                  { name: "⚡ MRG", key: "mrg" },
-                  { name: "🪙 ATF", key: "atf" },
-                  { name: "🏢 Victor", key: "victors" },
-                  { name: "💎 Kynex", key: "kynex" },
+                                    { name: "🪙 ATF", key: "atf" },
+                                    { name: "💎 Kynex", key: "kynex" },
                   { name: "⛏️ Diggo", key: "diggo" },
                   { name: "🐸 PepeGram", key: "pepegram" },
                   { name: "🤖 AdxEarn", key: "adxearn" },

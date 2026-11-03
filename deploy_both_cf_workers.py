@@ -488,198 +488,6 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
 
-  // 1. MRG Miner
-  const farmMrg = async () => {
-    if (!accData.mrg_init_data) return;
-    try {
-      let mrgInit = accData.mrg_init_data;
-      if (typeof mrgInit === "string" && (mrgInit.startsWith("user%3D") || mrgInit.includes("%257B") || mrgInit.includes("%2522"))) {
-        try { mrgInit = decodeURIComponent(mrgInit); } catch (_) {}
-      }
-      const mrgHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Origin": "https://app.mrgtoken.xyz",
-        "Referer": "https://app.mrgtoken.xyz/"
-      });
-      const fp = getDeterministicDevice(uid);
-      const devInfo = {
-        platform: "android",
-        deviceName: fp.model,
-        ram: "8 GB",
-        cpuCores: 8,
-        screenResolution: "1080x2400",
-        userAgent: fp.ua,
-        timezone: "UTC",
-        language: "en"
-      };
-
-      await humanDelay(1000, 2400);
-      await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
-        method: "POST", headers: mrgHeaders, body: JSON.stringify({
-          initData: mrgInit,
-          startParam: isOwner ? null : "ref_IRN1G3XD",
-          start_param: isOwner ? null : "ref_IRN1G3XD",
-          deviceInfo: devInfo
-        })
-      }, 2, 800).catch(() => {});
-
-      await humanDelay(1200, 2600);
-      let claimMiningRes = null;
-      let mrgTurnstileToken = null;
-      try {
-        try {
-          const mrgPassRaw = await upstashGet(`mrg:pass:${uid}`);
-          if (mrgPassRaw) {
-            const parsedM = typeof mrgPassRaw === "string" ? JSON.parse(mrgPassRaw) : mrgPassRaw;
-            mrgTurnstileToken = parsedM.turnstileToken || parsedM;
-          }
-        } catch (_) {}
-
-        const claimPayload = { initData: mrgInit, deviceInfo: devInfo };
-        if (mrgTurnstileToken) {
-          await fetchWithRetry("https://mrg.up.railway.app/api/user/verify-human", {
-            method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, turnstileToken: mrgTurnstileToken })
-          }, 1, 600).catch(() => {});
-          claimPayload.turnstileToken = mrgTurnstileToken;
-        }
-
-        const cResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify(claimPayload)
-        }, 1, 600);
-        if (cResp) {
-          claimMiningRes = await cResp.json().catch(() => null);
-        }
-      } catch (_) {}
-
-      await humanDelay(1200, 2800);
-      const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
-        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
-      }, 2, 1000).catch(() => null);
-
-      let curBalStr = "";
-      let meD = {};
-      if (meResp && meResp.ok) {
-        meD = await meResp.json().catch(() => ({}));
-        const targetTonW = getDynamicTonWallet(uid, accData);
-        if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
-          await fetchWithRetry("https://mrg.up.railway.app/api/user/connect-wallet", {
-            method: "POST", headers: mrgHeaders, body: JSON.stringify({
-              initData: mrgInit, address: targetTonW, balance: 0
-            })
-          }, 2, 800).catch(() => {});
-          if (ctx && ctx.waitUntil) {
-            ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
-              method: "POST",
-              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || env.CF_SECRET_KEY || "") }
-            }, 15000).catch(() => {}));
-          }
-        }
-
-        // Claim MRG Daily Check-in (+5 to +15 MRG daily streak with turnstile pass)
-        const checkinBody = { initData: mrgInit };
-        if (mrgTurnstileToken) {
-          checkinBody.turnstileToken = mrgTurnstileToken;
-        }
-        await fetchWithRetry("https://mrg.up.railway.app/api/user/daily-checkin", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify(checkinBody)
-        }, 1, 600).catch(() => {});
-
-        const tasks = meD.tasks || [];
-        const completed = new Set(meD.completedTaskIds || []);
-        for (const t of tasks) {
-          const tid = t.taskId || t.id;
-          const isRecurring = (t.taskType && String(t.taskType).includes("recurring")) || (t.type && String(t.type).includes("recurring"));
-          if (tid && (!completed.has(tid) || isRecurring)) {
-            const isLinkTask = (t.type === "link_visit" || t.url || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("social") || String(t.title || "").toLowerCase().includes("shorts") || String(t.title || "").toLowerCase().includes("discussion") || String(t.title || "").toLowerCase().includes("post"));
-            const waitTime = isLinkTask ? 16000 : 2800;
-            if (ctx && ctx.waitUntil) {
-              ctx.waitUntil(new Promise(async (resolve) => {
-                try {
-                  await humanDelay(waitTime, waitTime + 2000);
-                  const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                    method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, taskId: tid })
-                  }, 2, 600);
-                  const clD = await clResp.json().catch(() => ({}));
-                  if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second"))) {
-                    await humanDelay(12000, 15000);
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                      method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, taskId: tid })
-                    }, 1, 600).catch(() => {});
-                  }
-                } catch (_) {}
-                resolve();
-              }));
-            }
-          }
-        }
-
-        // Level Unlock (compare against manualUnlockedLevel so unboosted accounts get upgraded)
-        const uObj = meD.user || {};
-        const inBal = parseFloat(uObj.inAppBalance || 0);
-        const curLvl = parseInt(uObj.manualUnlockedLevel || 0, 10);
-        curBalStr = ` (bal: ${inBal.toFixed(1)} MRG, lvl: ${uObj.manualUnlockedLevel || uObj.peakLevel || 1})`;
-        if (inBal >= 100) {
-          const calcReqMRG = (lvl) => {
-            if (lvl <= 0) return 0;
-            if (lvl === 1) return 100;
-            if (lvl <= 203) return Math.round(100 + 9900 * Math.pow((lvl - 1) / 202, 1.8));
-            return 10000;
-          };
-          let lo = 1, hi = 203, targetLvl = curLvl;
-          while (lo <= hi) {
-            const mid = Math.floor((lo + hi) / 2);
-            if (inBal >= calcReqMRG(mid)) { targetLvl = mid; lo = mid + 1; } else { hi = mid - 1; }
-          }
-          if (targetLvl > curLvl) {
-            await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
-              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, level: targetLvl })
-            }, 1, 600).catch(() => {});
-          }
-        }
-      }
-
-      // Claim One-Time Bonus (Available to all fleet accounts)
-      await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
-      }, 1, 600).catch(() => {});
-
-      if (isOwner) {
-        await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
-        }).catch(() => {});
-
-        const frResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
-        }, 1, 800).catch(() => null);
-        if (frResp && frResp.ok) {
-          const frD = await frResp.json().catch(() => ({}));
-          const tStats = frD.teamStats || {};
-          if ((tStats.unclaimedOneTimeBonusMRG || 0) > 0) {
-            await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
-            }, 1, 600).catch(() => {});
-          }
-        }
-      }
-      let claimSummary = "";
-      if (!meResp || !meResp.ok) {
-        claimSummary = "auth_failed (session expired or unauthorized)";
-      } else if (claimMiningRes && (claimMiningRes.code === "HUMAN_CHECK_REQUIRED" || (claimMiningRes.error && String(claimMiningRes.error).toLowerCase().includes("security check")))) {
-        const unclaimedMRG = parseFloat((meD && meD.user && meD.user.unclaimedMiningBalance) || 0);
-        claimSummary = `turnstile_required (${unclaimedMRG.toFixed(1)} MRG ready)`;
-      } else if (claimMiningRes && claimMiningRes.success) {
-        claimSummary = `auto-claimed (${claimMiningRes.claimedAmount || "reward"} MRG)`;
-      } else if (claimMiningRes && !claimMiningRes.success) {
-        claimSummary = `claim_error (${claimMiningRes.error || claimMiningRes.code || "failed"})`;
-      } else {
-        const unclaimedMRG = parseFloat((meD && meD.user && meD.user.unclaimedMiningBalance) || 0);
-        claimSummary = unclaimedMRG > 0 ? `farmed (mining active: ${unclaimedMRG.toFixed(1)} MRG)` : "farmed (mining active)";
-      }
-      result.bots.mrg = `${claimSummary}${curBalStr}`;
-    } catch (e) {
-      result.bots.mrg = `error: ${e.message}`;
-    }
-  };
   // 2. ATF Miner
   const farmAtf = async () => {
     if (!accData.atf_init_data) return;
@@ -818,193 +626,6 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     }
   };
 
-  // 3. Victor's Company (@VictorsCompanybot)
-  const farmVictors = async () => {
-    try {
-      if (accData.victors_init_data) {
-        const vHeaders = getHumanHeaders(uid, {
-          "Content-Type": "application/json",
-          "Authorization": `tma ${accData.victors_init_data}`,
-          "Origin": "https://app.victors.company",
-          "Referer": "https://app.victors.company/"
-        });
-
-        if (accData.victors_human_pass) {
-          vHeaders["x-human-pass"] = String(accData.victors_human_pass);
-        } else {
-          try {
-            const upPass = await upstashGet(`victors:pass:${uid}`);
-            if (upPass) {
-              const parsed = typeof upPass === "string" && upPass.startsWith("{") ? JSON.parse(upPass) : upPass;
-              const hp = (parsed && parsed.humanPass) ? parsed.humanPass : parsed;
-              if (hp) vHeaders["x-human-pass"] = String(hp);
-            }
-          } catch (_) {}
-        }
-
-        await humanDelay(500, 1000);
-        // 1. Fetch Profile using humanPass
-        const meResp = await fetchWithRetry("https://server.victors.company/api/me", {
-          method: "GET", headers: vHeaders
-        }, 1, 800).catch(() => null);
-        let me = null;
-        let humanRequired = false;
-        if (meResp && meResp.ok) {
-          const mData = await meResp.json().catch(() => ({}));
-          me = mData.user || mData;
-        } else if (!vHeaders["x-human-pass"] || (meResp && (meResp.status === 401 || meResp.status === 403))) {
-          humanRequired = true;
-        }
-
-        // Complete tutorial if pending
-        if (me && !me.tutorialCompleted) {
-          await fetchWithRetry("https://server.victors.company/api/me/tutorial", {
-            method: "POST", headers: vHeaders, body: JSON.stringify({})
-          }, 1, 500).catch(() => {});
-        }
-
-        // Connect TON wallet if not yet connected
-        const vTonWallet = getDynamicTonWallet(uid, accData);
-        if (vTonWallet && (!me?.walletAddress || !me?.walletOwned)) {
-          await fetchWithRetry("https://server.victors.company/api/wallet/connect", {
-            method: "POST", headers: vHeaders, body: JSON.stringify({ address: vTonWallet })
-          }, 2, 600).catch(() => {});
-          await humanDelay(400, 800);
-          await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
-            method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: "connect-wallet" })
-          }, 1, 500).catch(() => {});
-          // If TonConnect proof is required on Victor's, trigger failover to Render node
-          if (!me?.walletOwned && ctx && ctx.waitUntil) {
-            ctx.waitUntil(fetchRenderWithFailover("/api/farm/account/" + uid, {
-              method: "POST",
-              headers: { "Authorization": "Bearer " + (env.SECRET_KEY || env.CF_SECRET_KEY || "") }
-            }, 15000).catch(() => {}));
-          }
-        }
-
-        // Ensure Level 1 Miner is hired to start mining and eliminate home.noJob
-        const curLvl = Number(me?.level || me?.peakLevel || 0);
-        const manLvl = Number(me?.manualUnlockedLevel || 0);
-        if (curLvl < 1 || manLvl < 1) {
-          await humanDelay(500, 1000);
-          await fetchWithRetry("https://server.victors.company/api/levels/unlock", {
-            method: "POST", headers: vHeaders, body: JSON.stringify({ level: 1 })
-          }, 2, 600).catch(() => {});
-        }
-
-        await humanDelay(800, 1600);
-        // 3. Daily Check-in
-        await fetchWithRetry("https://server.victors.company/api/checkin", {
-          method: "POST", headers: vHeaders, body: JSON.stringify({})
-        }, 1, 600).catch(() => {});
-
-        await humanDelay(1000, 2000);
-        // 4. Mining Claim
-        await fetchWithRetry("https://server.victors.company/api/mining/claim", {
-          method: "POST", headers: vHeaders, body: JSON.stringify({})
-        }, 1, 800).catch(() => {});
-
-        // 5. Level Unlock
-        const maxUnl = Number(me?.unlockedLevel || curLvl);
-        if (maxUnl > curLvl) {
-          await humanDelay(800, 1500);
-          await fetchWithRetry("https://server.victors.company/api/levels/unlock", {
-            method: "POST", headers: vHeaders, body: JSON.stringify({ level: maxUnl })
-          }, 2, 600).catch(() => {});
-        }
-
-        // 6. Tasks (with 4.2s link verification debounce)
-        try {
-          const tResp = await fetchWithRetry("https://server.victors.company/api/tasks", {
-            method: "GET", headers: vHeaders
-          }, 1, 800).catch(() => null);
-          if (tResp && tResp.ok) {
-            const tData = await tResp.json().catch(() => ({}));
-            const tasks = tData.tasks || [];
-            if (Array.isArray(tasks)) {
-              for (const t of tasks) {
-                const tid = t?.id || t?.taskId;
-                if (t && tid && !t.claimed && t.status !== "done") {
-                  if (t.kind === "link_visit" || t.kind === "telegram_channel" || t.kind === "partner_api" || t.url) {
-                    await humanDelay(4100, 4300);
-                  } else {
-                    await humanDelay(500, 1000);
-                  }
-                  await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
-                    method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: tid })
-                  }, 1, 500).catch(() => {});
-                }
-              }
-            }
-          }
-        } catch (_) {}
-
-        // 7. Referral Claims
-        await humanDelay(800, 1500);
-        await fetchWithRetry("https://server.victors.company/api/referral/claim-bonus", {
-          method: "POST", headers: vHeaders, body: JSON.stringify({})
-        }, 1, 600).catch(() => {});
-        await fetchWithRetry("https://server.victors.company/api/referral/claim-commission", {
-          method: "POST", headers: vHeaders, body: JSON.stringify({})
-        }, 1, 600).catch(() => {});
-
-        // 8. Arcade Minigame Mining (Safe Rows 0 & 1 only: 0% bust chance, sweeps all daily runs)
-        try {
-          const arcResp = await fetchWithRetry("https://server.victors.company/api/arcade", {
-            method: "GET", headers: vHeaders
-          }, 1, 800).catch(() => null);
-          if (arcResp && arcResp.ok) {
-            const arcData = await arcResp.json().catch(() => ({}));
-            const games = Array.isArray(arcData.games) ? arcData.games : [];
-            const mineGame = games.find(g => g && g.id === "mine");
-            const playsLeft = mineGame ? (mineGame.playsLeft || 0) : (arcData.runsLeft || 0);
-            const totalRuns = Math.min(playsLeft || (arcData.mine ? 1 : 0), 10);
-            for (let rIdx = 0; rIdx < totalRuns; rIdx++) {
-              let activeRun = (rIdx === 0) ? arcData.mine : null;
-              if (!activeRun) {
-                const stResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/start", {
-                  method: "POST", headers: vHeaders, body: JSON.stringify({ tool: "shovel", items: {} })
-                }, 1, 600).catch(() => null);
-                if (stResp && stResp.ok) {
-                  const sData = await stResp.json().catch(() => ({}));
-                  activeRun = sData.run;
-                }
-              }
-              if (activeRun && activeRun.status === "active") {
-                // Dig strictly safe rows 0 and 1 (safeRows = 2: 0% bust chance)
-                for (let d = 0; d < 2; d++) {
-                  await humanDelay(300, 600);
-                  const digResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/dig", {
-                    method: "POST", headers: vHeaders, body: JSON.stringify({ x: 4, y: d })
-                  }, 1, 500).catch(() => null);
-                  if (digResp && digResp.ok) {
-                    const digData = await digResp.json().catch(() => ({}));
-                    if (digData && digData.result) break;
-                  }
-                }
-                await fetchWithRetry("https://server.victors.company/api/arcade/mine/end", {
-                  method: "POST", headers: vHeaders, body: JSON.stringify({})
-                }, 1, 500).catch(() => {});
-                await humanDelay(400, 800);
-              } else {
-                break;
-              }
-            }
-          }
-        } catch (_) {}
-
-        if (humanRequired && !me) {
-          result.bots.victors = "human_pass_required (Turnstile needed)";
-        } else {
-          result.bots.victors = me ? `farmed (lvl: ${me.level || 1}, bal: ${me.miningBalance || 0})` : (humanRequired ? "human_pass_required" : "auth_failed");
-        }
-      } else {
-        result.bots.victors = "skipped (no initData)";
-      }
-    } catch (e) {
-      result.bots.victors = `error: ${e.message}`;
-    }
-  };
 
   // 10. Kynex Network (@Kynex_miningbot)
   const farmKynex = async () => {
@@ -2146,8 +1767,6 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   // Time-aligned cooldowns respect true protocol cycle durations (e.g. 6-8h, 12h, 24h)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1800, maxSec: 3600 },
-    mrg: { minSec: 3600, maxSec: 7200 },
-    victors: { minSec: 14400, maxSec: 28800 },
     kynex: { minSec: 3600, maxSec: 4200 },
     pepegram: { minSec: 21600, maxSec: 28800 },
     adxearn: { minSec: 7200, maxSec: 14400 },
@@ -2159,9 +1778,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   };
 
   const botRoutines = [
-    { name: "mrg", fn: farmMrg, hasData: Boolean(accData.mrg_init_data) },
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
-    { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data || accData.pepe_init_data) },
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data || accData.adx_init_data) },
@@ -2739,6 +2356,7 @@ async function supabaseUpdateAdminAuth(id = "6727787768", fields = {}) {
 
 async function upstashSrem(key, member) {
   try {
+    UPSTASH_MEMBERS_CACHE.delete(key);
     await fetch(`${UPSTASH_URL}/srem/${key}/${encodeURIComponent(member)}`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
@@ -6705,6 +6323,8 @@ fi
           memSessionHealth = null;
           memFleetAccounts = null;
           memFleetAccountsTs = 0;
+          UPSTASH_GET_CACHE.clear();
+          UPSTASH_MEMBERS_CACHE.clear();
           const allAccs = await getFleetAccounts(true);
           const acc = allAccs.find(a => a.index === numIdx);
           const uidStr = acc ? String(acc.user_id) : "";
@@ -6714,6 +6334,7 @@ fi
           if (uidStr) {
             await upstashSrem("fleet:revoked_sessions", uidStr);
             await upstashSadd("fleet:healthy_sessions", uidStr);
+            await upstashDel("fleet:revocation_reason:" + uidStr);
           }
         };
 
@@ -6730,7 +6351,7 @@ fi
           return `👑 *MY AGY AI — OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
             `${statusLine}\n` +
-            `🤖 *11 Active Mining Pools:* MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn AI • Chicken Land • Grouche • LUM • EarnVault\n` +
+            `🤖 *9 Active Mining Pools:* MRG • ATF • Victor's • Kynex • Diggo • PepeGram • AdxEarn AI • Chicken Land • Grouche • LUM • EarnVault\n` +
             `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • Render Coordinator Node 3 (Oregon)\n` +
             `🛡️ *Zero Phone Load:* 100% Cloud-First • Pure Accumulation Mode\n` +
             `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n` +
@@ -6752,8 +6373,7 @@ fi
                 (a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20) ||
                 (a.session && typeof a.session === "string" && a.session.trim().length > 20)
               );
-              const isExplicitRevoked = a.session_revoked === true || (!hasSession && (revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id)))));
-              const isRev = !hasSession || isExplicitRevoked;
+              const isRev = !hasSession || a.session_revoked === true || revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id)));
               const statusIcon = isRev ? "🔴" : "🟢";
               const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
               return {
@@ -6784,10 +6404,10 @@ fi
             ],
             [
               { text: "📊 Fleet Live Status", callback_data: "btn_status" },
-              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
-              { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
@@ -6815,8 +6435,8 @@ fi
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
-              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
-              { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "🐔 Chicken Land", callback_data: "btn_chicken" },
@@ -6840,11 +6460,11 @@ fi
           inline_keyboard: [
             [
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -7055,7 +6675,7 @@ fi
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
-              { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
@@ -7130,7 +6750,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 11-Bot Harvest" },
+              { text: "⚡ 9-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -8016,18 +7636,7 @@ fi
                 }
                 await harvestPromise;
               })());
-            } else if (cbData === "btn_mrg") {
-              const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* MRG Cloud Miner (@mrgtoken_bot)\n` +
-                `• *Status:* Active & Auto-Mining\n` +
-                `• *Yield:* ~0.06 MRG per claim cycle per account\n` +
-                `• *Payout Network:* TON Blockchain (The Open Network)\n` +
-                `• *Anti-Bot Defense:* Cryptographic User-Agent Isolation ✅\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-} else if (cbData === "btn_kynex" || cbData === "btn_kynex_mine" || cbData === "btn_kynex_claim") {
+            } else if (cbData === "btn_kynex" || cbData === "btn_kynex_mine" || cbData === "btn_kynex_claim") {
               const health = await getSessionHealthState();
               const activeCount = health.healthy.size;
               const revokedCount = health.revoked.size;
@@ -8044,22 +7653,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-            } else if (cbData === "btn_victors") {
-              const health = await getSessionHealthState();
-              const activeCount = health.healthy.size;
-              const revokedCount = health.revoked.size;
-              const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-                `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
-                `• *Master Account:* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
-                `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser\n` +
-                `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
-                `• *Deep Mine Arcade:* Automated Expeditions & Loot\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
-} else if (cbData === "btn_chicken" || cbData === "btn_chickenland") {
+            } else if (cbData === "btn_chicken" || cbData === "btn_chickenland") {
               const health = await getSessionHealthState();
               const activeCount = health.healthy.size;
               const rep = `🐔 *CHICKEN LAND COMMAND CENTER*\n` +
@@ -8078,7 +7672,7 @@ fi
                     { text: "🎟️ Check & Auto-Snipe Promo", callback_data: "btn_chicken_promo_auto" }
                   ],
                   [
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
                     { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                   ]
                 ]
@@ -8163,7 +7757,7 @@ fi
                 `• *Address:* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
                 `• *Live Balance:* \`2.4555 TON\` (~$2.98 USD / ~৳365 BDT)\n` +
                 `• *Mandatory Memo:* \`103525143\`\n\n` +
-                `🤖 *3. 11-Bot Cloud Mining Accumulated Yield:*\n` +
+                `🤖 *3. 9-Bot Cloud Mining Accumulated Yield:*\n` +
                 `• ⚡ MRG: \`62,578.97 MRG\` (Cloud Turnstile Auto-Claim)\n` +
                 `• 🪙 ATF: \`30,374.55 ATF\` (Math Solver Engine)\n` +
                 `• 🌐 Kynex: \`1,825,352.00 KNX\` (Energy Sweep Node)\n` +
@@ -8198,30 +7792,26 @@ fi
               const activeCount = health.healthy.size;
               const botsHubInlineKeyboard = {
                 inline_keyboard: [
-                  [ { text: "⚡ MRG Miner", callback_data: "btn_mrg" }, { text: "🪙 ATF Miner", callback_data: "btn_atf" } ],
-                  [ { text: "🐸 PepeGram", callback_data: "btn_pepe" }, { text: "🤖 AdxEarn AI", callback_data: "btn_adx" } ],
-                  [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
-                  [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "🐔 Chicken Land", callback_data: "btn_chicken" } ],
+                  [ { text: "🪙 ATF Miner", callback_data: "btn_atf" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
+                  [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "🐸 PepeGram", callback_data: "btn_pepe" } ],
+                  [ { text: "🤖 AdxEarn AI", callback_data: "btn_adx" }, { text: "🐔 Chicken Land", callback_data: "btn_chicken" } ],
                   [ { text: "🍐 Grouche Mine", callback_data: "btn_grouche" }, { text: "💎 LUM Miner", callback_data: "btn_lumeon" } ],
-                  [ { text: "🏦 EarnVault", callback_data: "btn_earnvault" }, { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" } ],
+                  [ { text: "🏦 EarnVault", callback_data: "btn_earnvault" }, { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" } ],
                   [ { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
                 ]
               };
-              const hubMsg = `🤖 *11-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+              const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
-                `1. ⚡ *MRG Miner* (@mrgtoken_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
-                `2. 🪙 *ATF Miner* (@ATF_AIRDROP_bot) — Cryptographic Math Solver\n` +
-                `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
-                `4. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
-                `5. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
-                `6. 🐸 *PepeGram* (@Pepe_gram_bot) — 6h Hash Production Loop\n` +
-                `7. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
-                `8. 🐔 *Chicken Land* (@ChickenLandBot) — Passive Egg Laying & Sub-Second Promo Sniper\n` +
-                `9. 🍐 *Grouche Mine* (@GRC_AirdrooBot) — Cloud Miner Yield & Adsgram Rewards\n` +
-                `10. 💎 *LUM Miner* (@lumeonminer_bot) — LUM Referral Mesh & Community Quests\n` +
-                `11. 🏦 *EarnVault* (@EarnVaultApp_bot) — USD Cash Balance & Cloud Vault Yield\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `1. 🪙 *ATF Miner* (@atfminers_bot) — Cryptographic Math Solver\n` +
+                `2. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
+                `3. ⛏️ *DiggoMiner* (@Diggominer_bot) — TonConnect 2.0 & Auto-Dig\n` +
+                `4. 🐸 *PepeGram* (@Pepe_gram_bot) — Cloud Mine & Auto-Upgrade\n` +
+                `5. 🤖 *AdxEarn AI* (@AdxEarnAibot) — AI Hashrate & Fast Yield\n` +
+                `6. 🐔 *Chicken Land* (@ChickenLandBot) — Auto-Eggs, Hen Buy & Promo Sniper\n` +
+                `7. 🍐 *Grouche Mine* (@GRC_AirdrooBot) — Daily Claim & Adsgram (+10 GRC)\n` +
+                `8. 💎 *LUM Miner* (@lumeonminer_bot) — Daily Mine & Boosters\n` +
+                `9. 🏦 *EarnVault* (@EarnVaultApp_bot) — Yield Farming & Cloud Vaults\n━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ _Select a bot below for dedicated live telemetry & controls:_`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, hubMsg, botsHubInlineKeyboard);
@@ -8233,7 +7823,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -8261,7 +7851,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -8288,7 +7878,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -8315,7 +7905,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🍐 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_grouche" },
@@ -8342,7 +7932,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "💎 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_lumeon" },
@@ -8370,7 +7960,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🏦 Trigger Harvest", callback_data: "btn_harvest" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔄 Refresh Status", callback_data: "btn_earnvault" },
@@ -8420,7 +8010,7 @@ fi
                       { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                     ],
                     [
-                      { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                      { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
                       { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
@@ -8515,7 +8105,7 @@ fi
                 inline_keyboard: [
                   [
                     { text: "🪙 Back to ATF", callback_data: "btn_atf" },
-                    { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                    { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                   ],
                   [
                     { text: "🔙 Main Menu", callback_data: "btn_back_main" }
@@ -8789,7 +8379,7 @@ fi
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
                 const health = await getSessionHealthState();
-                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 11 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
                 const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size} mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
                 const prov = aiData.provider || "Cloudflare Workers AI";
                 const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -9218,71 +8808,7 @@ fi
           return new Response("OK");
         }
 
-        // 1.43 Dedicated Victor's Company Command (/victors)
-        if (text === "/victors" || text.startsWith("/victors") || text.startsWith("/victor") || text === "🏢 Victor's Company") {
-          ctx.waitUntil((async () => {
-            const health = await getSessionHealthState();
-            const activeCount = health.healthy.size;
-            const revokedCount = health.revoked.size;
-            const vicInlineKeyboard = {
-              inline_keyboard: [
-                [
-                  { text: "🏢 Victor's Status", callback_data: "btn_victors" },
-                  { text: "👛 Verified Wallets", callback_data: "btn_wallets" }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
-                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
-                ]
-              ]
-            };
-            const vicMsg = `🏢 *VICTOR'S COMPANY CLOUD COMMAND CENTER*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
-              `• *Master Account (6727787768):* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
-              `• *Session Status:* 24h Cloud Mining Active\n` +
-              `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser (humanPass active)\n` +
-              `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
-              `• *Deep Mine Arcade:* Automated Expeditions & Loot\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚡ _Tap the buttons below to check telemetry:_`;
-            await sendReply(vicMsg, vicInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
 
-        // 1.445 Dedicated MRG Miner Command (/mrg)
-        if (text === "/mrg" || text.startsWith("/mrg") || text === "⛏️ MRG Miner" || text === "⚡ MRG Miner") {
-          ctx.waitUntil((async () => {
-            const health = await getSessionHealthState();
-            const activeCount = health.healthy.size;
-            const revokedCount = health.revoked.size;
-            const mrgInlineKeyboard = {
-              inline_keyboard: [
-                [
-                  { text: "⚡ MRG Cloud Mine", callback_data: "btn_mrg" },
-                  { text: "👛 Verified Wallets", callback_data: "btn_wallets" }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
-                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
-                ]
-              ]
-            };
-            const mrgMsg = `⛏️ *MRG MINER CLOUD COMMAND CENTER*\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* MRG Cloud Miner (@mrgtoken_bot)\n` +
-              `• *Status:* 🟢 \`${activeCount}/${health.total} Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
-              `• *Autonomous Level Upgrader:* Level 95+ Auto-Unlocked\n` +
-              `• *Cryptographic TON Connect 2.0 Proof:* \`${health.total}/${health.total} Connected\`\n` +
-              `• *Anti-Bot Defense:* User-Agent & Signature Isolation ✅\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚡ _Tap the buttons below to check telemetry:_`;
-            await sendReply(mrgMsg, mrgInlineKeyboard);
-          })());
-          return new Response("OK");
-        }
 
         // 1.45 Dedicated ATF Miner Cloud Command (/atf)
         if (text === "/atf" || text.startsWith("/atf") || text === "🪙 ATF Miner") {
@@ -9339,7 +8865,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
@@ -9372,7 +8898,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
@@ -9404,7 +8930,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_adx" },
@@ -9438,7 +8964,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -9469,7 +8995,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🍐 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_grouche" },
@@ -9501,7 +9027,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "💎 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_lumeon" },
@@ -9534,7 +9060,7 @@ fi
               inline_keyboard: [
                 [
                   { text: "🏦 Trigger Harvest", callback_data: "btn_harvest" },
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" }
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
                 ],
                 [
                   { text: "🔄 Refresh Status", callback_data: "btn_earnvault" },
@@ -9587,7 +9113,7 @@ fi
                   { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
                 ],
                 [
-                  { text: "🤖 11-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
                   { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
@@ -9609,37 +9135,33 @@ fi
           return new Response("OK");
         }
 
-        // 1.4595 8-Bot Hub Command (/bots or /hub)
+        // 1.4595 9-Bot Hub Command (/bots or /hub)
         if (text === "/bots" || text.startsWith("/bots") || text === "/hub" || text.startsWith("/hub")) {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
             const botsHubInlineKeyboard = {
               inline_keyboard: [
-                [ { text: "⚡ MRG Miner", callback_data: "btn_mrg" }, { text: "🪙 ATF Miner", callback_data: "btn_atf" } ],
-                [ { text: "🐸 PepeGram", callback_data: "btn_pepe" }, { text: "🤖 AdxEarn AI", callback_data: "btn_adx" } ],
-                [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
-                [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "🐔 Chicken Land", callback_data: "btn_chicken" } ],
+                [ { text: "🪙 ATF Miner", callback_data: "btn_atf" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
+                [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "🐸 PepeGram", callback_data: "btn_pepe" } ],
+                [ { text: "🤖 AdxEarn AI", callback_data: "btn_adx" }, { text: "🐔 Chicken Land", callback_data: "btn_chicken" } ],
                 [ { text: "🍐 Grouche Mine", callback_data: "btn_grouche" }, { text: "💎 LUM Miner", callback_data: "btn_lumeon" } ],
-                [ { text: "🏦 EarnVault", callback_data: "btn_earnvault" }, { text: "⚡ 11-Bot Harvest", callback_data: "btn_harvest" } ],
+                [ { text: "🏦 EarnVault", callback_data: "btn_earnvault" }, { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" } ],
                 [ { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
               ]
             };
-            const hubMsg = `🤖 *11-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+            const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
-              `1. ⚡ *MRG Miner* (@mrgtoken_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
-              `2. 🪙 *ATF Miner* (@ATF_AIRDROP_bot) — Cryptographic Math Solver\n` +
-              `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
-              `4. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
-              `5. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
-              `6. 🐸 *PepeGram* (@Pepe_gram_bot) — 6h Hash Production Loop\n` +
-              `7. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
-              `8. 🐔 *Chicken Land* (@ChickenLandBot) — Passive Egg Laying & Sub-Second Promo Sniper\n` +
-              `9. 🍐 *Grouche Mine* (@GRC_AirdrooBot) — Cloud Miner Yield & Adsgram Rewards\n` +
-              `10. 💎 *LUM Miner* (@lumeonminer_bot) — LUM Referral Mesh & Community Quests\n` +
-              `11. 🏦 *EarnVault* (@EarnVaultApp_bot) — USD Cash Balance & Cloud Vault Yield\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `1. 🪙 *ATF Miner* (@atfminers_bot) — Cryptographic Math Solver\n` +
+              `2. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
+              `3. ⛏️ *DiggoMiner* (@Diggominer_bot) — TonConnect 2.0 & Auto-Dig\n` +
+              `4. 🐸 *PepeGram* (@Pepe_gram_bot) — Cloud Mine & Auto-Upgrade\n` +
+              `5. 🤖 *AdxEarn AI* (@AdxEarnAibot) — AI Hashrate & Fast Yield\n` +
+              `6. 🐔 *Chicken Land* (@ChickenLandBot) — Auto-Eggs, Hen Buy & Promo Sniper\n` +
+              `7. 🍐 *Grouche Mine* (@GRC_AirdrooBot) — Daily Claim & Adsgram (+10 GRC)\n` +
+              `8. 💎 *LUM Miner* (@lumeonminer_bot) — Daily Mine & Boosters\n` +
+              `9. 🏦 *EarnVault* (@EarnVaultApp_bot) — Yield Farming & Cloud Vaults\n━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Select a bot below for dedicated live telemetry & controls:_`;
             await sendReply(hubMsg, botsHubInlineKeyboard);
           })());
@@ -9653,7 +9175,7 @@ fi
             await sendReply("⏳ *Generating AI Executive Briefing via Cloudflare Workers AI (Llama 3.1 & DeepSeek R1)...*");
             try {
               const health = await getSessionHealthState();
-              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 11 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size} accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
               const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size} mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
               const prov = aiData.provider || "Cloudflare Workers AI";
               const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
@@ -10426,6 +9948,14 @@ fi
               }
               await sendResilientMessage(chatId, rep, markup);
             } else {
+              memSessionHealth = null;
+              memFleetAccounts = null;
+              memFleetAccountsTs = 0;
+              UPSTASH_GET_CACHE.delete("fleet:accounts");
+              UPSTASH_MEMBERS_CACHE.delete("fleet:revoked_sessions");
+              UPSTASH_MEMBERS_CACHE.delete("fleet:healthy_sessions");
+              const freshAccs = await getFleetAccounts(true);
+              const health = await getSessionHealthState();
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to fetch its Telegram login code from active cloud sessions:\n\n` +
@@ -10433,11 +9963,10 @@ fi
                 `1. Tap the account number you are logging into.\n` +
                 `2. Enter the phone number in Telegram on your phone.\n` +
                 `3. The cloud session intercepts the code from Telegram (*777000*) and provides 1-tap copy!\n\n` +
-                `• *Active Accounts:* \`${totalAccs}\`\n` +
+                `• *Active Accounts:* \`${freshAccs.length}\`\n` +
                 `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to go in order._`;
-              const health = await getSessionHealthState();
-              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard(accounts, health.revoked));
+              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard(freshAccs, health.revoked));
             }
           })());
           return new Response("OK");
@@ -10553,7 +10082,7 @@ fi
 
 
         // 3.5 Instant Fleet Harvest
-        if (text === "⚡ 11-Bot Harvest" || text === "⚡ 8-Bot Harvest" || text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
+        if (text === "⚡ 9-Bot Harvest" || text === "⚡ 8-Bot Harvest" || text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const health = await getSessionHealthState();
@@ -10680,7 +10209,7 @@ fi
               `• *Address:* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• *Live Balance:* \`2.4555 TON\` (~$2.98 USD / ~৳365 BDT)\n` +
               `• *Mandatory Memo:* \`103525143\`\n\n` +
-              `🤖 *3. 11-Bot Cloud Mining Accumulated Yield:*\n` +
+              `🤖 *3. 9-Bot Cloud Mining Accumulated Yield:*\n` +
               `• ⚡ MRG: \`62,578.97 MRG\` (Cloud Turnstile Auto-Claim)\n` +
               `• 🪙 ATF: \`30,374.55 ATF\` (Math Solver Engine)\n` +
               `• 🌐 Kynex: \`1,825,352.00 KNX\` (Energy Sweep Node)\n` +
@@ -10866,7 +10395,7 @@ fi
                   `• *Daemon Status:* ${daemonStatus}\n` +
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
-                  `• *Active Lineup:* 11 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land • Grouche Mine • LUM Miner • EarnVault)\n` +
+                  `• *Active Lineup:* 9 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • Kynex Network • DiggoMiner • PepeGram • AdxEarn AI • Chicken Land • Grouche Mine • LUM Miner • EarnVault)\n` +
                   `• *⏱️ Synced:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-${accounts.length}>\` to inspect any account or \`/accounts\` for full fleet roster._`;
@@ -11653,7 +11182,7 @@ fi
             `• \`/status\` or \`/fleet\` — Real-time fleet operations & telemetry\n` +
             `• \`/summary\` — Executive all-in-one health check\n` +
             `• \`/harvest\` — Dispatches instant 11-bot harvest across all fleet accounts\n` +
-            `• \`/bots\` — 11-Bot Autonomous Mining Fleet Hub\n` +
+            `• \`/bots\` — 9-Bot Autonomous Mining Fleet Hub\n` +
             `• \`/chicken\` — Chicken Land Passive Farming & 8h Basket\n` +
             `• \`/snipe <CODE>\` — Sub-Second Promo Code Sniper (Concurrent Fleet Blaster)\n` +
             `• \`/ad_farmer\` — 24/7 Autonomous Ad-Farming Loop Status\n` +
@@ -17348,7 +16877,7 @@ async def main():
                     {"command": "treasury", "description": "💰 On-Chain Treasury & Live Payouts Ledger"},
                     {"command": "payouts", "description": "💳 Daily Financial Accounting & Ledger"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 11-Bot Multi-Cloud Harvest"},
-                    {"command": "bots", "description": "🤖 11-Bot Autonomous Mining Fleet Hub"},
+                    {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
                     {"command": "chicken", "description": "🐔 Chicken Land Passive Egg Laying & Farm"},
                     {"command": "grouche", "description": "🍐 Grouche Mine Yield & Adsgram Hub"},
                     {"command": "lumeon", "description": "💎 LUM Miner Referral & Tasks Hub"},

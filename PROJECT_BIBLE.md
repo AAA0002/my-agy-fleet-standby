@@ -42,7 +42,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 7. **🌐 Elastic Fleet Scaling & Zero Hardcoding**:
    - **Never hardcode 20 accounts or static lengths**: Accounts can increase or decrease dynamically. All scripts, queries, rosters, and UIs must derive fleet size dynamically via `len(accounts)`, `fleet.length`, `accounts.json`, and Upstash Redis `fleet:tokens:*` keys.
 8. **🤖 Unified Auto-Farming Engine Architecture**:
-   - The auto farming engine (MRG, ATF, Victor's Company, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche Mine, LUM Miner, EarnVault) is a unified, modular execution core. Both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) leverage identical reliable bot connectors, cleanly distinguished solely by bot token and chat destination.
+   - The auto farming engine (ATF, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault) is a unified, modular execution core. Both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`) leverage identical reliable bot connectors, cleanly distinguished solely by bot token and chat destination.
 6. **🔗 Dual-Layer Referral Binding Architecture & Silent Farming**:
    - **Routine Silent Farming**: All 20 fleet accounts execute 24/7 autonomous farming exclusively through **Telegram Mini App REST APIs** (authenticating with cryptographically signed `tgWebAppData` extracted via `RequestAppWebViewRequest`). Routine bot chats remain 100% silent without chat clutter.
    - **Dual-Layer Initial Referral Binding**: To guarantee 100% recruit-to-master attribution across diverse bot backends, initial onboarding executes a synchronized two-layer protocol:
@@ -107,18 +107,19 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Master Directory Reference**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for complete technical architecture and cheat sheet.
 15. **🎯 Zero Fake Data & Ground-Truth 11-Bot Policy ("Strict 11-Bot Integrity")**:
     - The farming fleet exclusively operates across and monitors the **11 active legitimate bots**:
-      1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
-      2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
-      3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
-      4. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
-      5. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
-      6. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
-      7. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
-      8. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
+      1. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
+      2. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
+      3. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
+      4. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
+      5. 🤖 **AdxEarn AI** (`@AdxEarnAibot` / `api.adxearnai.xyz`)
+      6. 🐔 **Chicken Land** (`@ChickenLandBot` / `app8968434282.tgcloud.ai`)
+      7. 🍐 **Grouche Mine** (`@GRC_AirdrooBot` / `grouchemine.world`)
+      8. 💎 **LUM Miner** (`@lumeonminer_bot` / `lum-miner.gurmessa747.workers.dev`)
+      9. 🏦 **EarnVault** (`@EarnVaultApp_bot` / `eearnvault.top`)
       9. 🍐 **Grouche Mine** (`@GRC_AirdrooBot` / `https://grouchemine.world/`) — *Policy: 100% Social Task Completion, Daily Streak Claim, and TON Wallet Binding. Strict Zero-Spend Policy: NEVER buy miner packages; accumulate 100% of raw GRC/LNX balance.*
       10. 💎 **LUM Miner** (`@lumeonminer_bot` / `https://lum-miner.gurmessa747.workers.dev/`) — *Policy: Autonomous Master referral joining (`start_param=6727787768`), TON wallet qualification, community/YouTube tasks completion (+200 LUM total), and Master referral reward sweeps (+1,000 LUM per qualified referral).*
       11. 🏦 **EarnVault** (`@EarnVaultApp_bot` / `https://eearnvault.top/`) — *Policy: Firebase Custom Token auth exchange (`telegramAuth`), autonomous security gate solving (`startGate` + `confirmGate` waitMs polling loop) for daily check-in and cooldown claims, multi-network rewarded video ad watching (`getAdState` + `startAd` + `completeAd` across Monetag, Adsgram, Adsterra, GigaPub, QuickMoney), and partner task sweeps.*
-    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct or purged bots (`VyroDrop`, `Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AiLab`, `UltrawalletTrade`, `TRX Power`, `Finvora`, `Gold Keepers`, `EarnCraft`, `Art Airdrop`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Active mining pools comprise the 11 legitimate bots: **MRG Miner, ATF Miner, Victor's Company, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, and EarnVault**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+    - **Zero Fake / Zero Dead Bot Querying**: Truly defunct or purged bots (`MRG Miner`, `Victor's Company`, `VyroDrop`, `Astra Airdrop`, `LeafEarn`, `PumpkinEarn`, `Stones`, `AiLab`, `UltrawalletTrade`, `TRX Power`, `Finvora`, `Gold Keepers`, `EarnCraft`, `Art Airdrop`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Active mining pools comprise the 9 legitimate bots: **ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, and EarnVault**. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
     - **Cloudflare Edge 11-Bot Matrix Unification**: `ALLOWED_FLEET_BOTS` across Cloudflare Workers encompasses all 11 active protocols (`mrg`, `atf`, `victors`, `kynex`, `pepegram`, `adxearn`, `diggo`, `chickenland`, `grouchemine`, `lumeon`, `earnvault`). `sanitizeFleetTokensObject` preserves `diggo_jwt` and `victors_human_pass` alongside all WebApp initData hashes, ensuring 100% of accounts are farmed across all active pools during 15-minute cron triggers (`*/15 * * * *`).
 16. **🔄 24-Hour WebApp Token Lifetime & Autonomous Cloud Refresher**:
     - **Token Lifespan**: Telegram WebApp `initData` cryptographically expires after 24 hours (`auth_date` validation). Never allow tokens to age past 18 hours.

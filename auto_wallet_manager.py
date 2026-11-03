@@ -18,8 +18,6 @@ FULLY AUTONOMOUS FLEET ACCOUNT LIFECYCLE, WALLET PROVISIONING & BOT RECONCILER
      * ATF Miner: /miner/index.php?action=sync_wallet + start_mining
      * DiggoMiner: /api/ton/challenge + TonConnect 2.0 proof + /api/ton/bind
      * Grouche Mine: /api/users/wallet/connect + /api/mining/claim
-     * Victor's Company: /api/wallet/connect + unlock level 1 + /api/farming/start
-     * MRG Miner: /api/user/connect-wallet + /api/mining/start
      * Kynex Network: checks if STOPPED -> refills energy & calls startMining
 4. Background Self-Healing Watchdog:
    - Continuously auto-detects new accounts, resolves disconnected wallets,
@@ -684,20 +682,6 @@ async def connect_and_start_bot_wallets(acc_entry: dict, tokens: dict = None, se
                 logger.info(f"[{name}] 💎 Linked Grouche Mine TON wallet: {ton_addr[:12]}... & toggled active mining!")
             except Exception as e_grc:
                 logger.debug(f"[{name}] Grouche connect note: {e_grc}")
-
-        # 4. Victor's Company: Connect wallet, claim task, unlock level 1 miner
-        if tokens.get("victors_init_data"):
-            try:
-                v_init = tokens["victors_init_data"]
-                v_h = {"Content-Type": "application/json", "Authorization": f"tma {v_init}"}
-                await session.post("https://server.victors.company/api/wallet/connect", json={"address": ton_addr}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8))
-                await session.post("https://server.victors.company/api/tasks/claim", json={"taskId": "connect-wallet"}, headers=v_h, timeout=aiohttp.ClientTimeout(total=6))
-                await session.post("https://server.victors.company/api/levels/unlock", json={"level": 1}, headers=v_h, timeout=aiohttp.ClientTimeout(total=6))
-                await session.post("https://server.victors.company/api/farming/start", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=6))
-                res["connected"].append("Victor's")
-                res["started"].append("Victor's")
-            except Exception as e_vic:
-                logger.debug(f"[{name}] Victor's connect note: {e_vic}")
 
         # 5. Kynex Network: Check if mining status is STOPPED, refill energy & start mining
         if tokens.get("kynex_init_data"):

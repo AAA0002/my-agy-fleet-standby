@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Complete MRG & Victor's Eradication, Non-Blocking Farming Engine & Real-Time Dynamic OTP Hub (November 3, 2026)**:
+  - **Complete Removal of MRG Miner and Victor's Company**:
+    * Deleted all workflow files: `.github/workflows/mrg_turnstile_solver.yml`, `.github/workflows/victors_cloud_phone_tunnel.yml`, `.github/workflows/victors_sb_solver.yml`.
+    * Deleted all runner scripts: `mrg_turnstile_solver.py`, `setup_fleet_mrg_wallets.py`, `victors_arcade_solver.py`, `victors_cloud_phone_launcher.py`, `victors_sb_solver.py`, `bind_all_fleet_victors_wallets.py`, and archive scripts.
+    * Purged Upstash Redis: Deleted 42 `fleet:last_farm:mrg:*` and `fleet:last_farm:victors:*` history keys, and stripped all `mrg_init_data`, `mrg_token`, `victors_init_data`, `victors_token`, and `victors_human_pass` fields from `miniapp_tokens`, `fleet:accounts`, and `account:{uid}`.
+    * Purged all code references in `app.py`, `bot_registry.py`, `deploy_both_cf_workers.py`, `dashboard.html`, `public_admin/admin.html`, and `public/admin.html`.
+    * Fleet officially streamlined to the **9 active legitimate REST-only bots**: ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault.
+  - **Non-Blocking Cloud Fleet Farming Cycle Engine (`app.py`)**:
+    * Resolved critical stall where `run_cloud_fleet_farming_cycle` paused for 90s per account trying to extract MTProto tokens synchronously on `GLOBAL_MTPROTO_SEMAPHORE` before running the farming code.
+    * Converted token refreshes to non-blocking background tasks (`asyncio.create_task(...)`), allowing `farm_single_account_bots` to immediately execute all 9 active pools across all accounts in parallel (concurrency 6) with 0 delay.
+    * Added real-time dynamic progress updates: `LAST_FARM_RUN["farmed_count"]` increments and appends account results as each account finishes, enabling live polling on `/api/farm/status`.
+  - **Dynamic Real-Time OTP Hub & Instant Session Health Sync (`deploy_both_cf_workers.py`)**:
+    * Fixed ghost red dot lag on OTP Hub after account relink: `upstashSrem` now explicitly evicts `UPSTASH_MEMBERS_CACHE`, and `onAccountRelinkSuccess` clears all in-memory isolate caches (`UPSTASH_GET_CACHE.clear()`, `UPSTASH_MEMBERS_CACHE.clear()`, `memSessionHealth = null`, `memFleetAccounts = null`).
+    * In 2FA and code verification endpoints, `saveFleetAccountDynamic` and `onAccountRelinkSuccess` are awaited synchronously before responding to Telegram, ensuring the OTP menu displays green `🟢` with 0s latency.
+    * All fleet commands and menus updated from "11-Bot" to "9-Bot Harvest" and "9-Bot Autonomous Mining Hub".
+  - **Single Render Node Exclusivity**:
+    * Render Node 3 (Oregon, `srv-db437o3tqb8s73dt4erg`) is the exclusive running service; Node 1 (Singapore) and Node 2 (Frankfurt) remain suspended to eliminate multi-IP session duplication.
+
 - **⚡ End-to-End Autonomous Fleet Auto-Farming & Cloud Token Engine Overhaul (November 3, 2026)**:
   - **Auto-Farming Bot Execution Pipeline Optimization (`app.py`)**:
     * Diagnosed and fixed the root cause of fleet auto-farming timeouts: EarnVault (`_farm_earnvault`) ran a synchronous nested loop watching up to 10 rewarded ads for 11 seconds each (110s+), Chicken Land (`_farm_chickenland`) had a 25s inline sleep, and Grouche Mine (`_farm_grouchemine`) had an 11s sleep per task, causing accounts to exceed the 90s/180s timeouts.

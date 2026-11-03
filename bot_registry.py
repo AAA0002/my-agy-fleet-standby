@@ -14,20 +14,6 @@ automatically pick up new bots from this registry with ZERO per-account manual w
 from typing import Dict, List, Any
 
 ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
-    "mrg": {
-        "id": "mrg",
-        "name": "MRG Miner",
-        "bot_username": "mrgtoken_bot",
-        "bot_aliases": ["mrgtoken_bot", "mrgminerbot", 8862173167],
-        "master_ref_code": "ref_IRN1G3XD",
-        "app_url": "https://app.mrgtoken.xyz/",
-        "token_key": "mrg_init_data",
-        "short_names": ["app", "miniapp"],
-        "api_base": "https://api.mrgtoken.xyz",
-        "sponsor_channels": ["mrgminer", "mrgwithdrawal", "DurovKidney", "keepeye_app"],
-        "requires_turnstile": True,
-        "is_active": True,
-    },
     "atf": {
         "id": "atf",
         "name": "ATF Miner",
@@ -40,20 +26,6 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "api_base": "https://atfminers.asloni.online/api",
         "sponsor_channels": ["AI_TRADING_FOREX"],
         "requires_turnstile": False,
-        "is_active": True,
-    },
-    "victors": {
-        "id": "victors",
-        "name": "Victor's Company",
-        "bot_username": "VictorsCompanybot",
-        "bot_aliases": ["VictorsCompanyGame", 8943931170],
-        "master_ref_code": "ref_A20AA96F18",
-        "app_url": "https://app.victors.company/",
-        "token_key": "victors_init_data",
-        "short_names": ["app", "play"],
-        "api_base": "https://server.victors.company/api",
-        "sponsor_channels": ["VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "keepeye_app", "PickaxeEmpire"],
-        "requires_turnstile": True,
         "is_active": True,
     },
     "kynex": {

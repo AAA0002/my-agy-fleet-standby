@@ -37,9 +37,7 @@ CF_SECRET_KEY = os.getenv("CF_SECRET_KEY") or env.get("CF_SECRET_KEY", "")
 PRIMARY_EDGE_NODE = "https://restore-agy.agorameet.workers.dev"
 
 TARGET_BOTS = [
-    "mrg",
     "atf",
-    "victors",
     "kynex",
     "pepegram",
     "adxearn",
@@ -51,9 +49,7 @@ TARGET_BOTS = [
 ]
 
 TOKEN_KEYS = [
-    "mrg_init_data",
     "atf_init_data",
-    "victors_init_data",
     "kynex_init_data",
     "pepegram_init_data",
     "adxearn_init_data",
