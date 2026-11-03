@@ -1067,8 +1067,10 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - All fleet management, account re-linking, OTP code retrieval, and session operations execute 100% natively in Telegram chat via the on-screen PIN Pad and bot text commands.
 
 ### 4. Dynamic Session Health Synchronization & Active-Passive Edge Failback
-* **Dynamic Health State Machine**: Managed dynamically via Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 60s in-memory edge caching.
-* **1-Tap Re-link Auto-Promotion (`onAccountRelinkSuccess`)**: When an account session is re-linked via MTProto, its index is dynamically promoted from `revoked` to `healthy` across all edge nodes, immediately updating the OTP grid, fleet roster, and inspection screens.
+* **Dynamic Health State Machine**: Managed dynamically via Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 15s in-memory edge caching and automated eviction via `auto_wallet_manager.py`.
+* **Automated Revocation Auto-Purge (`ensure_account_complete`)**: Whenever an account is onboarded, saved, or verified with a valid session string, it is atomically removed from `fleet:revoked_sessions`, added to `fleet:healthy_sessions`, and its `fleet:revocation_reason:{idx}` key is permanently deleted.
+* **1-Tap Re-link Auto-Promotion (`onAccountRelinkSuccess`)**: When an account session is re-linked via MTProto, its index and user ID are dynamically promoted from `revoked` to `healthy` across all edge nodes, immediately updating the OTP grid, fleet roster, and inspection screens to green `🟢`.
+* **22-Account Fleet Scale**: Canonical registries, edge fallbacks (`DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`), and live states are fully synchronized for all 22 accounts.
 * **Resilient Multi-Layer Account Removal**: Deletions are mirrored across module RAM cache (`memDeletedAccounts`), Upstash Redis (`fleet:deleted_accounts`), and Cloudflare KV (`fleet_deleted_accounts`), ensuring that hitting Cloudflare KV daily free quotas never causes removed accounts to reappear or screens to stall.
 * **Render-to-Edge Failback Routing**: All outbound calls from Render nodes to Cloudflare Workers query Node 1 (`aaaai2.workers.dev`) first, immediately breaking upon receiving a 200 OK response. Standby nodes (Nodes 2-5) produce 0 scheduled KV writes and maintain cold zero-cost standby posture.
 

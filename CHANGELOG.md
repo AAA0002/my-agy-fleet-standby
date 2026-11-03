@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Root-Cause Elimination of Ghost Revocations & 22-Account Real-Time Health Synchronization (November 3, 2026)**:
+  - **Eliminated "Ghost Revocation" & Stuck Red Badges on Relinked Accounts**:
+    * Diagnosed user-reported issue where accounts (Accounts #14 Rohan Sharma `8727040932` and #21 Aaaa201 `8669217201`) continued showing red `🔴 Needs Re-link` badges on the Admin Bot (`@myagyai`) OTP & Relogin grid even after being relinked.
+    * Identified root cause: When Telethon encountered an invalid/stale session key, `sync_account_health_state()` pushed the account index into Redis set `fleet:revoked_sessions`. When the user re-authorized, the relink handlers saved the new account state but failed to atomically remove the index and user ID from `fleet:revoked_sessions` and delete `fleet:revocation_reason:{idx}`.
+    * Furthermore, `deploy_both_cf_workers.py` relied on `smR = await upstashSmembers("fleet:revoked_sessions")`, which preserved `'14'` and `'21'` indefinitely in edge isolate memory.
+  - **Automated Revocation Auto-Purge & Health Re-Assertion**:
+    * Enhanced `auto_wallet_manager.py`: added `upstash_smembers()`, `upstash_srem()`, `upstash_sadd()`, and `upstash_del()`.
+    * In `ensure_account_complete()`, added automatic eviction from `fleet:revoked_sessions` and `fleet:revocation_reason:{idx}` whenever an account entry has a valid session string.
+    * In `reconcile_all_fleet_accounts()`, switched Redis revocation lookup from `GET` (which failed on Redis Sets) to `SMEMBERS`, dynamically updating `fleet:live_state` with ground-truth health.
+    * In `deploy_both_cf_workers.py`:
+      - Added Account #22 (`AAA 22`, UID `9272631973`, phone `+8801732100769`) across `DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, and `KNOWN_PHONES_BY_INDEX` (all 3 definitions).
+      - In `saveFleetAccountDynamic()`, explicitly sets `session_revoked: false` and `status: "active"` and triggers `SREM fleet:revoked_sessions`.
+      - In `onAccountRelinkSuccess()`, added atomic `DEL fleet:revocation_reason:{numIdx}`.
+  - **Verified Edge Health & Telegram Gateway**:
+    * Deployed Node 4 (`https://restore-agy.agorameet.workers.dev`) handling `@myagyai` webhooks.
+    * Verified live endpoint: `total_accounts: 22`, `active: 22`, `revoked: 0`, `revoked_sessions: []`. All 22 account buttons now render green `🟢`.
+
 - **🤖 Fully Autonomous Account Lifecycle, 22-Account Auto-Reconciliation, Wallet Provisioning & Self-Updating Mesh (November 3, 2026)**:
   - **Eliminated Manual AI/Developer Intervention for Account Onboarding**:
     * Resolved the architectural limitation where newly added accounts (such as Account #22 `AAA 22` / `9272631973`, and Accounts #19 `Adil H` / #20 `Asaduzzaman Sarker`) required manual scripts or AI instructions to appear in fleet dashboards and connect bot wallets.

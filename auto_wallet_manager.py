@@ -106,6 +106,69 @@ def upstash_set(key: str, data: Any) -> bool:
         return False
 
 
+def upstash_srem(key: str, member: str) -> bool:
+    if not UPSTASH_TOKEN or not UPSTASH_URL:
+        return False
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/srem/{key}/{member}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            return True
+    except Exception as e:
+        logger.debug(f"Upstash SREM {key} {member} note: {e}")
+        return False
+
+
+def upstash_sadd(key: str, member: str) -> bool:
+    if not UPSTASH_TOKEN or not UPSTASH_URL:
+        return False
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/sadd/{key}/{member}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            return True
+    except Exception as e:
+        logger.debug(f"Upstash SADD {key} {member} note: {e}")
+        return False
+
+
+def upstash_del(key: str) -> bool:
+    if not UPSTASH_TOKEN or not UPSTASH_URL:
+        return False
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/del/{key}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            return True
+    except Exception as e:
+        logger.debug(f"Upstash DEL {key} note: {e}")
+        return False
+
+
+def upstash_smembers(key: str) -> List[str]:
+    if not UPSTASH_TOKEN or not UPSTASH_URL:
+        return []
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/smembers/{key}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            res = json.loads(r.read().decode("utf-8")).get("result")
+            if isinstance(res, list):
+                return [str(x) for x in res]
+            return []
+    except Exception as e:
+        logger.debug(f"Upstash SMEMBERS {key} note: {e}")
+        return []
+
+
 def load_json_file(path: str, default: Any = None) -> Any:
     if os.path.exists(path):
         try:
@@ -291,6 +354,14 @@ def ensure_account_complete(acc_entry: dict, all_accounts: list = None) -> dict:
     upstash_set(f"fleet:wallets_vault:index_{target_idx}", vault_payload)
     upstash_set(f"account:{uid_str}", acc_entry)
 
+    # Auto-clear revocation flags if valid session exists
+    if acc_entry.get("session_string") and not acc_entry.get("session_revoked"):
+        upstash_srem("fleet:revoked_sessions", str(target_idx))
+        upstash_srem("fleet:revoked_sessions", uid_str)
+        upstash_sadd("fleet:healthy_sessions", str(target_idx))
+        upstash_sadd("fleet:healthy_sessions", uid_str)
+        upstash_del(f"fleet:revocation_reason:{target_idx}")
+
     return acc_entry
 
 
@@ -352,7 +423,7 @@ def reconcile_all_fleet_accounts() -> List[Dict[str, Any]]:
     upstash_set("fleet:accounts", reconciled)
 
     # 6. Regenerate and update fleet:live_state in Redis
-    revoked_raw = upstash_get("fleet:revoked_sessions") or []
+    revoked_raw = upstash_smembers("fleet:revoked_sessions")
     revoked_set = set(str(x) for x in revoked_raw) if isinstance(revoked_raw, list) else set()
 
     state_accounts = []

@@ -2961,7 +2961,8 @@ const DEFAULT_FLEET_ACCOUNTS = [
   { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
   { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
   { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-  { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" }
+  { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" },
+  { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" }
 ];
 
 const KNOWN_PHONES = {
@@ -2985,7 +2986,8 @@ const KNOWN_PHONES = {
   "8975442879": "+8801839716506",
   "8937908003": "+8801804723069",
   "8609131528": "+8801312863569",
-  "8669217201": "+8801913962342"
+  "8669217201": "+8801913962342",
+  "9272631973": "+8801732100769"
 };
 
 const KNOWN_PHONES_BY_INDEX = {
@@ -3009,7 +3011,8 @@ const KNOWN_PHONES_BY_INDEX = {
   18: "+8801839716506",
   19: "+8801804723069",
   20: "+8801312863569",
-  21: "+8801913962342"
+  21: "+8801913962342",
+  22: "+8801732100769"
 };
 
 const cleanName = (acc, idx) => {
@@ -3497,7 +3500,8 @@ export default {
       18: "+8801839716506",
       19: "+8801804723069",
       20: "+8801312863569",
-      21: "+8801913962342"
+      21: "+8801913962342",
+      22: "+8801732100769"
     };
 
     const fetchFleetOtp = async (targetIdx) => {
@@ -6296,7 +6300,8 @@ fi
           18: "+8801839716506",
           19: "+8801804723069",
           20: "+8801312863569",
-          21: "+8801913962342"
+          21: "+8801913962342",
+          22: "+8801732100769"
         };
 
         const DEFAULT_FLEET_ACCOUNTS = [
@@ -6320,7 +6325,8 @@ fi
           { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
           { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
           { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-          { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" }
+          { index: 21, name: "Aaaa201", user_id: 8669217201, phone: "+8801913962342" },
+          { index: 22, name: "AAA", user_id: 9272631973, phone: "+8801732100769" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
@@ -6496,6 +6502,7 @@ fi
                 ...curList[existingIdx],
                 ...accData,
                 session_string: accData.session_string || curList[existingIdx].session_string,
+                session_revoked: false,
                 status: "active"
               };
             } else {
@@ -6671,6 +6678,7 @@ fi
           memSessionHealth.lastCheck = Date.now();
           ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(numIdx)));
           ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(numIdx)));
+          ctx.waitUntil(upstashDel("fleet:revocation_reason:" + numIdx));
           if (uidStr) {
             ctx.waitUntil(upstashSrem("fleet:revoked_sessions", uidStr));
             ctx.waitUntil(upstashSadd("fleet:healthy_sessions", uidStr));
