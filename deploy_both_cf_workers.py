@@ -4271,10 +4271,10 @@ fi
                 hasSession = true;
               }
             }
-            const isRev = revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || Boolean(a.session_revoked);
+            const isRev = !hasSession || revokedSet.has(String(a.index)) || (uidStr && revokedSet.has(uidStr)) || Boolean(a.session_revoked);
             a.session_revoked = isRev;
             a.status = isRev ? "Needs Re-link" : "Active";
-            a.mining_active = hasTokens;
+            a.mining_active = hasTokens && !isRev;
             a.health_icon = isRev ? "🔴" : "🟢";
           });
           stateObj.accounts = accs;
@@ -6678,8 +6678,9 @@ fi
           const targetAccs = (accs && accs.length > 0) ? accs : DEFAULT_FLEET_ACCOUNTS;
 
           targetAccs.forEach((acc) => {
+            const hasValidSession = Boolean(acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 20);
             const isExplicitRevoked = revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id)) || Boolean(acc.session_revoked);
-            const isRev = isExplicitRevoked;
+            const isRev = !hasValidSession || isExplicitRevoked;
             if (isRev) {
               revokedIndices.add(acc.index);
               revokedDetails.push({
@@ -6687,7 +6688,7 @@ fi
                 user_id: acc.user_id,
                 name: acc.name,
                 phone: acc.phone,
-                reason: "Session Invalidation (AUTH_KEY_DUPLICATED or Revoked)"
+                reason: !hasValidSession ? "Missing MTProto Session (Needs Login)" : "Session Invalidation (AUTH_KEY_DUPLICATED or Revoked)"
               });
             } else {
               healthyIndices.add(acc.index);
@@ -6758,7 +6759,8 @@ fi
               const name = cleanName(a, i + cIdx);
               const shortName = name.split(" ")[0];
               const isHost = String(a.user_id) === "6727787768";
-              const isRev = revokedSet.has(idx);
+              const hasSession = Boolean(a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20);
+              const isRev = !hasSession || revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id))) || Boolean(a.session_revoked);
               const statusIcon = isRev ? "🔴" : "🟢";
               const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
               return {

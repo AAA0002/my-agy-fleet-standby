@@ -34,7 +34,8 @@ except ImportError:
 
 # Constants & Configuration
 CHANNEL_USERNAME = "ChickenLandCodes"
-CHANNEL_ID = 4433995185
+CHANNEL_ID = -1004433995185
+RAW_CHANNEL_ID = 4433995185
 CHANNEL_URL = "https://t.me/s/ChickenLandCodes"
 RPC_URL = "https://app8968434282.tgcloud.ai/api/rpc"
 
@@ -323,11 +324,21 @@ async def redeem_single_account(
                 status_code = params.get("code") or data.get("description", "ERROR")
                 result["code_status"] = status_code
 
-                if "ALREADY" in status_code or "claimed" in str(data.get("description", "")).lower():
+                if (
+                    status_code in ("PROMO_USED", "ALREADY_CLAIMED", "ALREADY_USED")
+                    or "already" in status_code.lower()
+                    or "used" in status_code.lower()
+                    or "claimed" in str(data.get("description", "")).lower()
+                ):
                     if uid not in ACCOUNT_CLAIMED_CODES:
                         ACCOUNT_CLAIMED_CODES[uid] = set()
                     ACCOUNT_CLAIMED_CODES[uid].add(code)
-                elif status_code == "PROMO_FULL":
+                elif (
+                    status_code == "PROMO_FULL"
+                    or "full" in status_code.lower()
+                    or "limit" in status_code.lower()
+                    or "exhaust" in status_code.lower()
+                ):
                     EXHAUSTED_CODES.add(code)
 
     except Exception as e:
@@ -514,6 +525,9 @@ def fetch_channel_codes() -> List[Dict[str, Any]]:
     except Exception:
         return []
 
+ACTIVE_TELETHON_CLIENT = None
+ACTIVE_CHANNEL_ENTITY = None
+
 # =====================================================================
 # REAL-TIME TELETHON MTPROTO CHANNEL EVENT LISTENER (0ms PUSH SOCKET)
 # =====================================================================
@@ -523,6 +537,7 @@ async def start_mtproto_listener():
     Listens 24/7 to @ChickenLandCodes. The exact millisecond Telegram publishes or edits
     a post with a promo code, this handler triggers the sub-second parallel fleet burst!
     """
+    global ACTIVE_TELETHON_CLIENT, ACTIVE_CHANNEL_ENTITY
     try:
         from telethon import TelegramClient, events
         from telethon.sessions import StringSession
@@ -531,18 +546,24 @@ async def start_mtproto_listener():
         print("[MTProto Sniper] Telethon not installed; running in HTTP poller mode.")
         return
 
+    accounts = []
     base_dir = os.path.dirname(os.path.abspath(__file__))
     accs_file = os.path.join(base_dir, "accounts.json")
-    if not os.path.exists(accs_file):
-        print("[MTProto Sniper] accounts.json not found.")
-        return
+    if os.path.exists(accs_file):
+        try:
+            with open(accs_file, "r") as f:
+                accounts = json.load(f)
+        except Exception:
+            pass
 
-    try:
-        with open(accs_file, "r") as f:
-            accounts = json.load(f)
-    except Exception as e:
-        print(f"[MTProto Sniper] Failed to read accounts: {e}")
-        return
+    # Cloud Fallback: Load directly from Upstash Redis fleet:accounts if local file missing
+    if not accounts and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            res_r = redis_command("GET", "fleet:accounts")
+            if res_r:
+                accounts = json.loads(res_r) if isinstance(res_r, str) else res_r
+        except Exception:
+            pass
 
     # Choose Account #2 (Nancy, 8881914294) to avoid session conflicts with Master Account admin bot
     listener_acc = None
@@ -552,7 +573,7 @@ async def start_mtproto_listener():
             break
 
     if not listener_acc or not listener_acc.get("session_string"):
-        print("[MTProto Sniper] No active listener session string found.")
+        print("[MTProto Sniper] No active listener session string found in local files or Redis.")
         return
 
     sess_str = listener_acc["session_string"]
@@ -572,6 +593,7 @@ async def start_mtproto_listener():
             print(f"[MTProto Sniper] 🟢 Connected: {me.first_name} ({me.id})")
 
             # Resolve channel entity and verify joined
+            entity = None
             try:
                 entity = await client.get_entity(CHANNEL_USERNAME)
                 await client(JoinChannelRequest(entity))
@@ -579,9 +601,27 @@ async def start_mtproto_listener():
             except Exception as e:
                 print(f"[MTProto Sniper] Channel resolve notice: {e}")
 
+            ACTIVE_TELETHON_CLIENT = client
+            ACTIVE_CHANNEL_ENTITY = entity
+
+            valid_chat_ids = {CHANNEL_ID, RAW_CHANNEL_ID, -RAW_CHANNEL_ID}
+            if entity:
+                valid_chat_ids.add(entity.id)
+                valid_chat_ids.add(-entity.id)
+                try:
+                    from telethon import utils
+                    valid_chat_ids.add(utils.get_peer_id(entity))
+                except Exception:
+                    pass
+
             # Define instant push handler for NEW messages
-            @client.on(events.NewMessage(chats=[CHANNEL_USERNAME, CHANNEL_ID]))
+            @client.on(events.NewMessage)
             async def on_new_promo_message(event):
+                cid = event.chat_id
+                uname = (getattr(event.chat, 'username', '') or '').lower()
+                if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
+                    return
+
                 raw = event.raw_text or (event.message.message if event.message else "") or ""
                 parsed = extract_code_from_text(raw)
                 if not parsed:
@@ -604,8 +644,13 @@ async def start_mtproto_listener():
                     print(f"✅ [MTProto Sniper] Burst complete for {code}: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins) in {elapsed}s")
 
             # Define instant push handler for EDITED messages
-            @client.on(events.MessageEdited(chats=[CHANNEL_USERNAME, CHANNEL_ID]))
+            @client.on(events.MessageEdited)
             async def on_edited_promo_message(event):
+                cid = event.chat_id
+                uname = (getattr(event.chat, 'username', '') or '').lower()
+                if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
+                    return
+
                 raw = event.raw_text or (event.message.message if event.message else "") or ""
                 parsed = extract_code_from_text(raw)
                 if not parsed:
@@ -638,12 +683,36 @@ async def start_http_poller(poll_interval: float = 3.0):
     """
     High-Frequency Async Poller:
     Polls the channel feed every 2.5-3.5 seconds with cache-busting as secondary backup.
+    When Telethon client is connected, additionally polls MTProto directly without CDN cache.
     """
-    print(f"[HTTP Sniper] 🔄 Secondary Async HTTP Poller initialized (interval {poll_interval}s)...")
+    print(f"[HTTP Sniper] 🔄 Secondary Async Poller initialized (interval {poll_interval}s)...")
     connector = aiohttp.TCPConnector(limit=10, keepalive_timeout=30)
     async with aiohttp.ClientSession(connector=connector) as session:
         while True:
             try:
+                # 1. Direct MTProto Channel Polling if active Telethon client is available
+                if ACTIVE_TELETHON_CLIENT and ACTIVE_CHANNEL_ENTITY:
+                    try:
+                        msgs = await ACTIVE_TELETHON_CLIENT.get_messages(ACTIVE_CHANNEL_ENTITY, limit=3)
+                        for m in msgs:
+                            raw = m.raw_text or (m.message if m else "") or ""
+                            parsed = extract_code_from_text(raw)
+                            if parsed:
+                                code = parsed["code"]
+                                is_ex = parsed["is_exhausted"]
+                                if is_ex:
+                                    SEEN_CODES.add(code)
+                                    EXHAUSTED_CODES.add(code)
+                                    continue
+                                if code not in CLAIMED_CODES and not is_code_claimed(code):
+                                    print(f"🔥 [MTProto Poller] Fresh active code: {code}! Triggering fleet burst...")
+                                    t0 = time.time()
+                                    rep = await snipe_promo_fleet(code)
+                                    print(f"✅ [MTProto Poller] Burst: {rep['claimed_count']}/{rep['total_accounts']} in {round(time.time() - t0, 3)}s")
+                    except Exception:
+                        pass
+
+                # 2. HTTP Channel Web Scraper Fallback
                 codes = await fetch_channel_codes_async(session)
                 for it in codes:
                     code = it["code"]

@@ -525,7 +525,8 @@ def reconcile_all_fleet_accounts() -> List[Dict[str, Any]]:
         uid_s = str(a.get("user_id"))
         idx = a.get("index")
         has_tokens = bool(tokens_map.get(uid_s) or a.get("miniapp_tokens_synced") or a.get("kynex_init_data"))
-        is_revoked = str(idx) in revoked_set or uid_s in revoked_set
+        has_sess = bool(a.get("session_string") and len(str(a.get("session_string")).strip()) > 20)
+        is_revoked = (str(idx) in revoked_set) or (uid_s in revoked_set) or (not has_sess)
         st_entry = dict(a)
         st_entry.update({
             "status": "Needs Re-link" if is_revoked else "Active",

@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Ground-Truth Dynamic Session Health Audit & Sub-Second Sniper Hardening (November 3, 2026)**:
+  - **Eradication of Fake Green Dots in OTP & Relogin Menu (`deploy_both_cf_workers.py`)**:
+    * Resolved critical UI flaw where Account #21 (and #14, #19, #20) displayed green `🟢` in the Admin Bot (`@myagyai`) OTP & Relogin grid even when their sessions were missing or invalidated with `AuthKeyDuplicatedError`.
+    * Root Cause: `getSessionHealthState()` and `buildOtpMenuKeyboard()` previously relied exclusively on `revokedSet.has(idx)` against Upstash Redis `fleet:revoked_sessions`. When the Redis set was empty or not populated, all accounts defaulted to `🟢`.
+    * Upgraded logic: Enforced explicit `hasValidSession = Boolean(acc.session_string && acc.session_string.trim().length > 20)` pre-check across all keyboard builders, `ensureFullFleet()`, and live health state evaluators.
+    * Verified ground truth across all 22 accounts: Exactly 18 accounts are live, verified, and authorized (`🟢`), and exactly 4 accounts (#14 Rohan, #19 Adil, #20 Asaduzzaman, #21 Aaaa201) are in needs relogin / login status (`🔴`).
+    * Deployed live to Cloudflare Worker Node 4 (`restore-agy.agorameet.workers.dev`).
+  - **Resolution of `too many values to unpack (expected 3, got 4)` Exception (`app.py`, `auto_wallet_manager.py`)**:
+    * Fixed tuple unpacking mismatch in `verify_login_code` where `find_any_existing_account_wallets()` returns a 4-tuple `(idx, wallets, name, email)` but callers unpacked 3 items.
+    * Live on Render Node 3 (Oregon) deploy `dep-dbl00dbncjis73fg9co0` — relinking Account #21 (`+8801913962342`) now completes with clean wallet and state synchronization.
+  - **Zero-Latency Chicken Land Promo Code Sniper Architecture (`chickenland_promo_sniper.py`)**:
+    * **Telethon MTProto Chat Filter Rectification**: Fixed `CHANNEL_ID = -1004433995185` and `RAW_CHANNEL_ID = 4433995185` matching in `start_mtproto_listener()`. Previously, Telethon event filters compared `msg.chat_id` (`-1004433995185`) against the positive integer `4433995185`, silently preventing push callbacks from firing.
+    * **Direct MTProto Poller (Bypassing Web CDN Lag)**: The secondary poller loop now queries `client.get_messages(entity, limit=3)` directly from Telegram datacenters every 1.5s, eliminating the 60–180s caching lag of public Telegram web previews (`t.me/s/`).
+    * **Cloud-First Account Fallback**: Updated listener startup to load account sessions directly from Upstash Redis `fleet:accounts` if `accounts.json` is absent on ephemeral cloud containers.
+    * **`PROMO_USED` & `PROMO_FULL` Handling**: Added native recognition for Chicken Land's `PROMO_USED` response to record claimed status in per-user Redis sets (`chickenland:claimed:{uid}`), and `PROMO_FULL` to track exhausted codes.
+
 - **🐔 Chicken Land Dual-Engine Sub-Second Promo Sniper Upgrade & Zero-Latency Push Architecture (November 3, 2026)**:
   - **Root Cause Resolution for Missed Drop (`CLY2EWW6LE`)**:
     * Diagnosed why `CLY2EWW6LE` (1,000 coins, limited to first 100 players) was missed at 9:12 PM:
