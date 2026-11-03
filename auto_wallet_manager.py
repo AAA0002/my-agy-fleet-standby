@@ -144,13 +144,12 @@ def turso_get(key: str) -> Any:
                     val_str = rows[0][0]["value"]
                     val = val_str
                     while isinstance(val, str):
-                        s_trimmed = val.strip()
-                        if (s_trimmed.startswith("{") and s_trimmed.endswith("}")) or (s_trimmed.startswith("[") and s_trimmed.endswith("]")):
-                            try:
-                                val = json.loads(val)
-                            except Exception:
+                        try:
+                            loaded = json.loads(val)
+                            if loaded == val:
                                 break
-                        else:
+                            val = loaded
+                        except Exception:
                             break
                     return val
             return None
@@ -171,13 +170,12 @@ def upstash_get(key: str) -> Any:
                 res = json.loads(r.read().decode("utf-8"))["result"]
                 val = res
                 while isinstance(val, str):
-                    s_trimmed = val.strip()
-                    if (s_trimmed.startswith("{") and s_trimmed.endswith("}")) or (s_trimmed.startswith("[") and s_trimmed.endswith("]")):
-                        try:
-                            val = json.loads(val)
-                        except Exception:
+                    try:
+                        loaded = json.loads(val)
+                        if loaded == val:
                             break
-                    else:
+                        val = loaded
+                    except Exception:
                         break
         except Exception as e:
             logger.debug(f"Upstash GET {key} note: {e}")
@@ -186,13 +184,12 @@ def upstash_get(key: str) -> Any:
     if val is None:
         val = turso_get(key)
     while isinstance(val, str):
-        s_trimmed = val.strip()
-        if (s_trimmed.startswith("{") and s_trimmed.endswith("}")) or (s_trimmed.startswith("[") and s_trimmed.endswith("]")):
-            try:
-                val = json.loads(val)
-            except Exception:
+        try:
+            loaded = json.loads(val)
+            if loaded == val:
                 break
-        else:
+            val = loaded
+        except Exception:
             break
     return val
 

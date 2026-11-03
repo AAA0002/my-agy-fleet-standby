@@ -359,11 +359,41 @@ async def sync_account_health_state(account_idx: int, is_healthy: bool, reason: 
                 await s.post(f"{UPSTASH_URL}/sadd/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
                 await s.post(f"{UPSTASH_URL}/srem/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
                 await s.post(f"{UPSTASH_URL}/del/fleet:revocation_reason:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                await s.post(f"{UPSTASH_URL}/del/fleet:alert_sent:revoked:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
             else:
                 await s.post(f"{UPSTASH_URL}/sadd/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
                 await s.post(f"{UPSTASH_URL}/srem/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
                 if reason:
                     await s.post(f"{UPSTASH_URL}/set/fleet:revocation_reason:{idx_str}?ex=86400", data=reason, headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                # Dispatch proactive Telegram alert to Admin channels
+                dedup_key = f"fleet:alert_sent:revoked:{idx_str}"
+                try:
+                    async with s.get(f"{UPSTASH_URL}/get/{dedup_key}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2)) as r_chk:
+                        is_sent = False
+                        if r_chk.status == 200:
+                            j_chk = await r_chk.json()
+                            is_sent = bool(j_chk.get("result"))
+                    if not is_sent and REPORT_BOT_TOKEN:
+                        await s.post(f"{UPSTASH_URL}/set/{dedup_key}?ex=21600", data="1", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                        alert_msg = (
+                            f"🚨 <b>Fleet Session Revocation Notice</b> 🔴\n\n"
+                            f"• <b>Account:</b> #{account_idx}\n"
+                            f"• <b>Reason:</b> <code>{reason or 'Session expired / revoked'}</code>\n"
+                            f"• <b>Action:</b> Account needs to be re-linked.\n\n"
+                            f"👉 Open <b>MY AGY AI</b> bot (@myagyai) and tap <b>🔑 OTP &amp; Relogin</b> to relink."
+                        )
+                        for target_chat in ["-1004358687850", REPORT_CHAT_ID]:
+                            if target_chat:
+                                try:
+                                    await s.post(
+                                        f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage",
+                                        json={"chat_id": target_chat, "text": alert_msg, "parse_mode": "HTML"},
+                                        timeout=aiohttp.ClientTimeout(total=3)
+                                    )
+                                except Exception:
+                                    pass
+                except Exception as e_alert:
+                    logger.debug(f"[Health Sync] Alert dispatch note: {e_alert}")
     except Exception as e:
         logger.debug(f"[Health Sync] Failed for #{account_idx}: {e}")
 

@@ -433,6 +433,14 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **100% Eradication of Defunct Bots**: Completely deleted orphaned functions `sweep_mrg_tasks` and `sweep_victors_tasks` from `finish_all_fleet_sidetasks.py`, purged dead solver imports, aligned `app.py` to `FLEET_24_SET`, and updated all status cards to strictly reflect the 9 active legitimate bots.
     - **Autonomous Cloud 9-Bot Auto-Farming**: Live verification on Render Node 3 confirms all 24 accounts actively running non-blocking farming cycles across all 9 bots (ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
 
+55. **Instant Relink Status Display, 24-Account Referral Verification & Proactive Telegram Revocation Alerts (November 3, 2026)**:
+    - **Root Cause & Resolution for Post-Relink Red Status**: Discovered that `buildOtpMenuKeyboard` and `getSessionHealthState()` enforced `!hasSession` check which evaluated to `true` whenever raw session strings were omitted from lightweight database entries or KV caches, falsely rendering relinked accounts with red indicator (🔴). Refactored status evaluation to cross-reference live Upstash Redis sets (`healthyRawSet` vs `revokedRawSet`), guaranteeing newly relinked accounts immediately display green (`🟢`).
+    - **Edge Cache API Purge on Relink**: Added Cloudflare Edge Cache API (`caches.default.delete`) purge in `onAccountRelinkSuccess` across all worker nodes for `fleet:accounts`, `fleet:healthy_sessions`, `fleet:revoked_sessions`, and `fleet:live_state`.
+    - **Proactive Telegram Revocation Alerts**: Upgraded `sync_account_health_state()` in `app.py` to dispatch instant alert notifications to the Admin Notification Channel (`-1004358687850`) and Commander Arif (`6727787768`) via `REPORT_BOT_TOKEN` when an MTProto session is revoked or unauthorized, with 6-hour deduplication and auto-clear upon relink.
+    - **Complete Referral Audit (24 Accounts Across 9 Bots)**: Cryptographically verified that 100% of all 23 worker accounts (#2 through #24) possess active WebApp tokens and valid referral binding to Master Host `6727787768` (and `12668` for Chicken Land, `ref_4088138f11effe8eef4b86ff` for Diggo).
+    - **Master Fleet Reconciliation**: Executed `auto_wallet_manager.reconcile_all_fleet_accounts()` across all 24 accounts, preserving 5/5 multi-chain non-custodial wallets (TON, EVM, TRON, Solana, BTC) across `accounts.json`, Upstash `fleet:accounts`, and `fleet:live_state`.
+    - **Zero-Error Deployments**: Re-deployed Node 4 (`https://restore-agy.agorameet.workers.dev`) and synchronized bot commands, menus, and webhook.
+
 ---
 
 ## 📂 7. Key File Index

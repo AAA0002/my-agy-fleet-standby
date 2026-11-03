@@ -2699,7 +2699,14 @@ const getFleetAccounts = async (forceFresh = false, customEnv = null) => {
   try {
     const upAccs = await upstashGet("fleet:accounts", 0);
     if (upAccs) {
-      const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+      let parsedAccs = upAccs;
+      while (typeof parsedAccs === "string") {
+        try {
+          const nxt = JSON.parse(parsedAccs);
+          if (nxt === parsedAccs) break;
+          parsedAccs = nxt;
+        } catch (_) { break; }
+      }
       if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
         accounts = parsedAccs.map(a => Object.assign({}, a));
       }
@@ -6018,7 +6025,14 @@ fi
           try {
             const upAccs = await upstashGet("fleet:accounts", 0);
             if (upAccs) {
-              const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+              let parsedAccs = upAccs;
+              while (typeof parsedAccs === "string") {
+                try {
+                  const nxt = JSON.parse(parsedAccs);
+                  if (nxt === parsedAccs) break;
+                  parsedAccs = nxt;
+                } catch (_) { break; }
+              }
               if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
                 accounts = parsedAccs.map(a => Object.assign({}, a));
               }
@@ -6278,7 +6292,16 @@ fi
             }
           } catch (_) {}
 
+          let healthyRaw = [];
+          try {
+            const smH = await upstashSmembers("fleet:healthy_sessions", 5000);
+            if (Array.isArray(smH) && smH.length > 0) {
+              healthyRaw = smH.map(String);
+            }
+          } catch (_) {}
+
           const revokedRawSet = new Set(revokedRaw);
+          const healthyRawSet = new Set(healthyRaw);
           const revokedIndices = new Set();
           const healthyIndices = new Set();
           const revokedDetails = [];
@@ -6287,12 +6310,15 @@ fi
           const targetAccs = (accs && accs.length > 0) ? accs : DEFAULT_FLEET_ACCOUNTS;
 
           targetAccs.forEach((acc) => {
+            const idxStr = String(acc.index);
+            const uidStr = String(acc.user_id || "");
             const hasValidSession = Boolean(
               (acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 20) ||
               (acc.session && typeof acc.session === "string" && acc.session.trim().length > 20)
             );
-            const isExplicitRevoked = acc.session_revoked === true || (!hasValidSession && (revokedRawSet.has(String(acc.index)) || revokedRawSet.has(String(acc.user_id))));
-            const isRev = !hasValidSession || isExplicitRevoked;
+            const isExplicitRevoked = acc.session_revoked === true || revokedRawSet.has(idxStr) || (uidStr && revokedRawSet.has(uidStr));
+            const isExplicitHealthy = healthyRawSet.has(idxStr) || (uidStr && healthyRawSet.has(uidStr));
+            const isRev = isExplicitRevoked || (!isExplicitHealthy && !hasValidSession && acc.session_revoked !== false);
             if (isRev) {
               revokedIndices.add(acc.index);
               revokedDetails.push({
@@ -6300,7 +6326,7 @@ fi
                 user_id: acc.user_id,
                 name: acc.name,
                 phone: acc.phone,
-                reason: !hasValidSession ? "Missing MTProto Session (Needs Login)" : "Session Invalidation (AUTH_KEY_DUPLICATED or Revoked)"
+                reason: isExplicitRevoked ? "Session Invalidation (AUTH_KEY_DUPLICATED or Revoked)" : "Missing MTProto Session (Needs Login)"
               });
             } else {
               healthyIndices.add(acc.index);
@@ -6345,6 +6371,13 @@ fi
             await upstashSadd("fleet:healthy_sessions", uidStr);
             await upstashDel("fleet:revocation_reason:" + uidStr);
           }
+          if (typeof caches !== "undefined" && caches.default) {
+            try {
+              for (const k of ["fleet:accounts", "fleet:healthy_sessions", "fleet:revoked_sessions", "fleet:live_state", "fleet:status"]) {
+                caches.default.delete(`https://edge-cache.internal/${encodeURIComponent(k)}`).catch(() => {});
+              }
+            } catch (_) {}
+          }
         };
 
         const renderMainMenuText = async (dhakaTime) => {
@@ -6378,11 +6411,13 @@ fi
               const name = cleanName(a, i + cIdx);
               const shortName = name.split(" ")[0];
               const isHost = String(a.user_id) === "6727787768";
-              const hasSession = Boolean(
+              const idxStr = String(idx);
+              const uidStr = a.user_id ? String(a.user_id) : "";
+              const hasExplicitSession = Boolean(
                 (a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20) ||
                 (a.session && typeof a.session === "string" && a.session.trim().length > 20)
               );
-              const isRev = !hasSession || a.session_revoked === true || revokedSet.has(idx) || revokedSet.has(String(idx)) || (a.user_id && revokedSet.has(String(a.user_id)));
+              const isRev = a.session_revoked === true || revokedSet.has(idx) || revokedSet.has(idxStr) || (uidStr && revokedSet.has(uidStr));
               const statusIcon = isRev ? "🔴" : "🟢";
               const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
               return {

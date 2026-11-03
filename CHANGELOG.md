@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Instant Relink Status Update, Master Referral Audit Across 24 Accounts, and Proactive Telegram Session Alerts (November 3, 2026)**:
+  - **Dynamic Relink UI Bug Resolution (`deploy_both_cf_workers.py`)**:
+    * Identified root cause of newly authenticated accounts displaying red (🔴) in OTP & Relogin Hub: `buildOtpMenuKeyboard` and `getSessionHealthState()` previously enforced `!hasSession` check which evaluated to `true` whenever session strings were omitted from lightweight database queries or KV caches.
+    * Refactored health status evaluation to strictly cross-reference live Upstash Redis sets: `healthyRawSet` (`fleet:healthy_sessions`) vs `revokedRawSet` (`fleet:revoked_sessions`). Relinked accounts now immediately render green (`🟢`) upon completion of OTP/2FA verification.
+    * Added Cloudflare Edge Cache API (`caches.default.delete`) purge in `onAccountRelinkSuccess` for `fleet:accounts`, `fleet:healthy_sessions`, `fleet:revoked_sessions`, and `fleet:live_state`, eliminating stale edge cache reads across all workers.
+    * Added recursive string unpacking loop in `getFleetAccounts()` within `deploy_both_cf_workers.py` so double-serialized JSON strings from Upstash are parsed directly into valid account objects.
+  - **Proactive Session Revocation Telegram Alerts (`app.py`)**:
+    * Upgraded `sync_account_health_state()` in `app.py`: When a session is invalidated (e.g. `AuthKeyUnregisteredError`, `AuthKeyDuplicatedError`, or unauthorized), the engine now dispatches an immediate alert card to the Admin Notification Channel (`-1004358687850`) and Commander Arif (`6727787768`) via `REPORT_BOT_TOKEN`.
+    * Implemented a 6-hour Redis deduplication window (`fleet:alert_sent:revoked:{idx}`) to prevent alert floods while ensuring immediate visibility when an account requires attention.
+    * When an account is re-authenticated, the deduplication flag is cleared automatically so future warnings trigger without delay.
+  - **Cryptographic Master Referral Audit Across All 24 Accounts**:
+    * Ran automated audit script validating referral bindings across all 24 fleet accounts for the 9 active legitimate bots: ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, and EarnVault.
+    * Verified 100% of all 23 worker accounts (#2 through #24) possess valid WebApp tokens with referral parameters bound directly to Master Host UID `6727787768` (and `12668` for Chicken Land, `ref_4088138f11effe8eef4b86ff` for Diggo).
+  - **Master Fleet Reconciliation & Non-Custodial Multi-Chain Wallets (`auto_wallet_manager.py`)**:
+    * Executed `auto_wallet_manager.reconcile_all_fleet_accounts()` across all 24 fleet accounts.
+    * All 24 accounts verified with 5/5 distinct non-custodial multi-chain wallets (TON, EVM/BSC, TRON, Solana, BTC) generated, preserved, and synchronized to `accounts.json`, Upstash `fleet:accounts`, and `fleet:live_state`.
+  - **Seamless New Account Dynamic Onboarding**:
+    * Verified dynamic onboarding slot allocation: sending a new phone number to the bot dynamically allocates the next sequential slot (e.g. Account #25), sends the MTProto verification code via Render Node 3, provisions 5-chain wallets, and automatically binds master referrals.
+  - **Cloudflare Edge Deployment**:
+    * Deployed updated edge worker to Node 4 (`https://restore-agy.agorameet.workers.dev`) with active cron trigger (`*/15 * * * *`), synced bot commands, menu buttons, and webhooks.
+
 - **⚡ Complete 9-Bot Auto-Farming System Verification, Persistent Reply Keyboard Refresh & Zero Dead-Bot Cleanup (November 3, 2026)**:
   - **Full Ground-Truth MTProto Audit Across All 24 Fleet Accounts**:
     * Executed direct cryptographic MTProto authorization checks across all 24 fleet accounts via active StringSessions.
