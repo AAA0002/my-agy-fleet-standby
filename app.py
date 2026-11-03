@@ -2269,9 +2269,8 @@ async def autonomous_fleet_ad_farmer_loop():
 # =====================================================================
 async def chickenland_promo_watcher_loop():
     """
-    Autonomous 24/7 promo code sniffer for Chicken Land (@ChickenLandCodes).
-    Continuously monitors public channel drops and executes sub-second
-    aiohttp parallel redemptions across all fleet accounts.
+    Autonomous 24/7 Chicken Land Dual-Engine Sub-Second Promo Code Sniper (Cloud-First).
+    Combines 0ms MTProto Push Socket Listener (Telethon) with 2.5s Non-Blocking Async HTTP Poller.
     """
     # Only run continuous watcher if this node is primary coordinator
     is_active = (await is_this_node_active()) or IS_PRIMARY_HOST or (get_current_node_number() in (2, 3))
@@ -2279,52 +2278,12 @@ async def chickenland_promo_watcher_loop():
         logger.info("[ChickenLand Promo Sniper] Standby node detected; skipping watcher loop.")
         return
 
-    logger.info("[ChickenLand Promo Sniper] 🐔 24/7 Cloud Watcher initialized on Render Node 2...")
-    seen_in_memory = set()
-
-    # Pre-cache known historical codes & immediately snipe any unexhausted ones
+    logger.info("[ChickenLand Promo Sniper] 🐔 24/7 Cloud Dual-Engine Watcher initialized on Render Node 3...")
     try:
-        from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, is_code_claimed, mark_code_seen, snipe_promo_fleet
-        init_codes = await asyncio.to_thread(fetch_channel_codes)
-        for it in init_codes:
-            c = it["code"]
-            is_exhausted = it["is_exhausted"]
-            if is_exhausted:
-                seen_in_memory.add(c)
-                mark_code_seen(c)
-            elif not is_code_claimed(c):
-                logger.info(f"[ChickenLand Promo Sniper] 🔥 ACTIVE CODE ON STARTUP: {c}! Launching parallel burst...")
-                await snipe_promo_fleet(c)
-                seen_in_memory.add(c)
-                mark_code_seen(c)
-        logger.info(f"[ChickenLand Promo Sniper] Processed {len(seen_in_memory)} historical/active codes.")
+        from chickenland_promo_sniper import run_unified_sniper_daemon
+        await run_unified_sniper_daemon(poll_interval=2.5)
     except Exception as e:
-        logger.warning(f"[ChickenLand Promo Sniper] Init scrape error: {e}")
-
-    while True:
-        try:
-            from chickenland_promo_sniper import fetch_channel_codes, is_code_seen, is_code_claimed, mark_code_seen, snipe_promo_fleet
-            channel_items = await asyncio.to_thread(fetch_channel_codes)
-            for item in channel_items:
-                code = item["code"]
-                is_exhausted = item["is_exhausted"]
-
-                if (code not in seen_in_memory and not is_code_seen(code)) or (not is_exhausted and not is_code_claimed(code)):
-                    seen_in_memory.add(code)
-                    if is_exhausted:
-                        mark_code_seen(code)
-                        continue
-
-                    logger.info(f"[ChickenLand Promo Sniper] 🔥 NEW DROP DETECTED: {code}! Triggering parallel burst across fleet...")
-                    rep = await snipe_promo_fleet(code)
-                    logger.info(
-                        f"[ChickenLand Promo Sniper] ✅ Burst completed: {rep.get('claimed_count')}/{rep.get('total_accounts')} accounts claimed "
-                        f"(+{rep.get('total_coins')} coins) in {rep.get('burst_time_sec')}s"
-                    )
-        except Exception as e:
-            logger.debug(f"[ChickenLand Promo Sniper] Watcher loop tick: {e}")
-
-        await asyncio.sleep(8)
+        logger.error(f"[ChickenLand Promo Sniper] Unified daemon crashed: {e}")
 
 @app.post("/api/chickenland/snipe")
 @app.get("/api/chickenland/snipe")
