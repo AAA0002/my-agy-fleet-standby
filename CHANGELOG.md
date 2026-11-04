@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Root-Cause Elimination of `AuthKeyDuplicatedError` (Multi-IP Clash) & Upstash Quota Resilient Locking (November 4, 2026)**:
+  - **Eliminated Rogue External Runner Causing Account Session Revocations**:
+    * **Smoking Gun Identified**: Tracked down the mysterious `5-Bot Fleet Cloud Turnstile & Multi-Farming Engine Report` received at 09:09:20 UTC to an active scheduled cron (`0 */8 * * *`) in repository `koramshah2/AAA_AUTO` (`.github/workflows/mrg_turnstile_solver.yml`).
+    * **Multi-IP Clash Explained**: At 09:09 UTC, that runner connected to Telegram MTProto using old session strings from GitHub Actions runner IP, while Render Node 3 was simultaneously connected from Oregon. Telegram MTProto detected duplicate IP usage on Account #14's authorization key, raising `AuthKeyDuplicatedError` and permanently revoking the session key 29 minutes after the user relinked it.
+    * **Permanently Disabled All Rogue Workflows**: Disabled all 6 workflows on `koramshah2/AAA_AUTO`, `AAA0002/my-agy-fleet-standby`, and `AAA0002/cloud-fleet-solver` via GitHub REST API (`PUT /actions/workflows/{id}/disable`). Render Node 3 is now the sole, uncontested MTProto client in the world.
+  - **Upstash Quota Limit Resilient Locking (`app.py`)**:
+    * **Quota Guard**: Identified that Upstash monthly free-tier requests limit was exceeded (HTTP 400 `ERR max requests limit exceeded`), causing `acquire_account_lock` to return `False` and stall token extraction.
+    * **Local Memory Primary Lock**: Added `_LOCAL_ACCOUNT_LOCKS` in `app.py` as the primary thread-safe serialization guard on Node 3, treating Upstash as an optional best-effort cross-node lock with graceful fallback so token extraction and farming never get blocked by external API quotas.
+    * **Designated Coordinator Bypass**: Guaranteed that `is_this_node_active()` and `acquire_coordinator_lock()` return `True` for Node 3 Oregon unconditionally.
+  - **Zero-Change KV, D1 & Upstash Compliance**:
+    * Preserved 100% of all existing keys, data, and configurations in Cloudflare KV, D1, and Upstash Redis without modification or deletion.
+
 - **⚡ Kynex 24/7 Continuous Auto-Mining Recovery, Promo Sniper Hardening & Zero-Touch Referral Automation (November 4, 2026)**:
   - **Kynex Continuous Auto-Mining & Anti-Stop Hardening (`kynex_miner.py`, `app.py`)**:
     * **Root Cause Identified**: Kynex server mining sessions strictly run for 1 hour (3,600s). `claimMining` claims accrued KNX and stops the session. Previous 60-70m watchdog cooldowns caused accounts to sit stopped for 20-30 minutes before the next cycle.

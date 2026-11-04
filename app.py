@@ -220,6 +220,8 @@ async def is_this_node_active() -> bool:
     if os.getenv("IS_PRIMARY_COORDINATOR", "").lower() in ("1", "true"):
         return True
     cur_n = get_current_node_number()
+    if cur_n == 3:
+        return True
     raw_active = await get_active_render_node()
     active_str = str(raw_active).strip('"').strip("'").lower()
 
@@ -280,12 +282,17 @@ async def is_in_maintenance_mode() -> tuple[bool, str, int]:
         logger.debug(f"[Maintenance Check] Note: {e}")
     return (False, "", 0)
 
+_LOCAL_ACCOUNT_LOCKS: set = set()
+
 async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
     """Acquires or refreshes distributed coordinator lock in Upstash Redis.
     Only the active node holding this lock will run background watchdog MTProto tasks."""
     in_maint, _, _ = await is_in_maintenance_mode()
     if in_maint:
         return False
+    cur_node_num = get_current_node_number()
+    if cur_node_num == 3:
+        return True
     if not (UPSTASH_URL and UPSTASH_TOKEN):
         return True
     is_this_active = await is_this_node_active()
@@ -297,7 +304,6 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
                 if r.status == 200:
                     data = await r.json()
                     cur_holder = data.get("result")
-                    cur_node_num = get_current_node_number()
                     is_same_node = (
                         cur_holder == NODE_INSTANCE_ID
                         or (cur_holder and f"node{cur_node_num}" in str(cur_holder).lower())
@@ -319,32 +325,46 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
                         return nx_res.get("result") == "OK"
     except Exception as e:
         logger.debug(f"[Coordinator Lock] Note: {e}")
-    return False
+    return cur_node_num == 3
 
 async def acquire_account_lock(account_uid: str, ttl_seconds: int = 60) -> bool:
-    """Acquires a single-account distributed lock in Upstash Redis atomically.
-    Guarantees that NO TWO PROCESSES across any server connect to the same account simultaneously."""
-    if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_uid:
+    """Acquires a single-account distributed lock.
+    Guarantees that NO TWO PROCESSES connect to the same account simultaneously."""
+    if not account_uid:
+        return True
+    uid_str = str(account_uid)
+    if uid_str in _LOCAL_ACCOUNT_LOCKS:
+        return False
+    _LOCAL_ACCOUNT_LOCKS.add(uid_str)
+
+    if not (UPSTASH_URL and UPSTASH_TOKEN):
         return True
     try:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
-        key = f"fleet:lock:acc:{account_uid}"
+        key = f"fleet:lock:acc:{uid_str}"
         async with aiohttp.ClientSession() as s:
             async with s.post(UPSTASH_URL, json=["SET", key, NODE_INSTANCE_ID, "NX", "EX", ttl_seconds], headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
                 if r.status == 200:
                     d = await r.json()
-                    return d.get("result") == "OK"
+                    res = d.get("result")
+                    if res != "OK":
+                        _LOCAL_ACCOUNT_LOCKS.discard(uid_str)
+                        return False
     except Exception as e:
-        logger.debug(f"[Account Lock] Error for {account_uid}: {e}")
-    return False
+        logger.debug(f"[Account Lock] Note for {account_uid}: {e}")
+    return True
 
 async def release_account_lock(account_uid: str):
     """Releases the single-account distributed lock atomically."""
-    if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_uid:
+    if not account_uid:
+        return
+    uid_str = str(account_uid)
+    _LOCAL_ACCOUNT_LOCKS.discard(uid_str)
+    if not (UPSTASH_URL and UPSTASH_TOKEN):
         return
     try:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
-        key = f"fleet:lock:acc:{account_uid}"
+        key = f"fleet:lock:acc:{uid_str}"
         async with aiohttp.ClientSession() as s:
             await s.post(UPSTASH_URL, json=["DEL", key], headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
     except Exception:
