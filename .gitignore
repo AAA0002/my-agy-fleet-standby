@@ -74,3 +74,5 @@ AAAPREMIUMAPPSbot/
 session_audit_report.json
 pumpkin_web_sessions.*
 proto_desc/
+retired_accounts_archive.json
+fetch_telegram_code.py

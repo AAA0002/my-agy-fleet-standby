@@ -619,6 +619,16 @@ LUMEON_REFERRAL_CODE = "6727787768"
 EARNVAULT_BOT = "EarnVaultApp_bot"
 EARNVAULT_REFERRAL_CODE = "6727787768"
 
+def resolve_bot_start_param(bot_key: str) -> str:
+    bk = str(bot_key).lower()
+    if "diggo" in bk:
+        return DIGGO_REFERRAL_CODE
+    elif "adx" in bk:
+        return ADXEARN_REFERRAL_CODE
+    elif "chicken" in bk:
+        return CHICKENLAND_REFERRAL_CODE
+    return "6727787768"
+
 LAST_BATCH_RUN = {
     "status": "idle",
     "collected": 0,
@@ -2359,29 +2369,28 @@ def get_fleet_accounts_map() -> list:
 
     return [
         {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master 👑)"},
-        {"index": 2, "uid": "8881914294", "name": "Nancy"},
-        {"index": 3, "uid": "7648254021", "name": "Koram Shah"},
-        {"index": 4, "uid": "8826375659", "name": "Arif"},
-        {"index": 5, "uid": "8450010161", "name": "Nadim"},
-        {"index": 6, "uid": "8782429452", "name": "Kaitlyn"},
-        {"index": 7, "uid": "7734849205", "name": "Abid Hasan (1)"},
-        {"index": 8, "uid": "8025472383", "name": "Abid Hasan (2)"},
-        {"index": 9, "uid": "8851426148", "name": "Naimur Rahman"},
-        {"index": 10, "uid": "8203342513", "name": "Tanvir Ahmed"},
-        {"index": 11, "uid": "8190649727", "name": "MD Arif Hossain"},
-        {"index": 12, "uid": "7487048946", "name": "Sanzida Shimu"},
-        {"index": 13, "uid": "8741547543", "name": "Abid (3)"},
-        {"index": 14, "uid": "8727040932", "name": "Rohan Sharma"},
-        {"index": 15, "uid": "7749125802", "name": "Tasnim Farhana"},
-        {"index": 16, "uid": "7954290138", "name": "Rashedul Islam"},
-        {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud"},
-        {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan"},
-        {"index": 19, "uid": "8937908003", "name": "Adil H"},
-        {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker"},
-        {"index": 21, "uid": "8669217201", "name": "AAA201"},
-        {"index": 22, "uid": "9272631973", "name": "AAA 22"},
-        {"index": 23, "uid": "9106746905", "name": "Abid Hasan (4)"},
-        {"index": 24, "uid": "8972499908", "name": "AAA 24"}
+        {"index": 2, "uid": "7648254021", "name": "Koram Shah"},
+        {"index": 3, "uid": "8826375659", "name": "Arif"},
+        {"index": 4, "uid": "8450010161", "name": "Nadim"},
+        {"index": 5, "uid": "8782429452", "name": "Kaitlyn"},
+        {"index": 6, "uid": "7734849205", "name": "Abid Hasan (1)"},
+        {"index": 7, "uid": "8025472383", "name": "Abid Hasan (2)"},
+        {"index": 8, "uid": "8851426148", "name": "Naimur Rahman"},
+        {"index": 9, "uid": "8203342513", "name": "Tanvir Ahmed"},
+        {"index": 10, "uid": "8190649727", "name": "MD Arif Hossain"},
+        {"index": 11, "uid": "7487048946", "name": "Sanzida Shimu"},
+        {"index": 12, "uid": "8741547543", "name": "Abid (3)"},
+        {"index": 13, "uid": "8727040932", "name": "Rohan Sharma"},
+        {"index": 14, "uid": "7749125802", "name": "Tasnim Farhana"},
+        {"index": 15, "uid": "7954290138", "name": "Rashedul Islam"},
+        {"index": 16, "uid": "8841038141", "name": "Kawsar Mahmud"},
+        {"index": 17, "uid": "8975442879", "name": "Mehedi Hasan"},
+        {"index": 18, "uid": "8937908003", "name": "Adil H"},
+        {"index": 19, "uid": "8609131528", "name": "Asaduzzaman Sarker"},
+        {"index": 20, "uid": "8669217201", "name": "AAA201"},
+        {"index": 21, "uid": "9272631973", "name": "AAA 22"},
+        {"index": 22, "uid": "9106746905", "name": "Abid Hasan (4)"},
+        {"index": 23, "uid": "8972499908", "name": "AAA 24"}
     ]
 
 FLEET_24_ACCOUNTS_MAP = get_fleet_accounts_map()
@@ -7465,18 +7474,19 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         created_session = True
 
     try:
-        FLEET_24_SET = {
-            "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
+        FLEET_23_SET = {
+            "6727787768", "7648254021", "8826375659", "8450010161",
             "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
             "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
             "7954290138", "8841038141", "8975442879", "8937908003", "8609131528",
             "8669217201", "9272631973", "9106746905", "8972499908"
         }
+        FLEET_24_SET = FLEET_23_SET
         if accounts is None:
             accounts = await fetch_accounts_from_cloud()
         accounts = [
             a for a in (accounts or [])
-            if str(a.get("user_id")) in FLEET_24_SET or a.get("session_string") or a.get("session") or a.get("miniapp_tokens_synced")
+            if str(a.get("user_id")) in FLEET_23_SET or a.get("session_string") or a.get("session") or a.get("miniapp_tokens_synced")
         ]
         if not accounts:
             return {"ok": False, "message": "No accounts found for farming cycle", "farmed_count": 0}
@@ -8084,7 +8094,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                                             bot=bot_ent,
                                             platform="android",
                                             url=w_raw_url,
-                                            start_param="ref_4088138f11effe8eef4b86ff" if "diggo" in bot_key.lower() else "6727787768"
+                                            start_param=resolve_bot_start_param(bot_key)
                                         ))
                                         if wv and getattr(wv, 'url', None):
                                             found_webview_url = wv.url
@@ -8110,7 +8120,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                             bot=bot_ent,
                             platform="android",
                             url=menu_btn.url,
-                            start_param="ref_4088138f11effe8eef4b86ff" if "diggo" in bot_key.lower() else "6727787768"
+                            start_param=resolve_bot_start_param(bot_key)
                         ))
                         if wv and getattr(wv, "url", None):
                             found_webview_url = wv.url
@@ -8118,7 +8128,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                 webapp_info["menu_button_error"] = str(me_err)
 
         # 4. Try RequestAppWebViewRequest with discovered candidate short names
-        ref_start_param = "ref_4088138f11effe8eef4b86ff" if "diggo" in bot_key.lower() else "6727787768"
+        ref_start_param = resolve_bot_start_param(bot_key)
         for sn in candidate_short_names:
             if found_webview_url and "tgWebAppData" in found_webview_url and not found_webview_url.startswith("https://t.me/"):
                 break

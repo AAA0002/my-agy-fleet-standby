@@ -169,7 +169,7 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
     Prioritizes Upstash Redis `miniapp_tokens`, then `fleet:tokens:{uid}`, then `accounts.json`, then `fleet_miniapp_tokens.json`.
     """
     global CACHED_FLEET_TOKENS
-    if CACHED_FLEET_TOKENS and not force_refresh:
+    if CACHED_FLEET_TOKENS and not force_refresh and len(CACHED_FLEET_TOKENS) >= 20:
         return CACHED_FLEET_TOKENS
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -460,8 +460,8 @@ async def snipe_promo_fleet(
     """
     code = code.strip().upper()
     async with BURST_LOCK:
-        if not fleet:
-            fleet = load_fleet_tokens()
+        if not fleet or len(fleet) < 20:
+            fleet = load_fleet_tokens(force_refresh=True)
 
         if not fleet:
             return {"ok": False, "description": "No fleet tokens available"}
@@ -666,10 +666,10 @@ async def start_mtproto_listener():
         except Exception:
             pass
 
-    # Choose Account #2 (Nancy, 8881914294) to avoid session conflicts with Master Account admin bot
+    # Choose Koram Shah (7648254021) or Master Account (6727787768)
     listener_acc = None
     for acc in accounts:
-        if str(acc.get("user_id")) in ("8881914294", "7648254021", "6727787768") and acc.get("session_string"):
+        if str(acc.get("user_id")) in ("7648254021", "6727787768") and acc.get("session_string"):
             listener_acc = acc
             break
 

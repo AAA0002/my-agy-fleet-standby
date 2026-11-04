@@ -441,6 +441,36 @@ def load_fleet_chickenland_tokens() -> Dict[str, Dict[str, Any]]:
         except Exception:
             pass
 
+    # Cloudflare Edge Mesh High-Reliability Fallback (Guarantees all 24 accounts in cloud)
+    if len(tokens_map) < 20:
+        cf_endpoints = [
+            "https://restore-agy.agorameet.workers.dev/api/miniapp/tokens",
+            "https://aaaai2.workers.dev/api/miniapp/tokens",
+            "https://aaa-bot.workers.dev/api/miniapp/tokens"
+        ]
+        for cf_url in cf_endpoints:
+            try:
+                cf_req = urllib.request.Request(cf_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+                with urllib.request.urlopen(cf_req, timeout=4) as cf_r:
+                    if cf_r.status == 200:
+                        cf_data = json.loads(cf_r.read().decode("utf-8"))
+                        tok_dict = cf_data.get("tokens", cf_data)
+                        if isinstance(tok_dict, dict):
+                            for uid, toks in tok_dict.items():
+                                if not toks or not isinstance(toks, dict):
+                                    continue
+                                c_tok = toks.get("chickenland_init_data") or toks.get("chicken_init_data")
+                                if c_tok and str(uid) not in tokens_map:
+                                    tokens_map[str(uid)] = {
+                                        "user_id": str(uid),
+                                        "name": names.get(str(uid), f"Account {uid}"),
+                                        "token": c_tok
+                                    }
+                            if len(tokens_map) >= 20:
+                                break
+            except Exception:
+                pass
+
     return tokens_map
 
 

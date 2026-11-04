@@ -503,6 +503,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         initData: accData.atf_init_data,
         request_id: "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 10),
         device_id: "dev-" + (accData.device_id || "edge-" + uid),
+        ...(isOwner ? {} : { ref: "6727787768" }),
         ...obj
       });
 
@@ -630,39 +631,64 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   // 10. Kynex Network (@Kynex_miningbot)
   const farmKynex = async () => {
     try {
-      if (!accData.kynex_init_data) {
-        result.bots.kynex = "skipped (no initData)";
+      if (!accData.kynex_init_data && !accData.kynex_refresh_token) {
+        result.bots.kynex = "skipped (no initData or refreshToken)";
         return;
       }
-      let kyInit = accData.kynex_init_data;
-      if (typeof kyInit === "string" && (kyInit.startsWith("user%3D") || kyInit.includes("%257B"))) {
-        try { kyInit = decodeURIComponent(kyInit); } catch (_) {}
-      }
-      const authResp = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Origin": "https://kynex.top", "Referer": "https://kynex.top/telegram-auth.html" },
-        body: JSON.stringify({ data: { initData: kyInit } })
-      });
-      if (!authResp.ok) {
-        result.bots.kynex = `auth_error (${authResp.status})`;
-        return;
-      }
-      const authData = await authResp.json();
-      const customToken = authData.result?.customToken;
-      const kUid = authData.result?.uid;
-      if (!customToken) {
-        result.bots.kynex = "auth_failed (no customToken)";
-        return;
+      let idToken = null;
+      let kUid = null;
+      const kynexFbKey = atob("QUl6YVN5QjVhWVBjT3JEWHpNVEJ0NXA1VkNFRktaZG1CQk1HQTlj");
+
+      // 1. Instant Fast-Path: Exchange refreshToken via Google SecureToken API
+      if (accData.kynex_refresh_token) {
+        try {
+          const refResp = await fetch(`https://securetoken.googleapis.com/v1/token?key=${kynexFbKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(accData.kynex_refresh_token)}`
+          });
+          if (refResp.ok) {
+            const refData = await refResp.json();
+            if (refData.id_token) {
+              idToken = refData.id_token;
+              kUid = refData.user_id;
+            }
+          }
+        } catch (_) {}
       }
 
-      const kynexFbKey = atob("QUl6YVN5QjVhWVBjT3JEWHpNVEJ0NXA1VkNFRktaZG1CQk1HQTlj");
-      const tokResp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${kynexFbKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: customToken, returnSecureToken: true })
-      });
-      const tokData = await tokResp.json();
-      const idToken = tokData.idToken;
+      // 2. Fallback: Verify Telegram Auth & sign in with Custom Token
+      if (!idToken && accData.kynex_init_data) {
+        let kyInit = accData.kynex_init_data;
+        if (typeof kyInit === "string" && (kyInit.startsWith("user%3D") || kyInit.includes("%257B"))) {
+          try { kyInit = decodeURIComponent(kyInit); } catch (_) {}
+        }
+        const authResp = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Origin": "https://kynex.top", "Referer": "https://kynex.top/telegram-auth.html" },
+          body: JSON.stringify({ data: { initData: kyInit } })
+        });
+        if (authResp.ok) {
+          const authData = await authResp.json();
+          const customToken = authData.result?.customToken;
+          kUid = authData.result?.uid || kUid;
+          if (customToken) {
+            const tokResp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${kynexFbKey}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: customToken, returnSecureToken: true })
+            });
+            if (tokResp.ok) {
+              const tokData = await tokResp.json();
+              idToken = tokData.idToken;
+              if (tokData.refreshToken) {
+                accData.kynex_refresh_token = tokData.refreshToken;
+              }
+            }
+          }
+        }
+      }
+
       if (!idToken) {
         result.bots.kynex = "auth_failed (no idToken)";
         return;
@@ -1568,8 +1594,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   // 11. EarnVault
   const farmEarnvault = async () => {
-    const evInit = accData.earnvault_init_data;
-    if (!evInit) return;
+    if (!accData.earnvault_init_data && !accData.earnvault_refresh_token) return;
     try {
       const evHeaders = getHumanHeaders(uid, {
         "Content-Type": "application/json",
@@ -1577,25 +1602,52 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         "Referer": "https://eearnvault.top/"
       });
       const functionsBase = "https://us-central1-earnvaulte.cloudfunctions.net";
+      const evFbKey = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg";
+      let idTok = null;
 
-      // 1. telegramAuth to get custom token
-      const authResp = await fetchWithRetry(`${functionsBase}/telegramAuth`, {
-        method: "POST", headers: evHeaders,
-        body: JSON.stringify({ data: { initData: evInit } })
-      }, 1, 800);
-      if (!authResp || !authResp.ok) return;
-      const authData = await authResp.json();
-      const customTok = authData.result?.token;
-      if (!customTok) return;
+      // 1. Instant Fast-Path: Exchange refreshToken via Google SecureToken API
+      if (accData.earnvault_refresh_token) {
+        try {
+          const refResp = await fetch(`https://securetoken.googleapis.com/v1/token?key=${evFbKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(accData.earnvault_refresh_token)}`
+          });
+          if (refResp.ok) {
+            const refData = await refResp.json();
+            if (refData.id_token) {
+              idTok = refData.id_token;
+            }
+          }
+        } catch (_) {}
+      }
 
-      // 2. Exchange for Firebase ID Token
-      const exResp = await fetchWithRetry(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: customTok, returnSecureToken: true })
-      }, 1, 800);
-      if (!exResp || !exResp.ok) return;
-      const exData = await exResp.json();
-      const idTok = exData.idToken;
+      // 2. Fallback: telegramAuth to get custom token & exchange
+      if (!idTok && accData.earnvault_init_data) {
+        const evInit = accData.earnvault_init_data;
+        const authResp = await fetchWithRetry(`${functionsBase}/telegramAuth`, {
+          method: "POST", headers: evHeaders,
+          body: JSON.stringify({ data: { initData: evInit } })
+        }, 1, 800);
+        if (authResp && authResp.ok) {
+          const authData = await authResp.json();
+          const customTok = authData.result?.token;
+          if (customTok) {
+            const exResp = await fetchWithRetry(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${evFbKey}`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: customTok, returnSecureToken: true })
+            }, 1, 800);
+            if (exResp && exResp.ok) {
+              const exData = await exResp.json();
+              idTok = exData.idToken;
+              if (exData.refreshToken) {
+                accData.earnvault_refresh_token = exData.refreshToken;
+              }
+            }
+          }
+        }
+      }
+
       if (!idTok) return;
 
       const authHeaders = { ...evHeaders, "Authorization": `Bearer ${idTok}` };
@@ -1779,14 +1831,14 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   const botRoutines = [
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
-    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
+    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data || accData.kynex_refresh_token) },
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data || accData.pepe_init_data) },
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data || accData.adx_init_data) },
     { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) },
     { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data || accData.chicken_init_data) },
     { name: "grouchemine", fn: farmGrouchemine, hasData: Boolean(accData.grouchemine_init_data || accData.grc_init_data) },
     { name: "lumeon", fn: farmLumeon, hasData: Boolean(accData.lumeon_init_data) },
-    { name: "earnvault", fn: farmEarnvault, hasData: Boolean(accData.earnvault_init_data) }
+    { name: "earnvault", fn: farmEarnvault, hasData: Boolean(accData.earnvault_init_data || accData.earnvault_refresh_token) }
   ];
 
   const BOT_KEY_ALIASES = {
@@ -1917,6 +1969,12 @@ function sanitizeFleetTokensObject(rawObj) {
     if (acc.diggo_jwt && typeof acc.diggo_jwt === "string") {
       item.diggo_jwt = acc.diggo_jwt;
     }
+    if (acc.kynex_refresh_token && typeof acc.kynex_refresh_token === "string") {
+      item.kynex_refresh_token = acc.kynex_refresh_token;
+    }
+    if (acc.earnvault_refresh_token && typeof acc.earnvault_refresh_token === "string") {
+      item.earnvault_refresh_token = acc.earnvault_refresh_token;
+    }
     // Turnstile human pass purged per user directive
     for (const b of ALLOWED_FLEET_BOTS) {
       const k = b + "_init_data";
@@ -2015,36 +2073,35 @@ async function getFleetTokens(env) {
 
 const DEFAULT_FLEET_DATA = {
   ok: true,
-  count: 24,
-  active: 24,
+  count: 23,
+  active: 23,
   bnb_balance: 0.000812,
   kynex_balance: 4050,
   ton_balance: 1.42,
   accounts: [
     { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850", mining_active: true, kynex_coins: 6309, atf_balance: 312.4, status: "Active" },
-    { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617", mining_active: true, kynex_coins: 4050, atf_balance: 198.2, status: "Active" },
-    { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077", mining_active: true, kynex_coins: 5250, atf_balance: 184.6, status: "Active" },
-    { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
-    { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
-    { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
-    { index: 7, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
-    { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
-    { index: 9, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
-    { index: 10, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
-    { index: 11, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
-    { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
-    { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
-    { index: 14, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
-    { index: 15, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 16, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 17, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 18, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 21, name: "AAA201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 22, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 23, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+    { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077", mining_active: true, kynex_coins: 5250, atf_balance: 184.6, status: "Active" },
+    { index: 2, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
+    { index: 3, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
+    { index: 4, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
+    { index: 5, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
+    { index: 6, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
+    { index: 7, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
+    { index: 8, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
+    { index: 9, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
+    { index: 10, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
+    { index: 11, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
+    { index: 12, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
+    { index: 13, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 14, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 15, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 16, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 17, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 18, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 19, name: "AAA201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 20, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 21, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 22, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -2580,7 +2637,7 @@ let memDeletedAccounts = null;
 let memDeletedAccountsTs = 0;
 let lastMiniappTokensKvWrite = 0;
 let memSessionHealth = {
-  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
   revoked: [],
   lastCheck: 0
 };
@@ -2595,29 +2652,28 @@ const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
 
 const DEFAULT_FLEET_ACCOUNTS = [
   { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617", session_revoked: true },
-  { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
-  { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-  { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-  { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-  { index: 7, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
-  { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-  { index: 9, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
-  { index: 10, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
-  { index: 11, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
-  { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-  { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-  { index: 14, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
-  { index: 15, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
-  { index: 16, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
-  { index: 17, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
-  { index: 18, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
-  { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
-  { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-  { index: 21, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
-  { index: 22, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
-  { index: 23, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
-  { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
+  { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+  { index: 3, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+  { index: 4, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+  { index: 5, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+  { index: 6, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
+  { index: 7, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+  { index: 8, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
+  { index: 9, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
+  { index: 10, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+  { index: 11, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+  { index: 12, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+  { index: 13, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
+  { index: 14, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
+  { index: 15, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
+  { index: 16, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
+  { index: 17, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
+  { index: 18, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
+  { index: 19, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
+  { index: 20, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
+  { index: 21, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
+  { index: 22, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
+  { index: 23, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
 ];
 
 const KNOWN_PHONES = {
@@ -2649,29 +2705,28 @@ const KNOWN_PHONES = {
 
 const KNOWN_PHONES_BY_INDEX = {
   1: "+8801317342850",
-  2: "+8801943805617",
-  3: "+8801790208077",
-  4: "+8801575842094",
-  5: "+14302084365",
-  6: "+8801867539837",
-  7: "+8801718056423",
-  8: "+8801797795624",
-  9: "+8801727651288",
-  10: "+8801729892810",
-  11: "+8801571089931",
-  12: "+8801774578536",
-  13: "+8801838268380",
-  14: "+918930504750",
-  15: "+8801906045479",
-  16: "+8801304151082",
-  17: "+8801879273559",
-  18: "+8801839716506",
-  19: "+8801804723069",
-  20: "+8801312863569",
-  21: "+8801913962342",
-  22: "+8801732100769",
-  23: "+8801788601627",
-  24: "+8801794783852"
+  2: "+8801790208077",
+  3: "+8801575842094",
+  4: "+14302084365",
+  5: "+8801867539837",
+  6: "+8801718056423",
+  7: "+8801797795624",
+  8: "+8801727651288",
+  9: "+8801729892810",
+  10: "+8801571089931",
+  11: "+8801774578536",
+  12: "+8801838268380",
+  13: "+918930504750",
+  14: "+8801906045479",
+  15: "+8801304151082",
+  16: "+8801879273559",
+  17: "+8801839716506",
+  18: "+8801804723069",
+  19: "+8801312863569",
+  20: "+8801913962342",
+  21: "+8801732100769",
+  22: "+8801788601627",
+  23: "+8801794783852"
 };
 
 const cleanName = (acc, idx) => {
@@ -3151,31 +3206,30 @@ export default {
     };
 
     const KNOWN_PHONES_BY_INDEX = {
-      1: "+8801317342850",
-      2: "+8801943805617",
-      3: "+8801790208077",
-      4: "+8801575842094",
-      5: "+14302084365",
-      6: "+8801867539837",
-      7: "+8801718056423",
-      8: "+8801797795624",
-      9: "+8801727651288",
-      10: "+8801729892810",
-      11: "+8801571089931",
-      12: "+8801774578536",
-      13: "+8801838268380",
-      14: "+918930504750",
-      15: "+8801906045479",
-      16: "+8801304151082",
-      17: "+8801879273559",
-      18: "+8801839716506",
-      19: "+8801804723069",
-      20: "+8801312863569",
-      21: "+8801913962342",
-      22: "+8801732100769",
-      23: "+8801788601627",
-      24: "+8801794783852"
-    };
+  1: "+8801317342850",
+  2: "+8801790208077",
+  3: "+8801575842094",
+  4: "+14302084365",
+  5: "+8801867539837",
+  6: "+8801718056423",
+  7: "+8801797795624",
+  8: "+8801727651288",
+  9: "+8801729892810",
+  10: "+8801571089931",
+  11: "+8801774578536",
+  12: "+8801838268380",
+  13: "+918930504750",
+  14: "+8801906045479",
+  15: "+8801304151082",
+  16: "+8801879273559",
+  17: "+8801839716506",
+  18: "+8801804723069",
+  19: "+8801312863569",
+  20: "+8801913962342",
+  21: "+8801732100769",
+  22: "+8801788601627",
+  23: "+8801794783852"
+};
 
     const fetchFleetOtp = async (targetIdx) => {
       const renderNodes = await getRenderUrls();
@@ -3875,7 +3929,13 @@ fi
         const revokedSet = new Set((curHealth.revoked || []).map(Number));
         let details = curHealth.revokedDetails || [];
 
-        if (isHealthy) {
+        if (Array.isArray(body.healthy) && Array.isArray(body.revoked)) {
+          healthySet.clear();
+          revokedSet.clear();
+          body.healthy.forEach(x => healthySet.add(Number(x)));
+          body.revoked.forEach(x => revokedSet.add(Number(x)));
+          details = Array.isArray(body.revokedDetails) ? body.revokedDetails : [];
+        } else if (isHealthy) {
           if (targetIdx) {
             healthySet.add(targetIdx);
             revokedSet.delete(targetIdx);
@@ -5504,7 +5564,8 @@ fi
           current[k] = sanitizeTokens(v);
         }
         memTokens = current;
-        if ((CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (Date.now() - lastMiniappTokensKvWrite >= 3600000)) {
+        const hasAllAccounts = Object.keys(current).length >= 24;
+        if ((CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (hasAllAccounts || Date.now() - lastMiniappTokensKvWrite >= 60000)) {
           lastMiniappTokensKvWrite = Date.now();
           try {
             await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
@@ -6043,57 +6104,55 @@ fi
         };
 
         const KNOWN_PHONES_BY_INDEX = {
-          1: "+8801317342850",
-          2: "+8801943805617",
-          3: "+8801790208077",
-          4: "+8801575842094",
-          5: "+14302084365",
-          6: "+8801867539837",
-          7: "+8801718056423",
-          8: "+8801797795624",
-          9: "+8801727651288",
-          10: "+8801729892810",
-          11: "+8801571089931",
-          12: "+8801774578536",
-          13: "+8801838268380",
-          14: "+918930504750",
-          15: "+8801906045479",
-          16: "+8801304151082",
-          17: "+8801879273559",
-          18: "+8801839716506",
-          19: "+8801804723069",
-          20: "+8801312863569",
-          21: "+8801913962342",
-          22: "+8801732100769",
-          23: "+8801788601627",
-          24: "+8801794783852"
-        };
+  1: "+8801317342850",
+  2: "+8801790208077",
+  3: "+8801575842094",
+  4: "+14302084365",
+  5: "+8801867539837",
+  6: "+8801718056423",
+  7: "+8801797795624",
+  8: "+8801727651288",
+  9: "+8801729892810",
+  10: "+8801571089931",
+  11: "+8801774578536",
+  12: "+8801838268380",
+  13: "+918930504750",
+  14: "+8801906045479",
+  15: "+8801304151082",
+  16: "+8801879273559",
+  17: "+8801839716506",
+  18: "+8801804723069",
+  19: "+8801312863569",
+  20: "+8801913962342",
+  21: "+8801732100769",
+  22: "+8801788601627",
+  23: "+8801794783852"
+};
 
         const DEFAULT_FLEET_ACCOUNTS = [
           { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-          { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
-          { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
-          { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-          { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-          { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-          { index: 7, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
-          { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-          { index: 9, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
-          { index: 10, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
-          { index: 11, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
-          { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-          { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-          { index: 14, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
-          { index: 15, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
-          { index: 16, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
-          { index: 17, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 18, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
-          { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
-          { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-          { index: 21, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
-          { index: 22, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
-          { index: 23, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
-          { index: 24, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
+          { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+          { index: 2, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+          { index: 3, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+          { index: 4, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 5, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
+          { index: 6, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+          { index: 7, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 8, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 9, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 10, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+          { index: 11, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+          { index: 12, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
+          { index: 13, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
+          { index: 14, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
+          { index: 15, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
+          { index: 16, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
+          { index: 17, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
+          { index: 18, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
+          { index: 19, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
+          { index: 20, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
+          { index: 21, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
+          { index: 22, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
@@ -6763,7 +6822,7 @@ fi
           const lines = accounts.map((a, i) => {
             const idx = a.index || (i + 1);
             const isHost = String(a.user_id) === "6727787768";
-            const isRev = health.revoked.has(idx);
+            const isRev = health.revoked.has(idx) || health.revoked.has(String(idx)) || health.revoked.has(Number(idx)) || (a.user_id && health.revoked.has(String(a.user_id))) || a.session_revoked === true;
             if (isRev) revokedCount++; else activeCount++;
             const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "");
             const phoneStr = ph ? ` (\`${ph}\`)` : "";
