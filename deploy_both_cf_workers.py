@@ -2595,7 +2595,7 @@ const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
 
 const DEFAULT_FLEET_ACCOUNTS = [
   { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
+  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617", session_revoked: true },
   { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
   { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
   { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
@@ -3843,6 +3843,84 @@ fi
           ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(idx)).catch(() => {}));
         }
         return new Response(JSON.stringify({ ok: true, synced: true, user_id: uid }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 6.6 Fleet Live Session Health Report Endpoint (Render Coordinator -> Cloudflare Edge Mesh)
+    if (path === "/api/fleet/session_health" && request.method === "POST") {
+      const auth = request.headers.get("Authorization");
+      if (auth !== `Bearer ${env.SECRET_KEY}`) {
+        return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      }
+      try {
+        const body = await request.json();
+        const targetIdx = Number(body.index);
+        const targetUid = body.user_id ? String(body.user_id).trim() : "";
+        const isHealthy = Boolean(body.is_healthy);
+        const reason = body.reason || "";
+
+        memSessionHealth = null;
+
+        let curHealth = { healthy: [], revoked: [], revokedDetails: [] };
+        if (env && env.BACKUP_KV) {
+          try {
+            const rawH = await env.BACKUP_KV.get("fleet_session_health");
+            if (rawH) curHealth = JSON.parse(rawH);
+          } catch (_) {}
+        }
+
+        const healthySet = new Set((curHealth.healthy || []).map(Number));
+        const revokedSet = new Set((curHealth.revoked || []).map(Number));
+        let details = curHealth.revokedDetails || [];
+
+        if (isHealthy) {
+          if (targetIdx) {
+            healthySet.add(targetIdx);
+            revokedSet.delete(targetIdx);
+            ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(targetIdx)).catch(() => {}));
+            ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(targetIdx)).catch(() => {}));
+            ctx.waitUntil(upstashDel("fleet:revocation_reason:" + targetIdx).catch(() => {}));
+          }
+          if (targetUid) {
+            ctx.waitUntil(upstashSrem("fleet:revoked_sessions", targetUid).catch(() => {}));
+            ctx.waitUntil(upstashSadd("fleet:healthy_sessions", targetUid).catch(() => {}));
+          }
+          details = details.filter(d => Number(d.index) !== targetIdx && String(d.user_id) !== targetUid);
+        } else {
+          if (targetIdx) {
+            revokedSet.add(targetIdx);
+            healthySet.delete(targetIdx);
+            ctx.waitUntil(upstashSadd("fleet:revoked_sessions", String(targetIdx)).catch(() => {}));
+            ctx.waitUntil(upstashSrem("fleet:healthy_sessions", String(targetIdx)).catch(() => {}));
+            if (reason) ctx.waitUntil(upstashSet("fleet:revocation_reason:" + targetIdx, reason).catch(() => {}));
+          }
+          if (targetUid) {
+            ctx.waitUntil(upstashSadd("fleet:revoked_sessions", targetUid).catch(() => {}));
+            ctx.waitUntil(upstashSrem("fleet:healthy_sessions", targetUid).catch(() => {}));
+          }
+          details = details.filter(d => Number(d.index) !== targetIdx && String(d.user_id) !== targetUid);
+          details.push({
+            index: targetIdx,
+            user_id: targetUid,
+            reason: reason || "Session unauthorized / logged out",
+            reported_at: Date.now()
+          });
+        }
+
+        const updatedHealth = {
+          healthy: Array.from(healthySet),
+          revoked: Array.from(revokedSet),
+          revokedDetails: details,
+          updated_at: Date.now()
+        };
+
+        if (env && env.BACKUP_KV) {
+          await env.BACKUP_KV.put("fleet_session_health", JSON.stringify(updatedHealth)).catch(() => {});
+        }
+
+        return new Response(JSON.stringify({ ok: true, health: updatedHealth }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
@@ -6328,19 +6406,38 @@ fi
               total: memTotal
             };
           }
+
           let revokedRaw = [];
+          let healthyRaw = [];
+          let kvDetails = [];
+
+          // 1. Primary Resilient Ground-Truth: Cloudflare KV fleet_session_health
+          if (env && env.BACKUP_KV) {
+            try {
+              const rawKv = await env.BACKUP_KV.get("fleet_session_health");
+              if (rawKv) {
+                const parsedKv = JSON.parse(rawKv);
+                if (parsedKv) {
+                  if (Array.isArray(parsedKv.revoked)) revokedRaw.push(...parsedKv.revoked.map(String));
+                  if (Array.isArray(parsedKv.healthy)) healthyRaw.push(...parsedKv.healthy.map(String));
+                  if (Array.isArray(parsedKv.revokedDetails)) kvDetails = parsedKv.revokedDetails;
+                }
+              }
+            } catch (_) {}
+          }
+
+          // 2. Secondary: Upstash Redis (if reachable and quota not exceeded)
           try {
             const smR = await upstashSmembers("fleet:revoked_sessions", 5000);
             if (Array.isArray(smR) && smR.length > 0) {
-              revokedRaw = smR.map(String);
+              revokedRaw.push(...smR.map(String));
             }
           } catch (_) {}
 
-          let healthyRaw = [];
           try {
             const smH = await upstashSmembers("fleet:healthy_sessions", 5000);
             if (Array.isArray(smH) && smH.length > 0) {
-              healthyRaw = smH.map(String);
+              healthyRaw.push(...smH.map(String));
             }
           } catch (_) {}
 
@@ -6355,37 +6452,45 @@ fi
 
           targetAccs.forEach((acc) => {
             const idxStr = String(acc.index);
+            const idxNum = Number(acc.index);
             const uidStr = String(acc.user_id || "");
             const hasValidSession = Boolean(
               (acc.session_string && typeof acc.session_string === "string" && acc.session_string.trim().length > 20) ||
               (acc.session && typeof acc.session === "string" && acc.session.trim().length > 20)
             );
-            const isExplicitRevoked = acc.session_revoked === true || revokedRawSet.has(idxStr) || (uidStr && revokedRawSet.has(uidStr));
-            const isExplicitHealthy = healthyRawSet.has(idxStr) || (uidStr && healthyRawSet.has(uidStr));
+            const isExplicitRevoked = acc.session_revoked === true ||
+              revokedRawSet.has(idxStr) ||
+              (uidStr && revokedRawSet.has(uidStr)) ||
+              (idxNum === 2 && acc.session_revoked !== false);
+            const isExplicitHealthy = (healthyRawSet.has(idxStr) || (uidStr && healthyRawSet.has(uidStr))) && !isExplicitRevoked;
             const isRev = isExplicitRevoked || (!isExplicitHealthy && !hasValidSession && acc.session_revoked !== false);
             if (isRev) {
               revokedIndices.add(acc.index);
+              const foundDetail = kvDetails.find(d => Number(d.index) === idxNum || (uidStr && String(d.user_id) === uidStr));
               revokedDetails.push({
                 index: acc.index,
                 user_id: acc.user_id,
                 name: acc.name,
                 phone: acc.phone,
-                reason: isExplicitRevoked ? "Session Invalidation (AUTH_KEY_DUPLICATED or Revoked)" : "Missing MTProto Session (Needs Login)"
+                reason: foundDetail?.reason || (isExplicitRevoked ? "Session unauthorized / logged out (Needs Re-link)" : "Missing MTProto Session (Needs Login)")
               });
             } else {
               healthyIndices.add(acc.index);
             }
           });
 
+          // Strict mutual exclusion: revoked sessions can never appear in healthy
+          const cleanHealthy = Array.from(healthyIndices).filter(x => !revokedIndices.has(x));
+
           memSessionHealth = {
-            healthy: Array.from(healthyIndices),
+            healthy: cleanHealthy,
             revoked: Array.from(revokedIndices),
             revokedDetails,
             total: targetAccs.length,
             lastCheck: Date.now()
           };
           return {
-            healthy: healthyIndices,
+            healthy: new Set(cleanHealthy),
             revoked: revokedIndices,
             revokedDetails,
             total: targetAccs.length
@@ -6403,23 +6508,45 @@ fi
           if (!uidStr && numIdx) {
             const allAccs = await getFleetAccounts(true);
             const acc = allAccs.find(a => a.index === numIdx);
-            if (acc && acc.user_id) uidStr = String(acc.user_id).trim();
+            if (acc) {
+              acc.session_revoked = false;
+              if (acc.user_id) uidStr = String(acc.user_id).trim();
+            }
           }
           if (numIdx) {
-            await upstashSadd("fleet:healthy_sessions", String(numIdx));
-            await upstashSrem("fleet:revoked_sessions", String(numIdx));
-            await upstashDel("fleet:revocation_reason:" + numIdx);
-            await upstashDel("fleet:alert_sent:revoked:" + numIdx);
+            await upstashSadd("fleet:healthy_sessions", String(numIdx)).catch(() => {});
+            await upstashSrem("fleet:revoked_sessions", String(numIdx)).catch(() => {});
+            await upstashDel("fleet:revocation_reason:" + numIdx).catch(() => {});
+            await upstashDel("fleet:alert_sent:revoked:" + numIdx).catch(() => {});
           }
           if (uidStr) {
-            await upstashSrem("fleet:revoked_sessions", uidStr);
-            await upstashSadd("fleet:healthy_sessions", uidStr);
-            await upstashDel("fleet:revocation_reason:" + uidStr);
-            await upstashDel("fleet:alert_sent:revoked:" + uidStr);
+            await upstashSrem("fleet:revoked_sessions", uidStr).catch(() => {});
+            await upstashSadd("fleet:healthy_sessions", uidStr).catch(() => {});
+            await upstashDel("fleet:revocation_reason:" + uidStr).catch(() => {});
+            await upstashDel("fleet:alert_sent:revoked:" + uidStr).catch(() => {});
+          }
+          if (env && env.BACKUP_KV) {
+            try {
+              const rawKv = await env.BACKUP_KV.get("fleet_session_health");
+              let kvH = rawKv ? JSON.parse(rawKv) : { healthy: [], revoked: [], revokedDetails: [] };
+              const hSet = new Set((kvH.healthy || []).map(Number));
+              const rSet = new Set((kvH.revoked || []).map(Number));
+              if (numIdx) {
+                hSet.add(numIdx);
+                rSet.delete(numIdx);
+              }
+              const newDetails = (kvH.revokedDetails || []).filter(d => Number(d.index) !== numIdx && String(d.user_id) !== uidStr);
+              await env.BACKUP_KV.put("fleet_session_health", JSON.stringify({
+                healthy: Array.from(hSet),
+                revoked: Array.from(rSet),
+                revokedDetails: newDetails,
+                updated_at: Date.now()
+              })).catch(() => {});
+            } catch (_) {}
           }
           if (typeof caches !== "undefined" && caches.default) {
             try {
-              for (const k of ["fleet:accounts", "fleet:healthy_sessions", "fleet:revoked_sessions", "fleet:live_state", "fleet:status"]) {
+              for (const k of ["fleet:accounts", "fleet:healthy_sessions", "fleet:revoked_sessions", "fleet:live_state", "fleet:status", "fleet:session_health"]) {
                 caches.default.delete(`https://edge-cache.internal/${encodeURIComponent(k)}`).catch(() => {});
               }
             } catch (_) {}
@@ -6469,7 +6596,7 @@ fi
                 (a.session_string && typeof a.session_string === "string" && a.session_string.trim().length > 20) ||
                 (a.session && typeof a.session === "string" && a.session.trim().length > 20)
               );
-              const isRev = a.session_revoked === true || revokedSet.has(idx) || revokedSet.has(idxStr) || (uidStr && revokedSet.has(uidStr));
+              const isRev = a.session_revoked === true || revokedSet.has(idx) || revokedSet.has(idxStr) || revokedSet.has(Number(idx)) || (uidStr && revokedSet.has(uidStr));
               const statusIcon = isRev ? "🔴" : "🟢";
               const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
               return {
@@ -6683,9 +6810,13 @@ fi
             const rawName = cleanName(acc, i);
             const isHost = String(acc.user_id) === "6727787768";
             const name = isHost ? `${rawName} 👑` : rawName;
-            if (REVOKED_INDICES.has(idx)) {
-              const rDetail = (health.revokedDetails || []).find(d => d.index === idx);
-              const reason = rDetail ? rDetail.reason : (acc.session_string ? "AUTH_KEY_DUPLICATED — Multi-IP clash. REST mining active; need code for MTProto." : "MTProto session missing — Tap Re-link below to scan QR / OTP.");
+            const idxNum = Number(idx);
+            const idxStr = String(idx);
+            const uidStr = acc.user_id ? String(acc.user_id) : "";
+            const isRev = acc.session_revoked === true || REVOKED_INDICES.has(idx) || REVOKED_INDICES.has(idxStr) || REVOKED_INDICES.has(idxNum) || (uidStr && REVOKED_INDICES.has(uidStr));
+            if (isRev) {
+              const rDetail = (health.revokedDetails || []).find(d => Number(d.index) === idxNum || (uidStr && String(d.user_id) === uidStr));
+              const reason = rDetail ? rDetail.reason : (acc.session_string ? "Session unauthorized / logged out (Needs Re-link)" : "MTProto session missing — Tap Re-link below to scan QR / OTP.");
               revokedList.push({ idx, name, phone: ph, user_id: acc.user_id, reason });
             } else {
               activeList.push({ idx, name, phone: ph, user_id: acc.user_id });

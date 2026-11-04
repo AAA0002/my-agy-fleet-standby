@@ -370,55 +370,119 @@ async def release_account_lock(account_uid: str):
     except Exception:
         pass
 
+_REVOCATION_ALERTS_DISPATCHED = {}
+
 async def sync_account_health_state(account_idx: int, is_healthy: bool, reason: str = ""):
-    """Synchronizes real-time session health state in Upstash Redis across all Cloudflare Workers & Render nodes."""
-    if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_idx:
+    """Synchronizes real-time session health state across Cloudflare Edge Mesh and Upstash Redis."""
+    if not account_idx:
         return
+    idx_str = str(account_idx)
+    now_ts = time.time()
+
+    # 1. Update in-process alert deduplication tracker
+    if is_healthy:
+        _REVOCATION_ALERTS_DISPATCHED.pop(account_idx, None)
+    
+    # 2. Update local accounts.json file if present
     try:
-        idx_str = str(account_idx)
-        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        acc_path = os.path.join(BASE_DIR, "accounts.json")
+        if os.path.exists(acc_path):
+            with open(acc_path, "r", encoding="utf-8") as f:
+                disk_accs = json.load(f)
+            updated = False
+            for a in disk_accs:
+                if a.get("index") == account_idx:
+                    if a.get("session_revoked") != (not is_healthy):
+                        a["session_revoked"] = not is_healthy
+                        updated = True
+                    break
+            if updated:
+                with open(acc_path, "w", encoding="utf-8") as f:
+                    json.dump(disk_accs, f, indent=2)
+    except Exception as e_disk:
+        logger.debug(f"[Health Sync] Disk sync note: {e_disk}")
+
+    # 3. Synchronize to Cloudflare Edge Mesh directly (/api/fleet/session_health)
+    edge_urls = [
+        "https://restore-agy.agorameet.workers.dev",
+        "https://restore-agy.aaaai2.workers.dev",
+        "https://restore-agy.aaa-bot.workers.dev",
+        "https://restore-agy.aaa222.workers.dev",
+        "https://restore-agy.aaaai.workers.dev",
+    ]
+    secret_key = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "aaafleet2025secure")
+    payload = {
+        "index": account_idx,
+        "is_healthy": is_healthy,
+        "reason": reason or ("Healthy" if is_healthy else "Session unauthorized / logged out")
+    }
+    cf_synced = False
+    try:
         async with aiohttp.ClientSession() as s:
-            if is_healthy:
-                await s.post(f"{UPSTASH_URL}/sadd/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                await s.post(f"{UPSTASH_URL}/srem/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                await s.post(f"{UPSTASH_URL}/del/fleet:revocation_reason:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                await s.post(f"{UPSTASH_URL}/del/fleet:alert_sent:revoked:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-            else:
-                await s.post(f"{UPSTASH_URL}/sadd/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                await s.post(f"{UPSTASH_URL}/srem/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                if reason:
-                    await s.post(f"{UPSTASH_URL}/set/fleet:revocation_reason:{idx_str}?ex=86400", data=reason, headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                # Dispatch proactive Telegram alert to Admin channels
-                dedup_key = f"fleet:alert_sent:revoked:{idx_str}"
+            for e_url in edge_urls:
                 try:
-                    async with s.get(f"{UPSTASH_URL}/get/{dedup_key}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2)) as r_chk:
-                        is_sent = False
-                        if r_chk.status == 200:
-                            j_chk = await r_chk.json()
-                            is_sent = bool(j_chk.get("result"))
-                    if not is_sent and REPORT_BOT_TOKEN:
-                        await s.post(f"{UPSTASH_URL}/set/{dedup_key}?ex=21600", data="1", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
-                        alert_msg = (
-                            f"🚨 <b>Fleet Session Revocation Notice</b> 🔴\n\n"
-                            f"• <b>Account:</b> #{account_idx}\n"
-                            f"• <b>Reason:</b> <code>{reason or 'Session expired / revoked'}</code>\n"
-                            f"• <b>Action:</b> Account needs to be re-linked.\n\n"
-                            f"👉 Open <b>MY AGY AI</b> bot (@myagyai) and tap <b>🔑 OTP &amp; Relogin</b> to relink."
-                        )
-                        for target_chat in ["-1004358687850", REPORT_CHAT_ID]:
-                            if target_chat:
-                                try:
-                                    await s.post(
-                                        f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage",
-                                        json={"chat_id": target_chat, "text": alert_msg, "parse_mode": "HTML"},
-                                        timeout=aiohttp.ClientTimeout(total=3)
-                                    )
-                                except Exception:
-                                    pass
-                except Exception as e_alert:
-                    logger.debug(f"[Health Sync] Alert dispatch note: {e_alert}")
-    except Exception as e:
-        logger.debug(f"[Health Sync] Failed for #{account_idx}: {e}")
+                    async with s.post(
+                        f"{e_url}/api/fleet/session_health",
+                        json=payload,
+                        headers={
+                            "Authorization": f"Bearer {secret_key}",
+                            "Content-Type": "application/json",
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AAA-Fleet-Health/1.0"
+                        },
+                        timeout=aiohttp.ClientTimeout(total=3)
+                    ) as resp:
+                        if resp.status == 200:
+                            cf_synced = True
+                            break
+                except Exception:
+                    pass
+    except Exception as e_cf:
+        logger.debug(f"[Health Sync] Edge sync note: {e_cf}")
+
+    # 4. Secondary: Upstash Redis (if configured and quota allows)
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            async with aiohttp.ClientSession() as s:
+                if is_healthy:
+                    await s.post(f"{UPSTASH_URL}/sadd/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                    await s.post(f"{UPSTASH_URL}/srem/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                    await s.post(f"{UPSTASH_URL}/del/fleet:revocation_reason:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                    await s.post(f"{UPSTASH_URL}/del/fleet:alert_sent:revoked:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                else:
+                    await s.post(f"{UPSTASH_URL}/sadd/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                    await s.post(f"{UPSTASH_URL}/srem/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                    if reason:
+                        await s.post(f"{UPSTASH_URL}/set/fleet:revocation_reason:{idx_str}?ex=86400", data=reason, headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+        except Exception as e_up:
+            logger.debug(f"[Health Sync] Upstash note: {e_up}")
+
+    # 5. Proactive Telegram Alert dispatch (Guaranteed 6-hour deduplication)
+    if not is_healthy and REPORT_BOT_TOKEN:
+        last_alert_time = _REVOCATION_ALERTS_DISPATCHED.get(account_idx, 0)
+        if now_ts - last_alert_time >= 21600:  # 6 hours debounce
+            _REVOCATION_ALERTS_DISPATCHED[account_idx] = now_ts
+            alert_msg = (
+                f"🚨 <b>Fleet Session Revocation Notice</b> 🔴\n\n"
+                f"• <b>Account:</b> #{account_idx}\n"
+                f"• <b>Reason:</b> <code>{reason or 'Session expired / revoked'}</code>\n"
+                f"• <b>Action:</b> Account needs to be re-linked.\n\n"
+                f"👉 Open <b>MY AGY AI</b> bot (@myagyai) and tap <b>🔑 OTP &amp; Relogin</b> to relink."
+            )
+            try:
+                async with aiohttp.ClientSession() as s:
+                    for target_chat in ["-1004358687850", REPORT_CHAT_ID]:
+                        if target_chat:
+                            try:
+                                await s.post(
+                                    f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage",
+                                    json={"chat_id": target_chat, "text": alert_msg, "parse_mode": "HTML"},
+                                    timeout=aiohttp.ClientTimeout(total=3)
+                                )
+                            except Exception:
+                                pass
+            except Exception as e_alert:
+                logger.debug(f"[Health Sync] Alert dispatch note: {e_alert}")
 
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -1683,14 +1747,22 @@ async def extract_tokens_for_account(acc: dict) -> dict:
                             await sync_account_health_state(idx, is_healthy=True)
                         break
                     else:
-                        logger.warning(f"[{name}] Session unauthorized")
+                        if attempt < 3:
+                            logger.info(f"[{name}] Session unauthorized on attempt {attempt}, retrying in {attempt * 2}s...")
+                            await asyncio.sleep(attempt * 2.0)
+                            continue
+                        logger.warning(f"[{name}] Session unauthorized after 3 attempts")
                         if idx:
                             await sync_account_health_state(idx, is_healthy=False, reason="Session unauthorized / logged out")
                         return {}
                 except Exception as conn_err:
                     err_str = str(conn_err)
                     if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str or "AuthKeyDuplicatedError" in type(conn_err).__name__:
-                        logger.warning(f"[{name}] MTProto session duplicated/revoked")
+                        if attempt < 3:
+                            logger.info(f"[{name}] Potential IP clash on attempt {attempt}, retrying in {attempt * 2}s...")
+                            await asyncio.sleep(attempt * 2.0)
+                            continue
+                        logger.warning(f"[{name}] MTProto session duplicated/revoked after 3 attempts")
                         if idx:
                             await sync_account_health_state(idx, is_healthy=False, reason="AuthKeyDuplicatedError (multi-IP clash)")
                         return {}

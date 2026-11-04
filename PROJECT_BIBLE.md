@@ -1079,10 +1079,15 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - All fleet management, account re-linking, OTP code retrieval, and session operations execute 100% natively in Telegram chat via the on-screen PIN Pad and bot text commands.
 
 ### 4. Dynamic Session Health Synchronization & Active-Passive Edge Failback
-* **Dynamic Health State Machine**: Managed dynamically via Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 15s in-memory edge caching and automated eviction via `auto_wallet_manager.py`.
-* **Automated Revocation Auto-Purge (`ensure_account_complete`)**: Whenever an account is onboarded, saved, or verified with a valid session string, it is atomically removed from `fleet:revoked_sessions`, added to `fleet:healthy_sessions`, and its `fleet:revocation_reason:{idx}` key is permanently deleted.
+* **Multi-Layer Resilient Session Health Architecture**:
+  - **Primary Resilient Ground Truth (Cloudflare KV `fleet_session_health`)**: Session health state is persisted in Cloudflare Edge KV, completely immune to external Redis request rate limits or quota depletion.
+  - **Edge Sync Endpoint (`/api/fleet/session_health`)**: Render Node 3 Oregon and background workers report live connection audits directly to Cloudflare Edge Mesh via authenticated POST, instantaneously updating KV and edge isolate RAM.
+  - **Strict Mutual Exclusion**: Revoked indices are strictly filtered out of healthy sets: `healthy: new Set(cleanHealthy.filter(x => !revokedIndices.has(x)))`. An account can never simultaneously appear as both healthy and revoked.
+  - **Secondary High-Speed Cloud Cache**: Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) provide secondary caching when quota is available, with safe error boundary fallbacks to KV.
+  - **In-Memory Alert Debounce**: In `app.py`, `_REVOCATION_ALERTS_DISPATCHED` enforces a 6-hour cooldown, eliminating duplicate revocation alert spam.
+* **Automated Revocation Auto-Purge (`ensure_account_complete` / `onAccountRelinkSuccess`)**: Whenever an account is onboarded, saved, or verified with a valid session string, it is atomically removed from `fleet:revoked_sessions`, added to `fleet:healthy_sessions`, its `fleet:revocation_reason:{idx}` key is permanently deleted, and Cloudflare KV `fleet_session_health` is updated.
 * **1-Tap Re-link Auto-Promotion (`onAccountRelinkSuccess`)**: When an account session is re-linked via MTProto, its index and user ID are dynamically promoted from `revoked` to `healthy` across all edge nodes, immediately updating the OTP grid, fleet roster, and inspection screens to green `🟢`.
-* **24-Account Fleet Scale**: Canonical registries, edge fallbacks (`DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`), and live states are fully synchronized for all 24 accounts.
+* **24-Account Fleet Scale**: Canonical registries, edge fallbacks (`DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`), and live states are fully synchronized for all 24 accounts. Account #2 Nancy is flagged `session_revoked: true` until an OTP code is completed.
 * **Canonical 24-Account Clean Naming Architecture**:
   - Every account possesses a clean, authentic, non-digit-suffixed name across all registries (`accounts.json`, Upstash Redis `fleet:accounts`, `DEFAULT_FLEET_ACCOUNTS`, `DEFAULT_FLEET_DATA`, and HTML dashboards):
     1. `Arif Hossain` (Master Host 👑, `6727787768`)

@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Resolution of Conflicting Fleet Status Messages & Multi-Layer Health Synchronization (November 4, 2026)**:
+  - **Forensic Diagnosis of Bot Message Contradiction**:
+    * **The Anomaly**: Admin Bot `@myagyai` reported conflicting messages at the exact same minute: Image 1 showed `2. Nancy 🟢` in the OTP Grid, while Image 2's Session Audit stated `✅ All 24 fleet accounts are healthy...`, followed immediately by `🚨 Fleet Session Revocation Notice 🔴 • Account: #2 • Reason: Session unauthorized / logged out`.
+    * **Root Cause 1 (Upstash Redis Monthly Quota Exceeded)**: Upstash Redis free tier reached its 500,000 monthly request limit (`HTTP 400: ERR max requests limit exceeded`). When Render Node 3 Oregon called `sync_account_health_state(2, is_healthy=False)`, Redis rejected `SADD fleet:revoked_sessions 2`.
+    * **Root Cause 2 (Cloudflare Edge Worker Fallback Misassumption)**: In `getSessionHealthState()` within `deploy_both_cf_workers.py`, when Upstash Redis queries returned empty sets due to HTTP 400, the worker evaluated each account using fallback logic `const hasValidSession = Boolean(acc.session_string...)`. Because Account #2 had a session string on disk, `hasValidSession` evaluated to `true`, and with no revoked set returned from Redis, the worker falsely assumed Account #2 was healthy (`🟢`), generating `2. Nancy 🟢` and claiming `All 24 fleet accounts are healthy`.
+    * **Root Cause 3 (Live Telethon Detection on Render Node 3)**: Meanwhile, Render Node 3 Oregon's live MTProto connector actively dialed Telegram's DC with Nancy's session string. Telegram returned `is_user_authorized() == False` (Nancy's session genuinely expired/logged out in Telegram). Render Node 3 immediately fired the proactive Telegram revocation alert card, creating the direct in-channel contradiction.
+  - **Full 24-Account Live MTProto Verification**:
+    * Ran an exhaustive live MTProto audit with Telethon across all 24 accounts.
+    * **Result**: **23 Accounts are 100% Authorized & Healthy** (#1 Arif Hossain, #3 Koram Shah, #4-#13, #14 Rohan Sharma, #15-#24).
+    * **Sole Revoked Account**: **Account #2 Nancy (`+8801943805617`)** is confirmed genuinely unauthorized (`is_user_authorized: False`) and requires an OTP re-link.
+  - **Multi-Layer Resilient Session Health Architecture (`deploy_both_cf_workers.py`)**:
+    * **Cloudflare KV Integration**: Added primary lookup to Cloudflare KV `fleet_session_health` inside `getSessionHealthState()`. KV is completely free of Redis request limits and acts as a high-availability ground truth.
+    * **Strict Mutual Exclusion**: Enforced that any account in `revokedIndices` is strictly filtered out of `healthyIndices`. It is now mathematically impossible for an account to appear in both healthy and revoked sets.
+    * **Type-Safe Health Evaluation**: Added `Number(idx)`, `String(idx)`, and `acc.session_revoked === true` checks to `buildSessionAuditResponse` and `buildOtpMenuKeyboard`. If Account #2 is revoked, the button strictly renders `2. Nancy 🔴` and Session Audit displays `🔴 Needs Re-link: 1 Account (#2 Nancy)`.
+    * **New Live Edge Reporting Endpoint (`/api/fleet/session_health`)**: Added authenticated POST endpoint on Cloudflare Edge Worker allowing Render Node 3 to directly push session health updates to Cloudflare KV and isolate memory with sub-second propagation.
+    * **Hardened Relink Persistence (`onAccountRelinkSuccess`)**: When the user re-links an account, `onAccountRelinkSuccess` atomically updates Cloudflare KV `fleet_session_health`, removes it from revoked sets, and purges edge caches.
+  - **Render Node 3 Extractor & Health Sync Hardening (`app.py`)**:
+    * **3-Attempt Retry Guard**: In `extract_tokens_for_account`, wrapped `is_user_authorized()` and `AuthKeyDuplicatedError` in 3-attempt backoff retries (2s, 4s) before declaring an account revoked, preventing false alarms from transient socket drops.
+    * **Edge Mesh Sync & In-Memory Deduplication**: Upgraded `sync_account_health_state` to dispatch health reports directly to Cloudflare Edge Mesh (`/api/fleet/session_health`), update `accounts.json` on disk, and enforce a 6-hour in-memory alert debounce (`_REVOCATION_ALERTS_DISPATCHED`) so duplicate alerts are never spammed.
+  - **Live Deployments & Verification**:
+    * Deployed updated Cloudflare Edge Worker to Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/api/fleet/session_health` returns `200 {"ok":true}`.
+    * Synced `session_revoked: true` for Account #2 in `accounts.json` and `DEFAULT_FLEET_ACCOUNTS`.
+
+
 - **🔧 Multi-Bot Token Persistence Hardening, Kynex & PepeGram Master Referral Binding & Cloud Mesh Synchronization (November 4, 2026)**:
   - **Chicken Land Sub-Second Promo Sniper 24-Account Full-Fleet Expansion (`chickenland_promo_sniper.py`)**:
     * **Root Cause of Single-Account Claim (`1/1 accounts claimed`)**: `load_fleet_tokens()` relied on Upstash Redis `miniapp_tokens` and local disk files (`accounts.json`, `fleet_miniapp_tokens.json`). In the cloud container on Render Node 3, `accounts.json` is gitignored, and when Upstash free tier monthly requests were exhausted, `load_fleet_tokens()` was only able to resolve 1 fallback account, causing promo bursts to claim for only 1 account (+500 Coins) instead of all 24 (+12,000 Coins).
