@@ -60,12 +60,32 @@ async def jitter(min_s: float = 0.5, max_s: float = 1.5):
     await asyncio.sleep(random.uniform(min_s, max_s))
 
 
-async def authenticate_kynex(session: aiohttp.ClientSession, init_data: str) -> Optional[Dict[str, Any]]:
+async def authenticate_kynex(session: aiohttp.ClientSession, init_data: str, refresh_token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
-    Authenticates with Kynex using raw Telegram initData.
+    Authenticates with Kynex using raw Telegram initData or cached Firebase refreshToken.
+    Step 0: Fast token refresh via Google SecureToken API if refreshToken is present.
     Step 1: Calls verifyTelegramAuth Cloud Function to verify Telegram signature and credit referral.
-    Step 2: Exchanges the returned customToken for a Firebase idToken.
+    Step 2: Exchanges the returned customToken for a Firebase idToken & refreshToken.
     """
+    # Step 0: Fast Google SecureToken refresh if refreshToken exists
+    if refresh_token:
+        try:
+            async with session.post(
+                f"https://securetoken.googleapis.com/v1/token?key={FIREBASE_API_KEY}",
+                data=f"grant_type=refresh_token&refresh_token={refresh_token}",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=aiohttp.ClientTimeout(total=8)
+            ) as r_rf:
+                if r_rf.status == 200:
+                    rf_d = await r_rf.json()
+                    new_id = rf_d.get("id_token")
+                    new_rf = rf_d.get("refresh_token", refresh_token)
+                    u_id = rf_d.get("user_id")
+                    if new_id and u_id:
+                        return {"id_token": new_id, "refresh_token": new_rf, "uid": u_id}
+        except Exception:
+            pass
+
     try:
         # Step 1: verifyTelegramAuth
         verify_payload = {"data": {"initData": init_data}}
@@ -107,6 +127,7 @@ async def authenticate_kynex(session: aiohttp.ClientSession, init_data: str) -> 
             t_data = await t_resp.json()
 
         id_token = t_data.get("idToken")
+        refresh_tok = t_data.get("refreshToken")
         if not id_token:
             logger.warning("[Kynex Auth] Missing idToken in exchange response")
             return None
@@ -117,6 +138,7 @@ async def authenticate_kynex(session: aiohttp.ClientSession, init_data: str) -> 
 
         return {
             "id_token": id_token,
+            "refresh_token": refresh_tok,
             "uid": uid,
             "is_new_user": is_new_user,
             "referrer_uid": referrer_uid,
@@ -244,12 +266,16 @@ async def farm_kynex_account(
         result["status"] = "skipped (no initData)"
         return result
 
-    # 1. Authenticate
-    auth_res = await authenticate_kynex(session, init_data)
+    # 1. Authenticate (Fast Google SecureToken refresh if refreshToken cached)
+    rf_tok = acc_entry.get("kynex_refresh_token")
+    auth_res = await authenticate_kynex(session, init_data, refresh_token=rf_tok)
     if not auth_res or (isinstance(auth_res, dict) and auth_res.get("_error")):
         err_msg = auth_res.get("_error", "auth_failed") if isinstance(auth_res, dict) else "auth_failed"
         result["status"] = err_msg
         return result
+
+    if isinstance(auth_res, dict) and auth_res.get("refresh_token"):
+        acc_entry["kynex_refresh_token"] = auth_res["refresh_token"]
 
     id_token = auth_res["id_token"]
     uid = auth_res["uid"]

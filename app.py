@@ -1582,11 +1582,35 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         tokens["lumeon_init_data"] = lum_tok
     await asyncio.sleep(random.uniform(0.3, 0.8))
 
-    # 11. EarnVault (@EarnVaultApp_bot - Silent WebApp query)
+    # 11. EarnVault (@EarnVaultApp_bot - Silent WebApp query with immediate Firebase refreshToken exchange)
     ev_param = None if is_master else EARNVAULT_REFERRAL_CODE
     ev_tok = await extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=ev_param, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"])
     if ev_tok:
         tokens["earnvault_init_data"] = ev_tok
+        try:
+            async with aiohttp.ClientSession() as ev_s:
+                async with ev_s.post(
+                    "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth",
+                    json={"data": {"initData": ev_tok}},
+                    headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as ev_r:
+                    if ev_r.status == 200:
+                        ev_d = await ev_r.json()
+                        c_tok = ev_d.get("result", {}).get("token")
+                        if c_tok:
+                            ev_key = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+                            async with ev_s.post(
+                                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={ev_key}",
+                                json={"token": c_tok, "returnSecureToken": True},
+                                timeout=aiohttp.ClientTimeout(total=5)
+                            ) as s_r:
+                                if s_r.status == 200:
+                                    s_d = await s_r.json()
+                                    if s_d.get("refreshToken"):
+                                        tokens["earnvault_refresh_token"] = s_d["refreshToken"]
+        except Exception:
+            pass
 
     # Active Mining Bots: ATF, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault
     return tokens
@@ -7005,36 +7029,65 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     async def _farm_earnvault():
         ev_init = tokens.get("earnvault_init_data") or tokens.get("ev_init_data")
-        if not ev_init:
-            status["bots"]["earnvault"] = "skipped (no initData)"
-            return
+        rf_token = tokens.get("earnvault_refresh_token") or acc.get("earnvault_refresh_token")
+        id_tok = None
+        ev_key = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+        functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
+        ev_headers = {
+            "Content-Type": "application/json",
+            "User-Agent": user_agent
+        }
+
+        # Step 0: Fast Google SecureToken refresh if refreshToken is already cached
+        if rf_token:
+            try:
+                c_st, rf_d = await safe_post(
+                    f"https://securetoken.googleapis.com/v1/token?key={ev_key}",
+                    data=f"grant_type=refresh_token&refresh_token={rf_token}",
+                    req_headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    timeout_sec=6
+                )
+                if c_st == 200 and isinstance(rf_d, dict) and rf_d.get("id_token"):
+                    id_tok = rf_d["id_token"]
+                    if rf_d.get("refresh_token"):
+                        tokens["earnvault_refresh_token"] = rf_d["refresh_token"]
+                        acc["earnvault_refresh_token"] = rf_d["refresh_token"]
+            except Exception:
+                pass
+
+        if not id_tok:
+            if not ev_init:
+                status["bots"]["earnvault"] = "skipped (no initData)"
+                return
+            try:
+                # 1. telegramAuth to get custom token
+                c_st, auth_d = await safe_post(f"{functions_base}/telegramAuth", json_data={"data": {"initData": ev_init}}, req_headers=ev_headers, timeout_sec=8)
+                if c_st != 200 or not isinstance(auth_d, dict):
+                    status["bots"]["earnvault"] = f"auth_failed ({c_st})"
+                    return
+                custom_tok = auth_d.get("result", {}).get("token")
+                if not custom_tok:
+                    status["bots"]["earnvault"] = "no_custom_token"
+                    return
+
+                # 2. Exchange for Firebase ID Token
+                ex_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={ev_key}"
+                c_st, ex_d = await safe_post(ex_url, json_data={"token": custom_tok, "returnSecureToken": True}, timeout_sec=8)
+                if c_st != 200 or not isinstance(ex_d, dict):
+                    status["bots"]["earnvault"] = f"firebase_token_failed ({c_st})"
+                    return
+                id_tok = ex_d.get("idToken")
+                if not id_tok:
+                    status["bots"]["earnvault"] = "no_id_token"
+                    return
+                if ex_d.get("refreshToken"):
+                    tokens["earnvault_refresh_token"] = ex_d["refreshToken"]
+                    acc["earnvault_refresh_token"] = ex_d["refreshToken"]
+            except Exception as ae:
+                status["bots"]["earnvault"] = f"auth_error: {format_error(ae)}"
+                return
+
         try:
-            functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
-            ev_headers = {
-                "Content-Type": "application/json",
-                "User-Agent": user_agent
-            }
-            # 1. telegramAuth to get custom token
-            c_st, auth_d = await safe_post(f"{functions_base}/telegramAuth", json_data={"data": {"initData": ev_init}}, req_headers=ev_headers, timeout_sec=8)
-            if c_st != 200 or not isinstance(auth_d, dict):
-                status["bots"]["earnvault"] = f"auth_failed ({c_st})"
-                return
-            custom_tok = auth_d.get("result", {}).get("token")
-            if not custom_tok:
-                status["bots"]["earnvault"] = "no_custom_token"
-                return
-
-            # 2. Exchange for Firebase ID Token
-            ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
-            c_st, ex_d = await safe_post(ex_url, json_data={"token": custom_tok, "returnSecureToken": True}, timeout_sec=8)
-            if c_st != 200 or not isinstance(ex_d, dict):
-                status["bots"]["earnvault"] = f"firebase_token_failed ({c_st})"
-                return
-            id_tok = ex_d.get("idToken")
-            if not id_tok:
-                status["bots"]["earnvault"] = "no_id_token"
-                return
-
             auth_headers = {**ev_headers, "Authorization": f"Bearer {id_tok}"}
 
             # Gate solver helper
