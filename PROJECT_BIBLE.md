@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: November 4, 2026 (Kynex 24/7 Continuous Auto-Mining Recovery, Promo Sniper Hardening & Zero-Touch Referral Automation)*
+> *Last Updated: November 4, 2026 (Rogue Runner Eradication, Multi-IP Anti-Clash Isolation & Resilient In-Memory Account Locking)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*
@@ -275,6 +275,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       5. Source node suspends itself (`POST /v1/services/{old_id}/suspend`) -> container stops, hours stop.
       6. System enforces 5-minute cooldown where NO MTProto connections are made, allowing Telegram datacenter servers to completely flush old socket states and NAT bindings.
       7. Maintenance Mode expires, new node promotes itself to active coordinator, and normal farming resumes on a clean single IP.
+    * **Rogue External Runner Eradication & Strict Single-IP Enforcement (November 4, 2026)**:
+      * **Root Cause of Session Revocations**: Discovered that an old scheduled workflow in `koramshah2/AAA_AUTO` (`.github/workflows/mrg_turnstile_solver.yml` running on `0 */8 * * *`) fired at 08:52 UTC on GitHub Actions. It connected to Telegram MTProto concurrently with Render Node 3 using the same `StringSession` keys, causing Telegram's security system to permanently invalidate Account #14's auth key with `AuthKeyDuplicatedError (multi-IP clash)`.
+      * **Complete Workflow Shutdown**: Permanently disabled all 6 workflows across `koramshah2/AAA_AUTO`, `AAA0002/my-agy-fleet-standby`, and `AAA0002/cloud-fleet-solver` via GitHub REST API.
+      * **Sole Live MTProto Client**: Render Oregon Node 3 is now the 100% exclusive MTProto client in the entire world for all 24 fleet accounts, preventing any future multi-IP session revocations.
+      * **Resilient In-Memory Locking (`_LOCAL_ACCOUNT_LOCKS`)**: Added thread-safe in-memory account locking in `app.py` so that external Upstash request limits (`ERR max requests limit exceeded`) never block or stall local token extractions or farming cycles.
   - **🌐 Dedicated Relayers & Auxiliary AI Services**:
     * Primary MTProto Relayer: `https://atf-mtproto-relayer.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
     * Backup MTProto Relayer: `https://atf-mtproto-relayer-backup.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
