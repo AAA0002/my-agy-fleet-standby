@@ -57,7 +57,7 @@ except Exception:
         "Web3Primeteam", "keepeye_app", "kynex_mining", "pepe_grammmm", "solanamemes001"
     ]
 
-ATF_BOT = "atfminers_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
 KYNEX_BOT = "Kynex_miningbot"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 ADXEARN_BOT = "AdxEarnAibot"
