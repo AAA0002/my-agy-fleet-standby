@@ -536,7 +536,7 @@ def solve_atf_math(question_text: str) -> str:
     return solve_challenge_deterministic(question_text)
 
 # Active Fleet Mini-App Bots (All 9 Active Legitimate Bots)
-ATF_BOT = "atfminers_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
@@ -5105,6 +5105,7 @@ async def start_qr_login(request: Request):
                         acc_entry["email"] = existing_email
                         acc_entry["login_email"] = existing_email
                     acc_entry = auto_wallet_manager.ensure_account_complete(acc_entry, cur_accs)
+                    target_idx = acc_entry.get("index") or (int(req_index) if req_index else len(cur_accs) + 1)
                     auto_wallet_manager.reconcile_all_fleet_accounts()
                     asyncio.create_task(auto_wallet_manager.connect_and_start_bot_wallets(acc_entry))
                     asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
@@ -6545,6 +6546,22 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "Content-Type": "application/json"
                 }
                 c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
+                if c_st == 401 and tokens.get("diggo_init_data"):
+                    try:
+                        d_init = tokens["diggo_init_data"]
+                        if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
+                            import urllib.parse
+                            d_init = urllib.parse.unquote(d_init)
+                        c_a, d_a = await safe_post("https://diggo.linkpc.net/api/auth/telegram", json_data={"initData": d_init}, req_headers={
+                            "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "Content-Type": "application/json", "User-Agent": user_agent
+                        })
+                        if c_a == 200 and isinstance(d_a, dict) and d_a.get("token"):
+                            diggo_jwt = d_a["token"]
+                            tokens["diggo_jwt"] = diggo_jwt
+                            d_h["Authorization"] = f"Bearer {diggo_jwt}"
+                            c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
+                    except Exception:
+                        pass
                 if c_st == 200 and isinstance(st_d, dict):
                     st = st_d.get("state", {})
                     bal = float(st.get("balance") or 0.0)
@@ -8034,7 +8051,7 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         target_acc = next((a for a in accounts if str(a.get("user_id")) == str(req_uid)), None)
 
     bot_map = {
-        "atf": "atfminers_bot",
+        "atf": ATF_BOT,
         "kynex": "Kynex_miningbot"
     }
 
