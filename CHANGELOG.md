@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Kynex 24/7 Continuous Auto-Mining Recovery, Promo Sniper Hardening & Zero-Touch Referral Automation (November 4, 2026)**:
+  - **Kynex Continuous Auto-Mining & Anti-Stop Hardening (`kynex_miner.py`, `app.py`)**:
+    * **Root Cause Identified**: Kynex server mining sessions strictly run for 1 hour (3,600s). `claimMining` claims accrued KNX and stops the session. Previous 60-70m watchdog cooldowns caused accounts to sit stopped for 20-30 minutes before the next cycle.
+    * **Start-Mining Auto-Retry & State Verification**: Upgraded `farm_kynex_account` in `kynex_miner.py` with immediate retry logic if `startMining` encounters transient latency, verifying `mining_active = True`.
+    * **Shortened Cooldown & Auto-Recovery**: Reduced `BOT_COOLDOWNS["kynex"]` from `(3600, 4200)` to `(1800, 2400)` (30 to 40 minutes) in `app.py`. Added bypass logic in `_run_single_routine` to immediately restart mining whenever Kynex state is `stopped` or `idle`, ensuring accounts never sit idle.
+    * **Increased Watchdog Polling Frequency**: Reduced `cloud_wealth_automation_watchdog` sleep interval from 1,800s (30m) to 900s (15m), ensuring expired sessions are picked up and restarted promptly.
+    * **Authoritative Cycle State Tracking**: Updated `LAST_FARM_RUN` timestamp and status on every watchdog cycle so `/api/farm/status` and `/miner` dashboard show live status.
+  - **Full-Fleet Referral Automation & Verification**:
+    * **24-Account Referral Status Audit**: Verified that Master Account (`6727787768`) has 23 invited friends in Kynex, 23 referrals in LUM Miner, and full referral bindings across all legitimate bots.
+    * **Dispatched Silent MTProto Referral Binding**: Triggered `/api/fleet/bind-master-referrals` on Render Node 3 to bind remaining newly added accounts (`AAA 22`, `Abid Hasan (4)`, `AAA 24`) under Master.
+  - **Chicken Land Sub-Second Promo Code Sniper Hardening (`chickenland_promo_sniper.py`)**:
+    * **Case-Insensitive Exhaustion Recognition**: Hardened `extract_code_from_text` to check `EXPIRED`, `ALL CLAIMED`, `ALL_CLAIMED`, `EXHAUSTED`, `PLAYERS GOT IT`, and dynamic limit counts (`— 100 / 100`, `— 2,000 / 2,000`, `— 5,000 / 5,000`), preventing expired codes from triggering redundant burst calls.
+    * **Non-Blocking JSON RPC Parsing**: Handled HTTP 400 responses from tgcloud RPC with `resp.json(content_type=None)` safely without throwing content-type exceptions.
+    * **Telethon Reconnect Handler Deduplication**: Guarded event listener binding in `start_mtproto_listener` with `handlers_registered = False` outside `while True:`, preventing duplicate handlers on socket reconnections.
+  - **Account Name & Edge Dashboard Consistency (`accounts.json`, `deploy_both_cf_workers.py`)**:
+    * **`accounts.json` Field Hygiene**: Added clean `id`, `first_name`, and `last_name` matching `user_id` and `name` across all 24 accounts.
+    * **Clean Name Mapping**: Standardized Account #10 as `"Tanvir Ahmed"` (purged `"Tanvir Ahmed 10"` from all bot messages) and ensured Account #13 `"Abid (3)"` is correctly mapped across all worker blocks.
+    * **Cloudflare Edge Deployment**: Deployed updated worker to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified webhooks and commands.
+  - **Storage Integrity Preservation ("Zero-Change KV, D1 & Upstash")**:
+    * Complied strictly with user directive to preserve all existing Cloudflare KV, D1, and Upstash keys and schemas without modification or deletion.
+
+
 - **🚀 Comprehensive Full-Fleet 9-Bot Ground-Truth Alignment, Node 3 Coordinator Fix & End-to-End Dashboard Synchronization (November 3, 2026)**:
   - **Node 3 Active Coordinator & Distributed Lock Fix (`app.py`)**:
     * **Node Role Detection**: Updated `IS_PRIMARY_HOST` to recognize Render Oregon Node 3 (`db437o3tqb8s73dt4erg`) alongside Node 2.

@@ -6040,6 +6040,7 @@ fi
           if (n === "AAA" && i === 21) return "AAA 22";
           if (n === "Abid Hasan" && i === 6) return "Abid Hasan (1)";
           if (n === "Abid Hasan" && i === 7) return "Abid Hasan (2)";
+          if ((n === "Abid" || n === "Abid Hasan") && i === 12) return "Abid (3)";
           if (n === "Abid Hasan" && i === 22) return "Abid Hasan (4)";
           return n;
         };
@@ -7181,7 +7182,7 @@ fi
                 `• BEP-20 (BSC): \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
                 `• TON Deposit: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
                 `• Mandatory Memo: \`103525143\`\n\n` +
-                `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
+                `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed):*\n` +
                 `• BEP-20 (BSC): \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
                 `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
                 `🔐 *Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
@@ -10395,7 +10396,7 @@ fi
                   `🟠 *Bitcoin Address:*\n\`${w.btc}\`\n\n` +
                   `🛡️ _Direct Binance exchange custody (zero server recovery seeds)._`;
               } else if (targetIdx === 10) {
-                msg = `⭐ *Account #10: Tanvir Ahmed 10 (Worker Node)*\n` +
+                msg = `⭐ *Account #10: Tanvir Ahmed (Worker Node)*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `🏛️ *Custody:* Binance Web3 Wallet 2 (AAA)\n` +
                   `• Phone: \`+8801729892810\` | ID: \`8203342513\`\n\n` +
@@ -10441,7 +10442,7 @@ fi
               `• BEP-20: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• TON Deposit: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• MANDATORY MEMO: \`103525143\`\n\n` +
-              `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
+              `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed):*\n` +
               `• BEP-20: \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
               `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
               `🔐 *${workerCount} Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +

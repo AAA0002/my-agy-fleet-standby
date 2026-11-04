@@ -288,13 +288,15 @@ def extract_code_from_text(text: str) -> Optional[Dict[str, Any]]:
     if not code:
         return None
 
-    # Exhaustion indicators
+    # Exhaustion indicators (case-insensitive and resilient across all limit tiers)
+    text_u = text.upper()
     is_exhausted = (
-        "ALL CLAIMED" in text
-        or "100 / 100" in text
-        or "100/100" in text
-        or "EXHAUSTED" in text
-        or "❌ ALL CLAIMED" in text
+        "ALL CLAIMED" in text_u
+        or "ALL_CLAIMED" in text_u
+        or "EXPIRED" in text_u
+        or "EXHAUSTED" in text_u
+        or "PLAYERS GOT IT" in text_u
+        or bool(re.search(r'—\s*[\d,]+\s*/\s*[\d,]+', text))
     )
     return {"code": code, "is_exhausted": is_exhausted}
 
@@ -347,10 +349,18 @@ async def redeem_single_account(
 
     try:
         async with session.post(RPC_URL, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-            data = await resp.json()
+            data = None
+            try:
+                data = await resp.json(content_type=None)
+            except Exception:
+                try:
+                    text_resp = await resp.text()
+                    data = json.loads(text_resp)
+                except Exception:
+                    data = {}
             result["latency_ms"] = int((time.time() - t0) * 1000)
 
-            if data.get("ok"):
+            if isinstance(data, dict) and data.get("ok"):
                 res = data.get("result", {})
                 coins = res.get("coins", 0)
                 result["ok"] = True
@@ -374,30 +384,30 @@ async def redeem_single_account(
                         }
                         try:
                             async with session.post(RPC_URL, json=buy_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=4)) as b_resp:
-                                b_data = await b_resp.json()
+                                b_data = await b_resp.json(content_type=None)
                                 if b_data.get("ok"):
                                     result["hen_bought"] = True
                         except Exception:
                             pass
             else:
-                params = data.get("parameters", {})
-                status_code = params.get("code") or data.get("description", "ERROR")
-                result["code_status"] = status_code
+                params = (data.get("parameters") or {}) if isinstance(data, dict) else {}
+                status_code = params.get("code") or (data.get("description") if isinstance(data, dict) else None) or f"HTTP_{resp.status}"
+                result["code_status"] = str(status_code)
 
                 if (
                     status_code in ("PROMO_USED", "ALREADY_CLAIMED", "ALREADY_USED")
-                    or "already" in status_code.lower()
-                    or "used" in status_code.lower()
-                    or "claimed" in str(data.get("description", "")).lower()
+                    or "already" in str(status_code).lower()
+                    or "used" in str(status_code).lower()
+                    or "claimed" in str((data.get("description") if isinstance(data, dict) else "") or "").lower()
                 ):
                     if uid not in ACCOUNT_CLAIMED_CODES:
                         ACCOUNT_CLAIMED_CODES[uid] = set()
                     ACCOUNT_CLAIMED_CODES[uid].add(code)
                 elif (
                     status_code == "PROMO_FULL"
-                    or "full" in status_code.lower()
-                    or "limit" in status_code.lower()
-                    or "exhaust" in status_code.lower()
+                    or "full" in str(status_code).lower()
+                    or "limit" in str(status_code).lower()
+                    or "exhaust" in str(status_code).lower()
                 ):
                     EXHAUSTED_CODES.add(code)
 
@@ -639,6 +649,7 @@ async def start_mtproto_listener():
     sess_str = listener_acc["session_string"]
     acc_name = listener_acc.get("name", "Listener")
     client = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    handlers_registered = False
 
     while True:
         try:
@@ -676,60 +687,63 @@ async def start_mtproto_listener():
 
             chat_targets = [entity] if entity else [CHANNEL_USERNAME, CHANNEL_ID]
 
-            # Define instant push handler for NEW messages (Bound directly to channel socket)
-            @client.on(events.NewMessage(chats=chat_targets))
-            async def on_new_promo_message(event):
-                cid = event.chat_id
-                uname = (getattr(event.chat, 'username', '') or '').lower()
-                if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
-                    return
+            if not handlers_registered:
+                # Define instant push handler for NEW messages (Bound directly to channel socket)
+                @client.on(events.NewMessage(chats=chat_targets))
+                async def on_new_promo_message(event):
+                    cid = event.chat_id
+                    uname = (getattr(event.chat, 'username', '') or '').lower()
+                    if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
+                        return
 
-                raw = event.raw_text or (event.message.message if event.message else "") or ""
-                parsed = extract_code_from_text(raw)
-                if not parsed:
-                    return
+                    raw = event.raw_text or (event.message.message if event.message else "") or ""
+                    parsed = extract_code_from_text(raw)
+                    if not parsed:
+                        return
 
-                code = parsed["code"]
-                is_ex = parsed["is_exhausted"]
-                print(f"[MTProto Sniper] ⚡ PUSH EVENT RECEIVED: Code={code}, Exhausted={is_ex}")
+                    code = parsed["code"]
+                    is_ex = parsed["is_exhausted"]
+                    print(f"[MTProto Sniper] ⚡ PUSH EVENT RECEIVED: Code={code}, Exhausted={is_ex}")
 
-                if is_ex:
-                    SEEN_CODES.add(code)
-                    EXHAUSTED_CODES.add(code)
-                    return
+                    if is_ex:
+                        SEEN_CODES.add(code)
+                        EXHAUSTED_CODES.add(code)
+                        return
 
-                if code not in CLAIMED_CODES and not is_code_claimed(code):
-                    print(f"🔥 [MTProto Sniper] NEW LIVE PROMO CODE DETECTED: {code}! LAUNCHING PARALLEL BURST...")
-                    t0 = time.time()
-                    report = await snipe_promo_fleet(code)
-                    elapsed = round(time.time() - t0, 3)
-                    print(f"✅ [MTProto Sniper] Burst complete for {code}: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins) in {elapsed}s")
+                    if code not in CLAIMED_CODES and not is_code_claimed(code):
+                        print(f"🔥 [MTProto Sniper] NEW LIVE PROMO CODE DETECTED: {code}! LAUNCHING PARALLEL BURST...")
+                        t0 = time.time()
+                        report = await snipe_promo_fleet(code)
+                        elapsed = round(time.time() - t0, 3)
+                        print(f"✅ [MTProto Sniper] Burst complete for {code}: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins) in {elapsed}s")
 
-            # Define instant push handler for EDITED messages
-            @client.on(events.MessageEdited(chats=chat_targets))
-            async def on_edited_promo_message(event):
-                cid = event.chat_id
-                uname = (getattr(event.chat, 'username', '') or '').lower()
-                if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
-                    return
+                # Define instant push handler for EDITED messages
+                @client.on(events.MessageEdited(chats=chat_targets))
+                async def on_edited_promo_message(event):
+                    cid = event.chat_id
+                    uname = (getattr(event.chat, 'username', '') or '').lower()
+                    if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
+                        return
 
-                raw = event.raw_text or (event.message.message if event.message else "") or ""
-                parsed = extract_code_from_text(raw)
-                if not parsed:
-                    return
+                    raw = event.raw_text or (event.message.message if event.message else "") or ""
+                    parsed = extract_code_from_text(raw)
+                    if not parsed:
+                        return
 
-                code = parsed["code"]
-                is_ex = parsed["is_exhausted"]
+                    code = parsed["code"]
+                    is_ex = parsed["is_exhausted"]
 
-                if is_ex:
-                    SEEN_CODES.add(code)
-                    EXHAUSTED_CODES.add(code)
-                    return
+                    if is_ex:
+                        SEEN_CODES.add(code)
+                        EXHAUSTED_CODES.add(code)
+                        return
 
-                if code not in CLAIMED_CODES and not is_code_claimed(code):
-                    print(f"🔥 [MTProto Sniper] CODE DETECTED IN EDITED MESSAGE: {code}! LAUNCHING BURST...")
-                    report = await snipe_promo_fleet(code)
-                    print(f"✅ [MTProto Sniper] Edit burst complete: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins)")
+                    if code not in CLAIMED_CODES and not is_code_claimed(code):
+                        print(f"🔥 [MTProto Sniper] CODE DETECTED IN EDITED MESSAGE: {code}! LAUNCHING BURST...")
+                        report = await snipe_promo_fleet(code)
+                        print(f"✅ [MTProto Sniper] Edit burst complete: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins)")
+
+                handlers_registered = True
 
             # Keep Telethon connected indefinitely
             await client.run_until_disconnected()

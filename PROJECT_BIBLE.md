@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: November 3, 2026 (Full-Fleet 9-Bot Ground-Truth Alignment, Node 3 Coordinator Fix & End-to-End Dashboard Synchronization)*
+> *Last Updated: November 4, 2026 (Kynex 24/7 Continuous Auto-Mining Recovery, Promo Sniper Hardening & Zero-Touch Referral Automation)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*

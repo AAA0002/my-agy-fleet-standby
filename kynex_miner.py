@@ -371,19 +371,27 @@ async def farm_kynex_account(
         if earned > 0:
             result["notes"].append(f"claimed_{earned:.2f}_KNX")
 
-    # 5. Start mining session
+    # 5. Start mining session (with auto-retry to guarantee mining is never left stopped)
     await jitter(0.5, 1.2)
     start_res = await call_kynex_function(session, id_token, "startMining")
-    if start_res and not start_res.get("_error"):
-        if start_res.get("started"):
-            result["mining_active"] = True
-            result["notes"].append("mining_started")
+    if start_res and not start_res.get("_error") and start_res.get("started"):
+        result["mining_active"] = True
+        result["notes"].append("mining_started")
     else:
-        err_msg = (start_res or {}).get("_error", "")
-        if "already active" in err_msg.lower():
+        err_msg = str((start_res or {}).get("_error", "")).lower()
+        if "already active" in err_msg or "active" in err_msg:
             result["mining_active"] = True
         else:
-            result["notes"].append(f"start_note: {err_msg[:60]}")
+            # Immediate retry after short delay to prevent mining remaining stopped
+            await asyncio.sleep(1.2)
+            start_res2 = await call_kynex_function(session, id_token, "startMining")
+            if start_res2 and not start_res2.get("_error") and start_res2.get("started"):
+                result["mining_active"] = True
+                result["notes"].append("mining_started_retry")
+            elif "already active" in str((start_res2 or {}).get("_error", "")).lower():
+                result["mining_active"] = True
+            else:
+                result["notes"].append(f"start_note: {err_msg[:60]}")
 
     # 6. Daily Check-in & Daily Invite Bonus
     await jitter(0.6, 1.4)

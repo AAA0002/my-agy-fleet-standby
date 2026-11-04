@@ -7115,7 +7115,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (9 Active Bots)
     BOT_COOLDOWNS = {
         "atf": (1800, 3600),
-        "kynex": (3600, 4200),
+        "kynex": (1800, 2400),
         "pepegram": (21600, 28800),
         "adxearn": (7200, 14400),
         "diggo": (7200, 14400),
@@ -7188,9 +7188,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         cd_sec = int(last_obj.get("cooldown", min_s)) if last_obj else min_s
                         elapsed = now_ts - last_time
                         if last_time > 0 and elapsed < cd_sec:
-                            rem_m = max(1, (cd_sec - elapsed) // 60)
-                            status["bots"][b_name] = f"cooldown ({rem_m}m remaining)"
-                            should_farm = False
+                            # Auto-recovery: If kynex is in cooldown but its last status was not mining: ACTIVE, allow immediate farm
+                            if b_name == "kynex" and ("stopped" in str(last_obj.get("status", "")).lower() or "idle" in str(last_obj.get("status", "")).lower()):
+                                should_farm = True
+                            else:
+                                rem_m = max(1, (cd_sec - elapsed) // 60)
+                                status["bots"][b_name] = f"cooldown ({rem_m}m remaining)"
+                                should_farm = False
                     except Exception:
                         pass
             except Exception:
@@ -7207,7 +7211,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 bot_res = str(status["bots"].get(b_name, "")).lower()
                 is_success = bot_res.startswith("farmed") or bot_res.startswith("ok")
                 next_cd = random.randint(min_s, max_s) if is_success else random.randint(180, 300)
-                val_to_save = json.dumps({"timestamp": now_ts, "cooldown": next_cd})
+                val_to_save = json.dumps({"timestamp": now_ts, "cooldown": next_cd, "status": bot_res})
                 FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = val_to_save
                 if UPSTASH_URL and UPSTASH_TOKEN:
                     try:
@@ -9097,6 +9101,11 @@ async def cloud_wealth_automation_watchdog():
                         farm_res = await run_cloud_fleet_farming_cycle(session, accounts, tokens)
                         farm_elapsed = time.time() - t_farm_start
                         farm_res["elapsed"] = farm_elapsed
+                        LAST_FARM_RUN["timestamp"] = time.time()
+                        LAST_FARM_RUN["status"] = "completed"
+                        LAST_FARM_RUN["farmed_count"] = farm_res.get("farmed_count", 0)
+                        LAST_FARM_RUN["total_accounts"] = len(accounts)
+                        LAST_FARM_RUN["results"] = farm_res.get("results", [])
                         logger.info(f"[Cloud Wealth Watchdog] Fleet farming cycle #{cycle_count} finished: {farm_res.get('farmed_count', 0)} accounts in {farm_elapsed:.1f}s")
                         asyncio.create_task(notify_farming_cycle_completion(farm_res, source=f"Watchdog #{cycle_count}", elapsed=farm_elapsed))
                     except Exception as fe:
@@ -9151,7 +9160,7 @@ async def cloud_wealth_automation_watchdog():
         except Exception as e:
             logger.error(f"[Cloud Wealth Watchdog] Cycle error: {e}")
 
-        await asyncio.sleep(1800)
+        await asyncio.sleep(900)
 
 
 if __name__ == "__main__":
