@@ -1576,6 +1576,25 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         "synced_at": time.time()
     }
 
+    # Security Sentinel Check: Scan for unauthorized foreign device logins from 777000
+    try:
+        from fleet_security_sentinel import parse_service_notification, dispatch_security_alert
+        svc_msgs = await asyncio.wait_for(client.get_messages(777000, limit=3), timeout=3.0)
+        for s_msg in svc_msgs:
+            if s_msg and s_msg.message:
+                info = parse_service_notification(s_msg.message)
+                if info and info.get("is_login_notification") and not info.get("whitelisted"):
+                    s_ts = s_msg.date.timestamp() if hasattr(s_msg.date, "timestamp") else time.time()
+                    if time.time() - s_ts < 86400:  # within last 24h
+                        asyncio.create_task(dispatch_security_alert(
+                            account_idx=acc.get("index") or uid,
+                            account_name=name,
+                            account_phone=acc.get("phone", "N/A"),
+                            info=info
+                        ))
+    except Exception as e_sec:
+        logger.debug(f"[Security Check] Note for {name}: {e_sec}")
+
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
 
     # 1. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
@@ -5520,6 +5539,18 @@ async def get_account_otp(acc_target: str, request: Request):
                     for msg in messages:
                         if not msg or not msg.message:
                             continue
+                        
+                        # Inspect for unauthorized foreign device logins
+                        try:
+                            from fleet_security_sentinel import parse_service_notification, dispatch_security_alert
+                            login_info = parse_service_notification(msg.message)
+                            if login_info and login_info.get("is_login_notification") and not login_info.get("whitelisted"):
+                                msg_ts = msg.date.timestamp() if hasattr(msg.date, "timestamp") else time.time()
+                                if time.time() - msg_ts < 86400:  # within last 24h
+                                    asyncio.create_task(dispatch_security_alert(target_idx, name, phone, login_info))
+                        except Exception as e_sec:
+                            logger.debug(f"[Security Check] Note: {e_sec}")
+
                         m = re.search(r"Login code:\s*(\d{5,6})", msg.message, re.IGNORECASE) or (
                             ("login" in msg.message.lower() or "code" in msg.message.lower()) and re.search(r"\b(\d{5,6})\b", msg.message)
                         )

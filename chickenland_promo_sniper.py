@@ -774,6 +774,26 @@ async def start_mtproto_listener():
                         report = await snipe_promo_fleet(code)
                         print(f"✅ [MTProto Sniper] Edit burst complete: {report['claimed_count']}/{report['total_accounts']} claimed (+{report['total_coins']} coins)")
 
+                # Define instant push handler for 777000 Telegram Service Notifications (Security Sentinel)
+                @client.on(events.NewMessage(chats=777000))
+                async def on_service_notification_event(event):
+                    try:
+                        raw_msg = event.raw_text or (event.message.message if event.message else "") or ""
+                        from fleet_security_sentinel import parse_service_notification, dispatch_security_alert
+                        info = parse_service_notification(raw_msg)
+                        if info and info.get("is_login_notification"):
+                            if info.get("whitelisted"):
+                                print(f"[Security Sentinel] 🛡️ Whitelisted device login: {info.get('device')} ({info.get('whitelist_reason')}). No alert required.")
+                                return
+                            # Foreign/Unknown device!
+                            acc_idx = listener_acc.get("index", 2)
+                            acc_name = listener_acc.get("name", "Fleet Account")
+                            acc_phone = listener_acc.get("phone", "N/A")
+                            print(f"🚨 [Security Sentinel] UNKNOWN DEVICE LOGIN DETECTED on #{acc_idx} {acc_name}: {info.get('device')} (IP: {info.get('ip')})")
+                            await dispatch_security_alert(acc_idx, acc_name, acc_phone, info)
+                    except Exception as e_sec:
+                        print(f"[Security Sentinel Note]: {e_sec}")
+
                 handlers_registered = True
 
             # Keep Telethon connected indefinitely

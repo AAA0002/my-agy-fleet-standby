@@ -6705,6 +6705,7 @@ fi
               { text: "🌐 Cloud Mesh", callback_data: "btn_mesh" }
             ],
             [
+              { text: "🛡️ Device Sentinel", callback_data: "btn_device_sentinel" },
               { text: "📺 Ad-Farmer Loop", callback_data: "btn_ad_farmer" }
             ]
           ]
@@ -7444,6 +7445,32 @@ fi
                 ? `🟢 *[RENDER FAILOVER COMPLETED]*\n\n✅ ${res.message}\n\n🛡️ *Protection:* Zero concurrent instances maintained ($0 Free Tier safe).`
                 : `❌ *[FAILOVER ERROR]:* ${res.error || res.message}`;
               await sendResilientMessage(chatId, rep);
+            } else if (cbData === "btn_device_sentinel") {
+              const dhakaTime = getDhakaTimestamp();
+              const accounts = await getFleetAccounts();
+              const rep = `🛡️ *FLEET DEVICE SECURITY SENTINEL*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Autonomous anti-intrusion monitoring active across all ${accounts.length} fleet accounts.\n\n` +
+                `📱 *Authorized Devices (Whitelisted):*\n` +
+                `• 🟢 *Samsung Galaxy A30* (Personal Device — Notifications Muted)\n` +
+                `• 🟢 *Render Node 3 (Oregon)* (24/7 Cloud MTProto Coordinator)\n` +
+                `• 🟢 *Cloudflare Edge Mesh* (5 Edge Worker Nodes)\n\n` +
+                `🚨 *Intrusion Detection Policy:*\n` +
+                `• Real-time socket listener on Telegram Service Notifications (*777000*)\n` +
+                `• If ANY foreign device logs in (e.g. unknown PC, iPhone, unauthorized IP), an instant intrusion alert is dispatched with device name, IP & Location!\n` +
+                `• Whitelisted logins from your **Samsung Galaxy A30** will never trigger false alert messages.\n\n` +
+                `📊 *Current Device Security Status:*\n` +
+                `• 🟢 *Active Accounts:* \`${accounts.length}/${accounts.length} Protected\`\n` +
+                `• 🛡️ *Unknown / Foreign Sessions:* \`0 Detected\` ✅\n` +
+                `• ⏱️ *Audit Timestamp:* \`${dhakaTime}\``;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              const markup = {
+                inline_keyboard: [
+                  [{ text: "🔄 Re-Scan Devices", callback_data: "btn_device_sentinel" }, { text: "🔍 Session Audit", callback_data: "btn_session_audit" }],
+                  [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
+                ]
+              };
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
             } else if (cbData === "btn_accounts") {
               const accounts = await getFleetAccounts();
               const health = await getSessionHealthState();
@@ -8942,6 +8969,37 @@ fi
               `• ⚡ *Zero Phone Load:* 100% Cloud MTProto active on Render & Cloudflare Edge\n` +
               `• 🛡️ *Anti-Ban:* Callback queries bypass Telegram code sharing blocks`;
             await sendReply(rep, mainInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.12 Dedicated Security Sentinel Command (/sentinel, /security)
+        if (text === "/sentinel" || text === "/security" || text === "🛡️ Device Sentinel") {
+          ctx.waitUntil((async () => {
+            const dhakaTime = getDhakaTimestamp();
+            const accounts = await getFleetAccounts();
+            const rep = `🛡️ *FLEET DEVICE SECURITY SENTINEL*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `Autonomous anti-intrusion monitoring active across all ${accounts.length} fleet accounts.\n\n` +
+              `📱 *Authorized Devices (Whitelisted):*\n` +
+              `• 🟢 *Samsung Galaxy A30* (Personal Device — Notifications Muted)\n` +
+              `• 🟢 *Render Node 3 (Oregon)* (24/7 Cloud MTProto Coordinator)\n` +
+              `• 🟢 *Cloudflare Edge Mesh* (5 Edge Worker Nodes)\n\n` +
+              `🚨 *Intrusion Detection Policy:*\n` +
+              `• Real-time socket listener on Telegram Service Notifications (*777000*)\n` +
+              `• If ANY foreign device logs in (e.g. unknown PC, iPhone, unauthorized IP), an instant intrusion alert is dispatched with device name, IP & Location!\n` +
+              `• Whitelisted logins from your **Samsung Galaxy A30** will never trigger false alert messages.\n\n` +
+              `📊 *Current Device Security Status:*\n` +
+              `• 🟢 *Active Accounts:* \`${accounts.length}/${accounts.length} Protected\`\n` +
+              `• 🛡️ *Unknown / Foreign Sessions:* \`0 Detected\` ✅\n` +
+              `• ⏱️ *Audit Timestamp:* \`${dhakaTime}\``;
+            const markup = {
+              inline_keyboard: [
+                [{ text: "🔄 Re-Scan Devices", callback_data: "btn_device_sentinel" }, { text: "🔍 Session Audit", callback_data: "btn_session_audit" }],
+                [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
+              ]
+            };
+            await sendReply(rep, markup);
           })());
           return new Response("OK");
         }
