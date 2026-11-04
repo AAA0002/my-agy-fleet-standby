@@ -3,6 +3,9 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🔧 Multi-Bot Token Persistence Hardening, Kynex & PepeGram Master Referral Binding & Cloud Mesh Synchronization (November 4, 2026)**:
+  - **Chicken Land Sub-Second Promo Sniper 24-Account Full-Fleet Expansion (`chickenland_promo_sniper.py`)**:
+    * **Root Cause of Single-Account Claim (`1/1 accounts claimed`)**: `load_fleet_tokens()` relied on Upstash Redis `miniapp_tokens` and local disk files (`accounts.json`, `fleet_miniapp_tokens.json`). In the cloud container on Render Node 3, `accounts.json` is gitignored, and when Upstash free tier monthly requests were exhausted, `load_fleet_tokens()` was only able to resolve 1 fallback account, causing promo bursts to claim for only 1 account (+500 Coins) instead of all 24 (+12,000 Coins).
+    * **Remediation**: Added an automatic Cloudflare Edge Mesh KV fallback (`https://restore-agy.agorameet.workers.dev/api/miniapp/tokens`). Verified that `load_fleet_tokens()` now loads all **24/24 accounts** with 100% reliability, enabling simultaneous 300ms parallel burst claims across the entire fleet.
   - **Firebase & JWT Token Persistence Architecture Across All Clouds (`app.py`, `deploy_both_cf_workers.py`)**:
     * **Root Cause of 401s Identified**: `earnvault_refresh_token`, `kynex_refresh_token`, and `diggo_jwt` were acquired in memory during farming cycles but were filtered out by `clean_merged` in `app.py` and `ALLOWED_FLEET_KEYS` in Cloudflare Worker edge nodes. When hashes aged past 24 hours, `telegramAuth` returned HTTP 401.
     * **Cloud-Wide Whitelist & Persistence**: Added `earnvault_refresh_token`, `kynex_refresh_token`, and `diggo_jwt` to `ALLOWED_FLEET_KEYS` in `deploy_both_cf_workers.py` and `clean_merged` in `app.py`. Added atomic local disk persistence to `fleet_miniapp_tokens.json`.
