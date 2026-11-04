@@ -7877,7 +7877,7 @@ fi
               const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
-                `1. 🪙 *ATF Miner* (@atfminers_bot) — Cryptographic Math Solver\n` +
+                `1. 🪙 *ATF Miner* (@ATF_AIRDROP_bot) — Cryptographic Math Solver\n` +
                 `2. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
                 `3. ⛏️ *DiggoMiner* (@Diggominer_bot) — TonConnect 2.0 & Auto-Dig\n` +
                 `4. 🐸 *PepeGram* (@Pepe_gram_bot) — Cloud Mine & Auto-Upgrade\n` +
@@ -9228,7 +9228,7 @@ fi
             const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Live Sessions:* \`${activeCount}/${health.total} MTProto Online\` • \`${health.total}/${health.total} REST Mining Active\`\n\n` +
-              `1. 🪙 *ATF Miner* (@atfminers_bot) — Cryptographic Math Solver\n` +
+              `1. 🪙 *ATF Miner* (@ATF_AIRDROP_bot) — Cryptographic Math Solver\n` +
               `2. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
               `3. ⛏️ *DiggoMiner* (@Diggominer_bot) — TonConnect 2.0 & Auto-Dig\n` +
               `4. 🐸 *PepeGram* (@Pepe_gram_bot) — Cloud Mine & Auto-Upgrade\n` +
@@ -14278,7 +14278,7 @@ Reply to Arif naturally:`;
           // C3.25 Per-Pool Connection Guide
           if (cqData.startsWith("ub_guide_pool_")) {
             const poolKey = cqData.replace("ub_guide_pool_", "").trim();
-            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "atfminers_bot", ref_url: "https://t.me/atfminers_bot?start=6727787768" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "ATF_AIRDROP_bot", ref_url: "https://t.me/ATF_AIRDROP_bot?start=6727787768" };
             const guideMsg = `📖 *HOW TO CONNECT ${poolInfo.name.toUpperCase()} (10 SECONDS)* 🚀\n\n` +
               `Connecting ${poolInfo.name} to 24/7 cloud auto-mining is fast and frictionless:\n\n` +
               `1️⃣ *1-Tap QR Login:* Tap *📱 1-Tap QR Login* below to link your account safely!\n` +
@@ -14332,7 +14332,7 @@ Reply to Arif naturally:`;
           // C3.3 Add Per-Pool Account Prompt
           if (cqData.startsWith("ub_add_pool_")) {
             const poolKey = cqData.replace("ub_add_pool_", "").trim();
-            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "atfminers_bot" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "ATF_AIRDROP_bot" };
             const profile = await getUserProfile(cqChatId, cq.from);
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             if (profile.accounts.length >= totalSlots) {

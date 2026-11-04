@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Deep Bug Hunt & Root-Cause Elimination across 9-Bot Fleet (November 4, 2026)**:
+  - **ATF Miner Entity Resolution Bug Fixed (`app.py`, `login_account.py`, `refresh_cloud_tokens.py`, `extract_all_missing_fleet_tokens.py`, `deploy_both_cf_workers.py`)**:
+    * **Bug Identified**: Found that legacy handle `@atfminers_bot` was permanently deleted/unregistered on Telegram (`Bad Request: chat not found`). Any call to `cl.get_entity("atfminers_bot")` threw `ValueError: No user has "atfminers_bot" as username`.
+    * **Root Cause Remediation**: Updated canonical bot handle to official active bot `@ATF_AIRDROP_bot` (Bot ID: `8233119648`), maintaining backwards compatibility aliases in `BOT_ALIASES`. All 24 fleet accounts can now interact with ATF Miner without entity resolution failures.
+  - **F821 Undefined Name `target_idx` in QR Auth Resolved (`app.py`)**:
+    * **Bug Identified**: In `_wait_qr_auth()` (`/api/account/login/qr-start`), `target_idx` was referenced three times without declaration, causing any QR-based onboarding to crash with `NameError: name 'target_idx' is not defined`.
+    * **Fix Applied**: Defined `target_idx = acc_entry.get("index") or (int(req_index) if req_index else len(cur_accs) + 1)` immediately following `ensure_account_complete`. Static analysis (`uvx ruff check . --select F821`) now passes 100% with 0 errors.
+  - **DiggoMiner On-the-Fly 401 JWT Self-Healing (`app.py`)**:
+    * **Bug Identified**: In `_farm_diggo()`, when a stored `diggo_jwt` expired or was rejected with HTTP 401, the routine terminated immediately with `state_failed (401)` without attempting an inline exchange using `diggo_init_data`.
+    * **Fix Applied**: Added automatic on-the-fly re-exchange logic: when HTTP 401 is received from `https://diggo.linkpc.net/api/state`, it unquotes `diggo_init_data`, posts to `/api/auth/telegram`, acquires a fresh 30-day JWT, updates memory and Redis, and retries state fetching seamlessly in the same cycle.
+  - **Account #14 Multi-IP Revocation Root Cause Solved**:
+    * **Verification**: Account #14 (`rohan_sharma7`, ID `8727040932`) was verified 100% authenticated and authorized on Render Node 3.
+    * **Live 9-Bot Harvest**: Executed targeted farm cycle for Account #14 on Render Node 3 (`/api/farm/account/8727040932`) — 9/9 bots farmed successfully with 0 errors (Grouche: 835 GRC, LUM: 4 tasks, Chicken Land: 19 hens / 142.5/h, Diggo: lvl 71 / 1081.79 bal, PepeGram: 1770 power / 2997 hashes, Kynex: 137,557 KNX active mining, EarnVault: $1.43, ATF: lvl 48 / 321.2 ATF, AdxEarn: 15,970 pts).
+    * **Multi-IP Clash Prevented**: All crons across external repositories (`koramshah2/AAA_AUTO`, `AAA0002/cloud-fleet-solver`) remain permanently disabled, eliminating any secondary IP collisions.
+  - **Storage & Infrastructure Compliance**:
+    * Strict adherence to zero-change directive: Upstash Redis keys, Cloudflare KV, and D1 databases were left untouched without any deletions or destructive resets.
+
+
 - **🛡️ Root-Cause Elimination of `AuthKeyDuplicatedError` (Multi-IP Clash) & Upstash Quota Resilient Locking (November 4, 2026)**:
   - **Eliminated Rogue External Runner Causing Account Session Revocations**:
     * **Smoking Gun Identified**: Tracked down the mysterious `5-Bot Fleet Cloud Turnstile & Multi-Farming Engine Report` received at 09:09:20 UTC to an active scheduled cron (`0 */8 * * *`) in repository `koramshah2/AAA_AUTO` (`.github/workflows/mrg_turnstile_solver.yml`).

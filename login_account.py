@@ -42,14 +42,14 @@ API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
 # All 9 Verified Legitimate Fleet Bots & Referral Codes
-ATF_BOT = "atfminers_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
 
 BOT_ALIASES = {
-    "ATF_AIRDROP_bot": ["atfminers_bot", 7058204689],
-    "atfminers_bot": ["ATF_AIRDROP_bot", 7058204689],
-    "Kynex_miningbot": ["kynexnetworkbot", 7421882583],
-    "Pepe_gram_bot": ["pepegram_bot", 7639148332],
+    "ATF_AIRDROP_bot": ["atfminers_bot", 8233119648, 7058204689],
+    "atfminers_bot": ["ATF_AIRDROP_bot", 8233119648, 7058204689],
+    "Kynex_miningbot": ["kynexnetworkbot", 8663611744, 7421882583],
+    "Pepe_gram_bot": ["pepegram_bot", 8958239010, 7639148332],
 }
 
 async def resolve_bot_entity(client, bot_name):

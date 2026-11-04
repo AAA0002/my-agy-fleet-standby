@@ -30,7 +30,7 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 TARGET_BOTS = [
     {
         "key": "atf_init_data",
-        "bot": "atfminers_bot",
+        "bot": "ATF_AIRDROP_bot",
         "url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
         "short_names": ["app", "miner", "play"],
         "name": "ATF Miner"

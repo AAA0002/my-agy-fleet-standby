@@ -107,7 +107,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Master Directory Reference**: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for complete technical architecture and cheat sheet.
 15. **🎯 Zero Fake Data & Ground-Truth 11-Bot Policy ("Strict 11-Bot Integrity")**:
     - The farming fleet exclusively operates across and monitors the **11 active legitimate bots**:
-      1. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
+      1. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot` / `atfminers.asloni.online`, Bot ID: `8233119648`)
       2. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.top`)
       3. ⛏️ **DiggoMiner** (`@Diggominer_bot` / `diggo.linkpc.net`)
       4. 🐸 **PepeGram** (`@Pepe_gram_bot` / `app.miniempire.app`)
