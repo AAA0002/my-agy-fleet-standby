@@ -187,7 +187,6 @@ function getHumanHeaders(uid, extra = {}) {
 
 const FLEET_TON_WALLETS = {
   "6727787768": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT",
-  "8881914294": "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP",
   "7648254021": "UQC8xeCT2LQHUOceVFozYqRR8xEnxdZeo4Hsy_B9_jrkpp-1",
   "8826375659": "UQAOfjJtPFrKKWVqHGF0Fmo6BkTLyTTmE3Oq0vABlQYZoPBD",
   "8450010161": "UQBrmX45swcSdxBfgg4vQUjoaBxD-_48zwqvofbpndAsMOBQ",
@@ -211,7 +210,6 @@ const FLEET_TON_WALLETS = {
 
 const FLEET_TRON_WALLETS = {
   "6727787768": "TZ6LY4QwiJr8WXN6W1HjiUCbkvFxq1vmUJ",
-  "8881914294": "TQjrF4JNZLBXTH64Vrs9P5ZLGdqM8UdrTY",
   "7648254021": "TKFmg55vVkbHGLNznmh5vXq3hgbmj5b4qk",
   "8826375659": "TDHuNA7ma8YmdTWZyTShAvdQsg6NKeuyxP",
   "8450010161": "TB6jbngGfmtLGG3CrAAYF8kDt1w7UEp1Wn",
@@ -2081,27 +2079,27 @@ const DEFAULT_FLEET_DATA = {
   accounts: [
     { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850", mining_active: true, kynex_coins: 6309, atf_balance: 312.4, status: "Active" },
     { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077", mining_active: true, kynex_coins: 5250, atf_balance: 184.6, status: "Active" },
-    { index: 2, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
-    { index: 3, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
-    { index: 4, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
-    { index: 5, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
-    { index: 6, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
-    { index: 7, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
-    { index: 8, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
-    { index: 9, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
-    { index: 10, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
-    { index: 11, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
-    { index: 12, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
-    { index: 13, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 14, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 15, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 16, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 17, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 18, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 19, name: "AAA201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 20, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 21, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 22, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+    { index: 3, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
+    { index: 4, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
+    { index: 5, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
+    { index: 6, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
+    { index: 7, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
+    { index: 8, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
+    { index: 9, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
+    { index: 10, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
+    { index: 11, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
+    { index: 12, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
+    { index: 13, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
+    { index: 14, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 15, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 16, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 17, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 18, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 19, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 20, name: "AAA201", user_id: 8669217201, phone: "+8801913962342", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 21, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 22, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 23, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -2678,7 +2676,6 @@ const DEFAULT_FLEET_ACCOUNTS = [
 
 const KNOWN_PHONES = {
   "6727787768": "+8801317342850",
-  "8881914294": "+8801943805617",
   "7648254021": "+8801790208077",
   "8826375659": "+8801575842094",
   "8450010161": "+14302084365",
@@ -2750,7 +2747,6 @@ const cleanName = (acc, idx) => {
   if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
   if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
   if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
-  if (n === "Nancy Davis 2") return "Nancy";
   if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
   if (n === "Aaaa201") return "AAA201";
   if (n === "AAA" && i === 21) return "AAA 22";
@@ -5972,7 +5968,6 @@ fi
         const farmResults = [];
         const staticWebhooks = {
           "6727787768": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407",
-          "8881914294": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=72c47501683e2e70dfaccd8d3ed5c285&user_id=60713750",
           "7648254021": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=10dc29f743913f3a2e4d835b2b676e9e&user_id=59905120",
           "8826375659": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=2267f8d65e4a2b276e16b2e5ca0e0983&user_id=60678854",
           "8450010161": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=25f6e7e8e1ef0d6e0a3518a377491e76&user_id=60720095",
@@ -6078,8 +6073,7 @@ fi
 
         const KNOWN_PHONES = {
           "6727787768": "+8801317342850",
-          "8881914294": "+8801943805617",
-          "7648254021": "+8801790208077",
+                  "7648254021": "+8801790208077",
           "8826375659": "+8801575842094",
           "8450010161": "+14302084365",
           "8782429452": "+8801867539837",
@@ -6132,27 +6126,27 @@ fi
         const DEFAULT_FLEET_ACCOUNTS = [
           { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
           { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
-          { index: 2, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-          { index: 3, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-          { index: 4, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-          { index: 5, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
-          { index: 6, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-          { index: 7, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
-          { index: 8, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
-          { index: 9, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
-          { index: 10, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-          { index: 11, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-          { index: 12, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
-          { index: 13, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
-          { index: 14, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
-          { index: 15, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 16, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
-          { index: 17, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
-          { index: 18, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
-          { index: 19, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
-          { index: 20, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
-          { index: 21, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
-          { index: 22, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
+          { index: 3, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+          { index: 4, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+          { index: 5, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 6, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
+          { index: 7, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+          { index: 8, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 9, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 10, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 11, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+          { index: 12, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+          { index: 13, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
+          { index: 14, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
+          { index: 15, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
+          { index: 16, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
+          { index: 17, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
+          { index: 18, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
+          { index: 19, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
+          { index: 20, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
+          { index: 21, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
+          { index: 22, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
+          { index: 23, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
@@ -6173,8 +6167,7 @@ fi
           if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
           if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
           if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
-          if (n === "Nancy Davis 2") return "Nancy";
-          if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
+                  if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
           if (n === "Aaaa201") return "AAA201";
           if (n === "AAA" && i === 21) return "AAA 22";
           if (n === "Abid Hasan" && i === 6) return "Abid Hasan (1)";

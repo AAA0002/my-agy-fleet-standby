@@ -634,7 +634,7 @@ ACTIVE_CHANNEL_ENTITY = None
 # =====================================================================
 async def start_mtproto_listener():
     """
-    Connects to Telegram MTProto push socket using Account #2 (Nancy) or Account #1 (Arif).
+    Connects to Telegram MTProto push socket using active fleet account.
     Listens 24/7 to @ChickenLandCodes. The exact millisecond Telegram publishes or edits
     a post with a promo code, this handler triggers the sub-second parallel fleet burst!
     """

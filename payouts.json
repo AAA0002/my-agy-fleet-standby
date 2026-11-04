@@ -11,7 +11,7 @@
   },
   {
     "id": 2,
-    "account": "Nadim Никитин",
+    "account": "Nadim \u041d\u0438\u043a\u0438\u0442\u0438\u043d",
     "user_id": 8450010161,
     "amount": "0.000065",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -21,7 +21,7 @@
   },
   {
     "id": 3,
-    "account": "Kaitlyn Морозов",
+    "account": "Kaitlyn \u041c\u043e\u0440\u043e\u0437\u043e\u0432",
     "user_id": 8782429452,
     "amount": "0.000065",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -51,7 +51,7 @@
   },
   {
     "id": 6,
-    "account": "Tg Соколов",
+    "account": "Tg \u0421\u043e\u043a\u043e\u043b\u043e\u0432",
     "user_id": 8851426148,
     "amount": "0.000065",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -61,7 +61,7 @@
   },
   {
     "id": 7,
-    "account": "Girtt Кузнецов",
+    "account": "Girtt \u041a\u0443\u0437\u043d\u0435\u0446\u043e\u0432",
     "user_id": 8203342513,
     "amount": "0.000065",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -77,16 +77,6 @@
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
     "network": "BEP-20",
     "timestamp": "2026-09-17T22:28:56.797256+00:00",
-    "status": "Submitted & Verified"
-  },
-  {
-    "id": 9,
-    "account": "Nancy",
-    "user_id": 8881914294,
-    "amount": "0.000055",
-    "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "network": "BEP-20",
-    "timestamp": "2026-09-17T22:51:54.451737+00:00",
     "status": "Submitted & Verified"
   },
   {
@@ -121,7 +111,7 @@
   },
   {
     "id": 13,
-    "account": "Nadim Никитин",
+    "account": "Nadim \u041d\u0438\u043a\u0438\u0442\u0438\u043d",
     "user_id": 8450010161,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -131,7 +121,7 @@
   },
   {
     "id": 14,
-    "account": "Kaitlyn Морозов",
+    "account": "Kaitlyn \u041c\u043e\u0440\u043e\u0437\u043e\u0432",
     "user_id": 8782429452,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -151,7 +141,7 @@
   },
   {
     "id": 16,
-    "account": "Tg Соколов",
+    "account": "Tg \u0421\u043e\u043a\u043e\u043b\u043e\u0432",
     "user_id": 8851426148,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -170,16 +160,6 @@
     "status": "Submitted & Verified"
   },
   {
-    "id": 18,
-    "account": "Nancy",
-    "user_id": 8881914294,
-    "amount": "0.000055",
-    "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "network": "BEP-20",
-    "timestamp": "2026-09-18T07:09:32.098715+00:00",
-    "status": "Submitted & Verified"
-  },
-  {
     "id": 19,
     "account": "Koram Shah",
     "user_id": 7648254021,
@@ -191,7 +171,7 @@
   },
   {
     "id": 20,
-    "account": "Girtt Кузнецов",
+    "account": "Girtt \u041a\u0443\u0437\u043d\u0435\u0446\u043e\u0432",
     "user_id": 8203342513,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -221,7 +201,7 @@
   },
   {
     "id": 23,
-    "account": "Nadim Никитин",
+    "account": "Nadim \u041d\u0438\u043a\u0438\u0442\u0438\u043d",
     "user_id": 8450010161,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -231,7 +211,7 @@
   },
   {
     "id": 24,
-    "account": "Kaitlyn Морозов",
+    "account": "Kaitlyn \u041c\u043e\u0440\u043e\u0437\u043e\u0432",
     "user_id": 8782429452,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -261,7 +241,7 @@
   },
   {
     "id": 27,
-    "account": "Tg Соколов",
+    "account": "Tg \u0421\u043e\u043a\u043e\u043b\u043e\u0432",
     "user_id": 8851426148,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -277,16 +257,6 @@
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
     "network": "BEP-20",
     "timestamp": "2026-09-18T16:01:16.480522+00:00",
-    "status": "Submitted & Verified"
-  },
-  {
-    "id": 29,
-    "account": "Nancy",
-    "user_id": 8881914294,
-    "amount": "0.000055",
-    "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "network": "BEP-20",
-    "timestamp": "2026-09-18T16:28:16.081530+00:00",
     "status": "Submitted & Verified"
   },
   {
@@ -361,7 +331,7 @@
   },
   {
     "id": 37,
-    "account": "Tg Соколов",
+    "account": "Tg \u0421\u043e\u043a\u043e\u043b\u043e\u0432",
     "user_id": 8851426148,
     "amount": "0.000095",
     "wallet": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
@@ -390,18 +360,8 @@
     "status": "Submitted & Verified"
   },
   {
-    "id": 40,
-    "account": "Nancy",
-    "user_id": 8881914294,
-    "amount": "0.000095",
-    "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "network": "BEP-20",
-    "timestamp": "2026-09-20T08:56:48.663263+00:00",
-    "status": "Submitted & Verified"
-  },
-  {
     "id": 41,
-    "account": "Nadim Никитин",
+    "account": "Nadim \u041d\u0438\u043a\u0438\u0442\u0438\u043d",
     "user_id": 8450010161,
     "amount": "0.000075",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -421,7 +381,7 @@
   },
   {
     "id": 43,
-    "account": "Kaitlyn Морозов",
+    "account": "Kaitlyn \u041c\u043e\u0440\u043e\u0437\u043e\u0432",
     "user_id": 8782429452,
     "amount": "0.000055",
     "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -431,7 +391,7 @@
   },
   {
     "id": 44,
-    "account": "Girtt Кузнецов",
+    "account": "Girtt \u041a\u0443\u0437\u043d\u0435\u0446\u043e\u0432",
     "user_id": 8203342513,
     "amount": "0.00009",
     "wallet": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",

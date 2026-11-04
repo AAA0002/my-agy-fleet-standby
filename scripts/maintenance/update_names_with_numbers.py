@@ -22,8 +22,7 @@ API_HASH = "5cd9e5bbfb572a4429a0c54774153b47"
 
 # Map of bought accounts to update on Telegram with index at the end
 CHANGED_PROFILES = {
-    "+8801943805617": {"first": "Nancy", "last": "Davis 2", "full": "Nancy Davis 2", "index": 2},
-    "+8801790208077": {"first": "Kamrul", "last": "Hasan 3", "full": "Kamrul Hasan 3", "index": 3},
+        "+8801790208077": {"first": "Kamrul", "last": "Hasan 3", "full": "Kamrul Hasan 3", "index": 3},
     "+14302084365": {"first": "Nathan", "last": "Miller 5", "full": "Nathan Miller 5", "index": 5},
     "+8801867539837": {"first": "Kaitlyn", "last": "Ross 6", "full": "Kaitlyn Ross 6", "index": 6},
     "+8801727651288": {"first": "Naimur", "last": "Rahman 9", "full": "Naimur Rahman 9", "index": 9},

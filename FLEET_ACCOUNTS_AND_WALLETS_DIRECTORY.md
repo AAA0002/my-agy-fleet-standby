@@ -45,7 +45,7 @@
   - *Type:* Master Central Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`)
 - **Bot Referral Status:** `✅ Active Bound`
 
-### 02. Nancy (Worker Account)
+### 02. Nancy (Retired / Archived Worker Account)
 - **Phone Number:** `+8801943805617`
 - **Telegram ID:** `8881914294`
 - **Telegram Username:** `@nancydavis_24`

@@ -37,8 +37,7 @@ VICTORS_API = "https://server.victors.company/api"
 VICTORS_ORIGIN = "https://app.victors.company"
 
 UID_NAMES = {
-    8881914294: "Nancy",
-    8826375659: "Arif",
+        8826375659: "Arif",
     8450010161: "Nadim",
     8782429452: "Kaitlyn",
     7734849205: "Abid Hasan",
