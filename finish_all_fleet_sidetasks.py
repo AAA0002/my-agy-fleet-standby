@@ -1534,29 +1534,55 @@ async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: 
         return res
 
     functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
+    ev_key = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
     }
 
     try:
-        # 1. telegramAuth to get custom token
-        async with session.post(f"{functions_base}/telegramAuth", json={"data": {"initData": init_data}}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as a_r:
-            if a_r.status != 200:
-                return res
-            auth_d = await a_r.json()
-            custom_tok = auth_d.get("result", {}).get("token")
-            if not custom_tok:
-                return res
+        id_tok = None
+        rf_token = acc.get("earnvault_refresh_token")
+        if rf_token:
+            try:
+                async with session.post(
+                    f"https://securetoken.googleapis.com/v1/token?key={ev_key}",
+                    data=f"grant_type=refresh_token&refresh_token={rf_token}",
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    timeout=aiohttp.ClientTimeout(total=6)
+                ) as rf_r:
+                    if rf_r.status == 200:
+                        rf_d = await rf_r.json()
+                        if rf_d.get("id_token"):
+                            id_tok = rf_d["id_token"]
+                            if rf_d.get("refresh_token"):
+                                acc["earnvault_refresh_token"] = rf_d["refresh_token"]
+            except Exception:
+                pass
 
-        # 2. Exchange for Firebase ID Token
-        ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
-        async with session.post(ex_url, json={"token": custom_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as ex_r:
-            if ex_r.status != 200:
+        if not id_tok:
+            if not init_data:
                 return res
-            id_tok = (await ex_r.json()).get("idToken")
-            if not id_tok:
-                return res
+            # 1. telegramAuth to get custom token
+            async with session.post(f"{functions_base}/telegramAuth", json={"data": {"initData": init_data}}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as a_r:
+                if a_r.status != 200:
+                    return res
+                auth_d = await a_r.json()
+                custom_tok = auth_d.get("result", {}).get("token")
+                if not custom_tok:
+                    return res
+
+            # 2. Exchange for Firebase ID Token & cache refreshToken
+            ex_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={ev_key}"
+            async with session.post(ex_url, json={"token": custom_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as ex_r:
+                if ex_r.status != 200:
+                    return res
+                ex_d = await ex_r.json()
+                id_tok = ex_d.get("idToken")
+                if not id_tok:
+                    return res
+                if ex_d.get("refreshToken"):
+                    acc["earnvault_refresh_token"] = ex_d["refreshToken"]
 
         auth_headers = {**headers, "Authorization": f"Bearer {id_tok}"}
 

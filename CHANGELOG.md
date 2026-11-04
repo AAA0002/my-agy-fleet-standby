@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Full 24-Account Fleet x 9-Bot Forensic Audit & Non-Blocking Token Extractor Hardening (November 4, 2026)**:
+  - **Full Ground-Truth Audit across 24 Accounts x 9 Bots**:
+    * Verified 100% presence and health across all 24 fleet accounts: ATF Miner (24/24 active, up to level 166 / 6,552 ATF), Kynex Network (24/24 active, up to 145,990 KNX), LUM Miner (24/24 active, Master 23 referrals), Chicken Land, PepeGram, Grouche Mine, AdxEarn AI, DiggoMiner, and EarnVault.
+    * Cataloged exact per-bot architectures and authentication protocols: REST header tokens, Firebase callable functions, 30-day JWT Bearer tokens, and Google SecureToken OAuth refreshers.
+  - **MTProto Batch Extractor Deadlock Elimination (`app.py`)**:
+    * **Root Cause Identified**: The background token extractor had no timeouts on individual Telethon RPC queries (`RequestWebViewRequest`, `GetBotAppRequest`, `client.get_entity`, `client.get_dialogs`), and ran a blocking channel join (`JoinChannelRequest('diggo_community')`) on every cycle. If any single bot or channel throttled, the entire loop stalled indefinitely, blocking `GLOBAL_MTPROTO_SEMAPHORE`.
+    * **Remediation**:
+      1. Added strict `asyncio.wait_for(..., timeout=6.0)` on every single bot extraction call.
+      2. Added `asyncio.wait_for(client.connect(), timeout=10.0)` socket timeout guard.
+      3. Added `asyncio.wait_for(extract_tokens_with_client(...), timeout=45.0)` outer safety envelope per account.
+      4. Purged redundant `JoinChannelRequest` and `AllowSendMessageRequest` from routine token extraction.
+  - **Firebase `refreshToken` Architecture Applied to Side-Tasks (`finish_all_fleet_sidetasks.py`)**:
+    * Upgraded `sweep_earnvault_tasks` with cached `earnvault_refresh_token` resolution via Google's SecureToken API (`POST https://securetoken.googleapis.com/v1/token?key={apiKey}`), ensuring side-task sweeps never stall on expired Telegram WebApp hashes.
+  - **Diggo 30-Day JWT Immediate Exchange & Cache Propagation**:
+    * Ensured freshly extracted Diggo WebApp hashes are immediately exchanged for 30-day JWT tokens and saved to both memory, Redis, and local tokens before hash expiration.
+  - **Zero-Change Infrastructure Compliance**:
+    * Preserved 100% of all existing keys, data, and configurations in Cloudflare KV, D1, and Upstash Redis without modification or deletion.
+
 - **🐛 Deep Bug Hunt & Root-Cause Elimination across 9-Bot Fleet (November 4, 2026)**:
   - **Permanent Firebase RefreshToken Architecture for EarnVault & Kynex (`app.py`, `kynex_miner.py`)**:
     * **Root Cause of 401s Identified**: Telegram WebApp `initData` carries an `auth_date` that expires after ~18-24 hours. Bots relying strictly on `initData` for Firebase custom-token exchanges (`telegramAuth`) return HTTP 401 once hashes age past 18 hours.

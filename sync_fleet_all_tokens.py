@@ -28,7 +28,7 @@ if os.path.exists(env_file):
             line = line.strip()
             if "=" in line and not line.startswith("#"):
                 k, v = line.split("=", 1)
-                env[k.strip()] = v.strip().strip("\"'\"'")
+                env[k.strip()] = v.strip().strip("\"'")
 
 UPSTASH_URL = os.getenv("UPSTASH_URL") or env.get("UPSTASH_URL")
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or env.get("UPSTASH_TOKEN")

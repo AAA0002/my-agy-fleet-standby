@@ -690,10 +690,10 @@ async def start_mtproto_listener():
             if not handlers_registered:
                 # Define instant push handler for NEW messages (Bound directly to channel socket)
                 @client.on(events.NewMessage(chats=chat_targets))
-                async def on_new_promo_message(event):
+                async def on_new_promo_message(event, valid_ids=valid_chat_ids):
                     cid = event.chat_id
                     uname = (getattr(event.chat, 'username', '') or '').lower()
-                    if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
+                    if cid not in valid_ids and uname != CHANNEL_USERNAME.lower():
                         return
 
                     raw = event.raw_text or (event.message.message if event.message else "") or ""
@@ -719,10 +719,10 @@ async def start_mtproto_listener():
 
                 # Define instant push handler for EDITED messages
                 @client.on(events.MessageEdited(chats=chat_targets))
-                async def on_edited_promo_message(event):
+                async def on_edited_promo_message(event, valid_ids=valid_chat_ids):
                     cid = event.chat_id
                     uname = (getattr(event.chat, 'username', '') or '').lower()
-                    if cid not in valid_chat_ids and uname != CHANNEL_USERNAME.lower():
+                    if cid not in valid_ids and uname != CHANNEL_USERNAME.lower():
                         return
 
                     raw = event.raw_text or (event.message.message if event.message else "") or ""

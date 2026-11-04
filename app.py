@@ -1184,7 +1184,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     for cand in candidates:
         try:
-            cand_ent = await client.get_entity(cand)
+            cand_ent = await asyncio.wait_for(client.get_entity(cand), timeout=3.5)
             cand_in = await client.get_input_entity(cand_ent)
             if getattr(cand_ent, "bot", False):
                 bot_ent = cand_ent
@@ -1198,13 +1198,12 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     if not bot_ent or not bot_in:
         try:
-            dlgs = await client.get_dialogs(limit=50)
+            dlgs = await asyncio.wait_for(client.get_dialogs(limit=25), timeout=3.5)
             target_term = str(bot_username).lower()
             for d in dlgs:
                 d_name = (d.name or "").lower()
                 d_user = (getattr(d.entity, "username", None) or "").lower()
-                if (target_term in d_name or target_term in d_user or 
-                    ("vic" in target_term and "vic" in d_name)):
+                if target_term in d_name or target_term in d_user:
                     bot_ent = d.entity
                     bot_in = await client.get_input_entity(d.entity)
                     break
@@ -1226,7 +1225,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             }
             if start_param:
                 req_p["start_param"] = str(start_param)
-            res = await client(RequestWebViewRequest(**req_p))
+            res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=5.0)
             tok = extract_from_url(getattr(res, "url", None))
             if tok:
                 return tok
@@ -1506,44 +1505,50 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
 
     # 1. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
-    atf_param = None if is_master else ATF_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"], prefer_direct_url=True)
-    if tok:
-        tokens["atf_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
+    try:
+        atf_param = None if is_master else ATF_REFERRAL_CODE
+        tok = await asyncio.wait_for(extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"], prefer_direct_url=True), timeout=6.0)
+        if tok:
+            tokens["atf_init_data"] = tok
+    except Exception:
+        pass
+    await asyncio.sleep(random.uniform(0.3, 0.7))
 
     # 2. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
-    ky_param = None if is_master else KYNEX_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"], prefer_direct_url=True)
-    if tok:
-        tokens["kynex_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
+    try:
+        ky_param = None if is_master else KYNEX_REFERRAL_CODE
+        tok = await asyncio.wait_for(extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"], prefer_direct_url=True), timeout=6.0)
+        if tok:
+            tokens["kynex_init_data"] = tok
+    except Exception:
+        pass
+    await asyncio.sleep(random.uniform(0.3, 0.7))
 
     # 5. PepeGram (@Pepe_gram_bot - Silent WebApp query with prefer_direct_url=True)
-    pepe_tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"], prefer_direct_url=True)
-    if pepe_tok:
-        tokens["pepegram_init_data"] = pepe_tok
-    await asyncio.sleep(random.uniform(0.3, 0.8))
+    try:
+        pepe_tok = await asyncio.wait_for(extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"], prefer_direct_url=True), timeout=6.0)
+        if pepe_tok:
+            tokens["pepegram_init_data"] = pepe_tok
+    except Exception:
+        pass
+    await asyncio.sleep(random.uniform(0.3, 0.6))
 
     # 6. AdxEarn AI (@AdxEarnAibot - Silent WebApp query)
-    adx_param = None if is_master else ADXEARN_REFERRAL_CODE
-    adx_tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"])
-    if adx_tok:
-        tokens["adxearn_init_data"] = adx_tok
-    await asyncio.sleep(random.uniform(0.3, 0.8))
+    try:
+        adx_param = None if is_master else ADXEARN_REFERRAL_CODE
+        adx_tok = await asyncio.wait_for(extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://app.adxearnai.xyz/", candidate_short_names=["app", "play"]), timeout=6.0)
+        if adx_tok:
+            tokens["adxearn_init_data"] = adx_tok
+    except Exception:
+        pass
+    await asyncio.sleep(random.uniform(0.3, 0.6))
 
     # 7. DiggoMiner (@Diggominer_bot - Silent WebApp query with immediate 30-day JWT exchange)
     dig_param = None if is_master else DIGGO_REFERRAL_CODE
     try:
-        from telethon.tl.functions.bots import AllowSendMessageRequest
-        await client(AllowSendMessageRequest(bot=DIGGO_BOT))
+        dig_tok = await asyncio.wait_for(extract_bot_webapp_token(client, DIGGO_BOT, start_param=dig_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["app", "miner"]), timeout=6.0)
     except Exception:
-        pass
-    try:
-        await client(JoinChannelRequest("diggo_community"))
-    except Exception:
-        pass
-    dig_tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=dig_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["app", "miner"])
+        dig_tok = None
     if dig_tok:
         tokens["diggo_init_data"] = dig_tok
         # Immediate JWT exchange while auth_date is < 30s old
@@ -1553,64 +1558,78 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
                     "https://diggo.linkpc.net/api/auth/telegram",
                     json={"initData": dig_tok},
                     headers={"Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=5)
+                    timeout=aiohttp.ClientTimeout(total=4)
                 ) as r:
                     if r.status == 200:
                         d = await r.json()
                         jwt_tok = d.get("token")
                         if jwt_tok:
                             tokens["diggo_jwt"] = jwt_tok
+                            acc["diggo_jwt"] = jwt_tok
         except Exception as de:
             logger.debug(f"Diggo immediate JWT exchange note: {de}")
 
     # 8. Chicken Land (@ChickenLandBot - Silent WebApp query)
-    chk_param = None if is_master else CHICKENLAND_REFERRAL_CODE
-    chk_tok = await extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"])
-    if chk_tok:
-        tokens["chickenland_init_data"] = chk_tok
+    try:
+        chk_param = None if is_master else CHICKENLAND_REFERRAL_CODE
+        chk_tok = await asyncio.wait_for(extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"]), timeout=6.0)
+        if chk_tok:
+            tokens["chickenland_init_data"] = chk_tok
+    except Exception:
+        pass
 
     # 9. Grouche Mine (@GRC_AirdrooBot - Silent WebApp query)
-    grc_param = None if is_master else GROUCHEMINE_REFERRAL_CODE
-    grc_tok = await extract_bot_webapp_token(client, GROUCHEMINE_BOT, start_param=grc_param, default_url="https://grouchemine.world/", candidate_short_names=["app", "miniapp", "play"])
-    if grc_tok:
-        tokens["grouchemine_init_data"] = grc_tok
+    try:
+        grc_param = None if is_master else GROUCHEMINE_REFERRAL_CODE
+        grc_tok = await asyncio.wait_for(extract_bot_webapp_token(client, GROUCHEMINE_BOT, start_param=grc_param, default_url="https://grouchemine.world/", candidate_short_names=["app", "miniapp", "play"]), timeout=6.0)
+        if grc_tok:
+            tokens["grouchemine_init_data"] = grc_tok
+    except Exception:
+        pass
 
     # 10. LUM Miner (@lumeonminer_bot - Silent WebApp query)
-    lum_param = None if is_master else LUMEON_REFERRAL_CODE
-    lum_tok = await extract_bot_webapp_token(client, LUMEON_BOT, start_param=lum_param, default_url="https://lum-miner.gurmessa747.workers.dev/", candidate_short_names=["Lum", "lum", "app"])
-    if lum_tok:
-        tokens["lumeon_init_data"] = lum_tok
-    await asyncio.sleep(random.uniform(0.3, 0.8))
+    try:
+        lum_param = None if is_master else LUMEON_REFERRAL_CODE
+        lum_tok = await asyncio.wait_for(extract_bot_webapp_token(client, LUMEON_BOT, start_param=lum_param, default_url="https://lum-miner.gurmessa747.workers.dev/", candidate_short_names=["Lum", "lum", "app"]), timeout=6.0)
+        if lum_tok:
+            tokens["lumeon_init_data"] = lum_tok
+    except Exception:
+        pass
+    await asyncio.sleep(random.uniform(0.3, 0.6))
 
     # 11. EarnVault (@EarnVaultApp_bot - Silent WebApp query with immediate Firebase refreshToken exchange)
-    ev_param = None if is_master else EARNVAULT_REFERRAL_CODE
-    ev_tok = await extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=ev_param, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"])
-    if ev_tok:
-        tokens["earnvault_init_data"] = ev_tok
-        try:
-            async with aiohttp.ClientSession() as ev_s:
-                async with ev_s.post(
-                    "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth",
-                    json={"data": {"initData": ev_tok}},
-                    headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
-                    timeout=aiohttp.ClientTimeout(total=5)
-                ) as ev_r:
-                    if ev_r.status == 200:
-                        ev_d = await ev_r.json()
-                        c_tok = ev_d.get("result", {}).get("token")
-                        if c_tok:
-                            ev_key = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
-                            async with ev_s.post(
-                                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={ev_key}",
-                                json={"token": c_tok, "returnSecureToken": True},
-                                timeout=aiohttp.ClientTimeout(total=5)
-                            ) as s_r:
-                                if s_r.status == 200:
-                                    s_d = await s_r.json()
-                                    if s_d.get("refreshToken"):
-                                        tokens["earnvault_refresh_token"] = s_d["refreshToken"]
-        except Exception:
-            pass
+    try:
+        ev_param = None if is_master else EARNVAULT_REFERRAL_CODE
+        ev_tok = await asyncio.wait_for(extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=ev_param, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"]), timeout=6.0)
+        if ev_tok:
+            tokens["earnvault_init_data"] = ev_tok
+            try:
+                async with aiohttp.ClientSession() as ev_s:
+                    async with ev_s.post(
+                        "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth",
+                        json={"data": {"initData": ev_tok}},
+                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+                        timeout=aiohttp.ClientTimeout(total=4)
+                    ) as ev_r:
+                        if ev_r.status == 200:
+                            ev_d = await ev_r.json()
+                            c_tok = ev_d.get("result", {}).get("token")
+                            if c_tok:
+                                ev_key = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+                                async with ev_s.post(
+                                    f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={ev_key}",
+                                    json={"token": c_tok, "returnSecureToken": True},
+                                    timeout=aiohttp.ClientTimeout(total=4)
+                                ) as s_r:
+                                    if s_r.status == 200:
+                                        s_d = await s_r.json()
+                                        if s_d.get("refreshToken"):
+                                            tokens["earnvault_refresh_token"] = s_d["refreshToken"]
+                                            acc["earnvault_refresh_token"] = s_d["refreshToken"]
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     # Active Mining Bots: ATF, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault
     return tokens
@@ -1647,7 +1666,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             connected = False
             for attempt in range(1, 4):
                 try:
-                    await client.connect()
+                    await asyncio.wait_for(client.connect(), timeout=10.0)
                     if await client.is_user_authorized():
                         connected = True
                         if idx:
@@ -1673,7 +1692,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             if not connected:
                 return {}
 
-            return await extract_tokens_with_client(client, acc)
+            return await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=45.0)
         except Exception as e:
             logger.error(f"[{name}] Telethon connection error: {e}")
             return {}
