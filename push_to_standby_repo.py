@@ -195,6 +195,14 @@ def push_app():
     clean_file = os.path.join(BASE_DIR, "clean_up_system.py")
     if os.path.exists(clean_file):
         push_file(clean_file, "clean_up_system.py", "feat: autonomous multi-tier clean up engine")
+    kyn_f = os.path.join(BASE_DIR, "kynex_miner.py")
+    if os.path.exists(kyn_f):
+        push_file(kyn_f, "kynex_miner.py", "feat: Kynex Network auto-refresh token & continuous mining")
+        push_to_solver_repo(kyn_f, "kynex_miner.py", "feat: Kynex Network auto-refresh token & continuous mining")
+    fst_f = os.path.join(BASE_DIR, "finish_all_fleet_sidetasks.py")
+    if os.path.exists(fst_f):
+        push_file(fst_f, "finish_all_fleet_sidetasks.py", "feat: 9-bot fleet all side-tasks harvest engine")
+        push_to_solver_repo(fst_f, "finish_all_fleet_sidetasks.py", "feat: 9-bot fleet all side-tasks harvest engine")
     rct_f = os.path.join(BASE_DIR, "refresh_cloud_tokens.py")
     if os.path.exists(rct_f):
         push_file(rct_f, "refresh_cloud_tokens.py", "feat: 8-bot cloud token refresher")

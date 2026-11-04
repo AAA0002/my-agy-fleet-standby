@@ -5391,14 +5391,16 @@ fi
         }
         const ALLOWED_FLEET_KEYS = new Set([
           "account_id", "name", "synced_at", "updated_at", "username", "phone", "uid",
-          "atf_init_data", "kynex_init_data",
-          "diggo_init_data", "pepegram_init_data", "adxearn_init_data", "chickenland_init_data"
+          "diggo_jwt", "earnvault_refresh_token", "kynex_refresh_token",
+          "atf_init_data", "kynex_init_data", "diggo_init_data", "pepegram_init_data",
+          "adxearn_init_data", "chickenland_init_data", "grouchemine_init_data",
+          "lumeon_init_data", "earnvault_init_data"
         ]);
         const sanitizeTokens = (obj) => {
           if (!obj || typeof obj !== "object") return {};
           const clean = {};
           for (const [k, v] of Object.entries(obj)) {
-            if ((ALLOWED_FLEET_KEYS.has(k) || k.endsWith("_init_data")) && v && !k.includes("leafearn") && !k.includes("astra") && !k.includes("vyro")) clean[k] = v;
+            if ((ALLOWED_FLEET_KEYS.has(k) || k.endsWith("_init_data") || k.endsWith("_refresh_token") || k.endsWith("_jwt")) && v && !k.includes("leafearn") && !k.includes("astra") && !k.includes("vyro") && !k.includes("mrg") && !k.includes("victors")) clean[k] = v;
           }
           return clean;
         };

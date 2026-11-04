@@ -262,7 +262,7 @@ async def farm_kynex_account(
         "notes": []
     }
 
-    if not init_data:
+    if not init_data and not acc_entry.get("kynex_refresh_token"):
         result["status"] = "skipped (no initData)"
         return result
 

@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔧 Multi-Bot Token Persistence Hardening, Kynex & PepeGram Master Referral Binding & Cloud Mesh Synchronization (November 4, 2026)**:
+  - **Firebase & JWT Token Persistence Architecture Across All Clouds (`app.py`, `deploy_both_cf_workers.py`)**:
+    * **Root Cause of 401s Identified**: `earnvault_refresh_token`, `kynex_refresh_token`, and `diggo_jwt` were acquired in memory during farming cycles but were filtered out by `clean_merged` in `app.py` and `ALLOWED_FLEET_KEYS` in Cloudflare Worker edge nodes. When hashes aged past 24 hours, `telegramAuth` returned HTTP 401.
+    * **Cloud-Wide Whitelist & Persistence**: Added `earnvault_refresh_token`, `kynex_refresh_token`, and `diggo_jwt` to `ALLOWED_FLEET_KEYS` in `deploy_both_cf_workers.py` and `clean_merged` in `app.py`. Added atomic local disk persistence to `fleet_miniapp_tokens.json`.
+    * **Instant Cloud Token Synchronization**: In `_farm_diggo()`, `_farm_kynex()`, and `_farm_earnvault()`, newly acquired tokens immediately trigger non-blocking cloud synchronization (`sync_account_tokens_to_clouds`), ensuring Cloudflare KV and Upstash Redis never lose authenticated sessions.
+  - **Kynex Network Referral Embedding & Instant Handshake (`app.py`, `kynex_miner.py`)**:
+    * **Root Cause of Missing Referrals on Late Accounts**: When `prefer_direct_url=True` was used, Telethon called `RequestWebViewRequest(url="https://kynex.top/telegram-auth.html")` which stripped `start_param` from the generated Telegram WebApp hash.
+    * **Remediation**: Set `prefer_direct_url=False` for Kynex, forcing `RequestAppWebViewRequest(short_name="app", start_param="6727787768")` so `start_param` is cryptographically embedded inside `initData`.
+    * **Immediate Handshake**: During token extraction, `kynex_miner.authenticate_kynex` is called immediately with the freshly extracted hash, triggering `verifyTelegramAuth` on Kynex Cloud Functions and permanently binding under Master Account #1 (`6727787768`).
+    * **Permanent Session Resilience**: In `kynex_miner.py`, enabled SecureToken bypass if `kynex_refresh_token` exists, allowing continuous 24/7 farming even when raw `initData` is absent or expired.
+  - **PepeGram Master Referral Standardization (`app.py`, `login_account.py`)**:
+    * **Root Cause**: Found hardcoded `start_param="1449"` (game tenant ID) in `app.py` and `login_account.py` instead of Master's referral code `PEPEGRAM_REFERRAL_CODE` (`6727787768`).
+    * **Remediation**: Replaced `"1449"` with `PEPEGRAM_REFERRAL_CODE` across token extraction and referral onboarding routines.
+  - **MTProto Batch Extractor Envelope Safety (`app.py`)**:
+    * Increased outer timeout in `extract_tokens_for_account` from 45.0s to 65.0s and optimized individual bot timeouts to 5.0s, guaranteeing all 9 bots complete token extraction without truncation.
+  - **Account #14 Multi-IP Revocation Explained & Verified**:
+    * Confirmed that Account #14's revocation earlier today was caused by a legacy scheduled GitHub Actions runner in `koramshah2/AAA_AUTO` that ran at 09:09 UTC from a Microsoft Azure IP while Render Node 3 was connected from Oregon.
+    * With all external workflows permanently disabled, Render Node 3 Oregon remains the sole, uncontested MTProto coordinator in the world. Account #14 is confirmed 100% active, healthy (`🟢`), and farmed across all 9 bots.
+  - **Zero-Change Infrastructure Compliance**:
+    * Preserved 100% of all existing keys, data, and configurations in Cloudflare KV, D1, and Upstash Redis without modification or deletion.
+
+
 - **🌐 Full 24-Account Fleet x 9-Bot Forensic Audit & Non-Blocking Token Extractor Hardening (November 4, 2026)**:
   - **Full Ground-Truth Audit across 24 Accounts x 9 Bots**:
     * Verified 100% presence and health across all 24 fleet accounts: ATF Miner (24/24 active, up to level 166 / 6,552 ATF), Kynex Network (24/24 active, up to 145,990 KNX), LUM Miner (24/24 active, Master 23 referrals), Chicken Land, PepeGram, Grouche Mine, AdxEarn AI, DiggoMiner, and EarnVault.

@@ -1517,16 +1517,26 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     # 2. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
     try:
         ky_param = None if is_master else KYNEX_REFERRAL_CODE
-        tok = await asyncio.wait_for(extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"], prefer_direct_url=True), timeout=6.0)
+        tok = await asyncio.wait_for(extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"], prefer_direct_url=False), timeout=5.0)
         if tok:
             tokens["kynex_init_data"] = tok
+            try:
+                import kynex_miner
+                async with aiohttp.ClientSession() as ky_s:
+                    k_auth = await kynex_miner.authenticate_kynex(ky_s, tok)
+                    if k_auth and isinstance(k_auth, dict) and k_auth.get("refresh_token"):
+                        tokens["kynex_refresh_token"] = k_auth["refresh_token"]
+                        acc["kynex_refresh_token"] = k_auth["refresh_token"]
+            except Exception:
+                pass
     except Exception:
         pass
-    await asyncio.sleep(random.uniform(0.3, 0.7))
+    await asyncio.sleep(random.uniform(0.3, 0.6))
 
-    # 5. PepeGram (@Pepe_gram_bot - Silent WebApp query with prefer_direct_url=True)
+    # 5. PepeGram (@Pepe_gram_bot - Silent WebApp query with Master referral parameter)
     try:
-        pepe_tok = await asyncio.wait_for(extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"], prefer_direct_url=True), timeout=6.0)
+        pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
+        pepe_tok = await asyncio.wait_for(extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"]), timeout=5.0)
         if pepe_tok:
             tokens["pepegram_init_data"] = pepe_tok
     except Exception:
@@ -1692,7 +1702,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             if not connected:
                 return {}
 
-            return await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=45.0)
+            return await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=65.0)
         except Exception as e:
             logger.error(f"[{name}] Telethon connection error: {e}")
             return {}
@@ -2554,7 +2564,7 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                             pass
                     valid_ex_toks[k] = v
                 merged = {**valid_ex_toks, **tokens}
-                clean_merged = {k: v for k, v in merged.items() if (k in ("account_id", "name", "synced_at", "updated_at", "phone", "diggo_jwt") or k.endswith("_init_data")) and v}
+                clean_merged = {k: v for k, v in merged.items() if (k in ("account_id", "name", "synced_at", "updated_at", "phone", "diggo_jwt", "earnvault_refresh_token", "kynex_refresh_token") or k.endswith("_init_data") or k.endswith("_refresh_token") or k.endswith("_jwt")) and v}
                 await s.post(
                     f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
                     data=json.dumps(clean_merged),
@@ -2581,7 +2591,25 @@ async def sync_account_tokens_to_clouds(tokens: dict):
             except Exception as ue:
                 logger.warning(f"Upstash token sync note: {ue}")
 
-        # 3. Supabase Postgres
+        # 3. Local disk persistence in fleet_miniapp_tokens.json
+        try:
+            loc_t_file = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
+            if os.path.exists(loc_t_file):
+                with open(loc_t_file, "r", encoding="utf-8") as lf:
+                    cur_disk = json.load(lf)
+            else:
+                cur_disk = {}
+            if str(uid) not in cur_disk:
+                cur_disk[str(uid)] = {}
+            for tk, tv in tokens.items():
+                if tv:
+                    cur_disk[str(uid)][tk] = tv
+            with open(loc_t_file, "w", encoding="utf-8") as lf:
+                json.dump(cur_disk, lf, indent=2)
+        except Exception as d_err:
+            logger.debug(f"Local tokens file sync note: {d_err}")
+
+        # 4. Supabase Postgres
         if SUPABASE_URL and SUPABASE_KEY:
             try:
                 await s.patch(
@@ -2879,7 +2907,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
                 await asyncio.sleep(0.5)
             except Exception:
                 pass
-            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param="1449", default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
+            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://app.miniempire.app/miniapp/", candidate_short_names=["app", "miniapp"])
             acc_entry["pepegram_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -6351,12 +6379,17 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 4. Kynex Network (@Kynex_miningbot)
     async def _farm_kynex():
-        if tokens.get("kynex_init_data"):
+        k_init = tokens.get("kynex_init_data")
+        k_rf = tokens.get("kynex_refresh_token") or acc.get("kynex_refresh_token")
+        if k_init or k_rf:
             try:
                 import kynex_miner
-                res = await kynex_miner.farm_kynex_account(session, tokens["kynex_init_data"], acc, is_master=is_owner)
+                res = await kynex_miner.farm_kynex_account(session, k_init or "", acc, is_master=is_owner)
                 if isinstance(res, dict) and res.get("balance") is not None:
                     acc["kynex_coins"] = float(res.get("balance", 0.0) or 0.0)
+                if acc.get("kynex_refresh_token"):
+                    tokens["kynex_refresh_token"] = acc["kynex_refresh_token"]
+                    asyncio.create_task(sync_account_tokens_to_clouds(tokens))
                 status["bots"]["kynex"] = res.get("status", "farmed")
                 return
             except Exception as e:
@@ -6570,6 +6603,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if c_a == 200 and isinstance(d_a, dict) and d_a.get("token"):
                     diggo_jwt = d_a["token"]
                     tokens["diggo_jwt"] = diggo_jwt
+                    acc["diggo_jwt"] = diggo_jwt
+                    asyncio.create_task(sync_account_tokens_to_clouds(tokens))
                     if UPSTASH_URL and UPSTASH_TOKEN:
                         try:
                             await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=diggo_jwt, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
@@ -6601,6 +6636,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         if c_a == 200 and isinstance(d_a, dict) and d_a.get("token"):
                             diggo_jwt = d_a["token"]
                             tokens["diggo_jwt"] = diggo_jwt
+                            acc["diggo_jwt"] = diggo_jwt
+                            asyncio.create_task(sync_account_tokens_to_clouds(tokens))
                             d_h["Authorization"] = f"Bearer {diggo_jwt}"
                             c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
                     except Exception:
@@ -7071,6 +7108,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     if rf_d.get("refresh_token"):
                         tokens["earnvault_refresh_token"] = rf_d["refresh_token"]
                         acc["earnvault_refresh_token"] = rf_d["refresh_token"]
+                        asyncio.create_task(sync_account_tokens_to_clouds(tokens))
             except Exception:
                 pass
 
@@ -7102,6 +7140,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if ex_d.get("refreshToken"):
                     tokens["earnvault_refresh_token"] = ex_d["refreshToken"]
                     acc["earnvault_refresh_token"] = ex_d["refreshToken"]
+                    asyncio.create_task(sync_account_tokens_to_clouds(tokens))
             except Exception as ae:
                 status["bots"]["earnvault"] = f"auth_error: {format_error(ae)}"
                 return
