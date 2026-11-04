@@ -271,6 +271,37 @@ def load_fleet_tokens(force_refresh: bool = False) -> Dict[str, Dict[str, Any]]:
         except Exception:
             pass
 
+    # 5. Cloudflare Edge Mesh High-Reliability Fallback (Guarantees all 24 accounts in cloud)
+    if len(fleet) < 20:
+        cf_endpoints = [
+            "https://restore-agy.agorameet.workers.dev/api/miniapp/tokens",
+            "https://aaaai2.workers.dev/api/miniapp/tokens",
+            "https://aaa-bot.workers.dev/api/miniapp/tokens"
+        ]
+        for cf_url in cf_endpoints:
+            try:
+                cf_req = urllib.request.Request(cf_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+                with urllib.request.urlopen(cf_req, timeout=4) as cf_r:
+                    if cf_r.status == 200:
+                        cf_data = json.loads(cf_r.read().decode("utf-8"))
+                        tok_dict = cf_data.get("tokens", cf_data)
+                        if isinstance(tok_dict, dict):
+                            for uid, toks in tok_dict.items():
+                                if not isinstance(toks, dict):
+                                    continue
+                                tok = toks.get("chickenland_init_data") or toks.get("chicken_init_data")
+                                if tok and str(uid) not in fleet:
+                                    u_name = toks.get("name") or names.get(str(uid), f"User {uid}")
+                                    fleet[str(uid)] = {
+                                        "user_id": str(uid),
+                                        "name": u_name,
+                                        "b64_token": get_b64_token(tok)
+                                    }
+                            if len(fleet) >= 20:
+                                break
+            except Exception:
+                pass
+
     CACHED_FLEET_TOKENS = fleet
     return fleet
 
