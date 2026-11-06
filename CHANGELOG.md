@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐔 Chicken Land Anti-Spam Sniper Hardening, Telegram Main WebView Engine & 23-Account Fleet Token Durability (November 6, 2026)**:
+  - **Zero-Spam Deduplication & Cooldown Engine (`chickenland_promo_sniper.py`)**:
+    * Diagnosed and resolved repeated alert card spamming to Telegram Bot (`@myagyai`) and Admin Channel (`-1004358687850`): added `ALERTED_CODES_TIMESTAMPS` enforcing strict 24-hour per-code alert deduplication.
+    * Added `LAST_EMERGENCY_REFRESH_TIME` rate-limiter (10-minute minimum cooldown) to prevent repetitive emergency token refresh cascading loops.
+    * Added fast-path exit in `snipe_promo_fleet`: immediately skips burst executions for codes already in `CLAIMED_CODES` or `EXHAUSTED_CODES`.
+  - **Edge Cron Deduplication & Webhook Recovery (`deploy_both_cf_workers.py`)**:
+    * Added in-memory `PROCESSED_PROMO_CODES_EDGE = new Set()`, Cloudflare KV cache (`env.BACKUP_KV`), and Turso LibSQL state lookups before dispatching promo bursts from Edge Cron.
+    * Prevented Upstash Redis 500k quota exhaustion from causing endless re-evaluation of channel posts.
+    * Fixed dropped Admin Bot (`@myagyai`) webhook by triggering `/api/sync-telegram-webhooks` directly from Edge Gateway Node 4, restoring real-time command processing with 0 pending updates.
+  - **Official Telegram `RequestMainWebViewRequest` Engine (`app.py`)**:
+    * Imported and prioritized `RequestMainWebViewRequest` as Priority -1 in `extract_bot_webapp_token`: directly queries Telegram MTProto for the bot's configured Main Mini App (`?startapp=promo` / `?startapp=12668`) without failing on short-name guesses.
+    * Updated `extract_from_tme_link` to seamlessly resolve single-part bot links (`https://t.me/ChickenLandBot?startapp=...`).
+    * Configured Chicken Land with `prefer_direct_url=False` so official Main Mini App and message buttons are evaluated before fallback webview requests.
+    * Expanded per-account connection timeouts (`75.0s` / `90.0s`) and added `force=1` bypass to `/collect-tokens` on Render Node 3.
+  - **Health Verification & 9-Bot Parity (`check_system_health.py`)**:
+    * Updated token resolution to prioritize Turso LibSQL High-Capacity SSOT (25M ops/mo) before Upstash Redis.
+    * Added proper browser `User-Agent`, `Origin`, and `Referer` headers to AdxEarn AI and DiggoMiner probe requests.
+    * Updated titles and telemetry to strictly reflect the 9 legitimate ground-truth bots.
+
 - **🐔 Chicken Land Sub-Second Promo Code Sniper Dual-Engine Hardening, Direct URL Extraction & Turso LibSQL Mesh SSOT (November 6, 2026)**:
   - **Direct URL & Menu Button Fast-Track Token Extraction (`app.py`)**:
     * Diagnosed root cause of Chicken Land expired tokens (50h–105h old) causing `401 Unauthorized` on promo redemptions: `extract_bot_webapp_token` timed out at 6.0s while cycling through failing candidate short names (`play`, `app`, `farm`).

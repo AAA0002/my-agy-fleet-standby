@@ -7,7 +7,7 @@ Live forensic health verification across:
 3. Telegram Bot Webhooks
 4. Render Deployment Status
 5. Upstash Redis State
-6. Live 11-Bot API Probe
+6. Live 9-Bot Fleet API Probe
 """
 
 import os
@@ -15,6 +15,7 @@ import json
 import time
 import urllib.request
 import urllib.error
+import urllib.parse
 import aiohttp
 import asyncio
 
@@ -118,7 +119,7 @@ async def test_render_deployments():
             print(f"  ⚠️ Render check error: {e}")
 
 async def test_live_11_bots_probe():
-    print("\n--- 5. Probing Live 11-Bot API Connectivity & Tokens ---")
+    print("\n--- 5. Probing Live 9-Bot API Connectivity & Tokens ---")
     accs_file = os.path.join(BASE_DIR, "accounts.json")
     if not os.path.exists(accs_file):
         print("  ⚠️ accounts.json missing")
@@ -128,25 +129,15 @@ async def test_live_11_bots_probe():
     master_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) == "6727787768"][0]
     worker_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) != "6727787768"][0]
 
-    # Pull live tokens from Upstash Redis or Turso LibSQL kv_mesh
+    # Pull live tokens: Turso LibSQL High-Capacity SSOT FIRST (25M ops/mo), then Upstash
     live_tokens = {}
-    if UPSTASH_URL and UPSTASH_TOKEN:
-        try:
-            req = urllib.request.Request(f"{UPSTASH_URL}/get/fleet:tokens:6727787768", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                raw_d = json.loads(resp.read()).get("result")
-                if raw_d:
-                    live_tokens = json.loads(raw_d) if isinstance(raw_d, str) else raw_d
-        except Exception:
-            pass
-
-    if not live_tokens and TURSO_URL and TURSO_TOKEN:
+    if TURSO_URL and TURSO_TOKEN:
         try:
             t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
             t_req = urllib.request.Request(
                 t_http,
                 headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
-                data=json.dumps({"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key IN ('fleet:tokens_state', 'miniapp_tokens', 'fleet:tokens:6727787768') LIMIT 3;"}}]}).encode()
+                data=json.dumps({"requests": [{"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key IN ('fleet:tokens_state', 'fleet:tokens:6727787768', 'fleet:diggo:jwt:6727787768');"}}]}).encode()
             )
             with urllib.request.urlopen(t_req, timeout=4) as resp:
                 t_res = json.loads(resp.read().decode())
@@ -154,19 +145,31 @@ async def test_live_11_bots_probe():
                     if item.get("type") == "ok":
                         rows = item.get("response", {}).get("result", {}).get("rows", [])
                         for row in rows:
-                            if row and row[0]:
-                                val_raw = row[0].get("value")
+                            if row and len(row) >= 2 and row[1]:
+                                k_name = row[0].get("value")
+                                val_raw = row[1].get("value")
+                                if k_name == "fleet:diggo:jwt:6727787768" and val_raw:
+                                    live_tokens["diggo_jwt"] = val_raw
+                                    continue
                                 if val_raw:
                                     parsed = json.loads(val_raw) if isinstance(val_raw, str) else val_raw
                                     if isinstance(parsed, dict):
-                                        if "6727787768" in parsed:
-                                            live_tokens = parsed["6727787768"]
-                                            break
-                                        elif "atf_init_data" in parsed:
-                                            live_tokens = parsed
-                                            break
-                        if live_tokens:
-                            break
+                                        t_dict = parsed.get("6727787768") if "6727787768" in parsed else parsed
+                                        if isinstance(t_dict, dict) and t_dict.get("atf_init_data"):
+                                            # Prefer newer tokens
+                                            for tk, tv in t_dict.items():
+                                                if tv and (tk not in live_tokens or tk.endswith("_init_data")):
+                                                    live_tokens[tk] = tv
+        except Exception:
+            pass
+
+    if not live_tokens and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            req = urllib.request.Request(f"{UPSTASH_URL}/get/fleet:tokens:6727787768", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                raw_d = json.loads(resp.read()).get("result")
+                if raw_d:
+                    live_tokens = json.loads(raw_d) if isinstance(raw_d, str) else raw_d
         except Exception:
             pass
 
@@ -225,24 +228,36 @@ async def test_live_11_bots_probe():
                     async with s.post(b_url, json={"initData": tok, "tid": 1449}, headers=pepe_headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "adxearn" in tok_key:
-                    async with s.post(b_url, json={"initData": tok, "fp": "fp_6727787768"}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    adx_h = {
+                        "Origin": "https://api.adxearnai.xyz",
+                        "Referer": "https://api.adxearnai.xyz/",
+                        "Content-Type": "application/json",
+                        "X-Telegram-Init-Data": tok,
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+                    }
+                    async with s.post(b_url, json={"initData": tok, "fp": "fp_6727787768"}, headers=adx_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "diggo" in tok_key:
                     jwt = live_tokens.get("diggo_jwt")
                     d_init = live_tokens.get("diggo_init_data") or master_acc.get("diggo_init_data")
+                    diggo_ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
                     if not jwt and d_init:
-                        async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init}, headers={"Content-Type": "application/json", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as ar:
+                        d_init_payload = urllib.parse.unquote(d_init) if "%3D" in d_init else d_init
+                        async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init_payload}, headers={"Content-Type": "application/json", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": diggo_ua}, timeout=aiohttp.ClientTimeout(total=6)) as ar:
                             if ar.status == 200:
                                 jwt = (await ar.json()).get("token")
+                                if jwt:
+                                    live_tokens["diggo_jwt"] = jwt
                     if jwt:
-                        async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": diggo_ua}, timeout=aiohttp.ClientTimeout(total=6)) as r:
                             r_status = r.status
                             if r_status == 401 and d_init:
-                                async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init}, headers={"Content-Type": "application/json", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as ar2:
+                                d_init_payload = urllib.parse.unquote(d_init) if "%3D" in d_init else d_init
+                                async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init_payload}, headers={"Content-Type": "application/json", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": diggo_ua}, timeout=aiohttp.ClientTimeout(total=6)) as ar2:
                                     if ar2.status == 200:
                                         jwt2 = (await ar2.json()).get("token")
                                         if jwt2:
-                                            async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt2}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r2:
+                                            async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt2}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": diggo_ua}, timeout=aiohttp.ClientTimeout(total=6)) as r2:
                                                 r_status = r2.status
                     else:
                         r_status = 401
@@ -275,7 +290,7 @@ async def test_live_11_bots_probe():
 
 async def main():
     print("=" * 70)
-    print("🔍 COMPREHENSIVE LIVE SYSTEM & 11-BOT HEALTH VERIFICATION")
+    print("🔍 COMPREHENSIVE LIVE SYSTEM & 9-BOT FLEET HEALTH VERIFICATION")
     print("=" * 70)
     await test_cf_nodes()
     await test_render_nodes()

@@ -533,11 +533,12 @@ To prevent repetitive manual interventions and code rewrites when onboarding new
     4. Cloudflare Edge Cron trigger was missing the `Authorization: Bearer` secret header, causing edge triggers to be rejected.
     5. No administrative alert was sent when all accounts failed with 401 Unauthorized.
 - **Architectural Solution Implemented**:
-  1. **Direct WebApp Priority Queue**: In `extract_bot_webapp_token`, Priority 0 (Direct `RequestWebViewRequest` with `default_url="https://app8968434282.tgcloud.ai/"`) and Priority 2 (Bot Menu Button via `GetBotMenuButtonRequest`) execute *first*, extracting tokens in < 300ms.
-  2. **Turso LibSQL High-Capacity Mesh SSOT**: `chickenland_promo_sniper.py` directly executes `/v2/pipeline` queries against Turso LibSQL `kv_mesh` table (25M ops/month quota), reading `fleet:tokens_state` and `miniapp_tokens` and persisting `chickenland:seen_codes` and `chickenland:claimed_codes`.
-  3. **Operational Transparency & Autonomous Refresher**: If redemptions fail due to expired auth, the sniper immediately dispatches an administrative alert card and triggers background token extraction (`/collect-tokens?force=1`) on Render Oregon Node 3.
-  4. **Strict Nancy Filter**: Enforced exact 23-account fleet parity by purging Nancy (`8881914294`) across all token loading tiers.
-  5. **Cloudflare Edge Secret Fix**: Injected `Authorization: Bearer ${sniperSecret}` and query secret into Cloudflare Edge Worker cron dispatch, ensuring seamless sub-second execution.
+  1. **Direct WebApp & Main Mini App Priority Queue**: In `extract_bot_webapp_token`, Priority -1 (`RequestMainWebViewRequest` for native Telegram Main Mini Apps like `?startapp=promo` / `?startapp=12668`), Priority 0 (Direct `RequestWebViewRequest` with `default_url`), and Priority 2 (Bot Menu Button via `GetBotMenuButtonRequest`) execute *first*, extracting tokens in < 300ms.
+  2. **Zero-Spam Deduplication & Rate Limiter**: Added `ALERTED_CODES_TIMESTAMPS` enforcing a 24-hour alert cooldown per unique promo code in `chickenland_promo_sniper.py`, plus an in-memory `PROCESSED_PROMO_CODES_EDGE = new Set()`, Cloudflare KV check, and Turso LibSQL state lookups in `deploy_both_cf_workers.py`. Completely eliminated duplicate alert flooding to Telegram Bot (`@myagyai`) and Admin Channel (`-1004358687850`).
+  3. **Turso LibSQL High-Capacity Mesh SSOT**: `chickenland_promo_sniper.py` directly executes `/v2/pipeline` queries against Turso LibSQL `kv_mesh` table (25M ops/month quota), reading `fleet:tokens_state` and `miniapp_tokens` and persisting `chickenland:seen_codes` and `chickenland:claimed_codes`.
+  4. **Operational Transparency & Autonomous Refresher**: If redemptions fail due to expired auth, the sniper immediately dispatches an administrative alert card (rate-limited to 1 per code) and triggers background token extraction (`/collect-tokens?force=1`) on Render Oregon Node 3 with a 10-minute cooldown.
+  5. **Strict Nancy Filter**: Enforced exact 23-account fleet parity by purging Nancy (`8881914294`) across all token loading tiers and Cloudflare Worker endpoints.
+  6. **Admin Bot Webhook Recovery**: Auto-syncs `Admin Bot (@myagyai)` webhook via `/api/sync-telegram-webhooks` directly from Edge Gateway Node 4, guaranteeing zero pending updates.
 
 ---
 

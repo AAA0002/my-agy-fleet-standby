@@ -1945,6 +1945,7 @@ let memHeartbeat = null;
 let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
+const PROCESSED_PROMO_CODES_EDGE = new Set();
 let memAdminUsersPayload = null;
 let memAdminUsersTimestamp = 0;
 
@@ -2004,24 +2005,22 @@ async function getFleetTokens(env) {
   if (memTokens && Object.keys(memTokens).length > 0) {
     return sanitizeFleetTokensObject(memTokens);
   }
-  // 1. Primary: Upstash Redis (miniapp_tokens has all verified bot tokens from Telethon)
+  // 1. Primary: Turso LibSQL High-Capacity SSOT (25M ops/mo, zero rate-limit, immediate consistency)
   try {
-    const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
-    if (uResp && uResp.ok) {
-      const uD = await uResp.json().catch(() => ({}));
-      if (uD.result) {
-        let parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
-        while (typeof parsed === "string") {
-          try {
-            const nxt = JSON.parse(parsed);
-            if (nxt === parsed) break;
-            parsed = nxt;
-          } catch (_) { break; }
-        }
-        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
-          memTokens = sanitizeFleetTokensObject(parsed);
-          return memTokens;
-        }
+    const tursoState = await tursoGet("fleet:tokens_state");
+    if (tursoState) {
+      const parsedTurso = typeof tursoState === "string" ? JSON.parse(tursoState) : tursoState;
+      if (parsedTurso && typeof parsedTurso === "object" && Object.keys(parsedTurso).length > 0) {
+        memTokens = sanitizeFleetTokensObject(parsedTurso);
+        return memTokens;
+      }
+    }
+    const tursoMiniapp = await tursoGet("miniapp_tokens");
+    if (tursoMiniapp) {
+      const parsedTurso = typeof tursoMiniapp === "string" ? JSON.parse(tursoMiniapp) : tursoMiniapp;
+      if (parsedTurso && typeof parsedTurso === "object" && Object.keys(parsedTurso).length > 0) {
+        memTokens = sanitizeFleetTokensObject(parsedTurso);
+        return memTokens;
       }
     }
   } catch (_) {}
@@ -2055,22 +2054,24 @@ async function getFleetTokens(env) {
       }
     }
   } catch (_) {}
-  // 3b. Turso LibSQL High-Capacity Failover Mesh (25M ops/mo, zero rate-limit)
+  // 4. Quaternary: Upstash Redis (miniapp_tokens fallback)
   try {
-    const tursoState = await tursoGet("fleet:tokens_state");
-    if (tursoState) {
-      const parsedTurso = typeof tursoState === "string" ? JSON.parse(tursoState) : tursoState;
-      if (parsedTurso && typeof parsedTurso === "object" && Object.keys(parsedTurso).length > 0) {
-        memTokens = sanitizeFleetTokensObject(parsedTurso);
-        return memTokens;
-      }
-    }
-    const tursoMiniapp = await tursoGet("miniapp_tokens");
-    if (tursoMiniapp) {
-      const parsedTurso = typeof tursoMiniapp === "string" ? JSON.parse(tursoMiniapp) : tursoMiniapp;
-      if (parsedTurso && typeof parsedTurso === "object" && Object.keys(parsedTurso).length > 0) {
-        memTokens = sanitizeFleetTokensObject(parsedTurso);
-        return memTokens;
+    const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
+    if (uResp && uResp.ok) {
+      const uD = await uResp.json().catch(() => ({}));
+      if (uD.result) {
+        let parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
+        while (typeof parsed === "string") {
+          try {
+            const nxt = JSON.parse(parsed);
+            if (nxt === parsed) break;
+            parsed = nxt;
+          } catch (_) { break; }
+        }
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+          memTokens = sanitizeFleetTokensObject(parsed);
+          return memTokens;
+        }
       }
     }
   } catch (_) {}
@@ -5635,8 +5636,14 @@ fi
         }
         // Ensure entire current dictionary is completely sanitized of legacy keys
         for (const [k, v] of Object.entries(current)) {
+          if (String(k) === "8881914294") {
+            delete current[k];
+            continue;
+          }
           current[k] = sanitizeTokens(v);
         }
+        delete current["8881914294"];
+        delete current[8881914294];
         memTokens = current;
         const hasAllAccounts = Object.keys(current).length >= 23;
         if ((CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (hasAllAccounts || Date.now() - lastMiniappTokensKvWrite >= 60000)) {
@@ -16868,8 +16875,34 @@ Reply to Arif naturally:`;
         if (!codeMatch) return;
         const pCode = (codeMatch[1] || codeMatch[0]).trim().toUpperCase();
 
-        const isClaimed = await upstashGet(`chickenland:claimed_codes_set:${pCode}`, 0);
-        if (isClaimed) return;
+        const isClaimedMem = PROCESSED_PROMO_CODES_EDGE.has(pCode);
+        if (isClaimedMem) return;
+
+        let isClaimedKv = false;
+        try {
+          if (env.BACKUP_KV) {
+            const kvVal = await env.BACKUP_KV.get(`chickenland:claimed_codes_set:${pCode}`);
+            if (kvVal) isClaimedKv = true;
+          }
+        } catch (_) {}
+        if (isClaimedKv) {
+          PROCESSED_PROMO_CODES_EDGE.add(pCode);
+          return;
+        }
+
+        const isClaimedTurso = await tursoGet(`chickenland:claimed_codes_set:${pCode}`);
+        if (isClaimedTurso) {
+          PROCESSED_PROMO_CODES_EDGE.add(pCode);
+          return;
+        }
+
+        PROCESSED_PROMO_CODES_EDGE.add(pCode);
+        try {
+          if (env.BACKUP_KV) {
+            await env.BACKUP_KV.put(`chickenland:claimed_codes_set:${pCode}`, "1", { expirationTtl: 86400 * 7 });
+          }
+          await tursoSet(`chickenland:claimed_codes_set:${pCode}`, "1");
+        } catch (_) {}
 
         const sniperSecret = env.SECRET_KEY || env.CF_SECRET_KEY || "";
         await fetchRenderWithFailover(`/api/chickenland/snipe?code=${pCode}&secret=${sniperSecret}`, {
@@ -16880,7 +16913,6 @@ Reply to Arif naturally:`;
           },
           body: JSON.stringify({ code: pCode, buy_hens: true })
         }, 15000);
-        await upstashSet(`chickenland:claimed_codes_set:${pCode}`, "1", 86400 * 7);
       } catch (_) {}
     })());
 

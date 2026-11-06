@@ -255,10 +255,22 @@ def mark_code_claimed(code: str):
     except Exception:
         pass
 
-def send_telegram_alert(text: str):
-    """Sends clean notification card to Admin channels."""
+ALERTED_CODES_TIMESTAMPS: Dict[str, float] = {}
+LAST_EMERGENCY_REFRESH_TIME: float = 0.0
+
+def send_telegram_alert(text: str, code: str = None):
+    """Sends clean notification card to Admin channels with strict anti-spam deduplication."""
     if not REPORT_BOT_TOKEN:
         return
+    if code:
+        c_up = str(code).strip().upper()
+        last_t = ALERTED_CODES_TIMESTAMPS.get(c_up, 0)
+        # Suppress duplicate alerts for the same code within 24 hours
+        if (time.time() - last_t) < 86400:
+            logger.info(f"[Sniper Anti-Spam] Suppressed duplicate alert for {c_up} (already alerted within 24h)")
+            return
+        ALERTED_CODES_TIMESTAMPS[c_up] = time.time()
+
     url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
     targets = [REPORT_CHAT_ID]
     if ADMIN_NOTIF_CHANNEL and ADMIN_NOTIF_CHANNEL not in targets:
@@ -615,6 +627,13 @@ async def redeem_single_account(
 
 async def trigger_emergency_token_refresh():
     """Trigger background token refresh on Render Node 3 when 401 Unauthorized occurs."""
+    global LAST_EMERGENCY_REFRESH_TIME
+    now_er = time.time()
+    if (now_er - LAST_EMERGENCY_REFRESH_TIME) < 600:
+        logger.info("[Sniper Emergency] Token refresh cooldown active (<10m), skipping duplicate trigger.")
+        return
+    LAST_EMERGENCY_REFRESH_TIME = now_er
+
     try:
         secret = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY") or "aaafleet2025secure"
         connector = aiohttp.TCPConnector(limit=5)
@@ -639,13 +658,24 @@ async def snipe_promo_fleet(
     code: str,
     fleet: Optional[Dict[str, Dict[str, Any]]] = None,
     auto_buy_hens: bool = True,
-    send_alert: bool = True
+    send_alert: bool = True,
+    force: bool = False
 ) -> Dict[str, Any]:
     """
     Sub-Second Parallel Burst Engine:
     Redeems promo code concurrently across all fleet accounts in 300-450ms.
     """
     code = code.strip().upper()
+    if not force and (code in CLAIMED_CODES or code in EXHAUSTED_CODES):
+        logger.info(f"[Sniper Fast-Path] Code {code} already processed in current state, skipping duplicate burst.")
+        return {
+            "ok": True,
+            "code": code,
+            "claimed_count": 0,
+            "total_coins": 0,
+            "hens_bought": 0,
+            "status": "ALREADY_PROCESSED"
+        }
     async with BURST_LOCK:
         if not fleet or len(fleet) < 20:
             fleet = load_fleet_tokens(force_refresh=True)
@@ -732,7 +762,7 @@ async def snipe_promo_fleet(
                 if hens_bought > 0:
                     alert_msg += f"🐣 <b>Autonomous Expansion:</b> {hens_bought} basic hens purchased!\n"
                 alert_msg += f"🛡 <i>Cloud Node 3 Sub-Second Sniper Engine</i>"
-                send_telegram_alert(alert_msg)
+                send_telegram_alert(alert_msg, code=code)
             elif unauth_count >= max(5, int(len(fleet) * 0.6)):
                 alert_msg = (
                     f"⚠️ <b>CHICKEN LAND PROMO SNIPER ALERT</b> 🐔\n\n"
@@ -742,7 +772,7 @@ async def snipe_promo_fleet(
                     f"🔄 <b>Autonomous Action:</b> Triggering emergency MTProto token refresh on Render Node 3...\n"
                     f"🛡 <i>Cloud Node 3 Token Watchdog</i>"
                 )
-                send_telegram_alert(alert_msg)
+                send_telegram_alert(alert_msg, code=code)
                 asyncio.create_task(trigger_emergency_token_refresh())
             elif is_full:
                 alert_msg = (
@@ -752,7 +782,7 @@ async def snipe_promo_fleet(
                     f"⏱ <b>Burst Reaction Latency:</b> {total_time}s\n"
                     f"🛡 <i>Cloud Node 3 Sub-Second Sniper Engine</i>"
                 )
-                send_telegram_alert(alert_msg)
+                send_telegram_alert(alert_msg, code=code)
 
         return report
 

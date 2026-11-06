@@ -80,7 +80,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from telethon import TelegramClient, functions, types
 from telethon.sessions import StringSession
-from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
+from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, RequestMainWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.account import UpdateNotifySettingsRequest
 from telethon.tl.functions.bots import GetBotMenuButtonRequest
@@ -1129,9 +1129,9 @@ async def extract_from_tme_link(client: TelegramClient, target_link: str, fallba
     try:
         clean_p = target_link.split("t.me/")[1].split("?")[0].strip("/")
         parts = clean_p.split("/")
-        if len(parts) >= 2:
+        if len(parts) >= 1:
             target_bot = parts[0]
-            short_name = parts[1]
+            short_name = parts[1] if len(parts) >= 2 else None
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(target_link).query)
             sp = qs.get("startapp", [None])[0] or qs.get("start_param", [None])[0] or qs.get("start", [None])[0] or fallback_param
 
@@ -1168,37 +1168,37 @@ async def extract_from_tme_link(client: TelegramClient, target_link: str, fallba
             from telethon import utils as tu
             t_user = tu.get_input_user(bot_user_ent)
 
-            # Strategy 1: messages.GetBotAppRequest to resolve the real BotApp
-            bot_app_obj = None
-            try:
-                app_res = await client(functions.messages.GetBotAppRequest(
-                    app=types.InputBotAppShortName(bot_id=t_user or t_in, short_name=short_name),
-                    hash=0
-                ))
-                app_ent = getattr(app_res, "app", None)
-                if app_ent and hasattr(app_ent, "id") and hasattr(app_ent, "access_hash"):
-                    bot_app_obj = types.InputBotAppID(id=app_ent.id, access_hash=app_ent.access_hash)
-            except Exception as ge:
-                logger.debug(f"GetBotAppRequest for {target_bot}/{short_name}: {ge}")
+            # Strategy 1 & 2: If short_name exists, try GetBotAppRequest & RequestAppWebViewRequest
+            if short_name:
+                bot_app_obj = None
+                try:
+                    app_res = await client(functions.messages.GetBotAppRequest(
+                        app=types.InputBotAppShortName(bot_id=t_user or t_in, short_name=short_name),
+                        hash=0
+                    ))
+                    app_ent = getattr(app_res, "app", None)
+                    if app_ent and hasattr(app_ent, "id") and hasattr(app_ent, "access_hash"):
+                        bot_app_obj = types.InputBotAppID(id=app_ent.id, access_hash=app_ent.access_hash)
+                except Exception as ge:
+                    logger.debug(f"GetBotAppRequest for {target_bot}/{short_name}: {ge}")
 
-            # Strategy 2: RequestAppWebViewRequest using resolved BotApp or ShortName
-            try:
-                target_app_in = bot_app_obj or types.InputBotAppShortName(bot_id=t_user or t_in, short_name=short_name)
-                req = functions.messages.RequestAppWebViewRequest(
-                    peer=chat_peer or t_in,
-                    app=target_app_in,
-                    platform="android",
-                    start_param=str(sp) if sp else None,
-                    write_allowed=True
-                )
-                res = await client(req)
-                w_url = getattr(res, "url", None)
-                if w_url:
-                    t = extract_from_url(w_url)
-                    if t:
-                        return t
-            except Exception as ae:
-                logger.debug(f"RequestAppWebViewRequest for {target_bot}/{short_name}: {ae}")
+                try:
+                    target_app_in = bot_app_obj or types.InputBotAppShortName(bot_id=t_user or t_in, short_name=short_name)
+                    req = functions.messages.RequestAppWebViewRequest(
+                        peer=chat_peer or t_in,
+                        app=target_app_in,
+                        platform="android",
+                        start_param=str(sp) if sp else None,
+                        write_allowed=True
+                    )
+                    res = await client(req)
+                    w_url = getattr(res, "url", None)
+                    if w_url:
+                        t = extract_from_url(w_url)
+                        if t:
+                            return t
+                except Exception as ae:
+                    logger.debug(f"RequestAppWebViewRequest for {target_bot}/{short_name}: {ae}")
 
             # Strategy 3: RequestMainWebViewRequest (Main Mini App for bot)
             try:
@@ -1296,6 +1296,25 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
     if not bot_ent or not bot_in:
         logger.debug(f"Entity resolution failed for {bot_username} (candidates: {candidates})")
         return None
+
+    # Priority -1: Official Main Mini App via RequestMainWebViewRequest (Telegram's official Main Mini App method)
+    try:
+        from telethon import utils as tu
+        bot_user_ent = tu.get_input_user(bot_ent) or bot_in
+        m_req = RequestMainWebViewRequest(
+            peer=bot_in,
+            bot=bot_user_ent,
+            platform="android",
+            start_param=str(start_param) if start_param else None
+        )
+        m_res = await asyncio.wait_for(client(m_req), timeout=4.5)
+        m_url = getattr(m_res, "url", None)
+        if m_url:
+            tok = extract_from_url(m_url)
+            if tok:
+                return tok
+    except Exception as me:
+        logger.debug(f"[MainWebView Note] {bot_username}: {me}")
 
     # Priority 0: Direct RequestWebViewRequest if prefer_direct_url is enabled
     if prefer_direct_url and default_url and not default_url.startswith("https://t.me/"):
@@ -1727,13 +1746,19 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         dig_tok = None
     if dig_tok:
         tokens["diggo_init_data"] = dig_tok
-        # Immediate JWT exchange while auth_date is < 30s old
+        # Immediate JWT exchange while auth_date is fresh (< 30s old)
         try:
+            d_init_payload = urllib.parse.unquote(dig_tok) if "%3D" in dig_tok else dig_tok
             async with aiohttp.ClientSession() as http_s:
                 async with http_s.post(
                     "https://diggo.linkpc.net/api/auth/telegram",
-                    json={"initData": dig_tok},
-                    headers={"Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "Content-Type": "application/json"},
+                    json={"initData": d_init_payload},
+                    headers={
+                        "Origin": "https://diggo.linkpc.net",
+                        "Referer": "https://diggo.linkpc.net/",
+                        "Content-Type": "application/json",
+                        "User-Agent": user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+                    },
                     timeout=aiohttp.ClientTimeout(total=4)
                 ) as r:
                     if r.status == 200:
@@ -1742,13 +1767,25 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
                         if jwt_tok:
                             tokens["diggo_jwt"] = jwt_tok
                             acc["diggo_jwt"] = jwt_tok
+                            if TURSO_URL and TURSO_TOKEN and uid:
+                                try:
+                                    t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                                    t_now = int(time.time())
+                                    await http_s.post(
+                                        t_http,
+                                        json={"requests": [{"type": "execute", "stmt": {"sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);", "args": [{"type": "text", "value": f"fleet:diggo:jwt:{uid}"}, {"type": "text", "value": jwt_tok}, {"type": "integer", "value": str(t_now)}]}}]},
+                                        headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                                        timeout=aiohttp.ClientTimeout(total=3)
+                                    )
+                                except Exception:
+                                    pass
         except Exception as de:
             logger.debug(f"Diggo immediate JWT exchange note: {de}")
 
-    # 8. Chicken Land (@ChickenLandBot - Silent WebApp query)
+    # 8. Chicken Land (@ChickenLandBot - Main Mini App / WebApp query)
     try:
         chk_param = None if is_master else CHICKENLAND_REFERRAL_CODE
-        chk_tok = await asyncio.wait_for(extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"], prefer_direct_url=True), timeout=12.0)
+        chk_tok = await asyncio.wait_for(extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"], prefer_direct_url=False), timeout=10.0)
         if chk_tok:
             tokens["chickenland_init_data"] = chk_tok
     except Exception as ce:
@@ -1875,7 +1912,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
                         logger.error(f"[{name}] Connection error after 3 attempts: {conn_err}")
                         return {}
             if connected:
-                tokens_result = await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=55.0)
+                tokens_result = await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=75.0)
         except Exception as e:
             logger.error(f"[{name}] Telethon connection error: {e}")
             tokens_result = {}
@@ -1966,7 +2003,7 @@ async def collect_tokens(request: Request):
 
     # Concurrency Lock: Prevent multiple concurrent batch extractions from clashing over MTProto sessions
     now_ts = time.time()
-    if LAST_BATCH_RUN.get("status") == "running" and (now_ts - LAST_BATCH_RUN.get("timestamp", 0)) < 600:
+    if LAST_BATCH_RUN.get("status") == "running" and (now_ts - LAST_BATCH_RUN.get("timestamp", 0)) < 600 and request.query_params.get("force") != "1":
         return {
             "ok": True,
             "status": "ALREADY_IN_PROGRESS",
@@ -1989,7 +2026,7 @@ async def collect_tokens(request: Request):
             async with sem:
                 uid = str(acc.get("user_id"))
                 try:
-                    tokens = await asyncio.wait_for(extract_tokens_for_account(acc), timeout=70.0)
+                    tokens = await asyncio.wait_for(extract_tokens_for_account(acc), timeout=90.0)
                 except Exception as e:
                     logger.warning(f"[{acc.get('name', uid)}] Token extraction timeout/error: {e}")
                     tokens = {}
@@ -2738,8 +2775,9 @@ async def api_chickenland_snipe(request: Request, code: str = "", buy_hens: bool
     if not code:
         raise HTTPException(status_code=400, detail="Missing promo code")
 
+    force_snipe = request.query_params.get("force") == "1"
     from chickenland_promo_sniper import snipe_promo_fleet
-    report = await snipe_promo_fleet(code, auto_buy_hens=buy_hens)
+    report = await snipe_promo_fleet(code, auto_buy_hens=buy_hens, force=force_snipe)
     return {"ok": True, "report": report}
 
 @app.on_event("startup")
