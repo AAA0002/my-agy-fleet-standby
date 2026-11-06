@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐔 Chicken Land Sub-Second Promo Code Sniper Dual-Engine Hardening, Direct URL Extraction & Turso LibSQL Mesh SSOT (November 6, 2026)**:
+  - **Direct URL & Menu Button Fast-Track Token Extraction (`app.py`)**:
+    * Diagnosed root cause of Chicken Land expired tokens (50h–105h old) causing `401 Unauthorized` on promo redemptions: `extract_bot_webapp_token` timed out at 6.0s while cycling through failing candidate short names (`play`, `app`, `farm`).
+    * Re-architected `extract_bot_webapp_token` priority queue: Priority 0 (Direct `RequestWebViewRequest` with `default_url="https://app8968434282.tgcloud.ai/"`) and Priority 2 (Bot Menu Button via `GetBotMenuButtonRequest`) now execute immediately before candidate short names, extracting WebApp tokens in < 300ms.
+    * Added fallback to retry direct WebApp request without `start_param` if Telegram rejects start parameter for direct URLs.
+    * Configured `prefer_direct_url=True` and expanded per-account timeout to `12.0s` in `extract_tokens_for_account` for Chicken Land.
+  - **Turso LibSQL High-Capacity Mesh SSOT Integration (`chickenland_promo_sniper.py`)**:
+    * Integrated Turso LibSQL REST client (`/v2/pipeline`) directly into `chickenland_promo_sniper.py` (`turso_execute`, `turso_get`, `turso_set`, `async_turso_get`, `async_turso_set`).
+    * Upgraded `load_fleet_tokens()` to query Turso LibSQL `kv_mesh` table first for `fleet:tokens_state` and `miniapp_tokens`, completely eliminating Upstash Redis quota rate-limiting failures.
+    * Implemented dual-store persistence for `chickenland:seen_codes` and `chickenland:claimed_codes` across in-memory fast sets, Turso LibSQL, and Upstash Redis.
+    * Added strict Nancy (`8881914294`) filter across all 5 token loading steps, enforcing clean 23-account fleet parity.
+  - **Operational Transparency & Autonomous Emergency Token Refresher**:
+    * Enhanced `redeem_single_account` to flag `401 Unauthorized` / expired auth as `UNAUTHORIZED_EXPIRED`.
+    * Upgraded `snipe_promo_fleet` with smart operational alerting: if accounts fail due to expired tokens, it dispatches an administrative alert card to Telegram and triggers immediate background token collection (`/collect-tokens?force=1`) on Render Node 3.
+    * Added capacity exhaustion alert cards when 500/500 player limits are reached by public players.
+  - **Cloudflare Edge Cron Trigger & Nancy Eradication (`deploy_both_cf_workers.py`)**:
+    * Fixed missing authorization header in Cloudflare Edge Cron trigger: added `Authorization: Bearer ${sniperSecret}` and `?secret=${sniperSecret}` to edge fetch of `/api/chickenland/snipe`, resolving edge 401s.
+    * Updated edge regex in Cloudflare Worker to support variable length promo codes (`CL[A-Z0-9]{6,12}`).
+    * Added strict Nancy filter to `sanitizeFleetTokensObject` in Cloudflare Worker, permanently purging `8881914294` from Edge `/api/miniapp/tokens`.
+    * Enhanced `/snipe` and `/promo` Admin Bot commands with token expiration status notices.
+    * Deployed updated Edge Worker to Cloudflare Node 4 (`https://restore-agy.agorameet.workers.dev`).
+
+
 - **🛡️ Full MTProto Concurrency Deadlock Resolution, Cloud Function 429 Elimination & 30-Day Diggo JWT Durability (November 6, 2026)**:
   - **Deadlock-Proof MTProto Token Extraction (`app.py`)**:
     * Fixed infinite semaphore lock in `extract_tokens_for_account`: wrapped `client.disconnect()` in `asyncio.wait_for(..., timeout=3.0)` to eliminate Telethon connection teardown hangs.

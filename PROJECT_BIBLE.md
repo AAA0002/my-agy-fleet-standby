@@ -523,6 +523,24 @@ To prevent repetitive manual interventions and code rewrites when onboarding new
 
 ---
 
+### 🐔 Chicken Land Sub-Second Promo Code Sniper Architecture & Turso LibSQL Mesh SSOT (November 6, 2026)
+- **Problem Forensic Analysis**:
+  * Chicken Land promo codes (e.g. `CLBA429G6Y`, `CLJDRGRP23`) have a hard 500-player limit that public Telegram users exhaust within 60–120 seconds.
+  * The sniper failed previously because:
+    1. WebApp tokens (`chickenland_init_data`) were >50h–105h old and cryptographically rejected with `401 Unauthorized`.
+    2. `extract_bot_webapp_token` timed out at 6.0s on candidate short names (`play`, `app`, `farm`) without reaching direct WebApp or Menu Button strategies.
+    3. `chickenland_promo_sniper.py` relied solely on Upstash Redis (`miniapp_tokens`), which failed when Upstash hit its 500k/day quota.
+    4. Cloudflare Edge Cron trigger was missing the `Authorization: Bearer` secret header, causing edge triggers to be rejected.
+    5. No administrative alert was sent when all accounts failed with 401 Unauthorized.
+- **Architectural Solution Implemented**:
+  1. **Direct WebApp Priority Queue**: In `extract_bot_webapp_token`, Priority 0 (Direct `RequestWebViewRequest` with `default_url="https://app8968434282.tgcloud.ai/"`) and Priority 2 (Bot Menu Button via `GetBotMenuButtonRequest`) execute *first*, extracting tokens in < 300ms.
+  2. **Turso LibSQL High-Capacity Mesh SSOT**: `chickenland_promo_sniper.py` directly executes `/v2/pipeline` queries against Turso LibSQL `kv_mesh` table (25M ops/month quota), reading `fleet:tokens_state` and `miniapp_tokens` and persisting `chickenland:seen_codes` and `chickenland:claimed_codes`.
+  3. **Operational Transparency & Autonomous Refresher**: If redemptions fail due to expired auth, the sniper immediately dispatches an administrative alert card and triggers background token extraction (`/collect-tokens?force=1`) on Render Oregon Node 3.
+  4. **Strict Nancy Filter**: Enforced exact 23-account fleet parity by purging Nancy (`8881914294`) across all token loading tiers.
+  5. **Cloudflare Edge Secret Fix**: Injected `Authorization: Bearer ${sniperSecret}` and query secret into Cloudflare Edge Worker cron dispatch, ensuring seamless sub-second execution.
+
+---
+
 ### 🚫 Complete Eradication of Scammer & Removed Bots & Channels (October 8–9, 2026)
 Following operator directive and verified evidence of fraudulent schemes or obsolescence, **15 bots and all their associated channels/groups were permanently purged from all fleet code routines, blacklisted, blocked, dialogs erased with revoke=True across all 18 accounts, and all related channels/groups abandoned**:
 

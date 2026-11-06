@@ -1313,7 +1313,14 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             if tok:
                 return tok
         except Exception:
-            pass
+            if start_param:
+                try:
+                    res = await asyncio.wait_for(client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=default_url)), timeout=4.0)
+                    tok = extract_from_url(getattr(res, "url", None))
+                    if tok:
+                        return tok
+                except Exception:
+                    pass
 
     # Priority 1: High-Speed Inline Keyboard buttons in existing bot messages (Fastest, zero-spam, <300ms)
     try:
@@ -1385,6 +1392,63 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                 pass
     except Exception:
         pass
+
+    # Priority 2: Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
+    try:
+        menu = await asyncio.wait_for(client(functions.bots.GetBotMenuButtonRequest(user_id=bot_in)), timeout=3.5)
+        menu_btn = getattr(menu, "button", None)
+        if menu_btn and hasattr(menu_btn, "url") and menu_btn.url:
+            if "t.me/" in menu_btn.url:
+                tok = await asyncio.wait_for(extract_from_tme_link(client, menu_btn.url, start_param, chat_peer=bot_in), timeout=4.0)
+                if tok:
+                    return tok
+            elif not menu_btn.url.startswith("https://t.me/"):
+                req_p = {
+                    "peer": bot_ent,
+                    "bot": bot_ent,
+                    "platform": "android",
+                    "url": menu_btn.url
+                }
+                if start_param:
+                    req_p["start_param"] = str(start_param)
+                try:
+                    res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=4.0)
+                    tok = extract_from_url(getattr(res, "url", None))
+                    if tok:
+                        return tok
+                except Exception:
+                    if start_param:
+                        res = await asyncio.wait_for(client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=menu_btn.url)), timeout=4.0)
+                        tok = extract_from_url(getattr(res, "url", None))
+                        if tok:
+                            return tok
+    except Exception:
+        pass
+
+    # Priority 3: Direct RequestWebViewRequest with known default URL
+    if default_url and not default_url.startswith("https://t.me/"):
+        try:
+            req_p = {
+                "peer": bot_ent,
+                "bot": bot_ent,
+                "platform": "android",
+                "url": default_url
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=4.0)
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+        except Exception:
+            if start_param:
+                try:
+                    res = await asyncio.wait_for(client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=default_url)), timeout=4.0)
+                    tok = extract_from_url(getattr(res, "url", None))
+                    if tok:
+                        return tok
+                except Exception:
+                    pass
 
     bot_user_in = None
     try:
@@ -1684,11 +1748,11 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     # 8. Chicken Land (@ChickenLandBot - Silent WebApp query)
     try:
         chk_param = None if is_master else CHICKENLAND_REFERRAL_CODE
-        chk_tok = await asyncio.wait_for(extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"]), timeout=6.0)
+        chk_tok = await asyncio.wait_for(extract_bot_webapp_token(client, CHICKENLAND_BOT, start_param=chk_param, default_url="https://app8968434282.tgcloud.ai/", candidate_short_names=["play", "app", "farm", "miniapp"], prefer_direct_url=True), timeout=12.0)
         if chk_tok:
             tokens["chickenland_init_data"] = chk_tok
-    except Exception:
-        pass
+    except Exception as ce:
+        logger.warning(f"Chicken Land token extraction error: {ce}")
 
     # 9. Grouche Mine (@GRC_AirdrooBot - Silent WebApp query)
     try:

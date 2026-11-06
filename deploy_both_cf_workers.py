@@ -1958,6 +1958,9 @@ function sanitizeFleetTokensObject(rawObj) {
   const cleaned = {};
   for (const [uid, acc] of Object.entries(rawObj)) {
     if (!acc || typeof acc !== "object") continue;
+    if (String(uid) === "8881914294" || String(acc.account_id) === "8881914294" || (acc.name && acc.name.toLowerCase().includes("nancy"))) {
+      continue;
+    }
     const item = { account_id: String(acc.account_id || uid) };
     if (acc.name) item.name = acc.name;
     if (acc.synced_at) item.synced_at = acc.synced_at;
@@ -10587,13 +10590,19 @@ fi
                 const data = await res.json();
                 const rep = data.report || {};
                 const curAccs = await getFleetAccounts();
-                const totalFleetAccs = rep.total_accounts || curAccs.length || 24;
-                await sendReply(`🐔 *Chicken Land Promo Snipe Results:*\n\n` +
+                const totalFleetAccs = rep.total_accounts || curAccs.length || 23;
+                let replyDetails = `🐔 *Chicken Land Promo Snipe Results:*\n\n` +
                   `• *Code:* \`${promoCode}\`\n` +
                   `• *Claimed:* ${rep.claimed_count || 0}/${totalFleetAccs} Accounts ✅\n` +
                   `• *Coins Earned:* +${(rep.total_coins || 0).toLocaleString()} Coins 💰\n` +
                   `• *Hens Purchased:* ${rep.hens_bought || 0} New Hens 🐣\n` +
-                  `• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`);
+                  `• *Burst Time:* ${rep.burst_time_sec || 0}s ⚡`;
+                if (rep.unauthorized_count && rep.unauthorized_count >= Math.min(5, Math.floor(totalFleetAccs * 0.5))) {
+                  replyDetails += `\n• ⚠️ *Notice:* ${rep.unauthorized_count} accounts had expired tokens. Cloud token refresh dispatched!`;
+                } else if (rep.is_exhausted && (rep.claimed_count || 0) === 0) {
+                  replyDetails += `\n• ℹ️ *Capacity:* 500/500 player limit reached for this code.`;
+                }
+                await sendReply(replyDetails);
               } else {
                 await sendReply(`❌ *Sniper Error:* HTTP ${res.status} from Render Standby Node.`);
               }
@@ -16825,16 +16834,20 @@ Reply to Arif naturally:`;
         if (!ogMatch) return;
         const desc = ogMatch[1];
         if (desc.includes("ALL CLAIMED") || desc.includes("❌")) return;
-        const codeMatch = desc.match(/CL[A-Z0-9]{8}|👉\s*([A-Z0-9]{6,16})\s*👈/);
+        const codeMatch = desc.match(/CL[A-Z0-9]{6,12}|👉\s*([A-Z0-9]{6,16})\s*👈/);
         if (!codeMatch) return;
         const pCode = (codeMatch[1] || codeMatch[0]).trim().toUpperCase();
 
         const isClaimed = await upstashGet(`chickenland:claimed_codes_set:${pCode}`, 0);
         if (isClaimed) return;
 
-        await fetchRenderWithFailover("/api/chickenland/snipe", {
+        const sniperSecret = env.SECRET_KEY || env.CF_SECRET_KEY || "";
+        await fetchRenderWithFailover(`/api/chickenland/snipe?code=${pCode}&secret=${sniperSecret}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sniperSecret}`
+          },
           body: JSON.stringify({ code: pCode, buy_hens: true })
         }, 15000);
         await upstashSet(`chickenland:claimed_codes_set:${pCode}`, "1", 86400 * 7);
