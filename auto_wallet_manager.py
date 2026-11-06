@@ -56,7 +56,7 @@ FLEET_TRON_WALLETS = os.path.join(BASE_DIR, "fleet_tron_wallets.json")
 FLEET_SOLANA_WALLETS = os.path.join(BASE_DIR, "fleet_solana_wallets.json")
 FLEET_BTC_WALLETS = os.path.join(BASE_DIR, "fleet_btc_wallets.json")
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://internal-dodo-83852.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 
 TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
