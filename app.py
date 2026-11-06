@@ -139,10 +139,10 @@ PRIMARY_BTC_WALLET = "bc1q9d80d22081f42a19240409a29e2f69046c87"
 ENABLE_AUTO_WITHDRAWALS = False
 
 CF_WORKER_URLS = [
+    "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
     "https://restore-agy.aaa222.workers.dev",
-    "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai.workers.dev"
 ]
 

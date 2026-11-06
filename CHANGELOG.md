@@ -3,6 +3,12 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **⚡ Antigravity Duplicate Session Cleanup, 9-Bot Direct URL Fast-Track & Admin Webhook Restoration (November 6, 2026)**:
+  - **Daily Profit Reporter Crash Fix & Turso SSOT Fallback (`daily_profit_reporter.py`)**:
+    * Diagnosed and fixed fatal runtime crash (`KeyError: 'vic'`) during financial ledger generation: purged all obsolete references to defunct Victor's Company (`vic`).
+    * Upgraded `get_fleet_mining_totals` to query Turso LibSQL `kv_mesh` table first for `fleet:live_state` fallback, bypassing Upstash Redis daily request limits.
+    * Verified financial ledger generation across all 23 accounts and all 9 legitimate bots (ATF, Kynex, Diggo, PepeGram, AdxEarn, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+  - **Edge Gateway Prioritization (`app.py`)**:
+    * Re-ordered `CF_WORKER_URLS` to place Primary Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`) at index 0, eliminating failover latency.
   - **Duplicate Session & Daemon Cleanup (`agy-entry` & systemd user services)**:
     * Terminated old duplicate Antigravity daemon service (`antigravity-cli-daemon.service` / `agy remote-control serve` PID 884547) and all 15 duplicate MCP child processes, releasing over 2.6 GB of peak RSS memory and restoring available system RAM to 4.7 GB.
     * Disabled `antigravity-cli-daemon.service` from autostarting on boot/login.

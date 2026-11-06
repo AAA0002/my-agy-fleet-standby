@@ -273,28 +273,56 @@ async def get_fleet_mining_totals() -> dict:
             except Exception:
                 pass
 
-    # Fallback to Upstash Redis fleet:live_state if any balance is 0
-    if UPSTASH_URL and UPSTASH_TOKEN and (totals["knx"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0 or totals["vic"] == 0.0):
-        try:
-            import urllib.request
-            req = urllib.request.Request(
-                f"{UPSTASH_URL}/get/fleet:live_state",
-                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                d = json.loads(resp.read().decode())
-                res = d.get("result")
-                if res:
-                    live = json.loads(res) if isinstance(res, str) else res
-                    for a in live.get("accounts", []):
-                        if totals["knx"] == 0.0:
-                            totals["knx"] += float(a.get("kynex_coins", 0) or 0)
-                        if totals["atf"] == 0.0:
-                            totals["atf"] += float(a.get("atf_balance", 0) or 0)
-                        if totals["chicken_hens"] == 0:
-                            totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
-        except Exception:
-            pass
+    # Fallback to Turso LibSQL kv_mesh or Upstash Redis fleet:live_state if any balance is 0
+    if (totals["knx"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0):
+        # 1. Turso LibSQL High-Capacity SSOT
+        turso_url = (os.getenv("TURSO_DB_URL") or os.getenv("TURSO_URL", "")).replace("libsql://", "https://") + "/v2/pipeline"
+        turso_tok = os.getenv("TURSO_DB_TOKEN") or os.getenv("TURSO_TOKEN")
+        if turso_url and turso_tok:
+            try:
+                import urllib.request
+                req_t = urllib.request.Request(
+                    turso_url,
+                    headers={"Authorization": f"Bearer {turso_tok}", "Content-Type": "application/json"},
+                    data=json.dumps({"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = 'fleet:live_state' LIMIT 1;"}}]}).encode()
+                )
+                with urllib.request.urlopen(req_t, timeout=5) as resp:
+                    t_res = json.loads(resp.read().decode())
+                    rows = t_res.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                    if rows and rows[0] and rows[0][0].get("value"):
+                        live = json.loads(rows[0][0]["value"])
+                        for a in live.get("accounts", []):
+                            if totals["knx"] == 0.0:
+                                totals["knx"] += float(a.get("kynex_coins", 0) or 0)
+                            if totals["atf"] == 0.0:
+                                totals["atf"] += float(a.get("atf_balance", 0) or 0)
+                            if totals["chicken_hens"] == 0:
+                                totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
+            except Exception:
+                pass
+
+        # 2. Upstash Redis Fallback
+        if UPSTASH_URL and UPSTASH_TOKEN and (totals["knx"] == 0.0 or totals["atf"] == 0.0 or totals["chicken_hens"] == 0):
+            try:
+                import urllib.request
+                req = urllib.request.Request(
+                    f"{UPSTASH_URL}/get/fleet:live_state",
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    d = json.loads(resp.read().decode())
+                    res = d.get("result")
+                    if res:
+                        live = json.loads(res) if isinstance(res, str) else res
+                        for a in live.get("accounts", []):
+                            if totals["knx"] == 0.0:
+                                totals["knx"] += float(a.get("kynex_coins", 0) or 0)
+                            if totals["atf"] == 0.0:
+                                totals["atf"] += float(a.get("atf_balance", 0) or 0)
+                            if totals["chicken_hens"] == 0:
+                                totals["chicken_hens"] += int(a.get("chickenland_hens", 0) or 0)
+            except Exception:
+                pass
 
     # Fallback to accounts.json if still 0
     if totals["atf"] == 0.0 or totals["chicken_hens"] == 0:
@@ -392,8 +420,6 @@ async def generate_and_send_report(dry_run: bool = False):
         today_date_str = bst_now.strftime("%Y-%m-%d")
 
         ai_briefing = await get_ai_market_briefing(session, rates, total_payouts_bnb, wallet_bnb)
-
-        vic_str = f"`{fleet_totals['vic']:,.2f} VIC` mined (Hourly Shifts & Arcade Solver)" if fleet_totals['vic'] > 0 else "`Cloud Turnstile Active` (Hourly Shifts & Arcade Minigame Expeditions)"
 
         report = (
             f"📊 *[MY AGY AI — Daily Financial & Fleet Ledger]*\n"
