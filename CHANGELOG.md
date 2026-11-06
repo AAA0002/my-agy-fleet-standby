@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌾 Comprehensive 9-Bot Fleet Farming Engine Fixes & Multi-Store Cloud Durability (November 6, 2026)**:
+  - **Turso LibSQL High-Capacity KV Failover (`app.py` & `deploy_both_cf_workers.py`)**:
+    * Integrated Turso LibSQL table `kv_mesh` directly into `fetch_cloud_miniapp_tokens()` and `sync_account_tokens_to_clouds()` in `app.py`, as well as `getFleetTokens()` in `deploy_both_cf_workers.py`.
+    * Overcame Upstash Redis daily request limits (500k/day quota exhaustion) by providing an automatic failover bridge to Turso LibSQL (`25M ops/month` free tier), guaranteeing that WebApp session tokens and farming states are always durably stored and read.
+  - **Autonomous WebApp Token Refresher & 401 Unauthorized Elimination**:
+    * Dispatched batch token collection on Render Oregon Node 3 (`/collect-tokens`), extracting fresh cryptographically signed `initData` tokens across all 9 active legitimate bots (ATF Miner, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+    * Verified cryptographic freshness of newly minted tokens (auth_date < 70s old) and synchronized state into Turso `kv_mesh` (`fleet:tokens_state`).
+  - **Kynex & EarnVault Cloud Functions 503 Resiliency**:
+    * Hardened Kynex and EarnVault bot connectors across both Cloudflare Edge Worker and Render Node 3 against transient Google Cloud Functions `503 Service Unavailable` errors.
+    * Converted unexpected errors into non-crashing `upstream_503 (server maintenance)` statuses with intelligent jittered retries on subsequent cycles.
+  - **Edge Deployment & Render Parity**:
+    * Deployed updated worker script to Primary Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `HTTP 200 OK` and active cron trigger (`*/15 * * * *`).
+    * Aligned Render Node 3 deployment to synchronize with latest commit, eliminating stale in-memory cache and permanently purging Nancy (`8881914294`).
+
+
 - **🧹 Permanent Eradication of Retired Nancy Account & False Revocation Alert Elimination (November 6, 2026)**:
   - **Root Cause Forensic Diagnosis ("Why did that message show?")**:
     * Diagnosed the exact reason the Admin Bot `@myagyai` sent `🚨 Fleet Session Revocation Notice 🔴 • Account: #2 • Reason: Session unauthorized / logged out` and displayed `2. Nancy 🟢` (24 accounts) in the OTP grid despite earlier deletion:

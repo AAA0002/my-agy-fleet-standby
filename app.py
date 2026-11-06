@@ -2713,6 +2713,28 @@ async def sync_account_tokens_to_clouds(tokens: dict):
             except Exception as ue:
                 logger.warning(f"Upstash token sync note: {ue}")
 
+        # 2b. Turso LibSQL High-Capacity KV Mesh (25M ops/mo, zero rate-limit)
+        if TURSO_URL and TURSO_TOKEN:
+            try:
+                http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                t_now = int(time.time())
+                t_reqs = [
+                    {
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                            "args": [
+                                {"type": "text", "value": f"fleet:tokens:{uid}"},
+                                {"type": "text", "value": json.dumps(tokens)},
+                                {"type": "integer", "value": str(t_now)}
+                            ]
+                        }
+                    }
+                ]
+                await s.post(http_url, json={"requests": t_reqs}, headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=4))
+            except Exception as t_e:
+                logger.debug(f"[Turso Tokens Sync] Note: {t_e}")
+
         # 3. Local disk persistence in fleet_miniapp_tokens.json
         try:
             loc_t_file = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
@@ -6206,6 +6228,41 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                                 tokens_map[acc_id][tk] = tv
         except Exception:
             pass
+
+    # 1b. Turso LibSQL High-Capacity KV Failover (25M ops/mo, zero rate-limit)
+    if TURSO_URL and TURSO_TOKEN:
+        try:
+            http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+            turso_reqs = [
+                {"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = 'fleet:tokens_state' LIMIT 1;"}},
+                {"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = 'miniapp_tokens' LIMIT 1;"}}
+            ]
+            async with session.post(http_url, json={"requests": turso_reqs}, headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=5)) as tr:
+                if tr.status == 200:
+                    t_data = await tr.json()
+                    for res_item in t_data.get("results", []):
+                        if res_item.get("type") == "ok":
+                            rows = res_item.get("response", {}).get("result", {}).get("rows", [])
+                            if rows and rows[0]:
+                                val_raw = rows[0][0].get("value")
+                                if val_raw:
+                                    parsed_t = json.loads(val_raw) if isinstance(val_raw, str) else val_raw
+                                    while isinstance(parsed_t, str):
+                                        try:
+                                            parsed_t = json.loads(parsed_t)
+                                        except Exception:
+                                            break
+                                    if isinstance(parsed_t, dict):
+                                        for acc_id, t_obj in parsed_t.items():
+                                            if str(acc_id).isdigit() and isinstance(t_obj, dict):
+                                                if str(acc_id) not in tokens_map:
+                                                    tokens_map[str(acc_id)] = t_obj
+                                                else:
+                                                    for tk, tv in t_obj.items():
+                                                        if tk not in tokens_map[str(acc_id)] or not tokens_map[str(acc_id)][tk]:
+                                                            tokens_map[str(acc_id)][tk] = tv
+        except Exception as te:
+            logger.debug(f"[Turso Tokens Failover] Note: {te}")
 
     # 2. Secondary: Fallback to Cloudflare Worker edge nodes ONLY for accounts missing from Upstash
     for cf_url in CF_WORKER_URLS:

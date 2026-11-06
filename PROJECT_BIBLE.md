@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: November 4, 2026 (Rogue Runner Eradication, Multi-IP Anti-Clash Isolation & Resilient In-Memory Account Locking)*
+> *Last Updated: November 6, 2026 (9-Bot Fleet Farming Engine Fixes, Turso LibSQL KV Failover, Nancy Eradication & 23-Account Fleet Alignment)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*
@@ -15,14 +15,14 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first** (and consult [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for quick lookups). It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **an elastic multi-account Telegram fleet** (1 Master Account + dynamic Worker Accounts, currently 24 accounts including Account #19 Adil H `8937908003`, Account #20 Asaduzzaman Sarker `8609131528`, Account #21 AAA201 `8669217201`, Account #22 AAA 22 `9272631973`, Account #23 Abid Hasan (4) `9106746905`, and Account #24 AAA 24 `8972499908`) that dynamically scales up or down, continuously farming yield, satoshis, and tokens across 9 legitimate bot WebApp Mini Apps, while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Complete automated lifecycle handling, wallet provisioning, email assignment, and bot wallet connections are governed autonomously by [`auto_wallet_manager.py`](./auto_wallet_manager.py). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **an elastic multi-account Telegram fleet** (1 Master Account + 22 Worker Accounts, strictly 23 active accounts, with Nancy permanently eradicated) that dynamically scales up or down, continuously farming yield, satoshis, and tokens across 9 legitimate bot WebApp Mini Apps, while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin). Complete automated lifecycle handling, wallet provisioning, email assignment, and bot wallet connections are governed autonomously by [`auto_wallet_manager.py`](./auto_wallet_manager.py). Full persistent memory is tracked in [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
 2. **📱 Zero Phone Load Directive (Samsung Galaxy A30)**:
    - The local Samsung Galaxy A30 running Ubuntu 26.04 PRoot is **EXCLUSIVELY dedicated to running the Antigravity AI CLI for pair programming**.
    - **NEVER** run bots, daemon loops, supervisor loops, scrapers, queue pollers, or MTProto relay listeners locally on the phone. Keep CPU and RAM 100% free for the coding session.
-   - **100% of all mining, farming, token refreshers, and webhooks MUST run in the cloud** (Cloudflare Workers, Render, Upstash Redis).
+   - **100% of all mining, farming, token refreshers, and webhooks MUST run in the cloud** (Cloudflare Workers, Render, Upstash Redis, Turso LibSQL).
 3. **☁️ Zero-Trust Ephemeral Infrastructure & Mandatory Telegram Vault Backups ("Never Trust Any VM")**:
    - **Ephemeral Mindset**: Always assume ANY VPS, temporary container (e.g. `api.instabox.sh`), or local PRoot container can die, expire, or get wiped at any moment without warning. Never store unbacked-up data solely on an ephemeral VM.
    - **MANDATORY AUTOMATIC TELEGRAM BACKUP (DO NOT FORGET)**:
@@ -31,7 +31,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - Disaster recovery archives continuously flow to the Telegram vault (`@myagyai`) via `backup_manager.py`.
    - The 1-click restore mechanism (`restore.sh`) must always work out-of-the-box anywhere.
 4. **👥 Fleet-Wide Decision Rule ("Never Judge System by Master Account Alone")**:
-   - Every verification, audit, or architectural decision MUST probe at least 3 distinct worker accounts (e.g. Account #2 Nancy `8881914294`, Account #3 Koram `7648254021`, Account #10 `8203342513`) alongside the Master Account (`6727787768`).
+   - Every verification, audit, or architectural decision MUST probe at least 3 distinct worker accounts (e.g. Account #2 Koram `7648254021`, Account #3 Arif `8826375659`, Account #9 Tanvir `8203342513`) alongside the Master Account (`6727787768`).
    - Never assume an automated bot is functioning fleet-wide simply because the Master Account exhibits valid balances or active passes (which may originate from manual mobile phone logins).
 5. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
    - **NEVER trigger automatic withdrawals** from ANY bot under any circumstance.

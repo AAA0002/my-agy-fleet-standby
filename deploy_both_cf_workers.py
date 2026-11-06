@@ -2052,6 +2052,25 @@ async function getFleetTokens(env) {
       }
     }
   } catch (_) {}
+  // 3b. Turso LibSQL High-Capacity Failover Mesh (25M ops/mo, zero rate-limit)
+  try {
+    const tursoState = await tursoGet("fleet:tokens_state");
+    if (tursoState) {
+      const parsedTurso = typeof tursoState === "string" ? JSON.parse(tursoState) : tursoState;
+      if (parsedTurso && typeof parsedTurso === "object" && Object.keys(parsedTurso).length > 0) {
+        memTokens = sanitizeFleetTokensObject(parsedTurso);
+        return memTokens;
+      }
+    }
+    const tursoMiniapp = await tursoGet("miniapp_tokens");
+    if (tursoMiniapp) {
+      const parsedTurso = typeof tursoMiniapp === "string" ? JSON.parse(tursoMiniapp) : tursoMiniapp;
+      if (parsedTurso && typeof parsedTurso === "object" && Object.keys(parsedTurso).length > 0) {
+        memTokens = sanitizeFleetTokensObject(parsedTurso);
+        return memTokens;
+      }
+    }
+  } catch (_) {}
   // 4. Quaternary: Upstash Redis (fleet_miniapp_tokens)
   try {
     const uResp2 = await fetch(`${UPSTASH_URL}/get/fleet_miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
