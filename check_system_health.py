@@ -129,6 +129,15 @@ async def test_live_11_bots_probe():
     master_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) == "6727787768"][0]
     worker_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) != "6727787768"][0]
 
+    def extract_auth_date(tok):
+        if not isinstance(tok, str):
+            return 0
+        try:
+            qs = urllib.parse.parse_qs(tok)
+            return int(qs.get("auth_date", [0])[0])
+        except Exception:
+            return 0
+
     # Pull live tokens: Turso LibSQL High-Capacity SSOT FIRST (25M ops/mo), then Upstash
     live_tokens = {}
     if TURSO_URL and TURSO_TOKEN:
@@ -137,7 +146,7 @@ async def test_live_11_bots_probe():
             t_req = urllib.request.Request(
                 t_http,
                 headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
-                data=json.dumps({"requests": [{"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key IN ('fleet:tokens_state', 'fleet:tokens:6727787768', 'fleet:diggo:jwt:6727787768');"}}]}).encode()
+                data=json.dumps({"requests": [{"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key IN ('fleet:tokens:6727787768', 'fleet:tokens_state', 'fleet:diggo:jwt:6727787768');"}}]}).encode()
             )
             with urllib.request.urlopen(t_req, timeout=4) as resp:
                 t_res = json.loads(resp.read().decode())
@@ -155,11 +164,14 @@ async def test_live_11_bots_probe():
                                     parsed = json.loads(val_raw) if isinstance(val_raw, str) else val_raw
                                     if isinstance(parsed, dict):
                                         t_dict = parsed.get("6727787768") if "6727787768" in parsed else parsed
-                                        if isinstance(t_dict, dict) and t_dict.get("atf_init_data"):
-                                            # Prefer newer tokens
+                                        if isinstance(t_dict, dict):
                                             for tk, tv in t_dict.items():
-                                                if tv and (tk not in live_tokens or tk.endswith("_init_data")):
-                                                    live_tokens[tk] = tv
+                                                if tv:
+                                                    if tk not in live_tokens:
+                                                        live_tokens[tk] = tv
+                                                    elif tk.endswith("_init_data"):
+                                                        if extract_auth_date(tv) > extract_auth_date(live_tokens.get(tk)):
+                                                            live_tokens[tk] = tv
         except Exception:
             pass
 
@@ -273,8 +285,30 @@ async def test_live_11_bots_probe():
                     async with s.get(b_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "earnvault" in tok_key:
-                    async with s.post(b_url, json={"data": {"initData": tok}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
-                        r_status = r.status
+                    rt = live_tokens.get("earnvault_refresh_token") or master_acc.get("earnvault_refresh_token")
+                    if rt:
+                        try:
+                            async with s.post(
+                                "https://securetoken.googleapis.com/v1/token?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg",
+                                json={"grant_type": "refresh_token", "refresh_token": rt},
+                                timeout=aiohttp.ClientTimeout(total=4)
+                            ) as f_r:
+                                if f_r.status == 200:
+                                    f_d = await f_r.json()
+                                    id_tok = f_d.get("id_token")
+                                    if id_tok:
+                                        async with s.post(
+                                            "https://us-central1-earnvaulte.cloudfunctions.net/getAdState",
+                                            json={"data": {}},
+                                            headers={"Authorization": f"Bearer {id_tok}", "Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+                                            timeout=aiohttp.ClientTimeout(total=4)
+                                        ) as g_r:
+                                            r_status = g_r.status
+                        except Exception:
+                            pass
+                    if not r_status:
+                        async with s.post(b_url, json={"data": {"initData": tok}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                            r_status = r.status
 
                 lat = int((time.time() - t0) * 1000)
                 if r_status in (200, 201):

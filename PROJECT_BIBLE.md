@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: November 6, 2026 (MTProto Concurrency Deadlock Resolution, Cloud Function 429 Elimination, 30-Day Diggo JWT Durability & Turso LibSQL Monolithic Syncing)*
+> *Last Updated: November 6, 2026 (Legacy Upstash Deprecation, Upstash Primary Standardization, Cloudflare Gateway Node 4 Live Deploy & 9-Bot Token Preservation)*
 > *Classification: Mission-Critical Living Technical Documentation*
 > *Ground-Truth Directive: Zero fake reporting. Real balances, active states, and Turnstile requirements are queried live directly from bot APIs.*
 > *Master Navigation Directory: See [MASTER_SYSTEM_DIRECTORY.md](./MASTER_SYSTEM_DIRECTORY.md) for executive cheat sheet and instant lookup.*

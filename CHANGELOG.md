@@ -2,7 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🐔 Chicken Land Promo Sniper Bug Eradication, Upstash Failover & Render Node 3 Environment Repair (November 6, 2026)**:
+- **🌐 Zero-Stale Cluster Standardization, 9-Bot Ground Truth & Edge Gateway Deployment (November 6, 2026)**:
+  - **100% Eradication of Legacy Upstash Cluster (`internal-dodo-83852.upstash.io`)**:
+    * Cleaned all remaining legacy hardcoded references across GitHub Actions workflows: `.github/workflows/fleet_sentinel.yml` (lines 29, 344), `.github/workflows/cloud_token_refresher.yml` (line 71), and `.github/workflows/cloud_sweeper.yml` (line 80).
+    * Updated JavaScript / Deno / Bot configurations: `tgcloud_admin_bot/tgcloud/lib/config.js`, `tgcloud_admin_bot/tgcloud/lib/ui.js`, `My_Router_AI_bot/tgcloud/lib/config.js`, `deno_worker/main.ts`, and all archive scripts in `scripts/archive/`.
+    * Standardized 100% of the fleet codebase on active Primary cluster `rich-emu-106119.upstash.io` and Standby `pleasant-locust-220893.upstash.io`. Zero occurrences of `internal-dodo-83852` remain.
+  - **Cloudflare Edge Gateway Node 4 Deployment (`deploy_both_cf_workers.py`)**:
+    * Deployed updated edge worker code to Primary Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Active 24/7 edge cron trigger verified (`*/15 * * * *`).
+    * Webhook registrations synchronized with Telegram Bot API: Admin Bot (`@myagyai`) -> `https://restore-agy.agorameet.workers.dev/telegram-webhook` (0 pending backlog); User Bot (`@AAAPREMIUMAPPSbot`) -> `https://restore-agy.agorameet.workers.dev/user-bot-webhook` (0 pending backlog).
+    * Telegram Menu buttons, descriptions, and commands synchronized across both bots.
+  - **System Health Token Comparator & Auth Date Preservation (`check_system_health.py`)**:
+    * Root Cause: Diagnosed probe issue where fresh tokens (< 1.7h old) for master account `6727787768` were being inadvertently overwritten by older tokens from `fleet:tokens_state` due to an unconstrained dictionary update.
+    * Implemented `extract_auth_date` comparator: probe now checks cryptographic `auth_date` and strictly preserves newer tokens, never downgrading fresh credentials.
+    * Verified live 9-bot API connectivity: ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, and LUM Miner all return `✅ HTTP 200 OK`.
+  - **EarnVault Bot App MTProto WebApp Protocol Fix (`app.py`)**:
+    * Corrected EarnVault WebApp token extraction by setting `prefer_direct_url=False`, allowing Strategy 2 (`RequestAppWebViewRequest` with short_name `"App"`) to execute. EarnVault's Firebase Cloud Function requires bot app context rather than raw direct URL query IDs.
+  - **Nancy (`8881914294`) Report Sanitization**:
+    * Cleaned legacy residue from `live_farming_and_sidetasks_report.json`, achieving 100% ground-truth alignment with the 23 active fleet accounts.
+  - **Zero Phone Load (Samsung Galaxy A30)**:
+    * Verified 0 local bots, scrapers, or daemon loops running on the device. All 23 accounts and 9 bots run 100% in the cloud on Render Node 3 and Cloudflare Edge.
+
+
   - **Fatal `NameError: name 'logger' is not defined` Resolved (`chickenland_promo_sniper.py`)**:
     * Diagnosed fatal crash occurring during fast-path exit and alert anti-spam execution where `logger.info` was invoked without `logger` being initialized.
     * Added standard logging configuration with dedicated stream handler and timestamp formatting, ensuring completely crash-free execution.
