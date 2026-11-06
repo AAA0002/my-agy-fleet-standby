@@ -111,6 +111,8 @@ if os.path.exists(acc_path):
 existing_uids = {str(a.get("user_id")) for a in ACCOUNTS}
 if TOKENS_DB:
     for uid, tinfo in TOKENS_DB.items():
+        if str(uid) == "8881914294" or "nancy" in str(tinfo.get("name", "")).lower():
+            continue
         if str(uid).isdigit() and str(uid) not in existing_uids:
             ACCOUNTS.append({
                 "user_id": int(uid),

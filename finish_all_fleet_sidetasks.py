@@ -61,6 +61,8 @@ if os.path.exists(env_file):
 
 UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or ""
+TURSO_URL = env.get("TURSO_DB_URL") or env.get("TURSO_DATABASE_URL") or env.get("TURSO_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
+TURSO_TOKEN = env.get("TURSO_DB_TOKEN") or env.get("TURSO_AUTH_TOKEN") or ""
 SECRET_KEY = env.get("SECRET_KEY") or env.get("CF_SECRET_KEY") or ""
 
 CF_WORKERS = [
@@ -112,7 +114,7 @@ if UPSTASH_URL and UPSTASH_TOKEN:
                 existing_uids = {str(a.get("user_id") or a.get("account_id") or a.get("id") or "") for a in ACCOUNTS}
                 for a in up_accs:
                     a_uid = str(a.get("user_id") or a.get("account_id") or a.get("id") or "")
-                    if a_uid and a_uid not in existing_uids:
+                    if a_uid and a_uid not in existing_uids and a_uid != "8881914294" and "nancy" not in str(a.get("name", "")).lower():
                         ACCOUNTS.append(a)
                         existing_uids.add(a_uid)
     except Exception:
