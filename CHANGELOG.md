@@ -3,6 +3,9 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **⚡ Seamless Antigravity Refresh Loop & Termux Protection (November 6, 2026)**:
+  - **Remote-Control Daemon Strict Singleton & Deduplication Guarantee**:
+    * Guaranteed that `agy remote-control serve` starts automatically on boot / session start, but **strictly prevents multiple instances from running**.
+    * Enhanced `/data/home/.local/bin/agy-entry` and `setup_smart_agy.sh` with active `MainPID` reconciliation: dynamically kills any orphan/duplicate processes while preserving the single authorized systemd daemon (`antigravity-cli-daemon.service`).
   - **User-Centric Refresh Workflow ("Exit agy to refresh agy, NEVER exit Termux")**:
     * Clarified core mobile workflow: the user exits `agy` (`/exit` or `Ctrl+C` twice) specifically to **refresh/restart `agy`**, not to terminate Termux or sever the SSH connection.
     * Completely purged the aggressive `agy-tmux-reaper.service` daemon and all automatic `tmux kill-session` traps that previously caused the SSH connection to break and closed Termux on the phone.

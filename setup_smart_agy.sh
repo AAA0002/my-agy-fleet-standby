@@ -117,14 +117,31 @@ if [ ! -x "$REAL_AGY" ]; then
     REAL_AGY="$(which agy 2>/dev/null)"
 fi
 
-# 2. Ensure Antigravity Remote Control Daemon (aaa-hub-vm) is active
+# 2. Ensure Antigravity Remote Control Daemon (aaa-hub-vm) is active (Strict Singleton Guarantee)
 if command -v systemctl >/dev/null 2>&1; then
+    MAIN_PID="$(systemctl --user show --property MainPID --value antigravity-cli-daemon.service 2>/dev/null)"
+    if [ -n "$MAIN_PID" ] && [ "$MAIN_PID" != "0" ]; then
+        for PID in $(pgrep -f "agy remote-control serve" 2>/dev/null); do
+            if [ "$PID" != "$MAIN_PID" ]; then
+                kill -9 "$PID" 2>/dev/null || true
+            fi
+        done
+    fi
+
     if ! systemctl --user is-active antigravity-cli-daemon.service >/dev/null 2>&1; then
-        systemctl --user restart antigravity-cli-daemon.service >/dev/null 2>&1 || true
+        systemctl --user start antigravity-cli-daemon.service >/dev/null 2>&1 || true
     fi
 else
-    if ! pgrep -f "agy remote-control serve" >/dev/null 2>&1; then
+    RC_PIDS="$(pgrep -f "agy remote-control serve" 2>/dev/null)"
+    if [ -z "$RC_PIDS" ]; then
         nohup "$REAL_AGY" remote-control serve >/dev/null 2>&1 &
+    else
+        FIRST_PID="$(echo "$RC_PIDS" | head -n 1)"
+        for PID in $RC_PIDS; do
+            if [ "$PID" != "$FIRST_PID" ]; then
+                kill -9 "$PID" 2>/dev/null || true
+            fi
+        done
     fi
 fi
 
