@@ -24,7 +24,16 @@ import aiohttp
 import urllib.parse
 import urllib.request
 import base64
+import logging
 from typing import Dict, Any, List, Set, Optional
+
+# Logger setup
+logger = logging.getLogger("chickenland_sniper")
+if not logger.handlers:
+    _handler = logging.StreamHandler(sys.stdout)
+    _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
 
 try:
     from dotenv import load_dotenv
@@ -39,9 +48,13 @@ RAW_CHANNEL_ID = 4433995185
 CHANNEL_URL = "https://t.me/s/ChickenLandCodes"
 RPC_URL = "https://app8968434282.tgcloud.ai/api/rpc"
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
+# Upstash Redis: Dual-cluster support with automatic fallback
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
-TURSO_URL = os.getenv("TURSO_DATABASE_URL") or os.getenv("TURSO_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
+UPSTASH_STANDBY_URL = os.getenv("UPSTASH_STANDBY_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_STANDBY_TOKEN = os.getenv("UPSTASH_STANDBY_TOKEN") or ""
+
+TURSO_URL = os.getenv("TURSO_DB_URL") or os.getenv("TURSO_DATABASE_URL") or os.getenv("TURSO_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
 TURSO_TOKEN = os.getenv("TURSO_DB_TOKEN") or os.getenv("TURSO_AUTH_TOKEN") or ""
 
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""
@@ -149,44 +162,59 @@ async def async_turso_set(session: aiohttp.ClientSession, key: str, val: Any) ->
     return res is not None
 
 def redis_command(cmd: str, *args) -> Any:
-    """Synchronous Redis helper for initial startup loading."""
-    if not UPSTASH_URL or not UPSTASH_TOKEN:
-        return None
-    headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
-    try:
-        req = urllib.request.Request(UPSTASH_URL, data=json.dumps([cmd, *args]).encode('utf-8'), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=4) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            return data.get("result")
-    except Exception:
+    """Synchronous Redis helper for initial startup loading with dual-cluster failover."""
+    endpoints = []
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        endpoints.append((UPSTASH_URL, UPSTASH_TOKEN))
+    if UPSTASH_STANDBY_URL and UPSTASH_STANDBY_TOKEN and (UPSTASH_STANDBY_URL != UPSTASH_URL):
+        endpoints.append((UPSTASH_STANDBY_URL, UPSTASH_STANDBY_TOKEN))
+
+    for u_url, u_tok in endpoints:
+        headers = {"Authorization": f"Bearer {u_tok}", "Content-Type": "application/json"}
         try:
-            url = f"{UPSTASH_URL.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
-            req_get = urllib.request.Request(url, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
-            with urllib.request.urlopen(req_get, timeout=4) as resp:
+            req = urllib.request.Request(u_url, data=json.dumps([cmd, *args]).encode('utf-8'), headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=4) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
-                return data.get("result")
+                if "error" not in data:
+                    return data.get("result")
         except Exception:
-            return None
+            try:
+                url = f"{u_url.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
+                req_get = urllib.request.Request(url, headers={"Authorization": f"Bearer {u_tok}"})
+                with urllib.request.urlopen(req_get, timeout=4) as resp:
+                    data = json.loads(resp.read().decode('utf-8'))
+                    if "error" not in data:
+                        return data.get("result")
+            except Exception:
+                pass
+    return None
 
 async def async_redis_command(session: aiohttp.ClientSession, cmd: str, *args) -> Any:
-    """Non-blocking async Redis helper for post-burst persistence."""
-    if not UPSTASH_URL or not UPSTASH_TOKEN:
-        return None
-    headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
-    try:
-        async with session.post(UPSTASH_URL, json=[cmd, *args], headers=headers, timeout=aiohttp.ClientTimeout(total=3)) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                return data.get("result")
-    except Exception:
+    """Non-blocking async Redis helper for post-burst persistence with dual-cluster failover."""
+    endpoints = []
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        endpoints.append((UPSTASH_URL, UPSTASH_TOKEN))
+    if UPSTASH_STANDBY_URL and UPSTASH_STANDBY_TOKEN and (UPSTASH_STANDBY_URL != UPSTASH_URL):
+        endpoints.append((UPSTASH_STANDBY_URL, UPSTASH_STANDBY_TOKEN))
+
+    for u_url, u_tok in endpoints:
+        headers = {"Authorization": f"Bearer {u_tok}", "Content-Type": "application/json"}
         try:
-            url = f"{UPSTASH_URL.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
-            async with session.get(url, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as resp2:
-                if resp2.status == 200:
-                    data2 = await resp2.json()
-                    return data2.get("result")
+            async with session.post(u_url, json=[cmd, *args], headers=headers, timeout=aiohttp.ClientTimeout(total=3)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if "error" not in data:
+                        return data.get("result")
         except Exception:
-            pass
+            try:
+                url = f"{u_url.rstrip('/')}/{cmd}/" + "/".join(urllib.parse.quote(str(a), safe='') for a in args)
+                async with session.get(url, headers={"Authorization": f"Bearer {u_tok}"}, timeout=aiohttp.ClientTimeout(total=3)) as resp2:
+                    if resp2.status == 200:
+                        data2 = await resp2.json()
+                        if "error" not in data2:
+                            return data2.get("result")
+            except Exception:
+                pass
     return None
 
 def is_code_seen(code: str) -> bool:
@@ -905,7 +933,25 @@ async def start_mtproto_listener():
         except Exception:
             pass
 
-    # Cloud Fallback: Load directly from Upstash Redis fleet:accounts if local file missing
+    # Cloud Fallback 1: Turso LibSQL High-Capacity Mesh SSOT (25M ops/mo, 100% available)
+    if not accounts and TURSO_TOKEN:
+        try:
+            for t_k in ("fleet:accounts", "fleet:live_state"):
+                t_accs = turso_get(t_k)
+                if t_accs:
+                    parsed_t = json.loads(t_accs) if isinstance(t_accs, str) else t_accs
+                    while isinstance(parsed_t, str):
+                        parsed_t = json.loads(parsed_t)
+                    if isinstance(parsed_t, dict) and "accounts" in parsed_t:
+                        accounts = parsed_t["accounts"]
+                    elif isinstance(parsed_t, list):
+                        accounts = parsed_t
+                    if accounts:
+                        break
+        except Exception:
+            pass
+
+    # Cloud Fallback 2: Load directly from Upstash Redis fleet:accounts if local file missing
     if not accounts and UPSTASH_URL and UPSTASH_TOKEN:
         try:
             res_r = redis_command("GET", "fleet:accounts")
