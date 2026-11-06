@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Antigravity Duplicate Session Cleanup, 9-Bot Direct URL Fast-Track & Admin Webhook Restoration (November 6, 2026)**:
+  - **Duplicate Session & Daemon Cleanup (`agy-entry` & systemd user services)**:
+    * Terminated old duplicate Antigravity daemon service (`antigravity-cli-daemon.service` / `agy remote-control serve` PID 884547) and all 15 duplicate MCP child processes, releasing over 2.6 GB of peak RSS memory and restoring available system RAM to 4.7 GB.
+    * Disabled `antigravity-cli-daemon.service` from autostarting on boot/login.
+    * Re-engineered `/data/home/.local/bin/agy-entry` to eliminate automatic spawning of background remote-control daemons, enforcing a strict Single-Session Guarantee where only the active tmux CLI session runs.
+    * Updated `.bashrc` aliases (`agy-fix`) to attach directly to tmux without spawning conflicting background daemons.
+  - **Universal Direct URL Fast-Path for All 9 Active Fleet Bots (`app.py`)**:
+    * Enabled `prefer_direct_url=True` across all 9 legitimate farming bots (ATF Miner, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+    * Replaces slow candidate short-name guesses (which timed out after 5-6s each) with direct `RequestWebViewRequest` against verified bot WebApp URLs, slashing extraction latency to < 300ms per bot.
+    * Expanded per-account extraction timeouts to `90.0s` and `110.0s` to prevent premature aborts on slow networks.
+  - **Admin Bot (@myagyai) Webhook Restoration**:
+    * Diagnosed empty webhook URL causing dropped admin commands and pending Telegram updates: re-registered `https://restore-agy.agorameet.workers.dev/telegram-webhook` with Telegram Bot API, restoring pending update count to 0.
+  - **Turso LibSQL High-Capacity SSOT Parity & Nancy Eradication**:
+    * Purged retired account `8881914294` from Turso LibSQL `kv_mesh` table, establishing exact 23-account fleet parity.
+    * Synchronized `miniapp_tokens` to match `fleet:tokens_state` in Turso LibSQL, eliminating stale 68-hour-old token overwrites.
+
+
 - **🐔 Chicken Land Anti-Spam Sniper Hardening, Telegram Main WebView Engine & 23-Account Fleet Token Durability (November 6, 2026)**:
   - **Zero-Spam Deduplication & Cooldown Engine (`chickenland_promo_sniper.py`)**:
     * Diagnosed and resolved repeated alert card spamming to Telegram Bot (`@myagyai`) and Admin Channel (`-1004358687850`): added `ALERTED_CODES_TIMESTAMPS` enforcing strict 24-hour per-code alert deduplication.
