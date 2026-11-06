@@ -2,6 +2,31 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ VM Workshop, Remote Control Daemon & Mobile TMUX Resilience Overhaul (November 6, 2026)**:
+  - **Root-Cause Forensic Analysis of VM Workshop & TMUX Failures**:
+    * **Root Cause 1 (Antigravity Remote Control Daemon Stalled)**: The systemd daemon `antigravity-cli-daemon.service` running `agy remote-control serve` (instance `aaa-hub-vm` at `https://antigravity.google.com`) encountered an expired OAuth token at 12:29 UTC and blocked on stdin ("Enter the authorization code:"), causing the remote workshop session to disconnect.
+    * **Root Cause 2 (Inside-Tmux Exit Trap in `agy-entry`)**: In `/data/home/.local/bin/agy-entry`, if a user was already inside tmux and typed `agy` or `agy -c`, the script evaluated `if tmux list-windows -t agy | grep -q agy; then exit 0; fi`, causing the shell to immediately terminate with exit code 0 rather than executing or continuing the session.
+    * **Root Cause 3 (Zombie Client Geometry Lock on Mobile)**: When the user re-connected from their Samsung Galaxy A30 via Termux/SSH, `tmux attach-session -t agy` attached without the `-d` flag, leaving previous dead connections attached and locking the window dimensions to conflicting aspect ratios (`56x52`).
+    * **Root Cause 4 (Premature Session Destruction)**: `~/.tmux.conf` lacked `detach-on-destroy off`, causing tmux to terminate the entire session whenever an inner child process closed instead of safely dropping to a bash prompt.
+  - **Comprehensive Fixes & System Hardening**:
+    * **Remote Control Daemon Restored**: Restarted `antigravity-cli-daemon.service` and verified active state authenticated as `koramshah@gmail.com` on instance `aaa-hub-vm` (`https://antigravity.google.com`).
+    * **Rewrote `agy-entry` (`/data/home/.local/bin/agy-entry`)**:
+      - Inside tmux: detects if an AI session is already active (prevents duplicate launches) and seamlessly runs `$REAL_AGY --continue "$@"` without exiting.
+      - Outside tmux: executes `tmux attach-session -d -t agy` (automatically detaches zombie connections and instantly snaps to mobile terminal dimensions) or starts a fresh persistent session if none exists.
+    * **Hardened TMUX Configuration (`~/.tmux.conf`)**:
+      - Added `set-option -g detach-on-destroy off` (session remains alive in bash if inner process closes).
+      - Added `set-hook -g client-attached 'resize-window -A'` for instantaneous geometry adaptation on mobile Termux connect.
+      - Increased scrollback history limit to `20000`.
+    * **Enhanced Shell Aliases (`~/.bashrc`)**:
+      - Added `agy-fix` (restarts remote-control daemon and forces fresh mobile attach).
+      - Added `agy-restart` (safely kills stuck session and re-launches).
+      - Pointed `agy-direct` directly to `/data/home/.local/bin/agy` (bypasses tmux when desired).
+    * **Setup Script Synchronization (`setup_smart_agy.sh`)**:
+      - Mirrored all hardening rules into `setup_smart_agy.sh` so future system updates and one-liner restores automatically preserve these protections.
+  - **Disaster Recovery Backup (Rule 5 Compliance)**:
+    * Executed `python3 backup_manager.py` successfully streaming the fresh disaster recovery archive to Telegram vault `@myagyai` (`-1004453515167`).
+
+
 - **🧹 Ecosystem Sanitation, Worker Isolation & Account Registry Normalization (November 6, 2026)**:
   - **Zero Ecosystem Mixing Hardening (`deploy_both_cf_workers.py`)**:
     * Updated `FLEET_WORKER_SET` and `FLEET_WORKER_IDS_SET` in Cloudflare Edge Worker to include all 23 active fleet account UIDs (`6727787768`, `7648254021`, `8826375659`, `8450010161`, `8782429452`, `7734849205`, `8025472383`, `8851426148`, `8203342513`, `8190649727`, `7487048946`, `8741547543`, `8727040932`, `7749125802`, `7954290138`, `8841038141`, `8975442879`, `8937908003`, `8609131528`, `8669217201`, `9272631973`, `9106746905`, `8972499908`).
