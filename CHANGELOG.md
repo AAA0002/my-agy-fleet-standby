@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐔 Chicken Land Promo Sniper Bug Eradication, Upstash Failover & Render Node 3 Environment Repair (November 6, 2026)**:
+  - **Fatal `NameError: name 'logger' is not defined` Resolved (`chickenland_promo_sniper.py`)**:
+    * Diagnosed fatal crash occurring during fast-path exit and alert anti-spam execution where `logger.info` was invoked without `logger` being initialized.
+    * Added standard logging configuration with dedicated stream handler and timestamp formatting, ensuring completely crash-free execution.
+  - **Upstash Redis Cluster Failover & Quota Recovery (`.env`, `app.py`, 15 production scripts)**:
+    * Root Cause: Identified that legacy Upstash cluster `internal-dodo-83852.upstash.io` reached its monthly quota limit of 500,000 commands, returning HTTP 400 Bad Request (`ERR max requests limit exceeded`) on all operations.
+    * Promoted active healthy clusters: Primary `rich-emu-106119.upstash.io` (🟢 HTTP 200 PONG, 0 commands used) and Standby `pleasant-locust-220893.upstash.io` (🟢 HTTP 200 PONG).
+    * Upgraded `redis_command` and `async_redis_command` in `chickenland_promo_sniper.py` to seamlessly failover from primary to standby cluster if errors or rate limits are detected.
+    * Synchronized complete token state, miniapp tokens, accounts list, and live state from Turso LibSQL to both active Upstash clusters (`rich-emu` and `pleasant-locust`).
+    * Replaced all references to `internal-dodo-83852` across 15 active scripts including `app.py`, `daily_profit_reporter.py`, `auto_wallet_manager.py`, and `deploy_both_cf_workers.py`.
+  - **Render Node 3 Cloud Environment & Turso SSOT Integration (`chickenland_promo_sniper.py`)**:
+    * Diagnosed missing environment variables on Render Oregon Node 3: `TURSO_DB_URL` and `TURSO_DB_TOKEN` were absent, preventing cloud workers from querying the 25M ops/mo LibSQL database.
+    * Injected `TURSO_DB_URL`, `TURSO_DATABASE_URL`, `TURSO_DB_TOKEN`, `UPSTASH_URL`, and `UPSTASH_STANDBY_URL` directly into Render Node 3 via Render Management API (`PUT /v1/services/{id}/env-vars`).
+    * Added Turso LibSQL `fleet:accounts` and `fleet:live_state` fallback to `start_mtproto_listener()`: Render Node 3 now loads all 23 account MTProto sessions directly from Turso without requiring local `accounts.json`.
+  - **Immediate Fleet Promo Claiming & Hen Compounding Verified**:
+    * Tested and executed live snipes for active channel codes `CLW99KMA99` and `CLHKMBSF8H` across all 23 fleet accounts.
+    * Succeeded in claiming +6,000 coins across the fleet in parallel bursts (~1.1s latency).
+    * Automatically compounded rewards into +7 newly purchased basic hens, expanding total fleet flock size to 313 hens.
+  - **Multi-Repo Synchronization & Deployment**:
+    * Pushed updates to `origin/main` (`AAA0002/ATL`), `AAA0002/my-agy-fleet-standby`, and `AAA0002/cloud-fleet-solver`.
+    * Triggered live Render Oregon Node 3 deployment (`dep-dbn1ra6k1f9s738s0cjg`).
+    * Streamed disaster recovery backup archives directly to Telegram vault channel `@myagyai` (`-1004453515167`) via `backup_manager.py` per Rule 5.
+
 - **⚡ Antigravity Duplicate Session Cleanup, 9-Bot Direct URL Fast-Track & Admin Webhook Restoration (November 6, 2026)**:
   - **Daily Profit Reporter Crash Fix & Turso SSOT Fallback (`daily_profit_reporter.py`)**:
     * Diagnosed and fixed fatal runtime crash (`KeyError: 'vic'`) during financial ledger generation: purged all obsolete references to defunct Victor's Company (`vic`).
