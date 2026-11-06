@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 Ecosystem Sanitation, Worker Isolation & Account Registry Normalization (November 6, 2026)**:
+  - **Zero Ecosystem Mixing Hardening (`deploy_both_cf_workers.py`)**:
+    * Updated `FLEET_WORKER_SET` and `FLEET_WORKER_IDS_SET` in Cloudflare Edge Worker to include all 23 active fleet account UIDs (`6727787768`, `7648254021`, `8826375659`, `8450010161`, `8782429452`, `7734849205`, `8025472383`, `8851426148`, `8203342513`, `8190649727`, `7487048946`, `8741547543`, `8727040932`, `7749125802`, `7954290138`, `8841038141`, `8975442879`, `8937908003`, `8609131528`, `8669217201`, `9272631973`, `9106746905`, `8972499908`).
+    * Eradicated all remaining references to Nancy (`8881914294`) from worker routing code. Fleet accounts are now 100% prevented from leaking into public community user rosters (`ub_registered_users`).
+  - **Account Registry Normalization (`accounts.json`, `auto_wallet_manager.py`)**:
+    * Fixed missing `account_id` and normalized `id` and `user_id` types across all 23 accounts in `accounts.json`.
+    * Hardened `auto_wallet_manager.py` `ensure_account_complete()` to enforce consistent `account_id`, `user_id`, and `id` across all account reconciliation cycles.
+  - **Documentation & Memory Harmonization**:
+    * Regenerated `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` and `FLEET_MEMORY_CORE.md` with the complete, authentic 23-account directory and non-custodial wallet bindings.
+    * Purged stale test keys from `live_farming_and_sidetasks_report.json`.
+  - **Autonomous Maintenance & Hygiene Suite (`clean_up_system.py`)**:
+    * Purged 99 stale CI/CD workflow runs across GitHub Actions repositories (`AAA0002/ATL`, `AAA0002/cloud-fleet-solver`, `AAA0002/my-agy-fleet-standby`).
+    * Freed ~3.9 MB of disk space across local cache directories.
+    * Verified Zero Phone Load compliance (0 rogue background python processes on mobile).
+  - **Production Deployment & Vault Durability**:
+    * Re-compiled and deployed Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Executed `python3 backup_manager.py` streaming fresh disaster recovery archive to `@myagyai` (`-1004453515167`).
+
+
 - **🎨 Comprehensive Modernization of All 4 Ecosystem Dashboards (`enhance_dashboards.py`, November 6, 2026)**:
   - **Executive Fleet Operations Console (`public_admin/admin.html` & 5 mirrors)**:
     * **Dynamic Filter Chips & Quick Selectors**: Replaced static tags with responsive, auto-counting filter chips:

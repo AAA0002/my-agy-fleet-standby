@@ -50,34 +50,33 @@
 
 ---
 
-## 2. 👥 Active Accounts Roster (22 Accounts)
+## 2. 👥 Active Accounts Roster (23 Accounts)
 
 | Index | Name | Username | Telegram ID | Phone | Custody Type | Primary Wallet | Status |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- | :---: |
-| **01** | **Arif Hossain (Master)** 👑 | `@Arif2743aaa` | `6727787768` | `+8801317342850` | Binance Main Exchange Vault | TON: `UQBPZiS...gwDT` (Memo: 103525143) | 🟢 Active |
-| **02** | Nancy Davis 2 | `None` | `8881914294` | `+8801943805617` | Isolated 24-Word Seed | TON: `UQA0aO4...hsP` | 🟢 Active |
-| **03** | Koram Shah | `None` | `7648254021` | `+8801790208077` | Isolated 24-Word Seed | TON: `UQDQ1e7...6G9` | 🟢 Active |
-| **04** | Arif 4 | `None` | `8826375659` | `+8801575842094` | Isolated 24-Word Seed | TON: `UQBqM7d...R0E` | 🟢 Active |
-| **05** | Nathan Miller 5 | `None` | `8450010161` | `+14302084365` | Isolated 24-Word Seed | TON: `UQDYD4Y...aO_` | 🟢 Active |
-| **06** | Kaitlyn Ross 6 | `None` | `8782429452` | `+8801867539837` | Isolated 24-Word Seed | TON: `UQD3m0A...6gX` | 🟢 Active |
-| **07** | Abid Hasan 7 | `None` | `7734849205` | `+8801718056423` | Isolated 24-Word Seed | TON: `UQDgq1_...r0k` | 🟢 Active |
-| **08** | Abid Hasan (2) 8 | `None` | `8025472383` | `+8801797795624` | Isolated 24-Word Seed | TON: `UQC6jU_...aE2` | 🟢 Active |
-| **09** | Naimur Rahman 9 | `None` | `8851426148` | `+8801727651288` | Isolated 24-Word Seed | TON: `UQA4H_G...t5c` | 🟢 Active |
-| **10** | **Tanvir Ahmed 10** ⭐ | `@TanvirAhmed10` | `8203342513` | `+8801729892810` | Binance Web3 Wallet 2 (AAA) | TON: `UQBeouW...LKH` | 🟢 Active |
-| **11** | MD. ARIF HOSSAIN 11 | `None` | `8190649727` | `+8801571089931` | Isolated 24-Word Seed | TON: `UQA_VwI...Jd0` | 🟢 Active |
-| **12** | Sanzida Shimu 12 | `None` | `7487048946` | `+8801774578536` | Isolated 24-Word Seed | TON: `UQCvTzJ...1u_` | 🟢 Active |
-| **13** | Abid (3) 13 | `None` | `8741547543` | `+8801838268380` | Isolated 24-Word Seed | TON: `UQDwT-3...xK-` | 🟢 Active |
-| **14** | Rohan Sharma 14 | `None` | `8727040932` | `+918930504750` | Isolated 24-Word Seed | TON: `UQCfJ0X...r8K` | 🔴 Needs Re-link |
-| **15** | Tasnim Farhana 15 | `None` | `7749125802` | `+8801906045479` | Isolated 24-Word Seed | TON: `UQAxL-2...4hV` | 🟢 Active |
-| **16** | Rashedul Islam 16 | `None` | `7954290138` | `+8801304151082` | Isolated 24-Word Seed | TON: `UQDGZ6E...yYx` | 🟢 Active |
-| **17** | Kawsar Mahmud 17 | `None` | `8841038141` | `+8801879273559` | Isolated 24-Word Seed | TON: `UQDjL-9...8bZ` | 🟢 Active |
-| **18** | Mehedi Hasan 18 | `None` | `8975442879` | `+8801839716506` | Isolated 24-Word Seed | TON: `UQBcHzN...49fL` | 🟢 Active |
-| **19** | **Adil H** | `@AdilHassain` | `8937908003` | `+8801804723069` | Isolated 24-Word Seed | TON: `UQCrEZr...w8D` | 🟢 Active |
-| **20** | **Asaduzzaman Sarker** | `@Asaduzzamansarkar` | `8609131528` | `+8801312863569` | Isolated 24-Word Seed | TON: `UQCdmqN...0DE` | 🟢 Active |
-| **21** | **Aaaa201** | `@AAA201AAA` | `8669217201` | `+8801913962342` | Isolated 24-Word Seed | TON: `UQDH-Fr..._jw` | 🟢 Active |
-| **22** | **AAA 22** | `@aaa022a` | `9272631973` | `+8801732100769` | Isolated 24-Word Seed | TON: `UQDNmNk...HGJ` | 🟢 Active |
-| **23** | **Abid Hasan** | `@aaa023aa` | `9106746905` | `+8801788601627` | Isolated 24-Word Seed | TON: `UQCLQ4H...48B` | 🟢 Active |
-| **24** | **AAA 24** | `@aaa024a` | `8972499908` | `+8801794783852` | Isolated 24-Word Seed | TON: `UQBCmJ8...8Qk` | 🟢 Active |
+| **01** | **Arif Hossain (Master)** 👑 | `@Arif2743aaa` | `6727787768` | `+8801317342850` | Binance Main Exchange Vault | TON: `UQBPZiS...gwDT` | 🟢 Active |
+| **02** | Koram Shah | `@Koram_Shah` | `7648254021` | `+8801790208077` | Isolated 24-Word Seed | TON: `UQC8xeC...pp-1` | 🟢 Active |
+| **03** | Arif | `@Arif2743_a` | `8826375659` | `+8801575842094` | Isolated 24-Word Seed | TON: `UQAOfjJ...oPBD` | 🟢 Active |
+| **04** | Nadim | `@nathan_miller7` | `8450010161` | `+14302084365` | Isolated 24-Word Seed | TON: `UQBrmX4...MOBQ` | 🟢 Active |
+| **05** | Kaitlyn | `@kaitlyn_ross7` | `8782429452` | `+8801867539837` | Isolated 24-Word Seed | TON: `UQAid8o...jk9q` | 🟢 Active |
+| **06** | Abid Hasan (1) | `@Abidhasan222` | `7734849205` | `+8801718056423` | Isolated 24-Word Seed | TON: `UQAtcq_...fVXU` | 🟢 Active |
+| **07** | Abid Hasan (2) | `@None` | `8025472383` | `+8801797795624` | Isolated 24-Word Seed | TON: `UQCIPXA...LydV` | 🟢 Active |
+| **08** | Naimur Rahman | `@naimur_rhmn7` | `8851426148` | `+8801727651288` | Isolated 24-Word Seed | TON: `UQDF-a-...cweI` | 🟢 Active |
+| **09** | Tanvir Ahmed | `@tanvir_ahmed785` | `8203342513` | `+8801729892810` | Isolated 24-Word Seed | TON: `UQBeouW...5LKH` | 🟢 Active |
+| **10** | MD Arif Hossain | `@aaamah222` | `8190649727` | `+8801571089931` | Isolated 24-Word Seed | TON: `UQBgy3I...VHrB` | 🟢 Active |
+| **11** | Sanzida Shimu | `@SanzidaShimu` | `7487048946` | `+8801774578536` | Isolated 24-Word Seed | TON: `UQBOdyZ...BMQo` | 🟢 Active |
+| **12** | Abid (3) | `@Abid_300` | `8741547543` | `+8801838268380` | Isolated 24-Word Seed | TON: `UQAy5w8...fDkN` | 🟢 Active |
+| **13** | Rohan Sharma | `@rohan_sharma7` | `8727040932` | `+918930504750` | Isolated 24-Word Seed | TON: `UQCbqkS...UsLo` | 🟢 Active |
+| **14** | Tasnim Farhana | `@tasnim_farhana7` | `7749125802` | `+8801906045479` | Isolated 24-Word Seed | TON: `UQBhpe9...kcaR` | 🟢 Active |
+| **15** | Rashedul Islam | `@rashedul_islam7` | `7954290138` | `+8801304151082` | Isolated 24-Word Seed | TON: `UQANs0f...0gYH` | 🟢 Active |
+| **16** | Kawsar Mahmud | `@kawsar_mahmud7` | `8841038141` | `+8801879273559` | Isolated 24-Word Seed | TON: `UQCDqle...dY5j` | 🟢 Active |
+| **17** | Mehedi Hasan | `@mehedi_hasan783` | `8975442879` | `+8801839716506` | Isolated 24-Word Seed | TON: `UQBcHzN...49fL` | 🟢 Active |
+| **18** | Adil H | `@AdilHassain` | `8937908003` | `+8801804723069` | Isolated 24-Word Seed | TON: `UQCrEZr...Aw8D` | 🟢 Active |
+| **19** | Asaduzzaman Sarker | `@Asaduzzamansarkar` | `8609131528` | `+8801312863569` | Isolated 24-Word Seed | TON: `UQCdmqN...g0DE` | 🟢 Active |
+| **20** | AAA201 | `@AAA201AAA` | `8669217201` | `+8801913962342` | Isolated 24-Word Seed | TON: `UQDH-Fr...n_jw` | 🟢 Active |
+| **21** | AAA 22 | `@aaa022a` | `9272631973` | `+8801732100769` | Isolated 24-Word Seed | TON: `UQDNmNk...EHGJ` | 🟢 Active |
+| **22** | Abid Hasan (4) | `@aaa023aa` | `9106746905` | `+8801788601627` | Isolated 24-Word Seed | TON: `UQAvTw1...akWI` | 🟢 Active |
+| **23** | AAA 24 | `@aaa024a` | `8972499908` | `+8801794783852` | Isolated 24-Word Seed | TON: `UQDxJ5R...idIN` | 🟢 Active |
 
 ---
 
