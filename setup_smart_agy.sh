@@ -146,13 +146,35 @@ if [ -n "$TMUX" ]; then
     if [ -n "$AGY_PID" ]; then
         echo "⚡ Antigravity AI is already running in this tmux session (PID: $AGY_PID)."
         echo "👉 If you see the prompt below, just type your prompt directly."
-        echo "👉 When you type /exit, tmux will also exit automatically."
         exit 0
     fi
 
-    # Not currently running in this pane, start it immediately and kill tmux when done
-    "$REAL_AGY" --continue "$@"
-    tmux kill-session 2>/dev/null
+    # Refresh loop: when agy exits (to refresh), keep Termux & session open!
+    while true; do
+        "$REAL_AGY" --continue "$@"
+        EXIT_CODE=$?
+        echo ""
+        echo "=============================================================="
+        echo "  🔄 Antigravity CLI exited (code: $EXIT_CODE)."
+        echo "  👉 Press [ENTER] to refresh & restart Antigravity immediately"
+        echo "  👉 Type 'q' or 'bash' (or press Ctrl+C) for terminal prompt"
+        echo "  👉 Termux stays open! Your connection is NOT closed."
+        echo "=============================================================="
+        
+        # Trap Ctrl+C to drop cleanly to bash shell
+        trap 'echo ""; echo "⚡ Terminal shell ready. Run \"agy\" to restart."; exec bash' INT
+        read -r USER_CHOICE || USER_CHOICE="q"
+        trap - INT
+
+        if [ "$USER_CHOICE" = "q" ] || [ "$USER_CHOICE" = "bash" ] || [ "$USER_CHOICE" = "exit" ]; then
+            echo "⚡ Terminal shell ready. Run 'agy' anytime to restart."
+            exec bash
+            break
+        else
+            echo "⚡ Refreshing Antigravity AI CLI..."
+            sleep 0.3
+        fi
+    done
     exit 0
 fi
 
@@ -163,57 +185,18 @@ if tmux has-session -t agy 2>/dev/null; then
     # Detach any stale/zombie background clients and attach with active mobile dimensions
     exec tmux attach-session -d -t agy
 else
-    # Create persistent, mobile-optimized session that exits tmux when agy exits
-    exec tmux new-session -s agy "bash -c 'exec $REAL_AGY --continue; tmux kill-session -t agy 2>/dev/null'"
+    # Create persistent session running bash, and start agy-entry inside it
+    exec tmux new-session -s agy "bash -c 'agy-entry; exec bash'"
 fi
 ENTRY_SCRIPT
 chmod +x "$BIN_DIR/agy-entry"
 
-# Install agy-tmux-reaper auto-exit watchdog
-cat << 'REAPER_SCRIPT' > "$BIN_DIR/agy-tmux-reaper.sh"
-#!/bin/bash
-GRACE_SECS=0
-while true; do
-    if tmux has-session -t agy 2>/dev/null; then
-        if pgrep -f "agy.*--continue" >/dev/null 2>&1; then
-            GRACE_SECS=0
-        else
-            GRACE_SECS=$((GRACE_SECS + 1))
-            if [ "$GRACE_SECS" -ge 2 ]; then
-                tmux kill-session -t agy 2>/dev/null
-                GRACE_SECS=0
-            fi
-        fi
-    else
-        GRACE_SECS=0
-    fi
-    sleep 1
-done
-REAPER_SCRIPT
-chmod +x "$BIN_DIR/agy-tmux-reaper.sh"
-
+# Clean up any legacy agy-tmux-reaper if present
 if command -v systemctl >/dev/null 2>&1; then
-    SYSTEMD_USER_DIR="$USER_HOME/.config/systemd/user"
-    mkdir -p "$SYSTEMD_USER_DIR"
-    cat << REAPER_SERVICE > "$SYSTEMD_USER_DIR/agy-tmux-reaper.service"
-[Unit]
-Description=AAA AUTO Antigravity TMUX Auto-Exit Watchdog
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=$BIN_DIR/agy-tmux-reaper.sh
-Restart=always
-RestartSec=5s
-StandardOutput=null
-StandardError=null
-
-[Install]
-WantedBy=default.target
-REAPER_SERVICE
+    systemctl --user stop agy-tmux-reaper.service 2>/dev/null || true
+    systemctl --user disable agy-tmux-reaper.service 2>/dev/null || true
+    rm -f "$USER_HOME/.config/systemd/user/agy-tmux-reaper.service" "$BIN_DIR/agy-tmux-reaper.sh" 2>/dev/null || true
     systemctl --user daemon-reload 2>/dev/null || true
-    systemctl --user enable agy-tmux-reaper.service 2>/dev/null || true
-    systemctl --user restart agy-tmux-reaper.service 2>/dev/null || true
 fi
 
 # Also symlink / copy to /usr/local/bin if root/sudo available
@@ -275,6 +258,8 @@ alias new-session='agy-entry'
 alias agy-attach='tmux attach -d -t agy 2>/dev/null || tmux attach'
 alias agy-fix='agy remote-control start && tmux attach -d -t agy'
 alias agy-restart='tmux kill-session -t agy 2>/dev/null; agy'
+alias agy-refresh='agy-entry'
+alias refresh='agy-entry'
 BASHRC_SNIPPET
 
 echo "=============================================================="

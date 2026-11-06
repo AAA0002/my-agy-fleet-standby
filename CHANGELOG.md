@@ -2,14 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **⚡ TMUX Auto-Exit Coupling on Antigravity CLI Termination (November 6, 2026)**:
-  - **Seamless Single-Exit Workflow**:
-    * Implemented autonomous TMUX auto-exit mechanism: exiting `agy` (`/exit` or Ctrl+D) now automatically terminates the `agy` tmux session and returns the user directly to their phone's terminal (Termux on Samsung Galaxy A30).
-    * Removed legacy `; exec bash` fallthrough in `/data/home/.local/bin/agy-entry` which previously stranded users inside an empty tmux bash prompt upon exiting the AI CLI.
-    * Created and deployed `agy-tmux-reaper.service` (systemd user daemon running `/data/home/.local/bin/agy-tmux-reaper.sh`): continuously monitors tmux session `agy` and instantly tears down the session within 2 seconds whenever the `agy` process is absent.
-    * Integrated `agy-tmux-reaper.service` into `setup_smart_agy.sh` ensuring all future VM initializations and one-click restores preserve automatic tmux exit out-of-the-box.
+- **⚡ Seamless Antigravity Refresh Loop & Termux Protection (November 6, 2026)**:
+  - **User-Centric Refresh Workflow ("Exit agy to refresh agy, NEVER exit Termux")**:
+    * Clarified core mobile workflow: the user exits `agy` (`/exit` or `Ctrl+C` twice) specifically to **refresh/restart `agy`**, not to terminate Termux or sever the SSH connection.
+    * Completely purged the aggressive `agy-tmux-reaper.service` daemon and all automatic `tmux kill-session` traps that previously caused the SSH connection to break and closed Termux on the phone.
+    * Implemented an instant 1-key Refresh Loop inside `/data/home/.local/bin/agy-entry`:
+      - When `agy` exits, the terminal displays an interactive prompt keeping the tmux session and Termux connection 100% alive.
+      - Pressing **[ENTER]** instantly restarts and refreshes `agy` (0ms delay, zero phone load).
+      - Pressing **[Ctrl+C]** or typing `q` / `bash` drops cleanly into the VM shell prompt (`instabox-a:~/AAA_AUTO$ `) without closing Termux.
+  - **24/7 Background Persistence when Exiting Termux**:
+    * Verified `destroy-unattached off` and `detach-on-destroy off` in `~/.tmux.conf`: when the user swipes away or closes Termux on their Samsung Galaxy A30, `agy` stays 100% active and running on the cloud VM (`aaa-hub-vm`).
+    * Reconnecting from Termux immediately resumes the session via `agy-attach` / `agy`.
+  - **Convenience Aliases**:
+    * Added `refresh` and `agy-refresh` aliases to `~/.bashrc` and `setup_smart_agy.sh` for instant 1-command refreshes.
   - **Disaster Recovery Backup (Rule 5 Compliance)**:
-    * Executed `python3 backup_manager.py` streaming updated disaster recovery archive to Telegram vault `@myagyai` (`-1004453515167`).
+    * Streamed updated disaster recovery archive to Telegram vault `@myagyai` (`-1004453515167`).
 
 
 - **🛠️ VM Workshop, Remote Control Daemon & Mobile TMUX Resilience Overhaul (November 6, 2026)**:
