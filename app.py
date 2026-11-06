@@ -1815,7 +1815,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     # 11. EarnVault (@EarnVaultApp_bot - Silent WebApp query with immediate Firebase refreshToken exchange)
     try:
         ev_param = None if is_master else EARNVAULT_REFERRAL_CODE
-        ev_tok = await asyncio.wait_for(extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=ev_param, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"], prefer_direct_url=True), timeout=6.0)
+        ev_tok = await asyncio.wait_for(extract_bot_webapp_token(client, EARNVAULT_BOT, start_param=ev_param, default_url="https://eearnvault.top/", candidate_short_names=["App", "app", "earn"], prefer_direct_url=False), timeout=6.0)
         if ev_tok:
             tokens["earnvault_init_data"] = ev_tok
             try:
