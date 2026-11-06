@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ TMUX Auto-Exit Coupling on Antigravity CLI Termination (November 6, 2026)**:
+  - **Seamless Single-Exit Workflow**:
+    * Implemented autonomous TMUX auto-exit mechanism: exiting `agy` (`/exit` or Ctrl+D) now automatically terminates the `agy` tmux session and returns the user directly to their phone's terminal (Termux on Samsung Galaxy A30).
+    * Removed legacy `; exec bash` fallthrough in `/data/home/.local/bin/agy-entry` which previously stranded users inside an empty tmux bash prompt upon exiting the AI CLI.
+    * Created and deployed `agy-tmux-reaper.service` (systemd user daemon running `/data/home/.local/bin/agy-tmux-reaper.sh`): continuously monitors tmux session `agy` and instantly tears down the session within 2 seconds whenever the `agy` process is absent.
+    * Integrated `agy-tmux-reaper.service` into `setup_smart_agy.sh` ensuring all future VM initializations and one-click restores preserve automatic tmux exit out-of-the-box.
+  - **Disaster Recovery Backup (Rule 5 Compliance)**:
+    * Executed `python3 backup_manager.py` streaming updated disaster recovery archive to Telegram vault `@myagyai` (`-1004453515167`).
+
+
 - **🛠️ VM Workshop, Remote Control Daemon & Mobile TMUX Resilience Overhaul (November 6, 2026)**:
   - **Root-Cause Forensic Analysis of VM Workshop & TMUX Failures**:
     * **Root Cause 1 (Antigravity Remote Control Daemon Stalled)**: The systemd daemon `antigravity-cli-daemon.service` running `agy remote-control serve` (instance `aaa-hub-vm` at `https://antigravity.google.com`) encountered an expired OAuth token at 12:29 UTC and blocked on stdin ("Enter the authorization code:"), causing the remote workshop session to disconnect.

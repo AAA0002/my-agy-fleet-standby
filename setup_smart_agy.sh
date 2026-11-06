@@ -146,12 +146,14 @@ if [ -n "$TMUX" ]; then
     if [ -n "$AGY_PID" ]; then
         echo "⚡ Antigravity AI is already running in this tmux session (PID: $AGY_PID)."
         echo "👉 If you see the prompt below, just type your prompt directly."
-        echo "👉 If you want to restart afresh, run: tmux kill-session -t agy && agy"
+        echo "👉 When you type /exit, tmux will also exit automatically."
         exit 0
     fi
 
-    # Not currently running in this pane, start it immediately
-    exec "$REAL_AGY" --continue "$@"
+    # Not currently running in this pane, start it immediately and kill tmux when done
+    "$REAL_AGY" --continue "$@"
+    tmux kill-session 2>/dev/null
+    exit 0
 fi
 
 # 5. When connecting from OUTSIDE tmux (e.g. fresh SSH from phone Termux):
@@ -161,11 +163,58 @@ if tmux has-session -t agy 2>/dev/null; then
     # Detach any stale/zombie background clients and attach with active mobile dimensions
     exec tmux attach-session -d -t agy
 else
-    # Create persistent, mobile-optimized session
-    exec tmux new-session -s agy "bash -c 'exec $REAL_AGY --continue; exec bash'"
+    # Create persistent, mobile-optimized session that exits tmux when agy exits
+    exec tmux new-session -s agy "bash -c 'exec $REAL_AGY --continue; tmux kill-session -t agy 2>/dev/null'"
 fi
 ENTRY_SCRIPT
 chmod +x "$BIN_DIR/agy-entry"
+
+# Install agy-tmux-reaper auto-exit watchdog
+cat << 'REAPER_SCRIPT' > "$BIN_DIR/agy-tmux-reaper.sh"
+#!/bin/bash
+GRACE_SECS=0
+while true; do
+    if tmux has-session -t agy 2>/dev/null; then
+        if pgrep -f "agy.*--continue" >/dev/null 2>&1; then
+            GRACE_SECS=0
+        else
+            GRACE_SECS=$((GRACE_SECS + 1))
+            if [ "$GRACE_SECS" -ge 2 ]; then
+                tmux kill-session -t agy 2>/dev/null
+                GRACE_SECS=0
+            fi
+        fi
+    else
+        GRACE_SECS=0
+    fi
+    sleep 1
+done
+REAPER_SCRIPT
+chmod +x "$BIN_DIR/agy-tmux-reaper.sh"
+
+if command -v systemctl >/dev/null 2>&1; then
+    SYSTEMD_USER_DIR="$USER_HOME/.config/systemd/user"
+    mkdir -p "$SYSTEMD_USER_DIR"
+    cat << REAPER_SERVICE > "$SYSTEMD_USER_DIR/agy-tmux-reaper.service"
+[Unit]
+Description=AAA AUTO Antigravity TMUX Auto-Exit Watchdog
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$BIN_DIR/agy-tmux-reaper.sh
+Restart=always
+RestartSec=5s
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=default.target
+REAPER_SERVICE
+    systemctl --user daemon-reload 2>/dev/null || true
+    systemctl --user enable agy-tmux-reaper.service 2>/dev/null || true
+    systemctl --user restart agy-tmux-reaper.service 2>/dev/null || true
+fi
 
 # Also symlink / copy to /usr/local/bin if root/sudo available
 if [ "$(id -u)" -eq 0 ]; then
