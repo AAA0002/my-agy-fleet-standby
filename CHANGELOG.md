@@ -9839,6 +9839,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     - PepeGram, AdxEarn, DiggoMiner, and Kynex: Quests claimed.
   - Dispatched summary notification to AAA Admin Notification Channel (`-1004358687850`).
 
+## [2.4.0] - 2026-11-06
+### Adsgram Automation, Zero-Spend Policy & 9-Bot Side-Task Integration
+- **Grouche Mine 🍐 ($GRC) Adsgram 8/8 Watch & Click Automation**:
+  - Reverse-engineered `/api/users/ads` and `/api/users/ads/complete` (`clicked: 1, watchedMs: 15500+`).
+  - Automated full 8-ad watch cycle (+10 GRC each) every 12 hours across all 23 accounts, yielding +80 GRC per account per window (+1,840 GRC per fleet window).
+- **Enforced Strict Zero-Spend Balance Accumulation**:
+  - Permanently purged `/users/buy-package` calls from all scripts, strictly preventing any balance spending on miner packages.
+  - Accounts now accumulate 100% of earned GRC/LNX balances from referral rewards, tasks, daily claims, Adsgram, and passive mining yield.
+- **Full 9-Bot Matrix Unification**:
+  - Integrated Grouche Mine alongside the 9 active legitimate bots (ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault) into `finish_all_fleet_sidetasks.py`.
+  - Dispatched ground-truth reports directly to AAA Admin notification channel (`-1004358687850`).
+
 ## [2.3.0] - 2026-10-30
 ### Universal Smart Session Resume & Remote Control Daemon Engine
 - **Universal Installer (`setup_smart_agy.sh`)**:
