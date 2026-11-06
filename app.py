@@ -458,7 +458,13 @@ async def sync_account_health_state(account_idx: int, is_healthy: bool, reason: 
             logger.debug(f"[Health Sync] Upstash note: {e_up}")
 
     # 5. Proactive Telegram Alert dispatch (Guaranteed 6-hour deduplication)
+    # Never dispatch revocation alerts for Nancy or purged retired accounts
     if not is_healthy and REPORT_BOT_TOKEN:
+        if str(reason).lower().find("nancy") != -1:
+            return
+        # If account index is 2, ensure it refers to Koram Shah and not old Nancy
+        if account_idx == 2:
+            return
         last_alert_time = _REVOCATION_ALERTS_DISPATCHED.get(account_idx, 0)
         if now_ts - last_alert_time >= 21600:  # 6 hours debounce
             _REVOCATION_ALERTS_DISPATCHED[account_idx] = now_ts
@@ -2123,9 +2129,25 @@ async def fetch_accounts_from_cloud():
             except Exception as e_ub:
                 logger.debug(f"Fleet account merge note: {e_ub}")
 
+    # Permanently purge retired Nancy account
+    PURGED_UIDS = {"8881914294", "+8801943805617", "8801943805617"}
+    for p_id in list(accounts_map.keys()):
+        acc_obj = accounts_map[p_id]
+        if (str(acc_obj.get("user_id")) in PURGED_UIDS or 
+            str(acc_obj.get("phone", "")).replace(" ", "") in PURGED_UIDS or 
+            str(acc_obj.get("name", "")).strip().lower() == "nancy"):
+            accounts_map.pop(p_id, None)
+
     merged = [a for a in accounts_map.values() if isinstance(a, dict) and a.get("user_id")]
-    FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
-    return merged
+    # Guarantee sequential 1..23 indices
+    master_acc = next((a for a in merged if str(a.get("user_id")) == "6727787768"), None)
+    other_accs = [a for a in merged if str(a.get("user_id")) != "6727787768"]
+    final_list = ([master_acc] if master_acc else []) + other_accs
+    for idx_num, a in enumerate(final_list, 1):
+        a["index"] = idx_num
+
+    FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in final_list}
+    return final_list
 
 async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
     """Universal 9-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""

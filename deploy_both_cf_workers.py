@@ -2858,6 +2858,10 @@ const getFleetAccounts = async (forceFresh = false, customEnv = null) => {
     } catch (_) {}
   }
 
+  deletedSet.add("8881914294");
+  deletedSet.add("8801943805617");
+  deletedSet.add("+8801943805617");
+
   if (Array.isArray(delArr)) {
     delArr.forEach(d => {
       if (d) {
@@ -2869,16 +2873,16 @@ const getFleetAccounts = async (forceFresh = false, customEnv = null) => {
     });
   }
 
-  if (deletedSet.size > 0) {
-    accounts = accounts.filter(a => {
-      const uid = String(a.user_id || "").trim();
-      const ph = String(a.phone || "").trim();
-      const phClean = ph.replace(/\D/g, "");
-      if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace(/\D/g, "")))) return false;
-      if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
-      return true;
-    });
-  }
+  accounts = accounts.filter(a => {
+    const uid = String(a.user_id || "").trim();
+    const ph = String(a.phone || "").trim();
+    const phClean = ph.replace(/\D/g, "");
+    const nm = String(a.name || "").trim().toLowerCase();
+    if (nm === "nancy" || nm.includes("nancy")) return false;
+    if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace(/\D/g, "")))) return false;
+    if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
+    return true;
+  });
 
   const uniqueAccounts = [];
   const seenUids = new Set();
@@ -6334,6 +6338,10 @@ fi
             } catch (_) {}
           }
 
+          deletedSet.add("8881914294");
+          deletedSet.add("8801943805617");
+          deletedSet.add("+8801943805617");
+
           if (Array.isArray(delArr)) {
             delArr.forEach(d => {
               if (d) {
@@ -6346,16 +6354,16 @@ fi
           }
 
           // 5. Strictly filter out deleted accounts
-          if (deletedSet.size > 0) {
-            accounts = accounts.filter(a => {
-              const uid = String(a.user_id || "").trim();
-              const ph = String(a.phone || "").trim();
-              const phClean = ph.replace(/\D/g, "");
-              if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace(/\D/g, "")))) return false;
-              if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
-              return true;
-            });
-          }
+          accounts = accounts.filter(a => {
+            const uid = String(a.user_id || "").trim();
+            const ph = String(a.phone || "").trim();
+            const phClean = ph.replace(/\D/g, "");
+            const nm = String(a.name || "").trim().toLowerCase();
+            if (nm === "nancy" || nm.includes("nancy")) return false;
+            if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace(/\D/g, "")))) return false;
+            if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
+            return true;
+          });
 
           // 6. Deduplicate by UID or phone
           const uniqueAccounts = [];
@@ -6564,8 +6572,7 @@ fi
             );
             const isExplicitRevoked = acc.session_revoked === true ||
               revokedRawSet.has(idxStr) ||
-              (uidStr && revokedRawSet.has(uidStr)) ||
-              (idxNum === 2 && acc.session_revoked !== false);
+              (uidStr && revokedRawSet.has(uidStr));
             const isExplicitHealthy = (healthyRawSet.has(idxStr) || (uidStr && healthyRawSet.has(uidStr))) && !isExplicitRevoked;
             const isRev = isExplicitRevoked || (!isExplicitHealthy && !hasValidSession && acc.session_revoked !== false);
             if (isRev) {

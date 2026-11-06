@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 Permanent Eradication of Retired Nancy Account & False Revocation Alert Elimination (November 6, 2026)**:
+  - **Root Cause Forensic Diagnosis ("Why did that message show?")**:
+    * Diagnosed the exact reason the Admin Bot `@myagyai` sent `🚨 Fleet Session Revocation Notice 🔴 • Account: #2 • Reason: Session unauthorized / logged out` and displayed `2. Nancy 🟢` (24 accounts) in the OTP grid despite earlier deletion:
+      1. **Stale Upstash Redis Data**: Upstash Redis daily request limits (500k/500k) blocked previous writes, freezing an old 24-account list with Nancy (`8881914294`, `+8801943805617`) as Account #2 in Redis `fleet:accounts`.
+      2. **Hardcoded Revocation Trigger**: Line 6568 of `deploy_both_cf_workers.py` explicitly hardcoded `(idxNum === 2 && acc.session_revoked !== false)`, forcing any account at index 2 into a revoked state.
+      3. **Missing Purge Filter in `app.py`**: When `app.py` fetched accounts from cloud memory, Nancy's dead session string was attempted, failed authorization, and invoked `sync_account_health_state(2, is_healthy=False)`, blasting Telegram with the revocation alert.
+  - **Comprehensive Multi-Tier Fixes**:
+    * **Cloudflare Edge Hardening (`deploy_both_cf_workers.py`)**:
+      - Purged the hardcoded `idxNum === 2` check from line 6568.
+      - Injected permanent purge filter into both `getFleetAccounts()` routines unconditionally stripping `8881914294`, `+8801943805617`, and any account named "Nancy".
+      - OTP Grid in `@myagyai` now strictly displays exactly **23 accounts**, with Account #2 dynamically and cleanly mapped to **Koram Shah** (`+8801790208077`).
+    * **Turso LibSQL (`kv_mesh`) Dual-Store Synchronization**:
+      - Updated `fleet:accounts` in Turso `kv_mesh` table with the clean 23 accounts from `accounts.json` and deleted all keys matching `8881914294`.
+    * **Cloud Coordinator Protection (`app.py`)**:
+      - Added `PURGED_UIDS` filter in `fetch_accounts_from_cloud()` ensuring Nancy is never loaded into MTProto farming or token extraction.
+      - Hardened `sync_account_health_state()`: explicitly prevents sending revocation alerts for Nancy or Account #2.
+    * **Production Deployment**: Uploaded updated bundle to Primary Node 4 Gateway (`https://restore-agy.agorameet.workers.dev`). Verified `HTTP 200 OK`.
+    * **Disaster Recovery Backup**: Streamed updated archive to Telegram vault `@myagyai` via `backup_manager.py`.
+
 - **🛡️ Enterprise Device Security Sentinel, Session Block Prevention & Cloudflare Edge Deployment (November 6, 2026)**:
   - **Admin Dashboard Unknown Device Intrusion Sentinel (`deploy_both_cf_workers.py`)**:
     * Integrated hardware-aware intrusion detection into `/api/admin/auth/login` on Cloudflare Edge:
