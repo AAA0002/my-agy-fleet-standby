@@ -1746,7 +1746,12 @@ function App() {
         (acc.phone || "").includes(q);
 
       if (!matchSearch) return false;
-      const idx = acc.index || 0;
+      const idx = acc.index || (fleet.indexOf(acc) + 1);
+      const isRev = acc.session_revoked === true || acc.status === "Needs Re-link";
+      if (fleetFilter === "online") return !isRev;
+      if (fleetFilter === "relink") return isRev;
+      if (fleetFilter === "master") return idx === 1 || String(acc.user_id) === "6727787768";
+      if (fleetFilter === "workers") return idx > 1 && String(acc.user_id) !== "6727787768";
       if (fleetFilter === "personal") return idx >= 1 && idx <= 8;
       if (fleetFilter === "cloud") return idx >= 9;
       return true;
@@ -2084,11 +2089,13 @@ function App() {
       ),
 
       // Category Filter Chips & Search Bar
-      React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 mb-2.5" },
+      React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 mb-2.5 no-scrollbar" },
         [
           { id: "all", label: `All (${fleet.length})` },
-          { id: "personal", label: "Personal #1-8" },
-          { id: "cloud", label: `Cloud #${fleet.length > 8 ? "9-" + fleet.length : "9+"}` }
+          { id: "online", label: `🟢 Online (${fleet.filter(a => !a.session_revoked && a.status !== 'Needs Re-link').length})` },
+          { id: "master", label: "👑 Master (#1)" },
+          { id: "workers", label: `👥 Workers (${fleet.length > 1 ? fleet.length - 1 : 0})` },
+          { id: "cloud", label: "☁️ Cloud Mesh" }
         ].map(chip => React.createElement("button", {
           key: chip.id,
           onClick: () => setFleetFilter(chip.id),
@@ -2157,7 +2164,18 @@ function App() {
                   )
                 )
               ),
-              React.createElement("div", { className: "flex items-center gap-1" },
+              React.createElement("div", { className: "flex items-center gap-1.5" },
+                React.createElement("button", {
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    handleFarmSingleAccount(acc.user_id, acc.name || `Account #${accNum}`);
+                  },
+                  title: "1-Tap Cloud Farm 9 Pools",
+                  className: "text-[9px] font-mono font-bold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-2 py-0.5 rounded cursor-pointer transition active:scale-95 flex items-center gap-1"
+                },
+                  React.createElement(Icon, { name: "zap", className: "w-2.5 h-2.5 text-cyan-400" }),
+                  "Farm"
+                ),
                 (acc.session_revoked || acc.status === "Needs Re-link")
                   ? React.createElement("span", { className: "bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
                       "🔴 Needs Re-link"
@@ -2779,18 +2797,30 @@ function App() {
                   { ch: "ton", name: "💎 TON", addr: accWallets.ton },
                   { ch: "evm", name: "🟡 EVM (BSC)", addr: accWallets.evm },
                   { ch: "tron", name: "🔴 TRON", addr: accWallets.tron },
-                  { ch: "sol", name: "🟣 SOL", addr: accWallets.sol }
-                ].filter(w => Boolean(w.addr)).map(w => React.createElement("div", {
-                  key: w.ch,
-                  className: "flex items-center justify-between p-1.5 rounded-lg bg-black/40 border border-white/5 font-mono text-[9px]"
-                },
-                  React.createElement("span", { className: "text-slate-400 w-16 shrink-0" }, w.name),
-                  React.createElement("span", { className: "truncate text-slate-200 mx-1 select-all" }, w.addr),
-                  React.createElement("button", {
-                    onClick: () => copyToClipboard(w.addr, `Copied ${w.name} address!`),
-                    className: "px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300"
-                  }, "Copy")
-                ))
+                  { ch: "sol", name: "🟣 SOL", addr: accWallets.sol },
+                  { ch: "btc", name: "🟠 BTC", addr: accWallets.btc }
+                ].filter(w => Boolean(w.addr)).map(w => {
+                  const explorerUrl = BLOCK_EXPLORERS[w.ch] ? BLOCK_EXPLORERS[w.ch](w.addr) : "";
+                  return React.createElement("div", {
+                    key: w.ch,
+                    className: "flex items-center justify-between p-1.5 rounded-lg bg-black/40 border border-white/5 font-mono text-[9px]"
+                  },
+                    React.createElement("span", { className: "text-slate-400 w-20 shrink-0 font-bold" }, w.name),
+                    React.createElement("span", { className: "truncate text-slate-200 mx-1 select-all font-mono" }, w.addr),
+                    React.createElement("div", { className: "flex items-center gap-1 shrink-0" },
+                      React.createElement("button", {
+                        onClick: () => copyToClipboard(w.addr, `Copied ${w.name} address!`),
+                        className: "px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300 transition active:scale-95"
+                      }, "Copy"),
+                      explorerUrl && React.createElement("a", {
+                        href: explorerUrl,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        className: "px-1.5 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition active:scale-95"
+                      }, "↗")
+                    )
+                  );
+                })
               );
             })(),
 

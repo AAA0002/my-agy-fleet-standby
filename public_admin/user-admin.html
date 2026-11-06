@@ -203,15 +203,13 @@ function Icon({ name, className = "w-4 h-4" }) {
   });
 }
 
-// 11 Supported Cloud Mining Pools
+// 9 Active Legitimate Cloud Mining Pools
 const POOLS_LIST = [
-  { name: "Grouche Mine", key: "grouchemine", icon: "⚡", cadence: "Hashrate Active", username: "GRC_AirdrooBot", url: "https://t.me/GRC_AirdrooBot?start=6727787768" },
-  { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming", username: "ATF_AIRDROP_bot", url: "https://t.me/ATF_AIRDROP_bot?start=6727787768" },
-  { name: "EarnVault", key: "earnvault", icon: "🏢", cadence: "Mining Active", username: "EarnVaultApp_bot", url: "https://t.me/EarnVaultApp_bot?start=6727787768" },
+  { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming & Compounding", username: "ATF_AIRDROP_bot", url: "https://t.me/ATF_AIRDROP_bot?start=6727787768" },
   { name: "Kynex Network", key: "kynex", icon: "🌐", cadence: "12h Energy Reserve", username: "Kynex_miningbot", url: "https://t.me/Kynex_miningbot" },
   { name: "DiggoMiner", key: "diggo", icon: "⛏️", cadence: "30d JWT Mining", username: "Diggominer_bot", url: "https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff" },
   { name: "PepeGram", key: "pepegram", icon: "🐸", cadence: "6h Hash Production", username: "Pepe_gram_bot", url: "https://t.me/Pepe_gram_bot?start=6727787768" },
-  { name: "AdxEarn AI", key: "adxearn", icon: "💎", cadence: "Daily Ads Farming", username: "AdxEarnAibot", url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768" },
+  { name: "AdxEarn AI", key: "adxearn", icon: "🤖", cadence: "Daily Ads Farming", username: "AdxEarnAibot", url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768" },
   { name: "Chicken Land", key: "chickenland", icon: "🐔", cadence: "Auto-Egg Laying", username: "ChickenLandBot", url: "https://t.me/ChickenLandBot?start=12668" },
   { name: "Grouche Mine", key: "grouchemine", icon: "🍐", cadence: "Cloud Miner & Quests", username: "GRC_AirdrooBot", url: "https://t.me/GRC_AirdrooBot?start=6727787768" },
   { name: "LUM Miner", key: "lumeon", icon: "💎", cadence: "Auto-Referral & Tasks", username: "lumeonminer_bot", url: "https://t.me/lumeonminer_bot/Lum?startapp=6727787768" },
@@ -667,7 +665,7 @@ function App() {
     totalPoints: 0,
     totalAds: 0,
     totalRefs: 0,
-    poolsCount: 11,
+    poolsCount: 9,
     dailyBurnRate: 0
   });
 
@@ -1814,13 +1812,13 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 4: 11 CLOUD MINING POOLS TELEMETRY VIEW
+    // TAB 4: 9 ACTIVE MINING POOLS TELEMETRY VIEW
     // ==========================================================
     activeNavTab === "pools" && React.createElement("div", { className: "space-y-2.5 animate-fade-in" },
       React.createElement("div", { className: `p-3 rounded-2xl border ${cardBg}` },
         React.createElement("h2", { className: "font-black text-xs uppercase tracking-wider text-slate-400 mb-1" }, "Autonomous Cloud Farming Engine"),
         React.createElement("p", { className: "text-xs text-slate-300 leading-relaxed" },
-          "All 11 mining pools run 24/7 on the Cloudflare Edge Mesh and Render Standby Node 3 with zero battery load."
+          "All 9 legitimate mining pools run 24/7 on the Cloudflare Edge Mesh and Render Node 3 with zero phone load."
         )
       ),
 
