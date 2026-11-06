@@ -4356,6 +4356,57 @@ fi
           updated_at: new Date().toISOString()
         }));
 
+        // Device Intrusion Sentinel for Admin Dashboard
+        const userAgent = request.headers.get("User-Agent") || "Unknown Browser";
+        const country = request.headers.get("CF-IPCountry") || request.cf?.country || "Global";
+        const city = request.cf?.city || "";
+        const locStr = city ? `${city}, ${country}` : country;
+
+        // Check Samsung Galaxy A30 Whitelist & Cloud Mission Nodes
+        const isSamsungA30 = /samsung[\s_-]*galaxy[\s_-]*a30|samsung[\s_-]*a30|galaxy[\s_-]*a30|sm[\s_-]*a305|sm[\s_-]*a30|a305f|a305g/i.test(userAgent);
+        const isCloudMission = /render|telethon|cloud[\s_-]*coordinator|aaa[\s_-]*fleet|instabox/i.test(userAgent);
+
+        if (!isSamsungA30 && !isCloudMission) {
+          const dhakaTime = getDhakaTimestamp();
+          const alertText = `🚨 <b>ADMIN CONSOLE LOGIN FROM UNKNOWN DEVICE!</b> 🔴\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `• <b>Dashboard:</b> Executive Operations Console\n` +
+            `• <b>Auth Method:</b> <code>${authMethod}</code>\n` +
+            `• <b>Device / Browser:</b> <code>${userAgent.slice(0, 100)}</code> ⚠️\n` +
+            `• <b>IP Address:</b> 🌐 <code>${clientIp}</code>\n` +
+            `• <b>Location:</b> 📍 ${locStr}\n` +
+            `• <b>Timestamp:</b> ⏱️ ${dhakaTime}\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `⚠️ <b>Security Notice:</b>\n` +
+            `This device is <b>NOT your Samsung Galaxy A30</b> and <b>NOT our Cloud System</b>!\n` +
+            `An unknown device has logged into the Admin Dashboard!`;
+
+          ctx.waitUntil((async () => {
+            try {
+              if (ALERT_BOT_TOKEN) {
+                await fetch(`https://api.telegram.org/bot${ALERT_BOT_TOKEN}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: "-1004358687850",
+                    text: alertText,
+                    parse_mode: "HTML"
+                  })
+                }).catch(() => {});
+                await fetch(`https://api.telegram.org/bot${ALERT_BOT_TOKEN}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: "6727787768",
+                    text: alertText,
+                    parse_mode: "HTML"
+                  })
+                }).catch(() => {});
+              }
+            } catch (_) {}
+          })());
+        }
+
         return new Response(JSON.stringify({
           ok: true,
           success: true,
