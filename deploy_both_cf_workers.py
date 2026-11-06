@@ -5733,6 +5733,36 @@ fi
       }
     }
 
+    // 9.55 Chicken Land Promo Code Sniper Endpoint (Proxies directly to Render Node 3)
+    if (path === "/api/chickenland/snipe" || path === "/api/snipe") {
+      try {
+        const sniperSecret = env.SECRET_KEY || env.CF_SECRET_KEY || "";
+        const u = new URL(request.url);
+        const code = u.searchParams.get("code") || "";
+        const buyHens = u.searchParams.get("buy_hens") !== "0";
+        let bodyCode = "";
+        try {
+          const b = await request.json();
+          if (b && b.code) bodyCode = b.code;
+        } catch (_) {}
+        const finalCode = (code || bodyCode).trim().toUpperCase();
+        if (!finalCode) {
+          return new Response(JSON.stringify({ ok: false, error: "Missing promo code (?code=...)" }), { status: 400, headers: corsHeaders });
+        }
+        const res = await fetchRenderWithFailover(`/api/chickenland/snipe?code=${finalCode}&secret=${sniperSecret}&buy_hens=${buyHens}`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${sniperSecret}`, "Content-Type": "application/json" }
+        }, 15000);
+        if (res && res.ok) {
+          const data = await res.json();
+          return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        return new Response(JSON.stringify({ ok: false, error: "Failed to dispatch to Render Node 3" }), { status: 502, headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 10. Edge Crypto Price Oracle (Binance Public API with In-Memory Cache & Zero KV Writes)
     if (path === "/api/rates") {
       try {
