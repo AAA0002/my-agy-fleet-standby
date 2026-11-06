@@ -152,6 +152,9 @@ UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAAUeMAAIgcDI1ODEyOGQ4NDI0MWU0OWJmYTE3MjJhZWQ2MzI5YjI1MQ"
 TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
 TURSO_TOKEN = os.getenv("TURSO_TOKEN") or os.getenv("TURSO_DB_TOKEN") or ""
+TURSO_MINIAPP_CACHE = {}
+KYNEX_CLOUD_SEMAPHORE = asyncio.Semaphore(1)
+EARNVAULT_CLOUD_SEMAPHORE = asyncio.Semaphore(1)
 
 # Cloudflare Workers AI is used exclusively for all AI tasks (zero external keys needed)
 
@@ -1314,7 +1317,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     # Priority 1: High-Speed Inline Keyboard buttons in existing bot messages (Fastest, zero-spam, <300ms)
     try:
-        msgs = await client.get_messages(bot_ent, limit=15)
+        msgs = await asyncio.wait_for(client.get_messages(bot_ent, limit=15), timeout=4.0)
         for m in msgs:
             if not m.out and m.buttons:
                 for row in m.buttons:
@@ -1332,7 +1335,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                 }
                                 if start_param:
                                     req_p["start_param"] = str(start_param)
-                                res = await client(RequestWebViewRequest(**req_p))
+                                res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=4.0)
                                 tok = extract_from_url(getattr(res, "url", None))
                                 if tok:
                                     return tok
@@ -1345,7 +1348,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                 if tok:
                                     return tok
                             if "t.me/" in b_url:
-                                tok = await extract_from_tme_link(client, b_url, start_param, chat_peer=bot_in)
+                                tok = await asyncio.wait_for(extract_from_tme_link(client, b_url, start_param, chat_peer=bot_in), timeout=4.0)
                                 if tok:
                                     return tok
                             elif not b_url.startswith("https://t.me/"):
@@ -1358,7 +1361,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                     }
                                     if start_param:
                                         req_p["start_param"] = str(start_param)
-                                    res = await client(RequestWebViewRequest(**req_p))
+                                    res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=4.0)
                                     tok = extract_from_url(getattr(res, "url", None))
                                     if tok:
                                         return tok
@@ -1415,7 +1418,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         try:
             from telethon.tl.functions.messages import GetBotAppRequest
             from telethon.tl.types import InputBotAppID
-            app_res = await client(GetBotAppRequest(app=target_app, hash=0))
+            app_res = await asyncio.wait_for(client(GetBotAppRequest(app=target_app, hash=0)), timeout=3.5)
             app_ent = getattr(app_res, "app", None)
             if app_ent and hasattr(app_ent, "id") and hasattr(app_ent, "access_hash"):
                 target_app = InputBotAppID(id=app_ent.id, access_hash=app_ent.access_hash)
@@ -1431,7 +1434,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             }
             if start_param:
                 req_p["start_param"] = str(start_param)
-            res = await client(RequestAppWebViewRequest(**req_p))
+            res = await asyncio.wait_for(client(RequestAppWebViewRequest(**req_p)), timeout=4.0)
             tok = extract_from_url(getattr(res, "url", None))
             if tok:
                 return tok
@@ -1441,12 +1444,12 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
     # Strategy A.1: If BotApp not unlocked, send /start to activate chat and retry
     if start_param and not bot_username.lower().startswith("atf"):
         try:
-            await client.send_message(bot_in, f"/start {start_param}")
+            await asyncio.wait_for(client.send_message(bot_in, f"/start {start_param}"), timeout=3.5)
             await asyncio.sleep(1.0)
 
             # Check fresh reply message for inline WebApp buttons (Critical for WebApp bots)
             try:
-                fresh_msgs = await client.get_messages(bot_ent, limit=3)
+                fresh_msgs = await asyncio.wait_for(client.get_messages(bot_ent, limit=3), timeout=3.5)
                 for fm in fresh_msgs:
                     if not fm.out and fm.buttons:
                         for f_row in fm.buttons:
@@ -1463,7 +1466,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                                         }
                                         if start_param:
                                             f_req["start_param"] = str(start_param)
-                                        f_res = await client(RequestWebViewRequest(**f_req))
+                                        f_res = await asyncio.wait_for(client(RequestWebViewRequest(**f_req)), timeout=4.0)
                                         tok = extract_from_url(getattr(f_res, "url", None))
                                         if tok:
                                             return tok
@@ -1488,7 +1491,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 try:
                     from telethon.tl.functions.messages import GetBotAppRequest
                     from telethon.tl.types import InputBotAppID
-                    app_res = await client(GetBotAppRequest(app=target_app, hash=0))
+                    app_res = await asyncio.wait_for(client(GetBotAppRequest(app=target_app, hash=0)), timeout=3.5)
                     app_ent = getattr(app_res, "app", None)
                     if app_ent and hasattr(app_ent, "id") and hasattr(app_ent, "access_hash"):
                         target_app = InputBotAppID(id=app_ent.id, access_hash=app_ent.access_hash)
@@ -1501,7 +1504,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                     "write_allowed": True,
                     "start_param": str(start_param)
                 }
-                res = await client(RequestAppWebViewRequest(**req_p))
+                res = await asyncio.wait_for(client(RequestAppWebViewRequest(**req_p)), timeout=4.0)
                 tok = extract_from_url(getattr(res, "url", None))
                 if tok:
                     return tok
@@ -1510,11 +1513,11 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     # Strategy B: Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
     try:
-        menu = await client(functions.bots.GetBotMenuButtonRequest(user_id=bot_in))
+        menu = await asyncio.wait_for(client(functions.bots.GetBotMenuButtonRequest(user_id=bot_in)), timeout=3.5)
         menu_btn = getattr(menu, "button", None)
         if menu_btn and hasattr(menu_btn, "url") and menu_btn.url:
             if "t.me/" in menu_btn.url:
-                tok = await extract_from_tme_link(client, menu_btn.url, start_param, chat_peer=bot_in)
+                tok = await asyncio.wait_for(extract_from_tme_link(client, menu_btn.url, start_param, chat_peer=bot_in), timeout=4.0)
                 if tok:
                     return tok
             elif not menu_btn.url.startswith("https://t.me/"):
@@ -1526,7 +1529,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 }
                 if start_param:
                     req_p["start_param"] = str(start_param)
-                res = await client(RequestWebViewRequest(**req_p))
+                res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=4.0)
                 tok = extract_from_url(getattr(res, "url", None))
                 if tok:
                     return tok
@@ -1544,14 +1547,14 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             }
             if start_param:
                 req_p["start_param"] = str(start_param)
-            res = await client(RequestWebViewRequest(**req_p))
+            res = await asyncio.wait_for(client(RequestWebViewRequest(**req_p)), timeout=4.0)
             tok = extract_from_url(getattr(res, "url", None))
             if tok:
                 return tok
         except Exception:
             if start_param:
                 try:
-                    res = await client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=default_url))
+                    res = await asyncio.wait_for(client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=default_url)), timeout=4.0)
                     tok = extract_from_url(getattr(res, "url", None))
                     if tok:
                         return tok
@@ -1761,6 +1764,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
         return {}
 
     # Strict MTProto Concurrency Serializer: exactly 1 account connects at a time
+    tokens_result = {}
     async with GLOBAL_MTPROTO_SEMAPHORE:
         # Acquire account-level distributed lock to guarantee zero concurrent connections
         if uid:
@@ -1784,7 +1788,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
                     else:
                         if attempt < 3:
                             logger.info(f"[{name}] Session unauthorized on attempt {attempt}, retrying in {attempt * 2}s...")
-                            await asyncio.sleep(attempt * 2.0)
+                            await asyncio.sleep(attempt * 1.5)
                             continue
                         logger.warning(f"[{name}] Session unauthorized after 3 attempts")
                         if idx:
@@ -1795,34 +1799,37 @@ async def extract_tokens_for_account(acc: dict) -> dict:
                     if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str or "AuthKeyDuplicatedError" in type(conn_err).__name__:
                         if attempt < 3:
                             logger.info(f"[{name}] Potential IP clash on attempt {attempt}, retrying in {attempt * 2}s...")
-                            await asyncio.sleep(attempt * 2.0)
+                            await asyncio.sleep(attempt * 1.5)
                             continue
                         logger.warning(f"[{name}] MTProto session duplicated/revoked after 3 attempts")
                         if idx:
                             await sync_account_health_state(idx, is_healthy=False, reason="AuthKeyDuplicatedError (multi-IP clash)")
                         return {}
                     if attempt < 3:
-                        await asyncio.sleep(attempt * 2.0)
+                        await asyncio.sleep(attempt * 1.5)
                     else:
                         logger.error(f"[{name}] Connection error after 3 attempts: {conn_err}")
                         return {}
-            if not connected:
-                return {}
-
-            return await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=65.0)
+            if connected:
+                tokens_result = await asyncio.wait_for(extract_tokens_with_client(client, acc), timeout=55.0)
         except Exception as e:
             logger.error(f"[{name}] Telethon connection error: {e}")
-            return {}
+            tokens_result = {}
         finally:
             ACTIVE_MTPROTO_CLIENTS.discard(client)
             try:
-                await client.disconnect()
+                await asyncio.wait_for(client.disconnect(), timeout=3.0)
             except Exception:
                 pass
             if uid:
-                await release_account_lock(uid)
-            # Randomized human cooldown before next account connection
-            await asyncio.sleep(random.uniform(4.0, 8.0))
+                try:
+                    await asyncio.wait_for(release_account_lock(uid), timeout=2.0)
+                except Exception:
+                    pass
+
+    # Randomized human cooldown before next account connection (OUTSIDE SEMAPHORE)
+    await asyncio.sleep(random.uniform(2.0, 5.0))
+    return tokens_result
 
 @app.post("/collect-tokens")
 @app.get("/collect-tokens")
@@ -1917,16 +1924,80 @@ async def collect_tokens(request: Request):
         async def _collect_single(acc):
             async with sem:
                 uid = str(acc.get("user_id"))
-                tokens = await extract_tokens_for_account(acc)
+                try:
+                    tokens = await asyncio.wait_for(extract_tokens_for_account(acc), timeout=70.0)
+                except Exception as e:
+                    logger.warning(f"[{acc.get('name', uid)}] Token extraction timeout/error: {e}")
+                    tokens = {}
                 if tokens:
                     act_uid = str(tokens.get("account_id") or acc.get("user_id") or uid)
                     collected_batch[act_uid] = tokens
                     LAST_BATCH_RUN["collected"] = len(collected_batch)
                     await sync_account_tokens_to_clouds(tokens)
-                await asyncio.sleep(random.uniform(5.0, 10.0))
+                await asyncio.sleep(random.uniform(2.0, 5.0))
 
         tasks = [_collect_single(a) for a in target_accounts]
         await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Commit full collected batch directly into Turso LibSQL SSOT (miniapp_tokens + fleet:tokens_state)
+        if TURSO_URL and TURSO_TOKEN and collected_batch:
+            try:
+                http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                t_now = int(time.time())
+                existing_tokens = {}
+                try:
+                    async with aiohttp.ClientSession() as t_s:
+                        async with t_s.post(
+                            http_url,
+                            json={"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = 'miniapp_tokens' LIMIT 1;"}}]},
+                            headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                            timeout=aiohttp.ClientTimeout(total=4)
+                        ) as tr:
+                            if tr.status == 200:
+                                td = await tr.json()
+                                rows = td.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                                if rows and rows[0]:
+                                    raw_v = rows[0][0].get("value")
+                                    if raw_v:
+                                        existing_tokens = json.loads(raw_v) if isinstance(raw_v, str) else raw_v
+                except Exception:
+                    pass
+                merged_batch = {**existing_tokens, **collected_batch}
+                if "8881914294" in merged_batch:
+                    del merged_batch["8881914294"]
+                t_batch_reqs = [
+                    {
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                            "args": [
+                                {"type": "text", "value": "miniapp_tokens"},
+                                {"type": "text", "value": json.dumps(merged_batch)},
+                                {"type": "integer", "value": str(t_now)}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                            "args": [
+                                {"type": "text", "value": "fleet:tokens_state"},
+                                {"type": "text", "value": json.dumps(merged_batch)},
+                                {"type": "integer", "value": str(t_now)}
+                            ]
+                        }
+                    }
+                ]
+                async with aiohttp.ClientSession() as t_s:
+                    await t_s.post(
+                        http_url,
+                        json={"requests": t_batch_reqs},
+                        headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=5)
+                    )
+            except Exception as t_batch_err:
+                logger.debug(f"[Turso Batch Commit] Note: {t_batch_err}")
 
         # Trigger Cloudflare Edge Autonomous Cloud Farming (Failback to primary node)
         async with aiohttp.ClientSession() as http:
@@ -2718,6 +2789,28 @@ async def sync_account_tokens_to_clouds(tokens: dict):
             try:
                 http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
                 t_now = int(time.time())
+                global TURSO_MINIAPP_CACHE
+                if not TURSO_MINIAPP_CACHE:
+                    try:
+                        async with s.post(
+                            http_url,
+                            json={"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = 'miniapp_tokens' LIMIT 1;"}}]},
+                            headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                            timeout=aiohttp.ClientTimeout(total=4)
+                        ) as cur_r:
+                            if cur_r.status == 200:
+                                cur_d = await cur_r.json()
+                                c_rows = cur_d.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                                if c_rows and c_rows[0] and c_rows[0][0].get("value"):
+                                    c_parsed = json.loads(c_rows[0][0]["value"])
+                                    if isinstance(c_parsed, dict):
+                                        TURSO_MINIAPP_CACHE = c_parsed
+                    except Exception:
+                        pass
+                TURSO_MINIAPP_CACHE[str(uid)] = clean_merged
+                if "8881914294" in TURSO_MINIAPP_CACHE:
+                    del TURSO_MINIAPP_CACHE["8881914294"]
+                cache_str = json.dumps(TURSO_MINIAPP_CACHE)
                 t_reqs = [
                     {
                         "type": "execute",
@@ -2725,12 +2818,46 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                             "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
                             "args": [
                                 {"type": "text", "value": f"fleet:tokens:{uid}"},
-                                {"type": "text", "value": json.dumps(tokens)},
+                                {"type": "text", "value": json.dumps(clean_merged)},
+                                {"type": "integer", "value": str(t_now)}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                            "args": [
+                                {"type": "text", "value": "miniapp_tokens"},
+                                {"type": "text", "value": cache_str},
+                                {"type": "integer", "value": str(t_now)}
+                            ]
+                        }
+                    },
+                    {
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                            "args": [
+                                {"type": "text", "value": "fleet:tokens_state"},
+                                {"type": "text", "value": cache_str},
                                 {"type": "integer", "value": str(t_now)}
                             ]
                         }
                     }
                 ]
+                if clean_merged.get("diggo_jwt"):
+                    t_reqs.append({
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);",
+                            "args": [
+                                {"type": "text", "value": f"fleet:diggo:jwt:{uid}"},
+                                {"type": "text", "value": str(clean_merged["diggo_jwt"])},
+                                {"type": "integer", "value": str(t_now)}
+                            ]
+                        }
+                    })
                 await s.post(http_url, json={"requests": t_reqs}, headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=4))
             except Exception as t_e:
                 logger.debug(f"[Turso Tokens Sync] Note: {t_e}")
@@ -6570,23 +6697,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 4. Kynex Network (@Kynex_miningbot)
     async def _farm_kynex():
-        k_init = tokens.get("kynex_init_data")
-        k_rf = tokens.get("kynex_refresh_token") or acc.get("kynex_refresh_token")
-        if k_init or k_rf:
-            try:
-                import kynex_miner
-                res = await kynex_miner.farm_kynex_account(session, k_init or "", acc, is_master=is_owner)
-                if isinstance(res, dict) and res.get("balance") is not None:
-                    acc["kynex_coins"] = float(res.get("balance", 0.0) or 0.0)
-                if acc.get("kynex_refresh_token"):
-                    tokens["kynex_refresh_token"] = acc["kynex_refresh_token"]
-                    asyncio.create_task(sync_account_tokens_to_clouds(tokens))
-                status["bots"]["kynex"] = res.get("status", "farmed")
-                return
-            except Exception as e:
-                status["bots"]["kynex"] = f"api_error: {format_error(e)}"
-                return
-        status["bots"]["kynex"] = "skipped (no initData)"
+        async with KYNEX_CLOUD_SEMAPHORE:
+            await asyncio.sleep(random.uniform(0.5, 1.2))
+            k_init = tokens.get("kynex_init_data")
+            k_rf = tokens.get("kynex_refresh_token") or acc.get("kynex_refresh_token")
+            if k_init or k_rf:
+                try:
+                    import kynex_miner
+                    res = await kynex_miner.farm_kynex_account(session, k_init or "", acc, is_master=is_owner)
+                    if isinstance(res, dict) and res.get("balance") is not None:
+                        acc["kynex_coins"] = float(res.get("balance", 0.0) or 0.0)
+                    if acc.get("kynex_refresh_token"):
+                        tokens["kynex_refresh_token"] = acc["kynex_refresh_token"]
+                        asyncio.create_task(sync_account_tokens_to_clouds(tokens))
+                    status["bots"]["kynex"] = res.get("status", "farmed")
+                    return
+                except Exception as e:
+                    status["bots"]["kynex"] = f"api_error: {format_error(e)}"
+                    return
+            status["bots"]["kynex"] = "skipped (no initData)"
 
     # 10. PepeGram (@Pepe_gram_bot)
     async def _farm_pepegram():
@@ -6767,7 +6896,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 12. DiggoMiner (@Diggominer_bot)
     async def _farm_diggo():
-        diggo_jwt = tokens.get("diggo_jwt")
+        diggo_jwt = tokens.get("diggo_jwt") or acc.get("diggo_jwt")
         if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
             try:
                 async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
@@ -6775,6 +6904,23 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         jd = await jr.json()
                         if jd.get("result"):
                             diggo_jwt = str(jd["result"]).strip("\"' ")
+            except Exception:
+                pass
+
+        if not diggo_jwt and TURSO_URL and TURSO_TOKEN:
+            try:
+                t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                async with session.post(
+                    t_http,
+                    json={"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = ? LIMIT 1;", "args": [{"type": "text", "value": f"fleet:diggo:jwt:{uid}"}]}}]},
+                    headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=3)
+                ) as tr:
+                    if tr.status == 200:
+                        td = await tr.json()
+                        rows = td.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                        if rows and rows[0] and rows[0][0].get("value"):
+                            diggo_jwt = str(rows[0][0]["value"]).strip("\"' ")
             except Exception:
                 pass
 
@@ -6796,6 +6942,18 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     tokens["diggo_jwt"] = diggo_jwt
                     acc["diggo_jwt"] = diggo_jwt
                     asyncio.create_task(sync_account_tokens_to_clouds(tokens))
+                    if TURSO_URL and TURSO_TOKEN:
+                        try:
+                            t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                            t_now = int(time.time())
+                            async with session.post(
+                                t_http,
+                                json={"requests": [{"type": "execute", "stmt": {"sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);", "args": [{"type": "text", "value": f"fleet:diggo:jwt:{uid}"}, {"type": "text", "value": diggo_jwt}, {"type": "integer", "value": str(t_now)}]}}]},
+                                headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                                timeout=aiohttp.ClientTimeout(total=3)
+                            ) as _: pass
+                        except Exception:
+                            pass
                     if UPSTASH_URL and UPSTASH_TOKEN:
                         try:
                             await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=diggo_jwt, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
@@ -7308,8 +7466,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 status["bots"]["earnvault"] = "skipped (no initData)"
                 return
             try:
-                # 1. telegramAuth to get custom token
-                c_st, auth_d = await safe_post(f"{functions_base}/telegramAuth", json_data={"data": {"initData": ev_init}}, req_headers=ev_headers, timeout_sec=8)
+                # 1. telegramAuth to get custom token (serialized to prevent Cloud Function 429)
+                async with EARNVAULT_CLOUD_SEMAPHORE:
+                    await asyncio.sleep(random.uniform(0.5, 1.2))
+                    c_st, auth_d = await safe_post(f"{functions_base}/telegramAuth", json_data={"data": {"initData": ev_init}}, req_headers=ev_headers, timeout_sec=8)
                 if c_st != 200 or not isinstance(auth_d, dict):
                     status["bots"]["earnvault"] = f"auth_failed ({c_st})"
                     return

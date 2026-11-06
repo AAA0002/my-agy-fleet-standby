@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Full MTProto Concurrency Deadlock Resolution, Cloud Function 429 Elimination & 30-Day Diggo JWT Durability (November 6, 2026)**:
+  - **Deadlock-Proof MTProto Token Extraction (`app.py`)**:
+    * Fixed infinite semaphore lock in `extract_tokens_for_account`: wrapped `client.disconnect()` in `asyncio.wait_for(..., timeout=3.0)` to eliminate Telethon connection teardown hangs.
+    * Relocated randomized cooldown sleeps outside `GLOBAL_MTPROTO_SEMAPHORE` so the semaphore is freed immediately for other accounts.
+    * Added per-account execution timeout (`70.0s`) in `_run_batch_collection` to ensure that a slow or lagging MTProto session never stalls the batch run.
+    * Added strict 3.5s–4.0s timeouts to every MTProto network call in `extract_bot_webapp_token` (`GetBotAppRequest`, `RequestAppWebViewRequest`, `get_messages`, `send_message`, `GetBotMenuButtonRequest`).
+  - **Turso LibSQL Monolithic Syncing (`app.py` & `deploy_both_cf_workers.py`)**:
+    * Upgraded `sync_account_tokens_to_clouds()` and `_run_batch_collection()` to atomically synchronize both `miniapp_tokens` and `fleet:tokens_state` in Turso `kv_mesh` table (25M ops/mo quota) alongside individual `fleet:tokens:{uid}` keys.
+    * Upgraded Cloudflare Worker `/api/miniapp/tokens/sync` endpoint in `deploy_both_cf_workers.py` to directly mirror received tokens to Turso LibSQL via `tursoSet("miniapp_tokens")` and `tursoSet("fleet:tokens_state")`.
+    * Cleanly purged retired Nancy (`8881914294`) from Turso `fleet:tokens_state` and `miniapp_tokens`, ensuring exact 23-account fleet parity.
+  - **Google Cloud Functions HTTP 429 Rate-Limit Elimination**:
+    * Introduced dedicated single-flight semaphores `KYNEX_CLOUD_SEMAPHORE` and `EARNVAULT_CLOUD_SEMAPHORE` with human jitter delays (0.5s–1.2s) in `app.py`.
+    * Serialized concurrent REST calls to `us-central1` Google Cloud Functions (`verifyTelegramAuth` and `telegramAuth`), eliminating bursts from the same IP that previously caused HTTP 429 rate limits.
+  - **DiggoMiner 30-Day JWT Multi-Tier Cache**:
+    * Enhanced `_farm_diggo` in `app.py` with multi-database failover: reads `fleet:diggo:jwt:{uid}` from in-memory tokens, Upstash Redis, and Turso LibSQL `kv_mesh`.
+    * Automatically writes newly exchanged 30-day JWT Bearer tokens to Turso `kv_mesh` table with 30-day durability, allowing DiggoMiner to farm uninterrupted even when raw `initData` is older than 24 hours.
+
 - **🌾 Comprehensive 9-Bot Fleet Farming Engine Fixes & Multi-Store Cloud Durability (November 6, 2026)**:
   - **Turso LibSQL High-Capacity KV Failover (`app.py` & `deploy_both_cf_workers.py`)**:
     * Integrated Turso LibSQL table `kv_mesh` directly into `fetch_cloud_miniapp_tokens()` and `sync_account_tokens_to_clouds()` in `app.py`, as well as `getFleetTokens()` in `deploy_both_cf_workers.py`.

@@ -32,6 +32,8 @@ if os.path.exists(env_file):
 
 UPSTASH_URL = env.get("UPSTASH_URL")
 UPSTASH_TOKEN = env.get("UPSTASH_TOKEN")
+TURSO_URL = env.get("TURSO_URL") or env.get("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
+TURSO_TOKEN = env.get("TURSO_TOKEN") or env.get("TURSO_DB_TOKEN") or ""
 ADMIN_BOT_TOKEN = env.get("ADMIN_BOT_TOKEN") or env.get("REPORT_BOT_TOKEN")
 USER_BOT_TOKEN = env.get("USER_BOT_TOKEN")
 RENDER_KEY = env.get("RENDER_API_KEY_3") or env.get("RENDER_API_KEY")
@@ -126,7 +128,7 @@ async def test_live_11_bots_probe():
     master_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) == "6727787768"][0]
     worker_acc = [a for a in accs if str(a.get("account_id") or a.get("user_id")) != "6727787768"][0]
 
-    # Pull live tokens from Upstash Redis if available
+    # Pull live tokens from Upstash Redis or Turso LibSQL kv_mesh
     live_tokens = {}
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
@@ -138,9 +140,39 @@ async def test_live_11_bots_probe():
         except Exception:
             pass
 
+    if not live_tokens and TURSO_URL and TURSO_TOKEN:
+        try:
+            t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+            t_req = urllib.request.Request(
+                t_http,
+                headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                data=json.dumps({"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key IN ('fleet:tokens_state', 'miniapp_tokens', 'fleet:tokens:6727787768') LIMIT 3;"}}]}).encode()
+            )
+            with urllib.request.urlopen(t_req, timeout=4) as resp:
+                t_res = json.loads(resp.read().decode())
+                for item in t_res.get("results", []):
+                    if item.get("type") == "ok":
+                        rows = item.get("response", {}).get("result", {}).get("rows", [])
+                        for row in rows:
+                            if row and row[0]:
+                                val_raw = row[0].get("value")
+                                if val_raw:
+                                    parsed = json.loads(val_raw) if isinstance(val_raw, str) else val_raw
+                                    if isinstance(parsed, dict):
+                                        if "6727787768" in parsed:
+                                            live_tokens = parsed["6727787768"]
+                                            break
+                                        elif "atf_init_data" in parsed:
+                                            live_tokens = parsed
+                                            break
+                        if live_tokens:
+                            break
+        except Exception:
+            pass
+
     bots_to_test = [
         ("1. ATF Miner", "https://atfminers.asloni.online/miner/index.php?action=login", "atf_init_data"),
-        ("2. Kynex Network", "https://us-central1-keynex-e9511.cloudfunctions.net/telegramAuth", "kynex_init_data"),
+        ("2. Kynex Network", "https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", "kynex_init_data"),
         ("3. DiggoMiner", "https://diggo.linkpc.net/api/state", "diggo_jwt"),
         ("4. PepeGram", "https://app.miniempire.app/miniapp/auth?tid=1449", "pepegram_init_data"),
         ("5. AdxEarn AI", "https://api.adxearnai.xyz/api/user/session", "adxearn_init_data"),
@@ -171,7 +203,14 @@ async def test_live_11_bots_probe():
                 t0 = time.time()
                 r_status = None
                 if "atf" in tok_key:
-                    async with s.post(b_url, data={"initData": tok, "ref": "6727787768"}, headers={"User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    atf_h = {
+                        "Content-Type": "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Referer": "https://atfminers.asloni.online/miner/index.html",
+                        "Origin": "https://atfminers.asloni.online",
+                        "User-Agent": "Mozilla/5.0"
+                    }
+                    async with s.post(b_url, json={"initData": tok, "tg_id": 6727787768, "ref": "6727787768"}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "kynex" in tok_key:
                     async with s.post("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", json={"data": {"initData": tok, "referral": "6727787768"}}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
@@ -189,14 +228,22 @@ async def test_live_11_bots_probe():
                     async with s.post(b_url, json={"initData": tok, "fp": "fp_6727787768"}, headers={"X-Telegram-Init-Data": tok, "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
                         r_status = r.status
                 elif "diggo" in tok_key:
-                    jwt = live_tokens.get("diggo_jwt") or master_acc.get("diggo_jwt")
-                    if not jwt and "user%3D" in str(tok) or "query_id=" in str(tok):
-                        async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": tok}, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as ar:
+                    jwt = live_tokens.get("diggo_jwt")
+                    d_init = live_tokens.get("diggo_init_data") or master_acc.get("diggo_init_data")
+                    if not jwt and d_init:
+                        async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init}, headers={"Content-Type": "application/json", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as ar:
                             if ar.status == 200:
                                 jwt = (await ar.json()).get("token")
                     if jwt:
-                        async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt}", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                        async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r:
                             r_status = r.status
+                            if r_status == 401 and d_init:
+                                async with s.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init}, headers={"Content-Type": "application/json", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as ar2:
+                                    if ar2.status == 200:
+                                        jwt2 = (await ar2.json()).get("token")
+                                        if jwt2:
+                                            async with s.get("https://diggo.linkpc.net/api/state", headers={"Authorization": f"Bearer {jwt2}", "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/", "User-Agent": "Mozilla/5.0"}, timeout=aiohttp.ClientTimeout(total=6)) as r2:
+                                                r_status = r2.status
                     else:
                         r_status = 401
                 elif "chickenland" in tok_key:

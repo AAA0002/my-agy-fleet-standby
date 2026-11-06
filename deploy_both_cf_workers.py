@@ -5635,7 +5635,7 @@ fi
           current[k] = sanitizeTokens(v);
         }
         memTokens = current;
-        const hasAllAccounts = Object.keys(current).length >= 24;
+        const hasAllAccounts = Object.keys(current).length >= 23;
         if ((CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (hasAllAccounts || Date.now() - lastMiniappTokensKvWrite >= 60000)) {
           lastMiniappTokensKvWrite = Date.now();
           try {
@@ -5670,6 +5670,16 @@ fi
         try {
           await upstashSet("miniapp_tokens", current);
           await upstashSet("fleet_miniapp_tokens", current);
+        } catch (_) {}
+        try {
+          await tursoSet("miniapp_tokens", current);
+          await tursoSet("fleet:tokens_state", current);
+          if (accId && current[accId]) {
+            await tursoSet(`fleet:tokens:${accId}`, current[accId]);
+            if (current[accId].diggo_jwt) {
+              await tursoSet(`fleet:diggo:jwt:${accId}`, current[accId].diggo_jwt);
+            }
+          }
         } catch (_) {}
         return new Response(JSON.stringify({ ok: true, accounts: Object.keys(current).length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
