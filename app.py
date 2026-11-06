@@ -7568,11 +7568,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = json.dumps({"timestamp": now_ts, "cooldown": fail_cd})
 
     await asyncio.gather(*[_run_single_routine(b) for b in active_routines], return_exceptions=True)
-    if bg_tasks:
-        try:
-            await asyncio.wait_for(asyncio.gather(*bg_tasks, return_exceptions=True), timeout=18.0)
-        except Exception:
-            pass
+    # Background tasks (e.g. ad watching) continue executing asynchronously without stalling the farming cycle
     return status
 
 
@@ -7623,7 +7619,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     # Fast concurrent REST farming across all 9 active bots
                     res = await asyncio.wait_for(
                         farm_single_account_bots(session, a_dict, t_dict, force=force, target_bot=target_bot),
-                        timeout=50.0
+                        timeout=120.0
                     )
                     # If any bot reported token expiration or unauthorized, schedule non-blocking cloud refresh
                     if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "token_invalid" in str(v).lower() or "unauthorized" in str(v).lower() or "auth_failed" in str(v).lower()) for v in res.get("bots", {}).values()):
@@ -7637,7 +7633,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                         LAST_FARM_RUN["results"].append(res)
                     return res
                 except asyncio.TimeoutError:
-                    timeout_res = {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_50s"}}
+                    timeout_res = {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_120s"}}
                     LAST_FARM_RUN["farmed_count"] = LAST_FARM_RUN.get("farmed_count", 0) + 1
                     if "results" not in LAST_FARM_RUN:
                         LAST_FARM_RUN["results"] = []
