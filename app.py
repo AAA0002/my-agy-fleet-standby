@@ -148,10 +148,12 @@ CF_WORKER_URLS = [
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or ""
-UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://internal-dodo-83852.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAAUeMAAIgcDI1ODEyOGQ4NDI0MWU0OWJmYTE3MjJhZWQ2MzI5YjI1MQ"
-TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
-TURSO_TOKEN = os.getenv("TURSO_TOKEN") or os.getenv("TURSO_DB_TOKEN") or ""
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAAZ6HAAIgcDE5ZWE1Nzg1NjEzMWM0NmVmOWZlN2IyOWQ1NzM0YmEwOA"
+UPSTASH_STANDBY_URL = os.getenv("UPSTASH_STANDBY_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_STANDBY_TOKEN = os.getenv("UPSTASH_STANDBY_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
+TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or os.getenv("TURSO_DATABASE_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
+TURSO_TOKEN = os.getenv("TURSO_TOKEN") or os.getenv("TURSO_DB_TOKEN") or os.getenv("TURSO_AUTH_TOKEN") or ""
 TURSO_MINIAPP_CACHE = {}
 KYNEX_CLOUD_SEMAPHORE = asyncio.Semaphore(1)
 EARNVAULT_CLOUD_SEMAPHORE = asyncio.Semaphore(1)
@@ -6999,16 +7001,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     # 12. DiggoMiner (@Diggominer_bot)
     async def _farm_diggo():
         diggo_jwt = tokens.get("diggo_jwt") or acc.get("diggo_jwt")
-        if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
-            try:
-                async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
-                    if jr.status == 200:
-                        jd = await jr.json()
-                        if jd.get("result"):
-                            diggo_jwt = str(jd["result"]).strip("\"' ")
-            except Exception:
-                pass
-
         if not diggo_jwt and TURSO_URL and TURSO_TOKEN:
             try:
                 t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
@@ -7023,6 +7015,16 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         rows = td.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
                         if rows and rows[0] and rows[0][0].get("value"):
                             diggo_jwt = str(rows[0][0]["value"]).strip("\"' ")
+            except Exception:
+                pass
+
+        if not diggo_jwt and UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
+                    if jr.status == 200:
+                        jd = await jr.json()
+                        if jd.get("result"):
+                            diggo_jwt = str(jd["result"]).strip("\"' ")
             except Exception:
                 pass
 
@@ -7917,10 +7919,23 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         results = await asyncio.gather(*farm_tasks, return_exceptions=True)
         valid_res = [r for r in results if isinstance(r, dict)]
 
-        # Synchronize updated live account state to Upstash Redis
+        # Synchronize updated live account state to Turso LibSQL High-Capacity SSOT & Upstash Redis
+        live_payload = json.dumps({"accounts": accounts, "timestamp": time.time(), "updated_by": "render_cloud_cycle"})
+        if TURSO_URL and TURSO_TOKEN and accounts:
+            try:
+                http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                t_now = int(time.time())
+                await session.post(
+                    http_url,
+                    json={"requests": [{"type": "execute", "stmt": {"sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);", "args": [{"type": "text", "value": "fleet:live_state"}, {"type": "text", "value": live_payload}, {"type": "integer", "value": str(t_now)}]}}]},
+                    headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=4)
+                )
+            except Exception as te:
+                logger.debug(f"[Live State Turso] Note: {te}")
+
         if UPSTASH_URL and UPSTASH_TOKEN and accounts:
             try:
-                live_payload = json.dumps({"accounts": accounts, "timestamp": time.time(), "updated_by": "render_cloud_cycle"})
                 async with session.post(f"{UPSTASH_URL}/set/fleet:live_state", data=live_payload, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)):
                     pass
             except Exception:
