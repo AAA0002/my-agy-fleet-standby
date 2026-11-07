@@ -6560,6 +6560,8 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                         if u and u.isdigit():
                             if u not in tokens_map:
                                 tokens_map[u] = {}
+                            if acc.get("diggo_jwt") and not tokens_map[u].get("diggo_jwt"):
+                                tokens_map[u]["diggo_jwt"] = acc["diggo_jwt"]
                             for b in ALL_ACTIVE_BOT_KEYS:
                                 tk = f"{b}_init_data"
                                 if tk not in tokens_map[u] or not tokens_map[u][tk]:
@@ -6568,6 +6570,46 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                         tokens_map[u][tk] = val
         except Exception:
             pass
+
+    # Normalize bidirectional bot token aliases across all accounts
+    for u, t_entry in tokens_map.items():
+        if not isinstance(t_entry, dict):
+            continue
+        # Kynex
+        if t_entry.get("kynex_init_data") and not t_entry.get("knx_init_data"):
+            t_entry["knx_init_data"] = t_entry["kynex_init_data"]
+        elif t_entry.get("knx_init_data") and not t_entry.get("kynex_init_data"):
+            t_entry["kynex_init_data"] = t_entry["knx_init_data"]
+        # PepeGram
+        if t_entry.get("pepegram_init_data") and not t_entry.get("pepe_init_data"):
+            t_entry["pepe_init_data"] = t_entry["pepegram_init_data"]
+        elif t_entry.get("pepe_init_data") and not t_entry.get("pepegram_init_data"):
+            t_entry["pepegram_init_data"] = t_entry["pepe_init_data"]
+        # AdxEarn
+        if t_entry.get("adxearn_init_data") and not t_entry.get("adx_init_data"):
+            t_entry["adx_init_data"] = t_entry["adxearn_init_data"]
+        elif t_entry.get("adx_init_data") and not t_entry.get("adxearn_init_data"):
+            t_entry["adxearn_init_data"] = t_entry["adx_init_data"]
+        # Chicken Land
+        if t_entry.get("chickenland_init_data") and not t_entry.get("chicken_init_data"):
+            t_entry["chicken_init_data"] = t_entry["chickenland_init_data"]
+        elif t_entry.get("chicken_init_data") and not t_entry.get("chickenland_init_data"):
+            t_entry["chickenland_init_data"] = t_entry["chicken_init_data"]
+        # Grouche Mine
+        if t_entry.get("grouchemine_init_data") and not t_entry.get("grc_init_data"):
+            t_entry["grc_init_data"] = t_entry["grouchemine_init_data"]
+        elif t_entry.get("grc_init_data") and not t_entry.get("grouchemine_init_data"):
+            t_entry["grouchemine_init_data"] = t_entry["grc_init_data"]
+        # LUM Miner
+        if t_entry.get("lumeon_init_data") and not t_entry.get("lum_init_data"):
+            t_entry["lum_init_data"] = t_entry["lumeon_init_data"]
+        elif t_entry.get("lum_init_data") and not t_entry.get("lumeon_init_data"):
+            t_entry["lumeon_init_data"] = t_entry["lum_init_data"]
+        # EarnVault
+        if t_entry.get("earnvault_init_data") and not t_entry.get("ev_init_data"):
+            t_entry["ev_init_data"] = t_entry["earnvault_init_data"]
+        elif t_entry.get("ev_init_data") and not t_entry.get("earnvault_init_data"):
+            t_entry["earnvault_init_data"] = t_entry["ev_init_data"]
 
     return tokens_map
 
@@ -6813,7 +6855,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     async def _farm_kynex():
         async with KYNEX_CLOUD_SEMAPHORE:
             await asyncio.sleep(random.uniform(0.5, 1.2))
-            k_init = tokens.get("kynex_init_data")
+            k_init = tokens.get("kynex_init_data") or tokens.get("knx_init_data")
             k_rf = tokens.get("kynex_refresh_token") or acc.get("kynex_refresh_token")
             if k_init or k_rf:
                 try:
@@ -7087,6 +7129,39 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "Content-Type": "application/json"
                 }
                 c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
+                if c_st == 401:
+                    fresh_jwt = None
+                    if UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
+                                if jr.status == 200:
+                                    jd = await jr.json()
+                                    if jd.get("result"):
+                                        fresh_jwt = str(jd["result"]).strip("\"' ")
+                        except Exception:
+                            pass
+                    if not fresh_jwt and TURSO_URL and TURSO_TOKEN:
+                        try:
+                            t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                            async with session.post(
+                                t_http,
+                                json={"requests": [{"type": "execute", "stmt": {"sql": "SELECT val FROM kv_mesh WHERE key = ? LIMIT 1;", "args": [{"type": "text", "value": f"fleet:diggo:jwt:{uid}"}]}}]},
+                                headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                                timeout=aiohttp.ClientTimeout(total=3)
+                            ) as tr:
+                                if tr.status == 200:
+                                    td = await tr.json()
+                                    rows = td.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                                    if rows and rows[0] and rows[0][0].get("value"):
+                                        fresh_jwt = str(rows[0][0]["value"]).strip("\"' ")
+                        except Exception:
+                            pass
+                    if fresh_jwt and fresh_jwt != diggo_jwt:
+                        diggo_jwt = fresh_jwt
+                        tokens["diggo_jwt"] = diggo_jwt
+                        acc["diggo_jwt"] = diggo_jwt
+                        d_h["Authorization"] = f"Bearer {diggo_jwt}"
+                        c_st, st_d = await safe_get("https://diggo.linkpc.net/api/state", req_headers=d_h)
                 if c_st == 401 and tokens.get("diggo_init_data"):
                     try:
                         d_init = tokens["diggo_init_data"]
@@ -7740,14 +7815,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     bot_routines = [
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
-        {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
+        {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data") or tokens.get("knx_init_data") or tokens.get("kynex_refresh_token") or acc.get("kynex_refresh_token"))},
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data") or tokens.get("pepe_init_data"))},
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data") or tokens.get("adx_init_data"))},
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data") or tokens.get("diggo_jwt"))},
         {"name": "chickenland", "fn": _farm_chickenland, "has_data": bool(tokens.get("chickenland_init_data") or tokens.get("chicken_init_data"))},
         {"name": "grouchemine", "fn": _farm_grouchemine, "has_data": bool(tokens.get("grouchemine_init_data") or tokens.get("grc_init_data"))},
         {"name": "lumeon", "fn": _farm_lumeon, "has_data": bool(tokens.get("lumeon_init_data") or tokens.get("lum_init_data"))},
-        {"name": "earnvault", "fn": _farm_earnvault, "has_data": bool(tokens.get("earnvault_init_data") or tokens.get("ev_init_data"))},
+        {"name": "earnvault", "fn": _farm_earnvault, "has_data": bool(tokens.get("earnvault_init_data") or tokens.get("ev_init_data") or tokens.get("earnvault_refresh_token") or acc.get("earnvault_refresh_token"))},
     ]
 
     for b in bot_routines:

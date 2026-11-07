@@ -629,7 +629,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
   // 10. Kynex Network (@Kynex_miningbot)
   const farmKynex = async () => {
     try {
-      if (!accData.kynex_init_data && !accData.kynex_refresh_token) {
+      const kInit = accData.kynex_init_data || accData.knx_init_data;
+      if (!kInit && !accData.kynex_refresh_token) {
         result.bots.kynex = "skipped (no initData or refreshToken)";
         return;
       }
@@ -656,8 +657,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
       }
 
       // 2. Fallback: Verify Telegram Auth & sign in with Custom Token
-      if (!idToken && accData.kynex_init_data) {
-        let kyInit = accData.kynex_init_data;
+      if (!idToken && kInit) {
+        let kyInit = kInit;
         if (typeof kyInit === "string" && (kyInit.startsWith("user%3D") || kyInit.includes("%257B"))) {
           try { kyInit = decodeURIComponent(kyInit); } catch (_) {}
         }
@@ -1070,7 +1071,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
     if (!dJwt) {
       dJwt = await upstashGet(`fleet:diggo:jwt:${uid}`).catch(() => null);
     }
-    if (!dJwt && accData.diggo_init_data) {
+    const dInit = accData.diggo_init_data || accData.dgo_init_data;
+    if (!dJwt && dInit) {
       try {
         const aResp = await fetch("https://diggo.linkpc.net/api/auth/telegram", {
           method: "POST",
@@ -1080,7 +1082,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             "Referer": "https://diggo.linkpc.net/",
             "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36"
           },
-          body: JSON.stringify({ initData: accData.diggo_init_data })
+          body: JSON.stringify({ initData: dInit })
         });
         if (aResp.ok) {
           const aData = await aResp.json();
@@ -1101,28 +1103,38 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
       };
       let stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
-      if (stResp.status === 401 && accData.diggo_init_data) {
-        try {
-          const aResp = await fetch("https://diggo.linkpc.net/api/auth/telegram", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Origin": "https://diggo.linkpc.net",
-              "Referer": "https://diggo.linkpc.net/",
-              "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36"
-            },
-            body: JSON.stringify({ initData: accData.diggo_init_data })
-          });
-          if (aResp.ok) {
-            const aData = await aResp.json();
-            if (aData.token) {
-              dJwt = aData.token;
-              dHeaders["Authorization"] = `Bearer ${dJwt}`;
-              await upstashSet(`fleet:diggo:jwt:${uid}`, dJwt, 2592000).catch(() => {});
-              stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+      if (stResp.status === 401) {
+        // 1. Fresh Upstash check for newly minted 30-day JWT
+        const freshJwt = await upstashGet(`fleet:diggo:jwt:${uid}`).catch(() => null);
+        if (freshJwt && freshJwt !== dJwt) {
+          dJwt = freshJwt;
+          dHeaders["Authorization"] = `Bearer ${dJwt}`;
+          stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+        }
+        // 2. Re-auth via initData if still 401
+        if (stResp.status === 401 && dInit) {
+          try {
+            const aResp = await fetch("https://diggo.linkpc.net/api/auth/telegram", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Origin": "https://diggo.linkpc.net",
+                "Referer": "https://diggo.linkpc.net/",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36"
+              },
+              body: JSON.stringify({ initData: dInit })
+            });
+            if (aResp.ok) {
+              const aData = await aResp.json();
+              if (aData.token) {
+                dJwt = aData.token;
+                dHeaders["Authorization"] = `Bearer ${dJwt}`;
+                await upstashSet(`fleet:diggo:jwt:${uid}`, dJwt, 2592000).catch(() => {});
+                stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+              }
             }
-          }
-        } catch (_) {}
+          } catch (_) {}
+        }
       }
       if (stResp.ok) {
         const stData = await stResp.json();
@@ -1543,7 +1555,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   // 10. LUM Miner
   const farmLumeon = async () => {
-    const lumInit = accData.lumeon_init_data;
+    const lumInit = accData.lumeon_init_data || accData.lum_init_data;
     if (!lumInit) return;
     try {
       const lumHeaders = getHumanHeaders(uid, {
@@ -1852,14 +1864,14 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
 
   const botRoutines = [
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
-    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data || accData.kynex_refresh_token) },
+    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data || accData.knx_init_data || accData.kynex_refresh_token) },
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data || accData.pepe_init_data) },
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data || accData.adx_init_data) },
-    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data) },
+    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_jwt || accData.diggo_init_data || accData.dgo_init_data) },
     { name: "chickenland", fn: farmChickenland, hasData: Boolean(accData.chickenland_init_data || accData.chicken_init_data) },
     { name: "grouchemine", fn: farmGrouchemine, hasData: Boolean(accData.grouchemine_init_data || accData.grc_init_data) },
-    { name: "lumeon", fn: farmLumeon, hasData: Boolean(accData.lumeon_init_data) },
-    { name: "earnvault", fn: farmEarnvault, hasData: Boolean(accData.earnvault_init_data || accData.earnvault_refresh_token) }
+    { name: "lumeon", fn: farmLumeon, hasData: Boolean(accData.lumeon_init_data || accData.lum_init_data) },
+    { name: "earnvault", fn: farmEarnvault, hasData: Boolean(accData.earnvault_init_data || accData.ev_init_data || accData.earnvault_refresh_token) }
   ];
 
   const BOT_KEY_ALIASES = {

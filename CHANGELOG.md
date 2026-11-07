@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Full Fleet 9-Bot Auto-Farming Audit, Diggo 30-Day JWT Minting & Edge Token Synchronization Fix (November 7, 2026)**:
+  - **Comprehensive Account-by-Account & Bot-by-Bot Ground-Truth Audit**:
+    * Audited all 23 accounts (1 Master + 22 Workers) live one by one across all 9 authentic legitimate bots (ATF Miner, Kynex Network, DiggoMiner, PepeGram, AdxEarn AI, Chicken Land, Grouche Mine, LUM Miner, EarnVault).
+    * Verified fleet-wide accumulated asset balances: 18,147.83 ATF, 2,663,043.80 KNX, 71,205.09 PEPE, 687,665 AdxEarn Points, 32,640.29 DIGGO, 575 Hens / 498,645 Eggs / 11,588 Coins in Chicken Land, 26,748.07 GRC, 23/23 Qualified LUM Referrals, and $45.07 USD in EarnVault.
+  - **Account #3 DiggoMiner Fresh Token Extraction & 30-Day JWT Minting**:
+    * Resolved Account #3 (`8826375659`, Arif) DiggoMiner 401 error: extracted fresh `initData` via Telethon MTProto `RequestWebViewRequest` to `@Diggominer_bot`.
+    * Exchanged with `https://diggo.linkpc.net/api/auth/telegram`, successfully minting fresh 30-day JWT (`8c4d2448e025cf9dab75669a566cdc22918...`).
+    * Persisted fresh JWT to Upstash Redis (`fleet:diggo:jwt:8826375659`) with 30-day TTL (`2592000s`) and Turso LibSQL table `kv_mesh`. Verified `GET /api/state` returns `HTTP 200` with 2,377.78 DIGGO.
+  - **Cloudflare Edge Worker & Render Auto-Farming Bug Resolution**:
+    * **Diggo 401 Re-Auth & Upstash Fallback**: Fixed bug in `app.py` (`_farm_diggo`) and `deploy_both_cf_workers.py` (`farmDiggo`) where a stale JWT caused 401 errors without ever checking `fleet:diggo:jwt:{uid}`. Added automatic Upstash/Turso retrieval of the freshest 30-day JWT upon 401 before giving up, and verified all 23 accounts now have 100% valid Diggo JWTs.
+    * **Bidirectional Alias Normalization (`kynex`/`knx`, `lumeon`/`lum`)**: Fixed `farmKynex` and `farmLumeon` in `deploy_both_cf_workers.py` and `app.py` to seamlessly accept both short and long token keys (`kynex_init_data` / `knx_init_data`, `lumeon_init_data` / `lum_init_data`, `pepegram_init_data` / `pepe_init_data`, `adxearn_init_data` / `adx_init_data`, `grouchemine_init_data` / `grc_init_data`).
+    * **Master `miniapp_tokens` Mesh Synchronization**: Synchronized the canonical 23-account token dictionary into Upstash Redis (`miniapp_tokens`, `fleet_miniapp_tokens`, `fleet:tokens_state`), Turso LibSQL `kv_mesh`, local `fleet_miniapp_tokens.json`, and `accounts.json`.
+  - **Live Edge Deployment & Verification**:
+    * Deployed updated Cloudflare Edge Worker to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Tested live execution across accounts: Account #3 (`8826375659`), Account #4 (`8450010161`), Account #23 (`8972499908`), and Master Account (`6727787768`). Confirmed 100% successful farming with live balances returned and protocol cooldowns accurately observed.
+  - **Disaster Recovery Backup**:
+    * Executed `backup_manager.py` and confirmed disaster recovery archive delivery directly to Telegram vault (`@myagyai`).
+
 - **🎨 Dashboard Ecosystem Hardening, Edge Shared Scripts Integration & Telemetry Sync Fix (November 7, 2026)**:
   - **Executive Fleet Console (`admin.html`) Telemetry Refresh Fix**:
     * Resolved critical bug in `fetchStatus` where `res && res.ok` blocked dashboard telemetry updates when `/api/status` returned `{ accounts: [...] }` without an explicit boolean `ok: true`. Updated `ensureFullFleet` in `deploy_both_cf_workers.py` to always attach `ok: true`, live `bnb_balance`, and `rates`.
