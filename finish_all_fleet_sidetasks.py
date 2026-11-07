@@ -287,63 +287,128 @@ async def jitter(min_s: float = 0.5, max_s: float = 1.5):
 # 1. TOKEN LOADER & CLOUD SYNC
 # =============================================================================
 
+def extract_auth_date(tok) -> int:
+    if not isinstance(tok, str):
+        return 0
+    try:
+        qs = urllib.parse.parse_qs(tok)
+        return int(qs.get("auth_date", [0])[0])
+    except Exception:
+        return 0
+
 async def fetch_all_tokens(session: aiohttp.ClientSession) -> Dict[str, Dict[str, str]]:
-    """Loads tokens for all dynamic fleet accounts from Upstash Redis fleet:tokens:*."""
+    """Loads tokens for all dynamic fleet accounts from Turso LibSQL SSOT and Upstash Redis."""
     tokens_db = {}
+    
+    # 0. High-Capacity Primary: Turso LibSQL SSOT (25M ops/mo, zero rate limit)
+    if TURSO_URL and TURSO_TOKEN:
+        try:
+            t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+            t_req = {
+                "requests": [
+                    {"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key LIKE 'fleet:tokens:%';"}},
+                    {"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key LIKE 'fleet:diggo:jwt:%';"}}
+                ]
+            }
+            async with session.post(
+                t_http,
+                json=t_req,
+                headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                timeout=aiohttp.ClientTimeout(total=8)
+            ) as tr:
+                if tr.status == 200:
+                    td = await tr.json()
+                    tok_rows = td.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                    jwt_rows = td.get("results", [{}, {}])[1].get("response", {}).get("result", {}).get("rows", [])
+                    for r in tok_rows:
+                        u = r[0]["value"].replace("fleet:tokens:", "")
+                        if u.isdigit() and u != "8881914294":
+                            try:
+                                t_val = json.loads(r[1]["value"]) if isinstance(r[1]["value"], str) else r[1]["value"]
+                                if isinstance(t_val, dict):
+                                    tokens_db[u] = t_val
+                            except Exception:
+                                pass
+                    for r in jwt_rows:
+                        u = r[0]["value"].replace("fleet:diggo:jwt:", "")
+                        if u in tokens_db:
+                            tokens_db[u]["diggo_jwt"] = r[1]["value"]
+            logger.info(f"Loaded {len(tokens_db)} accounts from Turso LibSQL SSOT.")
+        except Exception as te:
+            logger.warning(f"Turso tokens fetch note: {te}")
+
     up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
     
-    # First, load from miniapp_tokens if available
-    try:
-        async with session.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers=up_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-            if r.status == 200:
-                d = await r.json()
-                raw = d.get("result")
-                while isinstance(raw, str):
-                    raw = json.loads(raw)
-                if isinstance(raw, dict):
-                    tokens_db.update(raw)
-    except Exception as e:
-        logger.warning(f"Error loading miniapp_tokens: {e}")
-
-    # Discover all dynamic accounts from Upstash Redis keys fleet:tokens:*
-    discovered_uids = set(str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "") for acc in ACCOUNTS if (acc.get("user_id") or acc.get("account_id") or acc.get("id")))
-    try:
-        async with session.get(f"{UPSTASH_URL}/keys/fleet:tokens:*", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as kr:
-            if kr.status == 200:
-                kd = await kr.json()
-                for k in kd.get("result", []):
-                    u = k.split(":")[-1]
-                    if u.isdigit():
-                        discovered_uids.add(u)
-    except Exception:
-        pass
-
-    # Ensure any newly discovered account is dynamically present in ACCOUNTS
-    existing_uids = set(str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "") for acc in ACCOUNTS if (acc.get("user_id") or acc.get("account_id") or acc.get("id")))
-    for duid in discovered_uids:
-        if duid not in existing_uids:
-            ACCOUNTS.append({"user_id": int(duid), "account_id": duid, "name": f"Account_{duid}"})
-            existing_uids.add(duid)
-
-    # Second, merge individual fleet:tokens:{uid}
-    for uid in discovered_uids:
+    # 1. Secondary: Merge Upstash miniapp_tokens
+    if UPSTASH_URL and UPSTASH_TOKEN:
         try:
-            async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as r:
+            async with session.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers=up_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                 if r.status == 200:
                     d = await r.json()
                     raw = d.get("result")
-                    if raw:
-                        parsed = json.loads(raw) if isinstance(raw, str) else raw
-                        while isinstance(parsed, str):
-                            try:
-                                parsed = json.loads(parsed)
-                            except Exception:
-                                break
-                        if isinstance(parsed, dict):
-                            existing = tokens_db.setdefault(uid, {})
-                            existing.update(parsed)
+                    while isinstance(raw, str):
+                        raw = json.loads(raw)
+                    if isinstance(raw, dict):
+                        for uid, utoks in raw.items():
+                            if str(uid) == "8881914294": continue
+                            if uid not in tokens_db:
+                                tokens_db[uid] = utoks
+                            else:
+                                for tk, tv in utoks.items():
+                                    if tv:
+                                        if tk not in tokens_db[uid]:
+                                            tokens_db[uid][tk] = tv
+                                        elif tk.endswith("_init_data") and extract_auth_date(tv) > extract_auth_date(tokens_db[uid].get(tk)):
+                                            tokens_db[uid][tk] = tv
+        except Exception as e:
+            logger.warning(f"Error loading miniapp_tokens: {e}")
+
+    # Discover all dynamic accounts from Upstash Redis keys fleet:tokens:*
+    discovered_uids = set(str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "") for acc in ACCOUNTS if (acc.get("user_id") or acc.get("account_id") or acc.get("id")))
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with session.get(f"{UPSTASH_URL}/keys/fleet:tokens:*", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as kr:
+                if kr.status == 200:
+                    kd = await kr.json()
+                    for k in kd.get("result", []):
+                        u = k.split(":")[-1]
+                        if u.isdigit() and u != "8881914294":
+                            discovered_uids.add(u)
         except Exception:
             pass
+
+    # Ensure any newly discovered account is dynamically present in ACCOUNTS
+    existing_uids = set(str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "") for acc in ACCOUNTS if (acc.get("user_id") or acc.get("account_id") or acc.get("id")))
+    for duid in discovered_uids.union(tokens_db.keys()):
+        if duid not in existing_uids and duid != "8881914294":
+            name = tokens_db.get(duid, {}).get("name", f"Account_{duid}")
+            if "nancy" not in str(name).lower():
+                ACCOUNTS.append({"user_id": int(duid), "account_id": duid, "name": name})
+                existing_uids.add(duid)
+
+    # 3. Merge individual fleet:tokens:{uid} from Upstash
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        for uid in discovered_uids:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        raw = d.get("result")
+                        if raw:
+                            parsed = json.loads(raw) if isinstance(raw, str) else raw
+                            while isinstance(parsed, str):
+                                try: parsed = json.loads(parsed)
+                                except Exception: break
+                            if isinstance(parsed, dict):
+                                existing = tokens_db.setdefault(uid, {})
+                                for tk, tv in parsed.items():
+                                    if tv:
+                                        if tk not in existing:
+                                            existing[tk] = tv
+                                        elif tk.endswith("_init_data") and extract_auth_date(tv) > extract_auth_date(existing.get(tk)):
+                                            existing[tk] = tv
+            except Exception:
+                pass
 
     return tokens_db
 
@@ -562,8 +627,24 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         jwt_token = None
         st = {}
 
-        # 0. Check cached JWT from acc object, token dict, or Upstash Redis
+        # 0. Check cached JWT from acc object, token dict, Turso LibSQL, or Upstash Redis
         jwt_token = acc.get("diggo_jwt") or (acc.get("tokens", {}).get("diggo_jwt") if isinstance(acc.get("tokens"), dict) else None)
+        if not jwt_token and TURSO_URL and TURSO_TOKEN:
+            try:
+                t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                async with session.post(
+                    t_http,
+                    json={"requests": [{"type": "execute", "stmt": {"sql": f"SELECT val FROM kv_mesh WHERE key = 'fleet:diggo:jwt:{uid}' LIMIT 1;"}}]},
+                    headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=3)
+                ) as tr:
+                    if tr.status == 200:
+                        td = await tr.json()
+                        rows = td.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                        if rows and rows[0] and rows[0][0].get("value"):
+                            jwt_token = str(rows[0][0]["value"]).strip()
+            except Exception:
+                pass
         if not jwt_token and UPSTASH_URL and UPSTASH_TOKEN:
             try:
                 async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
@@ -636,21 +717,34 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             st = a_d.get("state", {})
             res["balance"] = float(st.get("balance") or 0.0)
             res["level"] = int(st.get("player", {}).get("level", 1) or 1)
-            if UPSTASH_URL and UPSTASH_TOKEN and jwt_token:
+            if jwt_token:
                 acc["diggo_jwt"] = jwt_token
-                try:
-                    await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=jwt_token, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
-                    async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as gr:
-                        if gr.status == 200:
-                            curr_toks = {}
-                            r_res = (await gr.json()).get("result")
-                            if r_res:
-                                curr_toks = json.loads(r_res) if isinstance(r_res, str) else r_res
-                            if isinstance(curr_toks, dict):
-                                curr_toks["diggo_jwt"] = jwt_token
-                                await session.post(f"{UPSTASH_URL}/set/fleet:tokens:{uid}", data=json.dumps(curr_toks), headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
-                except Exception:
-                    pass
+                if TURSO_URL and TURSO_TOKEN:
+                    try:
+                        t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                        t_now = int(time.time())
+                        await session.post(
+                            t_http,
+                            json={"requests": [{"type": "execute", "stmt": {"sql": "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?);", "args": [{"type": "text", "value": f"fleet:diggo:jwt:{uid}"}, {"type": "text", "value": jwt_token}, {"type": "integer", "value": str(t_now)}]}}]},
+                            headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"},
+                            timeout=aiohttp.ClientTimeout(total=3)
+                        )
+                    except Exception:
+                        pass
+                if UPSTASH_URL and UPSTASH_TOKEN:
+                    try:
+                        await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=jwt_token, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                        async with session.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as gr:
+                            if gr.status == 200:
+                                curr_toks = {}
+                                r_res = (await gr.json()).get("result")
+                                if r_res:
+                                    curr_toks = json.loads(r_res) if isinstance(r_res, str) else r_res
+                                if isinstance(curr_toks, dict):
+                                    curr_toks["diggo_jwt"] = jwt_token
+                                    await session.post(f"{UPSTASH_URL}/set/fleet:tokens:{uid}", data=json.dumps(curr_toks), headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                    except Exception:
+                        pass
 
             auth_headers = {
                 "Content-Type": "application/json",
@@ -1457,7 +1551,7 @@ async def sweep_grouchemine_tasks(session: aiohttp.ClientSession, uid: str, name
 async def sweep_lumeon_tasks(session: aiohttp.ClientSession, uid: str, name: str, init_data: str, acc: dict) -> Dict[str, Any]:
     """Sweeps LUM Miner ($LUM) tasks, qualifications, and Master referral claims."""
     res = {"bot": "LUM Miner", "tasks_claimed": 0, "notes": [], "success": False, "balance": 0.0}
-    if not init_data:
+    if not init_data and not acc.get("earnvault_refresh_token"):
         return res
 
     base_url = "https://lum-miner.gurmessa747.workers.dev"
@@ -1532,7 +1626,7 @@ async def sweep_lumeon_tasks(session: aiohttp.ClientSession, uid: str, name: str
 async def sweep_earnvault_tasks(session: aiohttp.ClientSession, uid: str, name: str, init_data: str, acc: dict) -> Dict[str, Any]:
     """Sweeps EarnVault ($USD / $TON) daily check-ins, cooldown claims, rewarded ads, bonus tasks, and partner quests."""
     res = {"bot": "EarnVault", "tasks_claimed": 0, "notes": [], "success": False, "balance": 0.0}
-    if not init_data:
+    if not init_data and not acc.get("earnvault_refresh_token"):
         return res
 
     functions_base = "https://us-central1-earnvaulte.cloudfunctions.net"
@@ -1750,7 +1844,19 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         uid = str(acc.get("user_id") or acc.get("account_id") or acc.get("id") or "")
         name = acc.get("name", f"Account_{uid}")
         is_owner = (uid == MASTER_UID)
+        
+        # Smart merge: prioritize freshest tokens based on auth_date
+        merged_toks = {**acc}
         acc_toks = tokens_db.get(uid, {})
+        for k, v in acc_toks.items():
+            if v:
+                if k not in merged_toks or not merged_toks[k]:
+                    merged_toks[k] = v
+                elif k.endswith("_init_data"):
+                    if extract_auth_date(v) >= extract_auth_date(merged_toks.get(k)):
+                        merged_toks[k] = v
+                else:
+                    merged_toks[k] = v
 
         logger.info(f"🚀 Sweeping side-tasks for {name} ({uid})...")
         account_report = {
@@ -1760,49 +1866,49 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         }
 
         # 1. ATF Miner
-        atf_res = await sweep_atf_tasks(session, uid, name, acc_toks.get("atf_init_data", ""), acc)
+        atf_res = await sweep_atf_tasks(session, uid, name, merged_toks.get("atf_init_data", ""), merged_toks)
         account_report["results"]["atf"] = atf_res
 
         # 2. Kynex Network
-        kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
+        kynex_res = await sweep_kynex_tasks(session, uid, name, merged_toks.get("kynex_init_data", ""), merged_toks)
         account_report["results"]["kynex"] = kynex_res
 
         # 3. PepeGram
-        pepe_init = acc_toks.get("pepegram_init_data") or acc_toks.get("pepe_init_data", "")
-        pepe_res = await sweep_pepegram_tasks(session, uid, name, pepe_init, acc)
+        pepe_init = merged_toks.get("pepegram_init_data") or merged_toks.get("pepe_init_data", "")
+        pepe_res = await sweep_pepegram_tasks(session, uid, name, pepe_init, merged_toks)
         account_report["results"]["pepegram"] = pepe_res
 
         # 4. AdxEarn AI
-        adx_init = acc_toks.get("adxearn_init_data") or acc_toks.get("adx_init_data", "")
-        adx_res = await sweep_adxearn_tasks(session, uid, name, adx_init, acc)
+        adx_init = merged_toks.get("adxearn_init_data") or merged_toks.get("adx_init_data", "")
+        adx_res = await sweep_adxearn_tasks(session, uid, name, adx_init, merged_toks)
         account_report["results"]["adxearn"] = adx_res
 
         # 5. DiggoMiner
-        diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), {**acc, **acc_toks})
+        diggo_res = await sweep_diggo_tasks(session, uid, name, merged_toks.get("diggo_init_data", ""), merged_toks)
         account_report["results"]["diggo"] = diggo_res
 
         # 6. Chicken Land
-        chk_init = acc_toks.get("chickenland_init_data") or acc.get("chickenland_init_data") or acc_toks.get("chicken_init_data", "")
-        chicken_res = await sweep_chickenland_tasks(session, uid, name, chk_init, acc)
+        chk_init = merged_toks.get("chickenland_init_data") or merged_toks.get("chicken_init_data", "")
+        chicken_res = await sweep_chickenland_tasks(session, uid, name, chk_init, merged_toks)
         account_report["results"]["chickenland"] = chicken_res
 
         # 7. Grouche Mine
-        grc_init = acc_toks.get("grouchemine_init_data") or acc.get("grouchemine_init_data") or acc_toks.get("grc_init_data", "")
-        grc_res = await sweep_grouchemine_tasks(session, uid, name, grc_init, {**acc, **acc_toks})
+        grc_init = merged_toks.get("grouchemine_init_data") or merged_toks.get("grc_init_data", "")
+        grc_res = await sweep_grouchemine_tasks(session, uid, name, grc_init, merged_toks)
         account_report["results"]["grouchemine"] = grc_res
 
         # 8. LUM Miner
-        lum_init = acc_toks.get("lumeon_init_data") or acc.get("lumeon_init_data", "")
-        lum_res = await sweep_lumeon_tasks(session, uid, name, lum_init, acc)
+        lum_init = merged_toks.get("lumeon_init_data", "")
+        lum_res = await sweep_lumeon_tasks(session, uid, name, lum_init, merged_toks)
         account_report["results"]["lumeon"] = lum_res
 
         # 9. EarnVault
-        ev_init = acc_toks.get("earnvault_init_data") or acc.get("earnvault_init_data", "")
-        ev_res = await sweep_earnvault_tasks(session, uid, name, ev_init, acc)
+        ev_init = merged_toks.get("earnvault_init_data", "")
+        ev_res = await sweep_earnvault_tasks(session, uid, name, ev_init, merged_toks)
         account_report["results"]["earnvault"] = ev_res
 
         # Sync tokens to Cloudflare Workers if newly refreshed
-        await sync_token_to_cf(session, uid, acc_toks)
+        await sync_token_to_cf(session, uid, merged_toks)
 
         total_claimed = sum(r.get("tasks_claimed", 0) for r in account_report["results"].values())
         logger.info(f"✅ [{name}] Finished side-tasks! Claimed: {total_claimed} total tasks/rewards.")

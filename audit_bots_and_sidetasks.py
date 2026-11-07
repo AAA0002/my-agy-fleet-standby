@@ -17,6 +17,17 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
+TURSO_URL = os.getenv("TURSO_DB_URL") or os.getenv("TURSO_DATABASE_URL") or os.getenv("TURSO_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
+TURSO_TOKEN = os.getenv("TURSO_DB_TOKEN") or os.getenv("TURSO_AUTH_TOKEN") or ""
+
+def extract_auth_date(tok) -> int:
+    if not isinstance(tok, str):
+        return 0
+    try:
+        qs = urllib.parse.parse_qs(tok)
+        return int(qs.get("auth_date", [0])[0])
+    except Exception:
+        return 0
 
 def load_tokens_db():
     tokens = {}
@@ -29,7 +40,43 @@ def load_tokens_db():
         except Exception:
             pass
 
-    # 1. Primary: Always fetch latest fresh tokens from Upstash Redis (miniapp_tokens)
+    # 0. High-Capacity Primary: Turso LibSQL SSOT (25M ops/mo, zero rate limit)
+    if TURSO_URL and TURSO_TOKEN:
+        try:
+            t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+            t_req = {
+                "requests": [
+                    {"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key LIKE 'fleet:tokens:%';"}},
+                    {"type": "execute", "stmt": {"sql": "SELECT key, val FROM kv_mesh WHERE key LIKE 'fleet:diggo:jwt:%';"}}
+                ]
+            }
+            req = urllib.request.Request(
+                t_http,
+                data=json.dumps(t_req).encode(),
+                headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                tok_rows = data.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                jwt_rows = data.get("results", [{}, {}])[1].get("response", {}).get("result", {}).get("rows", [])
+                for r in tok_rows:
+                    u = r[0]["value"].replace("fleet:tokens:", "")
+                    if u.isdigit() and u != "8881914294":
+                        try:
+                            t_val = json.loads(r[1]["value"]) if isinstance(r[1]["value"], str) else r[1]["value"]
+                            if isinstance(t_val, dict):
+                                tokens[u] = t_val
+                        except Exception:
+                            pass
+                for r in jwt_rows:
+                    u = r[0]["value"].replace("fleet:diggo:jwt:", "")
+                    if u in tokens:
+                        tokens[u]["diggo_jwt"] = r[1]["value"]
+            print(f"Loaded {len(tokens)} accounts from Turso LibSQL SSOT")
+        except Exception as te:
+            print(f"⚠️ Turso LibSQL tokens fetch note: {te}")
+
+    # 1. Secondary: Merge Upstash Redis (miniapp_tokens)
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
@@ -39,22 +86,40 @@ def load_tokens_db():
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
                 raw = data.get("result")
-                if raw:
-                    parsed = json.loads(raw) if isinstance(raw, str) else raw
-                    if isinstance(parsed, dict) and len(parsed) > 0:
-                        tokens = parsed
-                        print(f"Loaded {len(tokens)} fresh accounts from Upstash Redis miniapp_tokens")
+                while isinstance(raw, str):
+                    raw = json.loads(raw)
+                if isinstance(raw, dict) and len(raw) > 0:
+                    for uid, utoks in raw.items():
+                        if str(uid) == "8881914294":
+                            continue
+                        if uid not in tokens:
+                            tokens[uid] = utoks
+                        else:
+                            for tk, tv in utoks.items():
+                                if tv:
+                                    if tk not in tokens[uid] or not tokens[uid][tk]:
+                                        tokens[uid][tk] = tv
+                                    elif tk.endswith("_init_data") and extract_auth_date(tv) > extract_auth_date(tokens[uid].get(tk)):
+                                        tokens[uid][tk] = tv
+                                    elif not tk.endswith("_init_data") and tk not in tokens[uid]:
+                                        tokens[uid][tk] = tv
+                    print(f"Merged with Upstash Redis miniapp_tokens (total accounts: {len(tokens)})")
         except Exception as e:
             print(f"⚠️ Upstash miniapp_tokens fetch note: {e}")
 
-    # Merge local tokens with Upstash tokens so nothing is ever lost
+    # 2. Merge local tokens with remote tokens
     for uid, acc in local_data.items():
+        if str(uid) == "8881914294":
+            continue
         if uid not in tokens:
             tokens[uid] = acc
         else:
             for k, v in acc.items():
-                if k not in tokens[uid] or not tokens[uid][k]:
-                    tokens[uid][k] = v
+                if v:
+                    if k not in tokens[uid] or not tokens[uid][k]:
+                        tokens[uid][k] = v
+                    elif k.endswith("_init_data") and extract_auth_date(v) > extract_auth_date(tokens[uid].get(k)):
+                        tokens[uid][k] = v
 
     if tokens:
         try:
@@ -63,7 +128,7 @@ def load_tokens_db():
         except Exception:
             pass
 
-    # 3. Tertiary: Upstash fleet:tokens:* pipeline fallback to dynamically merge all cloud tokens
+    # 3. Tertiary: Upstash fleet:tokens:* pipeline fallback
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
@@ -86,12 +151,21 @@ def load_tokens_db():
                             parts = k.split(":")
                             if len(parts) == 3 and parts[-1].isdigit():
                                 uid = parts[-1]
+                                if uid == "8881914294":
+                                    continue
                                 raw = item.get("result")
                                 if raw:
                                     parsed = json.loads(raw) if isinstance(raw, str) else raw
                                     if isinstance(parsed, dict):
-                                        if uid not in tokens or len(parsed) > len(tokens.get(uid, {})):
+                                        if uid not in tokens:
                                             tokens[uid] = parsed
+                                        else:
+                                            for tk, tv in parsed.items():
+                                                if tv:
+                                                    if tk not in tokens[uid] or not tokens[uid][tk]:
+                                                        tokens[uid][tk] = tv
+                                                    elif tk.endswith("_init_data") and extract_auth_date(tv) > extract_auth_date(tokens[uid].get(tk)):
+                                                        tokens[uid][tk] = tv
         except Exception as e:
             print(f"⚠️ Upstash fleet:tokens:* pipeline fetch note: {e}")
 
@@ -660,33 +734,63 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
 
         # 11. EarnVault
         ev_tok = tokens.get("earnvault_init_data")
-        if ev_tok:
+        rf_tok = tokens.get("earnvault_refresh_token") or acc_info.get("earnvault_refresh_token")
+        if ev_tok or rf_tok:
             b_rep = {"core": {}, "side_tasks": []}
             try:
-                auth_url = "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth"
-                async with session.post(auth_url, json={"data": {"initData": ev_tok}}, headers={"Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r_auth:
-                    if r_auth.status == 200:
-                        c_tok = (await r_auth.json()).get("result", {}).get("token")
-                        if c_tok:
-                            ex_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
-                            async with session.post(ex_url, json={"token": c_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as r_ex:
-                                if r_ex.status == 200:
-                                    id_tok = (await r_ex.json()).get("idToken")
-                                    dash_url = "https://us-central1-earnvaulte.cloudfunctions.net/getDashboard"
-                                    async with session.post(dash_url, json={"data": {}}, headers={"Authorization": f"Bearer {id_tok}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r_dash:
-                                        if r_dash.status == 200:
-                                            d_data = (await r_dash.json()).get("result", {})
-                                            bal_c = d_data.get("balanceCents", 0)
-                                            ref_c = d_data.get("referral", {}).get("total", 0)
-                                            b_rep["core"] = {
-                                                "status": f"Active: {bal_c}¢ (${bal_c/100:.2f})",
-                                                "balance_cents": bal_c,
-                                                "balance_usd": bal_c / 100.0,
-                                                "referrals": ref_c
-                                            }
-                                            b_rep["side_tasks"].append(f"Balance: ${bal_c/100:.2f}")
-                                            if is_master:
-                                                b_rep["side_tasks"].append(f"Referrals: {ref_c}")
+                ev_key = "AIzaSyCP9yYj_KSQxv0lW0EoqR39_QTO2SGJGEg"
+                id_tok = None
+                
+                # 1. Primary: Use long-lived refreshToken via Google SecureToken API
+                if rf_tok:
+                    try:
+                        async with session.post(
+                            f"https://securetoken.googleapis.com/v1/token?key={ev_key}",
+                            data=f"grant_type=refresh_token&refresh_token={rf_tok}",
+                            headers={"Content-Type": "application/x-www-form-urlencoded"},
+                            timeout=aiohttp.ClientTimeout(total=6)
+                        ) as rf_r:
+                            if rf_r.status == 200:
+                                rf_d = await rf_r.json()
+                                id_tok = rf_d.get("id_token")
+                                if rf_d.get("refresh_token"):
+                                    tokens["earnvault_refresh_token"] = rf_d["refresh_token"]
+                    except Exception:
+                        pass
+
+                # 2. Secondary: If no id_tok from refreshToken, exchange fresh initData via telegramAuth
+                if not id_tok and ev_tok:
+                    auth_url = "https://us-central1-earnvaulte.cloudfunctions.net/telegramAuth"
+                    async with session.post(auth_url, json={"data": {"initData": ev_tok}}, headers={"Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r_auth:
+                        if r_auth.status == 200:
+                            c_tok = (await r_auth.json()).get("result", {}).get("token")
+                            if c_tok:
+                                ex_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={ev_key}"
+                                async with session.post(ex_url, json={"token": c_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as r_ex:
+                                    if r_ex.status == 200:
+                                        ex_d = await r_ex.json()
+                                        id_tok = ex_d.get("idToken")
+                                        if ex_d.get("refreshToken"):
+                                            tokens["earnvault_refresh_token"] = ex_d["refreshToken"]
+
+                # 3. Query Dashboard with authenticated Firebase ID token
+                if id_tok:
+                    dash_url = "https://us-central1-earnvaulte.cloudfunctions.net/getDashboard"
+                    async with session.post(dash_url, json={"data": {}}, headers={"Authorization": f"Bearer {id_tok}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r_dash:
+                        if r_dash.status == 200:
+                            d_data = (await r_dash.json()).get("result", {})
+                            bal_c = d_data.get("balanceCents", 0)
+                            ref_c = d_data.get("referral", {}).get("total", 0)
+                            b_rep["core"] = {
+                                "status": f"Active: {bal_c}¢ (${bal_c/100:.2f})",
+                                "balance_cents": bal_c,
+                                "balance_usd": bal_c / 100.0,
+                                "referrals": ref_c
+                            }
+                            b_rep["side_tasks"].append(f"Balance: ${bal_c/100:.2f}")
+                            if is_master:
+                                b_rep["side_tasks"].append(f"Referrals: {ref_c}")
+
                 if not b_rep["core"].get("status"):
                     b_rep["core"]["status"] = "Auth Pending"
             except Exception as e:
@@ -702,12 +806,40 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
         uid = str(acc.get("user_id"))
         name = f"{acc.get('first_name', '')} {acc.get('last_name', '')}".strip() or acc.get("name") or f"Account {idx}"
         is_master = (uid == MASTER_UID)
-        tokens = {**acc, **tokens_db.get(uid, {})}
         
-        # If tokens missing from batch, attempt individual Upstash fetch
-        if not tokens or not any(k.endswith("_init_data") for k in tokens.keys()):
-            try:
-                if UPSTASH_URL and UPSTASH_TOKEN:
+        # Smart merge: prioritize freshest tokens based on auth_date
+        tokens = {**acc}
+        t_db = tokens_db.get(uid, {})
+        for k, v in t_db.items():
+            if v:
+                if k not in tokens or not tokens[k]:
+                    tokens[k] = v
+                elif k.endswith("_init_data"):
+                    if extract_auth_date(v) >= extract_auth_date(tokens.get(k)):
+                        tokens[k] = v
+                else:
+                    tokens[k] = v
+        
+        # If tokens missing from batch, attempt individual Turso/Upstash fetch
+        if not any(k.endswith("_init_data") for k in tokens.keys()):
+            if TURSO_URL and TURSO_TOKEN:
+                try:
+                    t_http = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                    t_req = {"requests": [{"type": "execute", "stmt": {"sql": f"SELECT val FROM kv_mesh WHERE key = 'fleet:tokens:{uid}' LIMIT 1;"}}]}
+                    req = urllib.request.Request(t_http, data=json.dumps(t_req).encode(), headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"})
+                    with urllib.request.urlopen(req, timeout=4) as r:
+                        d = json.loads(r.read().decode())
+                        rows = d.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+                        if rows and rows[0] and rows[0][0].get("value"):
+                            ind_tok = json.loads(rows[0][0]["value"]) if isinstance(rows[0][0]["value"], str) else rows[0][0]["value"]
+                            if isinstance(ind_tok, dict):
+                                for tk, tv in ind_tok.items():
+                                    if tv and (tk not in tokens or extract_auth_date(tv) >= extract_auth_date(tokens.get(tk))):
+                                        tokens[tk] = tv
+                except Exception:
+                    pass
+            if not any(k.endswith("_init_data") for k in tokens.keys()) and UPSTASH_URL and UPSTASH_TOKEN:
+                try:
                     req = urllib.request.Request(
                         f"{UPSTASH_URL}/get/fleet:tokens:{uid}",
                         headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -716,9 +848,12 @@ async def audit_single_account(acc, idx, total, tokens_db, sem):
                         d = json.loads(r.read().decode())
                         if d.get("result"):
                             ind_tok = json.loads(d["result"]) if isinstance(d["result"], str) else d["result"]
-                            tokens.update(ind_tok)
-            except Exception:
-                pass
+                            if isinstance(ind_tok, dict):
+                                for tk, tv in ind_tok.items():
+                                    if tv and (tk not in tokens or extract_auth_date(tv) >= extract_auth_date(tokens.get(tk))):
+                                        tokens[tk] = tv
+                except Exception:
+                    pass
 
         print(f"[{idx:02d}/{total}] Auditing {'👑 Master' if is_master else '👷 Worker'}: {name} (UID: {uid})...")
         res = await test_bot_farming_and_sidetasks(uid, name, tokens, acc)

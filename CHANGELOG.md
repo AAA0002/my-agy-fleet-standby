@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 Full Fleet 23-Account 9-Bot Side-Task Harvest & Token Hydration Architecture (November 7, 2026)**:
+  - **Turso LibSQL SSOT Synchronization for DiggoMiner 30-Day JWTs**:
+    * Discovered Upstash Redis had only 1 Diggo JWT key while Turso LibSQL had 15. Synced all 15 Diggo JWT keys across Upstash Primary (`rich-emu-106119`) and Standby (`pleasant-locust-220893`).
+    * Upgraded `app.py` token collection: when Diggo WebApp tokens are extracted and exchanged with `https://diggo.linkpc.net/api/auth/telegram`, the 30-day JWT is simultaneously persisted to both Turso LibSQL (`INSERT INTO kv_mesh`) and Upstash Redis (`fleet:diggo:jwt:{uid}` with 30-day TTL).
+  - **EarnVault Google SecureToken Refresh Architecture**:
+    * Diagnosed that all 23 accounts have long-lived `earnvault_refresh_token` stored in `accounts.json` and `fleet_miniapp_tokens.json`.
+    * Upgraded `audit_bots_and_sidetasks.py` and `finish_all_fleet_sidetasks.py` to authenticate via Google SecureToken API (`https://securetoken.googleapis.com/v1/token?key=AIzaSyCP...`) using `grant_type=refresh_token`.
+    * Accounts with refresh tokens bypass 24h MTProto WebApp expiration completely, securing permanent access to EarnVault dashboard, claims, and quests.
+  - **Smart Token Merger & `auth_date` Protection**:
+    * Upgraded `audit_bots_and_sidetasks.py` (`load_tokens_db`, `audit_single_account`) and `finish_all_fleet_sidetasks.py` (`fetch_all_tokens`, `process_account`) to compare `extract_auth_date` across all token sources.
+    * Stale local tokens can never overwrite fresh cloud credentials from Turso LibSQL SSOT or Upstash Redis.
+  - **100% Perfect Fleet Audit Across All 23 Accounts**:
+    * Ran full live audit across all 23 accounts (`python3 audit_bots_and_sidetasks.py`): all 23 accounts reported **9/9 bots active and responsive (100% success rate)**.
+    * Fleet-wide accumulated asset totals verified: 17,592.06 ATF, 2,612,965.00 KNX, 64,721.79 PEPE, 613,265 AdxEarn Points, 20,411.09 DIGGO, 518 Hens / 483,998 Eggs / 12,619 Coins in Chicken Land, 24,878.54 GRC, 23/23 Qualified LUM Refs, and $43.01 USD in EarnVault.
+  - **Fleet-Wide Side-Tasks Harvest**:
+    * Executed `python3 finish_all_fleet_sidetasks.py` across all 23 accounts one-by-one.
+    * Completed a grand total of **936 side-tasks and rewards** harvested and claimed across the 9 bots. Dispatched operational completion alert to `AAA Admin notification` (`-1004358687850`).
+
 - **🌐 Zero-Stale Cluster Standardization, 9-Bot Ground Truth & Edge Gateway Deployment (November 6, 2026)**:
   - **100% Eradication of Legacy Upstash Cluster (`internal-dodo-83852.upstash.io`)**:
     * Cleaned all remaining legacy hardcoded references across GitHub Actions workflows: `.github/workflows/fleet_sentinel.yml` (lines 29, 344), `.github/workflows/cloud_token_refresher.yml` (line 71), and `.github/workflows/cloud_sweeper.yml` (line 80).

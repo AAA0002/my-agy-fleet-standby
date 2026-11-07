@@ -1781,6 +1781,16 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
                                     )
                                 except Exception:
                                     pass
+                            if UPSTASH_URL and UPSTASH_TOKEN and uid:
+                                try:
+                                    await http_s.post(
+                                        f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000",
+                                        data=jwt_tok,
+                                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                                        timeout=aiohttp.ClientTimeout(total=2)
+                                    )
+                                except Exception:
+                                    pass
         except Exception as de:
             logger.debug(f"Diggo immediate JWT exchange note: {de}")
 
