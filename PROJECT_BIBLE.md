@@ -136,9 +136,9 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **DiggoMiner 4x Daily Ad Loop**: Cycles through all 4 daily rewarded ad slots per 24 hours (`/api/adsgram/start` + `/api/adsgram/complete` + `/api/tasks/claim`), claiming +10 DIGGO per ad.
 19. **🐔 Chicken Land Sub-Second Promo Code Sniper & Autonomous Compounding (`chickenland_promo_sniper.py`, `chickenland_miner.py`)**:
     - **Dual-Engine Real-Time Ingestion (0ms Push Socket + 2.5s Async HTTP Fallback)**:
-      * **Engine 1 (0ms MTProto Push)**: Uses persistent Telethon MTProto client on Render Node 3 (Nancy `8881914294` / Master `6727787768`) attached directly to `@ChickenLandCodes` (`4433995185`). Listens on `events.NewMessage` and `events.MessageEdited` over raw TCP socket, bypassing Telegram's 30–90s web preview CDN cache. Sub-millisecond regex parsing (`\b(CL[A-Z0-9]{6,12})\b`).
+      * **Engine 1 (0ms MTProto Push)**: Uses persistent Telethon MTProto client on Render Node 3 (Master `6727787768`) attached directly to `@ChickenLandCodes` (`4433995185`). Listens on `events.NewMessage` and `events.MessageEdited` over raw TCP socket, bypassing Telegram's 30–90s web preview CDN cache. Sub-millisecond regex parsing (`\b(CL[A-Z0-9]{6,12})\b`).
       * **Engine 2 (2.5s Async HTTP Poller)**: Secondary fallback polling `https://t.me/s/ChickenLandCodes?t={timestamp}` every 2.5 seconds using non-blocking `aiohttp` with cache-busting headers. Concurrently deep-inspects individual post endpoints (`https://t.me/ChickenLandCodes/{pid}`) to bypass Telegram's inline keyboard button preview gate.
-    - **Sub-Second Fleet Burst & Direct Cloud Token Priority**: Uses `aiohttp.ClientSession` with connection pooling to dispatch redemption payloads (`POST /api/promo`) to all 24 accounts simultaneously in 300–450ms. Zero synchronous blocking: all pre-checks use in-memory fast sets (`ACCOUNT_CLAIMED_CODES`, `SEEN_CODES`, `EXHAUSTED_CODES`), with asynchronous background persistence to Upstash Redis.
+    - **Sub-Second Fleet Burst & Direct Cloud Token Priority**: Uses `aiohttp.ClientSession` with connection pooling to dispatch redemption payloads (`POST /api/promo`) to all 23 accounts simultaneously in 300–450ms. Zero synchronous blocking: all pre-checks use in-memory fast sets (`ACCOUNT_CLAIMED_CODES`, `SEEN_CODES`, `EXHAUSTED_CODES`), with asynchronous background persistence to Upstash Redis.
     - **Flock Compounding Engine**: Automatically checks balance post-redemption; if coins exceed 1,000, triggers `/api/buy` to purchase additional basic hens (expanding hourly egg production capacity).
     - **24/7 Cloud Daemon & Multi-Engine Ingestion**: Continuous dual-engine watcher runs on Render Node 3 (`app.py`), reinforced by Cloudflare Edge cron triggers (`deploy_both_cf_workers.py`), side-task harvester sweeps (`finish_all_fleet_sidetasks.py`), and routine farming cycles (`chickenland_miner.py`).
     - **Interactive & Autonomous Bot Handlers**: Backed by `🎟️ Check & Auto-Snipe Promo` button in the Chicken Land menu, and smart `/promo` / `/snipe` handlers that auto-scrape and redeem if called without arguments. Zero phone load.
@@ -330,7 +330,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       * `/models`: Directory of active edge AI models.
     - **Executive Fleet Operations Console (`/admin`)**:
       * Live URL: `https://restore-agy.agorameet.workers.dev/admin` (Primary Cloudflare Edge Node).
-      * Features: All 24 accounts, Multi-Model Ari AI Studio, Dedicated OTP & Relogin Center (#1-24), Multi-Chain Treasury, 5-Node Edge Mesh latency matrix, Obsidian Dark & Clean Light theme.
+      * Features: All 23 accounts, Multi-Model Ari AI Studio, Dedicated OTP & Relogin Center (#1-23), Multi-Chain Treasury, 5-Node Edge Mesh latency matrix, Obsidian Dark & Clean Light theme.
   - **Admin Direct Control Chat**: `REPORT_CHAT_ID: 6727787768` (`@Arif2743aaa`, Phone: `+8801317342850`)
     - Purpose: High-priority operational alerts, Turnstile solver telemetry, and 1-click disaster restore execution.
     - Authorized Admin UIDs: `["6727787768", "8741547543", "7648254021"]`.
