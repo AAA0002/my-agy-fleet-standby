@@ -144,7 +144,20 @@ else
     fi
 fi
 
-# 3. If user passes explicit maintenance or non-interactive subcommands, pass through
+# 3. Handle explicit reset, new conversation, or maintenance subcommands
+if [ "$1" = "--reset" ] || [ "$1" = "reset" ]; then
+    echo "🔄 Resetting TMUX and Antigravity session..."
+    tmux kill-session -t agy 2>/dev/null || true
+    shift
+fi
+
+START_FLAGS="--continue"
+if [ "$1" = "--new" ] || [ "$1" = "-n" ] || [ "$1" = "new" ]; then
+    echo "✨ Starting a BRAND NEW Antigravity conversation..."
+    START_FLAGS=""
+    shift
+fi
+
 if [ "$#" -gt 0 ] && [ "$1" != "-c" ] && [ "$1" != "--continue" ]; then
     case "$1" in
         mcp|plugin|plugins|update|models|agent|agents|remote-control|changelog|help|acp)
@@ -167,7 +180,7 @@ if [ -n "$TMUX" ]; then
 
     # Refresh loop: when agy exits (to refresh), keep Termux & session open!
     while true; do
-        "$REAL_AGY" --continue "$@"
+        "$REAL_AGY" $START_FLAGS "$@"
         EXIT_CODE=$?
         echo ""
         echo "=============================================================="
@@ -270,12 +283,17 @@ alias agy='agy-entry'
 alias agy-direct='/data/home/.local/bin/agy'
 alias agy-remote='agy remote-control status'
 alias resume-session='agy-entry'
-alias new-session='agy-entry'
+alias new-session='agy-entry --new'
+alias agy-new='agy-entry --new'
 alias agy-attach='tmux attach -d -t agy 2>/dev/null || tmux attach'
 alias agy-fix='agy remote-control start && tmux attach -d -t agy'
 alias agy-restart='tmux kill-session -t agy 2>/dev/null; agy'
+alias agy-reset='tmux kill-session -t agy 2>/dev/null; agy'
 alias agy-refresh='agy-entry'
 alias refresh='agy-entry'
+alias kill-tmux='tmux kill-session -t agy 2>/dev/null || tmux kill-server'
+alias tmux-kill='tmux kill-session -t agy 2>/dev/null || tmux kill-server'
+alias tmux-reset='tmux kill-server 2>/dev/null; agy'
 BASHRC_SNIPPET
 
 echo "=============================================================="

@@ -24,6 +24,10 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
       - Purged obsolete Playwright Chromium profiles and runner chunks from late October.
       - Reduced `/tmp` footprint from 90MB down to 476KB. Background CPU utilization dropped from 100% to 0.0%.
       - Cleaned and confirmed persistent mobile tmux session `agy` geometry (`56x27`). Documented clean refresh command `agy-restart` / `kill-tmux`.
+    * **Unified Reset & Brand-New Session Workflow**:
+      - Added 1-word reset aliases: `agy-restart` / `agy-reset` (kills tmux session and launches clean session).
+      - Added `agy-new` / `new-session` (`agy-entry --new`): launches a brand-new conversation without `--continue` history when desired.
+      - Added `tmux-reset` (`tmux kill-server; agy`): destroys all tmux instances and rebuilds cleanly from scratch.
   - **Disaster Recovery Backup (Rule 5 Compliance)**:
     * Executed `python3 backup_manager.py` successfully streaming the fresh disaster recovery archive to Telegram vault `@myagyai` (`-1004453515167`).
 
