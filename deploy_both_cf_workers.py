@@ -1100,7 +1100,30 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         "Referer": "https://diggo.linkpc.net/",
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
       };
-      const stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+      let stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+      if (stResp.status === 401 && accData.diggo_init_data) {
+        try {
+          const aResp = await fetch("https://diggo.linkpc.net/api/auth/telegram", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Origin": "https://diggo.linkpc.net",
+              "Referer": "https://diggo.linkpc.net/",
+              "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36"
+            },
+            body: JSON.stringify({ initData: accData.diggo_init_data })
+          });
+          if (aResp.ok) {
+            const aData = await aResp.json();
+            if (aData.token) {
+              dJwt = aData.token;
+              dHeaders["Authorization"] = `Bearer ${dJwt}`;
+              await upstashSet(`fleet:diggo:jwt:${uid}`, dJwt, 2592000).catch(() => {});
+              stResp = await fetch("https://diggo.linkpc.net/api/state", { headers: dHeaders });
+            }
+          }
+        } catch (_) {}
+      }
       if (stResp.ok) {
         const stData = await stResp.json();
         const st = stData.state || {};
