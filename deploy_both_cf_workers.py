@@ -2698,25 +2698,25 @@ const DEFAULT_FLEET_ACCOUNTS = [
   { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
   { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
   { index: 3, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-  { index: 4, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-  { index: 5, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-  { index: 6, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
-  { index: 7, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-  { index: 8, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
-  { index: 9, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
-  { index: 10, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+  { index: 4, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
+  { index: 5, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
+  { index: 6, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+  { index: 7, name: "Abid Hasan", user_id: 8025472383, phone: "+8801797795624" },
+  { index: 8, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
+  { index: 9, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
+  { index: 10, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
   { index: 11, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-  { index: 12, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-  { index: 13, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
-  { index: 14, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
-  { index: 15, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
-  { index: 16, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
-  { index: 17, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
+  { index: 12, name: "Abid", user_id: 8741547543, phone: "+8801838268380" },
+  { index: 13, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
+  { index: 14, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
+  { index: 15, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
+  { index: 16, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
+  { index: 17, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
   { index: 18, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
   { index: 19, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
   { index: 20, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
   { index: 21, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
-  { index: 22, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
+  { index: 22, name: "AAA 23", user_id: 9106746905, phone: "+8801788601627" },
   { index: 23, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
 ];
 
@@ -2785,23 +2785,19 @@ const cleanName = (acc, idx) => {
   const defName = (i >= 0 && DEFAULT_FLEET_ACCOUNTS[i]) ? DEFAULT_FLEET_ACCOUNTS[i].name : "";
   let n = (acc.name || "").trim();
   if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${accNum || 1}`;
-  if (n.includes("Никитин") || n.startsWith("Nathan")) return "Nadim";
-  if (n.includes("Морозов") || n.startsWith("Kaitlyn")) return "Kaitlyn";
-  if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman";
-  if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10") || n === "Tanvir Ahmed 10") return "Tanvir Ahmed";
-  if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma";
-  if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana";
-  if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
-  if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
-  if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
-  if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
+  if (n.includes("Никитин")) return "Nathan Miller 5";
+  if (n.includes("Морозов")) return "Kaitlyn Ross 6";
+  if (n.includes("Соколов")) return "Naimur Rahman 9";
+  if (n.includes("Кузнецов") || n.includes("Girtt")) return "Tanvir Ahmed 10";
+  if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
+  if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
+  if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
+  if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
+  if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
   if (n === "Aaaa201") return "AAA201";
   if (accNum === 21 && (n === "AAA" || n === "AAA 22")) return "AAA 22";
-  if (accNum === 22 && (n === "AAA" || n === "AAA 23" || n === "Abid Hasan" || n === "Abid Hasan (4)")) return "Abid Hasan (4)";
+  if (accNum === 22 && (n === "AAA" || n === "AAA 23" || n === "Abid Hasan" || n === "Abid Hasan (4)")) return "AAA 23";
   if (accNum === 23 && (n === "AAA" || n === "AAA24" || n === "AAA 24")) return "AAA 24";
-  if (accNum === 6 && (n === "Abid Hasan" || n === "Abid Hasan (1)")) return "Abid Hasan (1)";
-  if (accNum === 7 && (n === "Abid Hasan" || n === "Abid Hasan (2)")) return "Abid Hasan (2)";
-  if (accNum === 12 && (n === "Abid" || n === "Abid Hasan" || n === "Abid (3)")) return "Abid (3)";
   return n;
 };
 
@@ -6276,25 +6272,25 @@ fi
           { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
           { index: 2, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
           { index: 3, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-          { index: 4, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-          { index: 5, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-          { index: 6, name: "Abid Hasan (1)", user_id: 7734849205, phone: "+8801718056423" },
-          { index: 7, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-          { index: 8, name: "Naimur Rahman", user_id: 8851426148, phone: "+8801727651288" },
-          { index: 9, name: "Tanvir Ahmed", user_id: 8203342513, phone: "+8801729892810" },
-          { index: 10, name: "MD Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 4, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
+          { index: 5, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 6, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+          { index: 7, name: "Abid Hasan", user_id: 8025472383, phone: "+8801797795624" },
+          { index: 8, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 9, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 10, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
           { index: 11, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-          { index: 12, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-          { index: 13, name: "Rohan Sharma", user_id: 8727040932, phone: "+918930504750" },
-          { index: 14, name: "Tasnim Farhana", user_id: 7749125802, phone: "+8801906045479" },
-          { index: 15, name: "Rashedul Islam", user_id: 7954290138, phone: "+8801304151082" },
-          { index: 16, name: "Kawsar Mahmud", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 17, name: "Mehedi Hasan", user_id: 8975442879, phone: "+8801839716506" },
+          { index: 12, name: "Abid", user_id: 8741547543, phone: "+8801838268380" },
+          { index: 13, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
+          { index: 14, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
+          { index: 15, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
+          { index: 16, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
+          { index: 17, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
           { index: 18, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
           { index: 19, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" },
           { index: 20, name: "AAA201", user_id: 8669217201, phone: "+8801913962342" },
           { index: 21, name: "AAA 22", user_id: 9272631973, phone: "+8801732100769" },
-          { index: 22, name: "Abid Hasan (4)", user_id: 9106746905, phone: "+8801788601627" },
+          { index: 22, name: "AAA 23", user_id: 9106746905, phone: "+8801788601627" },
           { index: 23, name: "AAA 24", user_id: 8972499908, phone: "+8801794783852" }
         ];
 
@@ -6308,23 +6304,19 @@ fi
           const defName = (i >= 0 && DEFAULT_FLEET_ACCOUNTS[i]) ? DEFAULT_FLEET_ACCOUNTS[i].name : "";
           let n = (acc.name || "").trim();
           if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${accNum || 1}`;
-          if (n.includes("Никитин") || n.startsWith("Nathan")) return "Nadim";
-          if (n.includes("Морозов") || n.startsWith("Kaitlyn")) return "Kaitlyn";
-          if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman";
-          if (n.includes("Кузнецов") || n.includes("Girtt") || n.startsWith("Node 10") || n === "Tanvir Ahmed 10") return "Tanvir Ahmed";
-          if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma";
-          if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana";
-          if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
-          if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
-          if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
-          if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
+          if (n.includes("Никитин")) return "Nathan Miller 5";
+          if (n.includes("Морозов")) return "Kaitlyn Ross 6";
+          if (n.includes("Соколов")) return "Naimur Rahman 9";
+          if (n.includes("Кузнецов") || n.includes("Girtt")) return "Tanvir Ahmed 10";
+          if (n.includes("Козлов") || n.includes("Raj Thakur")) return "Rohan Sharma 14";
+          if (n.includes("Тарасов") || n.includes("Tiffany")) return "Tasnim Farhana 15";
+          if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam 16";
+          if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud 17";
+          if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan 18";
           if (n === "Aaaa201") return "AAA201";
           if (accNum === 21 && (n === "AAA" || n === "AAA 22")) return "AAA 22";
-          if (accNum === 22 && (n === "AAA" || n === "AAA 23" || n === "Abid Hasan" || n === "Abid Hasan (4)")) return "Abid Hasan (4)";
+          if (accNum === 22 && (n === "AAA" || n === "AAA 23" || n === "Abid Hasan" || n === "Abid Hasan (4)")) return "AAA 23";
           if (accNum === 23 && (n === "AAA" || n === "AAA24" || n === "AAA 24")) return "AAA 24";
-          if (accNum === 6 && (n === "Abid Hasan" || n === "Abid Hasan (1)")) return "Abid Hasan (1)";
-          if (accNum === 7 && (n === "Abid Hasan" || n === "Abid Hasan (2)")) return "Abid Hasan (2)";
-          if (accNum === 12 && (n === "Abid" || n === "Abid Hasan" || n === "Abid (3)")) return "Abid (3)";
           return n;
         };
 

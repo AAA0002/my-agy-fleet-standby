@@ -1114,32 +1114,32 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
 * **Automated Revocation Auto-Purge (`ensure_account_complete` / `onAccountRelinkSuccess`)**: Whenever an account is onboarded, saved, or verified with a valid session string, it is atomically removed from `fleet:revoked_sessions`, added to `fleet:healthy_sessions`, its `fleet:revocation_reason:{idx}` key is permanently deleted, and Cloudflare KV `fleet_session_health` is updated.
 * **1-Tap Re-link Auto-Promotion (`onAccountRelinkSuccess`)**: When an account session is re-linked via MTProto, its index and user ID are dynamically promoted from `revoked` to `healthy` across all edge nodes, immediately updating the OTP grid, fleet roster, and inspection screens to green `🟢`.
 * **23-Account Fleet Scale**: Canonical registries, edge fallbacks (`DEFAULT_FLEET_ACCOUNTS`, `KNOWN_PHONES`, `KNOWN_PHONES_BY_INDEX`), and live states are fully synchronized for exactly 23 active, legitimate accounts (1..23). Account #2 Nancy is cleanly archived in `retired_accounts_archive.json` and completely eradicated from active mining loops and dashboards.
-* **Canonical 23-Account Clean Naming Architecture**:
-  - Every account possesses a clean, authentic, non-digit-suffixed name across all registries (`accounts.json`, Turso DB `fleet:accounts`, `DEFAULT_FLEET_ACCOUNTS`, `DEFAULT_FLEET_DATA`, and HTML dashboards):
-    1. `Arif Hossain` (Master Host 👑, `6727787768`)
-    2. `Koram Shah` (`7648254021`)
-    3. `Arif` (`8826375659`)
-    4. `Nadim` (`8450010161`)
-    5. `Kaitlyn` (`8782429452`)
-    6. `Abid Hasan (1)` (`7734849205`)
-    7. `Abid Hasan (2)` (`8025472383`)
-    8. `Naimur Rahman` (`8851426148`)
-    9. `Tanvir Ahmed` (`8203342513`)
-    10. `MD Arif Hossain` (`8190649727`)
-    11. `Sanzida Shimu` (`7487048946`)
-    12. `Abid (3)` (`8741547543`)
-    13. `Rohan Sharma` (`8727040932`)
-    14. `Tasnim Farhana` (`7749125802`)
-    15. `Rashedul Islam` (`7954290138`)
-    16. `Kawsar Mahmud` (`8841038141`)
-    17. `Mehedi Hasan` (`8975442879`)
-    18. `Adil H` (`8937908003`)
-    19. `Asaduzzaman Sarker` (`8609131528`)
-    20. `AAA201` (`8669217201`)
-    21. `AAA 22` (`9272631973`)
-    22. `Abid Hasan (4)` (`9106746905`)
-    23. `AAA 24` (`8972499908`)
-  - **Disambiguated OTP Grid Labels**: `buildOtpMenuKeyboard` dynamically ensures distinct button names (`MD Arif`, `AAA 22`, `AAA 24`, `AAA201`, `Abid (6)`, `Abid (7)`, `Abid (12)`, `Abid (22)`, `Arif (3)`), preventing short-name collisions.
+* **Canonical 23-Account Authoritative Naming Architecture (100% Direct Telegram Parity)**:
+  - Every account possesses its authentic profile name and phone number queried directly from Telegram MTProto `get_me()` across all registries (`accounts.json`, Turso DB `fleet:accounts`, Upstash Redis, `DEFAULT_FLEET_ACCOUNTS`, `DEFAULT_FLEET_DATA`, and HTML dashboards):
+    1. `Arif Hossain` (Master Host 👑, `6727787768`, `+8801317342850`, `@Arif2743aaa`)
+    2. `Koram Shah` (`7648254021`, `+8801790208077`, `@Koram_Shah`)
+    3. `Arif` (`8826375659`, `+8801575842094`, `@Arif2743_a`)
+    4. `Nathan Miller 5` (`8450010161`, `+14302084365`, `@nathan_miller7`)
+    5. `Kaitlyn Ross 6` (`8782429452`, `+8801867539837`, `@kaitlyn_ross7`)
+    6. `Abid Hasan` (`7734849205`, `+8801718056423`, `@Abidhasan222`)
+    7. `Abid Hasan` (`8025472383`, `+8801797795624`)
+    8. `Naimur Rahman 9` (`8851426148`, `+8801727651288`, `@naimur_rhmn7`)
+    9. `Tanvir Ahmed 10` (`8203342513`, `+8801729892810`, `@tanvir_ahmed785`)
+    10. `MD. ARIF HOSSAIN` (`8190649727`, `+8801571089931`, `@aaamah222`)
+    11. `Sanzida Shimu` (`7487048946`, `+8801774578536`, `@SanzidaShimu`)
+    12. `Abid` (`8741547543`, `+8801838268380`, `@Abid_300`)
+    13. `Rohan Sharma 14` (`8727040932`, `+918930504750`, `@rohan_sharma7`)
+    14. `Tasnim Farhana 15` (`7749125802`, `+8801906045479`, `@tasnim_farhana7`)
+    15. `Rashedul Islam 16` (`7954290138`, `+8801304151082`, `@rashedul_islam7`)
+    16. `Kawsar Mahmud 17` (`8841038141`, `+8801879273559`, `@kawsar_mahmud7`)
+    17. `Mehedi Hasan 18` (`8975442879`, `+8801839716506`, `@mehedi_hasan783`)
+    18. `Adil H` (`8937908003`, `+8801804723069`, `@AdilHassain`)
+    19. `Asaduzzaman Sarker` (`8609131528`, `+8801312863569`, `@Asaduzzamansarkar`)
+    20. `AAA201` (`8669217201`, `+8801913962342`, `@AAA201AAA`)
+    21. `AAA 22` (`9272631973`, `+8801732100769`, `@aaa022a`)
+    22. `AAA 23` (`9106746905`, `+8801788601627`, `@aaa023aa`)
+    23. `AAA 24` (`8972499908`, `+8801794783852`, `@aaa024a`)
+  - **Disambiguated OTP Grid Labels**: `buildOtpMenuKeyboard` dynamically ensures distinct button names (`MD. ARIF`, `AAA 22`, `AAA 23`, `AAA 24`, `AAA201`, `Abid (6)`, `Abid (7)`, `Abid (12)`, `Arif (3)`), preventing short-name collisions.
 * **Resilient Multi-Layer Account Removal**: Deletions are mirrored across module RAM cache (`memDeletedAccounts`), Upstash Redis (`fleet:deleted_accounts`), and Cloudflare KV (`fleet_deleted_accounts`), ensuring that hitting Cloudflare KV daily free quotas never causes removed accounts to reappear or screens to stall.
 * **Render-to-Edge Failback Routing**: All outbound calls from Render nodes to Cloudflare Workers query Node 1 (`aaaai2.workers.dev`) first, immediately breaking upon receiving a 200 OK response. Standby nodes (Nodes 2-5) produce 0 scheduled KV writes and maintain cold zero-cost standby posture.
 

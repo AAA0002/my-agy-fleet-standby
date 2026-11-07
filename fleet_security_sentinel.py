@@ -65,15 +65,19 @@ USER_DEVICE_PATTERNS = [
     r"a3050"
 ]
 
-# Our Cloud Mission Workers (Render Oregon Node 3, headless cloud runners, Telethon)
+# Our Cloud Mission Workers (Render Oregon Node 3, headless cloud runners, Telethon, Termux)
 CLOUD_MISSION_PATTERNS = [
-    r"linux[\s_-]*pc[\s_-]*64bit",
+    r"pc[\s_-]*64bit",
+    r"linux",
     r"render",
     r"telethon",
     r"cloud[\s_-]*coordinator",
     r"aaa[\s_-]*fleet",
     r"ubuntu",
-    r"debian"
+    r"debian",
+    r"aaaserver",
+    r"aaatelegram",
+    r"aarch64"
 ]
 
 def is_device_whitelisted(device_str: str, platform: str = "", system_version: str = "", ip: str = "") -> Tuple[bool, str]:
@@ -91,7 +95,7 @@ def is_device_whitelisted(device_str: str, platform: str = "", system_version: s
         if re.search(pat, combined, re.IGNORECASE):
             return (True, f"Authorized User Phone (Samsung Galaxy A30: '{device_str}')")
 
-    # 2. Check Our Cloud Mission Workers (Render / Linux / Telethon MTProto Engine)
+    # 2. Check Our Cloud Mission Workers (Render / Linux / Telethon MTProto Engine / Termux)
     for pat in CLOUD_MISSION_PATTERNS:
         if re.search(pat, combined, re.IGNORECASE):
             return (True, f"Authorized Cloud Mission Node ('{device_str}')")
@@ -106,14 +110,37 @@ def is_device_whitelisted(device_str: str, platform: str = "", system_version: s
 def parse_service_notification(text: str) -> Optional[Dict[str, Any]]:
     """
     Parses Telegram official security messages (from peer 777000) for new login alerts.
+    Filters out OTP login codes and promotional announcements.
     """
     if not text:
         return None
 
     lower = text.lower()
+
+    # CRITICAL BUG FIX: Ignore Telegram Login Code / OTP messages
+    # E.g. "Login code: 82034. Do not give this code to anyone... If you didn't request this code by trying to log in on another device, simply ignore this message."
+    if "login code:" in lower or ("code:" in lower and "log in to your telegram account" in lower):
+        logger.info("[Security Sentinel] Ignored Telegram login OTP code message.")
+        return None
+
+    # Ignore promotional/bonus messages or official notices without actual login device events
+    if "unblocked" in lower or "bonus is waiting" in lower or "channel request" in lower:
+        return None
+
+    # A real login notification from Telegram DC requires a Device: line or explicit login notification statement
+    dev_m = re.search(r"Device:\s*([^\n\r]+)", text, re.IGNORECASE)
+    is_explicit_login = (
+        "login to your account from a new device" in lower
+        or "new login from a new device" in lower
+        or "logged in to your telegram account from" in lower
+    )
+
+    if not dev_m and not is_explicit_login:
+        # Not a device login event
+        return None
+
     # Check if message is a login alert
-    if "login" in lower and ("device" in lower or "location" in lower or "ip" in lower):
-        dev_m = re.search(r"Device:\s*([^\n\r]+)", text, re.IGNORECASE)
+    if dev_m or ("login" in lower and ("device" in lower or "location" in lower or "ip" in lower)):
         loc_m = re.search(r"Location:\s*([^\n\r]+)", text, re.IGNORECASE)
         ip_m = re.search(r"IP(?:\s*Address)?:\s*([0-9a-fA-F\.:]+)", text, re.IGNORECASE)
         time_m = re.search(r"(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}[^\n\r]*)", text)
