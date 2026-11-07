@@ -19,6 +19,14 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
   - **Fleet-Wide Side-Tasks Harvest**:
     * Executed `python3 finish_all_fleet_sidetasks.py` across all 23 accounts one-by-one.
     * Completed a grand total of **936 side-tasks and rewards** harvested and claimed across the 9 bots. Dispatched operational completion alert to `AAA Admin notification` (`-1004358687850`).
+  - **Cloudflare Edge Worker Diggo Expired JWT Auto-Recovery (`deploy_both_cf_workers.py`)**:
+    * Diagnosed edge worker limitation where accounts with an expired cached `diggo_jwt` received `HTTP 401 Unauthorized` and failed to farm until manual expiration.
+    * Injected autonomous 401 catch-and-retry block: the edge worker automatically exchanges `diggo_init_data` with `https://diggo.linkpc.net/api/auth/telegram`, updates Upstash Redis (`set fleet:diggo:jwt:${uid}`), and seamlessly retries the mining claims and tasks.
+    * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`), verified live with active cron (`*/15 * * * *`) and 0 pending webhook backlog.
+  - **Disaster Recovery & Node Guardrail Alignment (`restore.sh`, `start_userbot.sh`, `clean_up_system.py`)**:
+    * Updated `start_userbot.sh` to designate Render Oregon Node 3 as the active primary cloud node and Node 2 / Node 1 as standby failover.
+    * Updated `restore.sh` executable permissions, purging defunct bot script references and registering active 9-bot fleet tools (`audit_bots_and_sidetasks.py`, `auto_wallet_manager.py`, `batch_earnvault_mine.py`, `batch_lumeon_mine.py`).
+    * Hardened `clean_up_system.py` with fallback to primary Upstash cluster `rich-emu-106119.upstash.io` and executed local cache/disk pruning.
 
 - **🌐 Zero-Stale Cluster Standardization, 9-Bot Ground Truth & Edge Gateway Deployment (November 6, 2026)**:
   - **100% Eradication of Legacy Upstash Cluster (`internal-dodo-83852.upstash.io`)**:

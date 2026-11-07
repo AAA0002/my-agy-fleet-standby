@@ -51,6 +51,7 @@ UPSTASH_URL = (
     or env_config.get("UPSTASH_URL")
     or os.environ.get("UPSTASH_REDIS_REST_URL")
     or os.environ.get("UPSTASH_URL")
+    or "https://rich-emu-106119.upstash.io"
 )
 UPSTASH_TOKEN = (
     env_config.get("UPSTASH_REDIS_REST_TOKEN")
