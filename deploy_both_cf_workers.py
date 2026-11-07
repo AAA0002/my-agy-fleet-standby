@@ -17129,7 +17129,11 @@ async def deploy_account(acc):
                     if res.get("success"):
                         break
                     else:
-                        print(f"⚠️ [{acc['name']}] Attempt {attempt} failed: {res.get('errors')}")
+                        errs = res.get('errors', [])
+                        if any(e.get('code') in (10000, 1000) or 'Authentication error' in str(e.get('message')) for e in errs):
+                            print(f"⚠️ [{acc['name']}] Authentication failed ({errs}). Skipping invalid node.")
+                            return False
+                        print(f"⚠️ [{acc['name']}] Attempt {attempt} failed: {errs}")
             except Exception as up_err:
                 if attempt < 3:
                     print(f"⚠️ [{acc['name']}] Attempt {attempt} network error ({up_err}). Retrying in 2s...")
