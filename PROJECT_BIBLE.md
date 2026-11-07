@@ -2022,11 +2022,18 @@ Whenever you perform work in this repository:
   - **11-Bot Full Parity on GitHub Actions Runner (`AAA0002/cloud-fleet-solver`)**:
     * Built native, zero-dependency REST handlers for **Grouche Mine**, **LUM Miner**, and **EarnVault** inside `mrg_turnstile_solver.py`.
     * Extended Phase 1 harvesting loop, audit summary, telemetry logging, and Telegram broadcast alert to seamlessly monitor and report all 11 active fleet bots without external dependencies.
-* **Cloudflare Edge Mesh D1 Token Sanitization, Pruning & Kynex Cooldown Harmonization (November 2, 2026)**:
-  - **D1 Edge Token Sanitization & Pruning Parity**:
-    * Updated `ALLOWED_FLEET_BOTS` and `sanitizeFleetTokensObject` in `deploy_both_cf_workers.py` to prevent silent stripping of `grouchemine`, `lumeon`, and `earnvault` tokens during edge memory caching.
-    * Fixed D1 query and pruning statement (`DELETE FROM fleet_tokens WHERE bot_name NOT IN (...)`) to safeguard all 11 active bots and `diggo_jwt`.
-    * Synchronized `BOT_COOLDOWNS["kynex"]` to 1 hour (`3600, 4200`) and deployed to Primary Edge Gateway (`https://restore-agy.agorameet.workers.dev`).
+* **Antigravity Remote Control Daemon Restoration & VM Stale Lock Sanitization (November 7, 2026)**:
+  - **Remote Control Daemon (`antigravity-cli-daemon.service`) Restoration**:
+    * Diagnosed and fixed unconditional `kill -9` process loop in `/data/home/.local/bin/agy-entry` and `setup_smart_agy.sh` that previously killed the systemd service whenever `agy` CLI was launched or refreshed.
+    * Implemented strict systemd `MainPID` reconciliation: automatically checks and starts `antigravity-cli-daemon.service`, queries its authoritative `MainPID`, preserves it permanently, and only deduplicates unauthorized orphan processes.
+    * Re-activated `antigravity-cli-daemon.service` on instance `aaa-hub-vm` (`https://antigravity.google.com`), verified active and authenticated as `koramshah@gmail.com`.
+    * Terminated stray process 922162 and duplicate MCP servers, freeing >500MB of RAM.
+  - **VM Stale Lock & Cache Purge ("Delete old temx / tmp")**:
+    * Discovered and purged 21,588 stale `.lock` files (85MB) in `/tmp/datacloud_telemetry` that were causing `telemetry_hook.js` to spike Node.js CPU to 100% on every CLI tool call.
+    * Purged obsolete Playwright Chromium profiles and runner chunks from late October.
+    * Reduced `/tmp` footprint from 90MB down to 476KB. Background CPU utilization dropped from 100% to 0.0%.
+    * Documented clean tmux session refresh (`agy-restart` / `kill-tmux && agy`).
+
 
 
 

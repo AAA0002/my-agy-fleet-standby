@@ -450,6 +450,12 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Render Oregon Node 3 Live Rollout**: Deployed `dep-dbn7s0ei0phs7389jnp0` (commit `d6dc328`), verified live and healthy (`HTTP 200` in 259ms).
     - **Disaster Recovery & Node Guardrail Alignment**: Aligned `start_userbot.sh`, `restore.sh`, and `clean_up_system.py`. Verified 0 phone load (Rule 4) and streamed fresh backup to `@myagyai` vault (Rule 5).
 
+57. **Antigravity Remote Control Daemon Restoration & VM Stale Lock Sanitization (November 7, 2026)**:
+    - **Remote Control Daemon Failure Diagnosed & Solved**: Diagnosed that `/data/home/.local/bin/agy-entry` had an unconstrained `pgrep -f "agy remote-control serve"` kill loop that inadvertently killed the authorized systemd daemon process (`antigravity-cli-daemon.service`) whenever `agy` CLI was launched or refreshed. Rebuilt `/data/home/.local/bin/agy-entry` and `setup_smart_agy.sh` with systemd `MainPID` reconciliation, permanently protecting the daemon.
+    - **Live Remote Control Re-activation**: Verified `antigravity-cli-daemon.service` is `active (running)`, enabled, and authenticated as `koramshah@gmail.com` under instance `aaa-hub-vm` (`https://antigravity.google.com`). Killed stray process 922162 and duplicate MCP servers, saving >500MB of RAM.
+    - **VM Stale Lock & Cache Purge ("Delete old temx / tmp")**: Discovered and purged 21,588 stale `.lock` files (85MB) in `/tmp/datacloud_telemetry` that were causing background tool calls to peg Node.js CPU at 100%. Cleaned `/tmp` down to 476KB. Verified CPU dropped to 0.0%. Documented clean tmux session refresh (`agy-restart` / `kill-tmux && agy`).
+    - **Rule 5 Compliance**: Streamed disaster recovery archive to `@myagyai` vault via `backup_manager.py`.
+
 ---
 
 ## 📂 7. Key File Index

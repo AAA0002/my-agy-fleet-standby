@@ -119,6 +119,9 @@ fi
 
 # 2. Ensure Antigravity Remote Control Daemon (aaa-hub-vm) is active (Strict Singleton Guarantee)
 if command -v systemctl >/dev/null 2>&1; then
+    if ! systemctl --user is-active antigravity-cli-daemon.service >/dev/null 2>&1; then
+        systemctl --user start antigravity-cli-daemon.service >/dev/null 2>&1 || true
+    fi
     MAIN_PID="$(systemctl --user show --property MainPID --value antigravity-cli-daemon.service 2>/dev/null)"
     if [ -n "$MAIN_PID" ] && [ "$MAIN_PID" != "0" ]; then
         for PID in $(pgrep -f "agy remote-control serve" 2>/dev/null); do
@@ -126,10 +129,6 @@ if command -v systemctl >/dev/null 2>&1; then
                 kill -9 "$PID" 2>/dev/null || true
             fi
         done
-    fi
-
-    if ! systemctl --user is-active antigravity-cli-daemon.service >/dev/null 2>&1; then
-        systemctl --user start antigravity-cli-daemon.service >/dev/null 2>&1 || true
     fi
 else
     RC_PIDS="$(pgrep -f "agy remote-control serve" 2>/dev/null)"

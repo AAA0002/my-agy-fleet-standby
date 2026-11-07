@@ -2,6 +2,33 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ Antigravity Remote Control Daemon Restoration & VM Stale Lock Sanitization (November 7, 2026)**:
+  - **Root-Cause Forensic Analysis of Remote Control Daemon Failure**:
+    * **Root Cause 1 (Unconditional `kill -9` in `agy-entry`)**: Traced that `/data/home/.local/bin/agy-entry` contained an unconstrained process loop (`for PID in $(pgrep -f "agy remote-control serve"); do kill -9 "$PID"; done`). Whenever the user connected, attached, or refreshed `agy` from Termux/SSH, `agy-entry` executed `kill -9` on the systemd service process (`antigravity-cli-daemon.service`), forcing it into `inactive (dead)` state.
+    * **Root Cause 2 (Duplicate Orphan Process & Triple MCP Server Collision)**: When the systemd daemon was dead, launching `agy` CLI spawned an unmanaged child process (`agy remote-control serve` PID 922162) that instantiated an entire duplicate set of 8 MCP servers (filesystem, git, fetch, time, memory, visualization, notebook), consuming over 500MB of unnecessary RAM and binding conflicting local loopback ports (34321, 46435).
+    * **Root Cause 3 (21,588 Stale Telemetry Locks Spiking Node CPU to 100%)**: Discovered `/tmp/datacloud_telemetry` was congested with 21,588 stale `.lock` files (85MB+) accumulated since October. Every background command triggered `telemetry_hook.js`, which performed recursive directory locking, causing Node.js to spike to 100% CPU on every single turn.
+  - **Comprehensive Fixes & System Hardening**:
+    * **Rewrote `agy-entry` (`/data/home/.local/bin/agy-entry` & `/usr/local/bin/agy-entry`)**:
+      - Replaced raw kill loop with strict systemd `MainPID` reconciliation.
+      - Automatically starts `antigravity-cli-daemon.service` if inactive.
+      - Extracts authorized `MainPID` from systemd; preserves it permanently and terminates only stray unauthorized processes.
+    * **Synchronized `setup_smart_agy.sh`**:
+      - Updated `setup_smart_agy.sh` to embed this identical `MainPID` reconciliation logic so future restores or updates never regress.
+    * **Systemd Service Re-activated & Verified**:
+      - Executed `agy remote-control start --name aaa-hub-vm`.
+      - Verified `antigravity-cli-daemon.service` is `active (running)`, enabled, and authenticated as `koramshah@gmail.com`.
+      - Verified `agy remote-control status` returns `Daemon status: active` on instance `aaa-hub-vm` (`https://antigravity.google.com`).
+      - Killed orphan PID 922162 and duplicate MCP instances, freeing >500MB of RAM.
+    * **VM Temp & Cache Sanitization ("delete old temx / tmp")**:
+      - Purged all 21,588 stale locks and json files in `/tmp/datacloud_telemetry`.
+      - Purged obsolete Playwright Chromium profiles and runner chunks from late October.
+      - Reduced `/tmp` footprint from 90MB down to 476KB. Background CPU utilization dropped from 100% to 0.0%.
+      - Cleaned and confirmed persistent mobile tmux session `agy` geometry (`56x27`). Documented clean refresh command `agy-restart` / `kill-tmux`.
+  - **Disaster Recovery Backup (Rule 5 Compliance)**:
+    * Executed `python3 backup_manager.py` successfully streaming the fresh disaster recovery archive to Telegram vault `@myagyai` (`-1004453515167`).
+
+
+
 - **🎯 Full Fleet 23-Account 9-Bot Side-Task Harvest & Token Hydration Architecture (November 7, 2026)**:
   - **Turso LibSQL SSOT Synchronization for DiggoMiner 30-Day JWTs**:
     * Discovered Upstash Redis had only 1 Diggo JWT key while Turso LibSQL had 15. Synced all 15 Diggo JWT keys across Upstash Primary (`rich-emu-106119`) and Standby (`pleasant-locust-220893`).
