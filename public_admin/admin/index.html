@@ -1505,7 +1505,7 @@ function App() {
     if (isManual) setSyncing(true);
     try {
       const res = await fetchMeshApi("/api/status");
-      if (res && res.ok) {
+      if (res && (res.ok || Array.isArray(res.accounts))) {
         if (res.bnb_balance !== undefined) setBnbBalance(res.bnb_balance);
         if (res.rates) setRates(res.rates);
         if (res.accounts && Array.isArray(res.accounts) && res.accounts.length > 0) {
@@ -1555,7 +1555,7 @@ function App() {
       const rLatency = Math.round(performance.now() - rStart);
       results["render_node2"] = { status: rResp.ok ? "live" : "degraded", ping: rLatency };
     } catch (_) {
-      results["render_node2"] = { status: "offline", ping: null };
+      results["render_node2"] = { status: "standby", ping: null };
     }
     setMeshPings(results);
     setTestingMesh(false);

@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎨 Dashboard Ecosystem Hardening, Edge Shared Scripts Integration & Telemetry Sync Fix (November 7, 2026)**:
+  - **Executive Fleet Console (`admin.html`) Telemetry Refresh Fix**:
+    * Resolved critical bug in `fetchStatus` where `res && res.ok` blocked dashboard telemetry updates when `/api/status` returned `{ accounts: [...] }` without an explicit boolean `ok: true`. Updated `ensureFullFleet` in `deploy_both_cf_workers.py` to always attach `ok: true`, live `bnb_balance`, and `rates`.
+    * Hardened condition in `admin.html` (and all 5 mirrors: `public/admin.html`, `dashboard.html`, `public_admin/admin/index.html`, `public_admin/index.html`, `tgcloud_admin_bot/public/index.html`) to `if (res && (res.ok || Array.isArray(res.accounts)))`.
+    * Gracefully classified suspended Node 2 (Frankfurt Standby) as "Standby Freeze ⏸️" during edge node matrix ping checks, preventing spurious degraded/offline warnings.
+  - **Ad Mediation Shared Scripts 404 Resolution (`/shared/*.js`)**:
+    * Identified root cause of failed ad mediation in `public_ads/index.html`: scripts `/shared/waterfallController.js`, `/shared/vastLoader.js`, `/shared/i18n.js`, `/shared/geo.js`, `/shared/gigapubController.js`, and `/shared/audio.js` returned HTTP 404 on Cloudflare Workers edge nodes.
+    * Added automated shared script embedding and dedicated edge route `/shared/:script` in `deploy_both_cf_workers.py` serving scripts with `Content-Type: application/javascript; charset=utf-8` and 24-hour edge caching. Verified all 6 scripts now return `HTTP 200`.
+  - **Quad Dashboard Mirror Synchronization**:
+    * Synchronized all 4 dashboard suites across repository locations:
+      1. Executive Fleet Console (`public_admin/admin.html`, `public/admin.html`, `dashboard.html`, `public_admin/admin/index.html`, `public_admin/index.html`, `tgcloud_admin_bot/public/index.html`).
+      2. User Bot Admin Console (`public_admin/user-admin.html`, `public/user-admin.html`, `public_admin/user-admin/index.html`, `public_admin/users/index.html`).
+      3. User Mining Mini App (`public_ads/miner/index.html`, `public/miner/index.html`, `public/app/index.html`, `public/index.html`).
+      4. Dedicated Ads Portal (`public_ads/index.html`, `public_ads/ad/index.html`, `public/ad/index.html`).
+    * Deployed Node 4 (`https://restore-agy.agorameet.workers.dev`) live. Verified `HTTP 200` on `/admin`, `/user-admin`, `/miner`, and `/ads`.
+
 - **🛡️ Comprehensive Bug Sweep, Telegram Ground-Truth Synchronization & Security Sentinel Hardening (November 7, 2026)**:
   - **Security Sentinel OTP False-Positive Bug Eliminated (`fleet_security_sentinel.py`)**:
     * Diagnosed root cause of spurious `🚨 UNAUTHORIZED DEVICE LOGIN DETECTED! 🔴 Unknown Device` alerts: `parse_service_notification` previously triggered on any peer 777000 message containing "login" and "device". When Telegram sent standard login verification OTP codes ("Login code: XXXXX... If you didn't request this code by trying to log in on another device..."), it lacked device/location metadata, defaulted to "Unknown Device", and raised false alarms.

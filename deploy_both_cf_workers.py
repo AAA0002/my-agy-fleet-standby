@@ -2693,6 +2693,7 @@ const SIBLING_URLS = __SIBLING_URLS_JSON__;
 const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
 const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
 const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
+const SHARED_SCRIPTS_MAP = __SHARED_SCRIPTS_MAP_JSON__;
 
 const DEFAULT_FLEET_ACCOUNTS = [
   { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
@@ -4054,6 +4055,10 @@ fi
 
         const ensureFullFleet = (stateObj) => {
           if (!stateObj) stateObj = { ok: true, accounts: [] };
+          stateObj.ok = true;
+          if (stateObj.bnb_balance === undefined) stateObj.bnb_balance = 0.000812;
+          if (stateObj.ton_balance === undefined) stateObj.ton_balance = 2.450;
+          if (!stateObj.rates) stateObj.rates = { bnb_usd: 749.5, ton_usd: 1.62, arb_usd: 0.21, btc_usd: 80000.0, usd_bdt: 122.5 };
           let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts.slice() : [];
           if (accs.length === 0 && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0) {
             accs = memFleetAccounts.slice();
@@ -5513,6 +5518,20 @@ fi
         }
       });
     };
+
+    // Shared JS Scripts for Ad Mediation & UI Controller (/shared/:script)
+    if (path.startsWith("/shared/")) {
+      const sName = path.slice(8);
+      if (typeof SHARED_SCRIPTS_MAP !== "undefined" && SHARED_SCRIPTS_MAP && SHARED_SCRIPTS_MAP[sName]) {
+        return new Response(SHARED_SCRIPTS_MAP[sName], {
+          headers: {
+            "Content-Type": "application/javascript; charset=utf-8",
+            "Cache-Control": "public, max-age=86400",
+            ...corsHeaders
+          }
+        });
+      }
+    }
 
     // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
     if (path === "/miner" || path === "/miner/" || path === "/dashboard" || path === "/mining-app" || path === "/atf") {
@@ -16980,6 +16999,15 @@ async def deploy_account(acc):
     with open(wallets_path, "r", encoding="utf-8") as f_w:
         wallets_json_str = f_w.read().strip()
 
+    shared_scripts_dict = {}
+    shared_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_ads", "shared")
+    if os.path.exists(shared_dir):
+        for sfile in os.listdir(shared_dir):
+            if sfile.endswith(".js"):
+                with open(os.path.join(shared_dir, sfile), "r", encoding="utf-8") as sf:
+                    shared_scripts_dict[sfile] = sf.read()
+    shared_scripts_json = json.dumps(shared_scripts_dict)
+
     upstash_tok = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
     turso_tok = os.getenv("TURSO_DB_TOKEN", "")
     supabase_key = os.getenv("SUPABASE_SERVICE_KEY", "")
@@ -16995,6 +17023,7 @@ async def deploy_account(acc):
         .replace("__USER_MINI_APP_HTML_JSON__", miniapp_html_json)
         .replace("__USER_ADS_HTML_JSON__", ads_html_json)
         .replace("__FLEET_WALLETS_JSON__", wallets_json_str)
+        .replace("__SHARED_SCRIPTS_MAP_JSON__", shared_scripts_json)
         .replace("__UPSTASH_TOKEN__", upstash_tok)
         .replace("__TURSO_TOKEN__", turso_tok)
         .replace("__SUPABASE_KEY__", supabase_key)
