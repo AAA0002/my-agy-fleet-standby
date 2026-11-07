@@ -432,32 +432,39 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 
 ## 👥 4. Fleet Accounts & Multi-Chain Wallet System
 
-The fleet consists of **18 Telegram accounts**:
+The fleet consists of **23 Telegram accounts** (1 Master Account + 22 Worker Accounts, Nancy permanently purged):
 - **Master Account**: UID `6727787768` (`Arif Hossain` / `@Arif2743aaa` / `@myagyai`). All worker referral links, commission sweeps, and team bonuses flow into this account.
-- **Worker Accounts (17 Accounts)**: UIDs `8881914294`, `7648254021`, `8826375659`, `8450010161`, `8782429452`, `7734849205`, `8025472383`, `8851426148`, `8203342513`, `8190649727`, `7487048946`, `8741547543`, `8727040932`, `7749125802`, `7954290138`, `8975442879`, `8841038141`.
+- **Worker Accounts (22 Accounts)**: UIDs `7648254021`, `8826375659`, `8450010161`, `8782429452`, `7734849205`, `8025472383`, `8851426148`, `8203342513`, `8190649727`, `7487048946`, `8741547543`, `8727040932`, `7749125802`, `7954290138`, `8841038141`, `8975442879`, `8937908003`, `8609131528`, `8669217201`, `9272631973`, `9106746905`, `8972499908`.
 
-### 👥 The 18 Fleet Accounts Roster & Ownership Classification
-To protect against automated Telegram Sybil bans and wipe away seller artifacts, all purchased accounts have been renamed with completely natural, human names and authentic usernames:
+### 👥 The 23 Fleet Accounts Roster & Ownership Classification
+To protect against automated Telegram Sybil bans and wipe away seller artifacts, all accounts are maintained with authentic names, verified phone numbers, and immutable isolated multi-chain wallets:
 - **Personal Accounts (8 Accounts — 100% Preserved & Immutable)**:
-  1. `Arif Hossain` (`+8801317342850`, `@Arif2743aaa`, UID `6727787768`) — Primary Master Account
-  2. `Koram Shah` (`+8801790208077`, `@Koram_Shah`, UID `7648254021`) — Account #3
-  3. `Arif` (`+8801575842094`, `@Arif2743_a`, UID `8826375659`) — Account #4
-  4. `MD. ARIF HOSSAIN` (`+8801571089931`, `@aaamah222`, UID `8190649727`) — Account #11
-  5. `Abid Hasan` (`+8801718056423`, `@Abidhasan222`, UID `7734849205`) — Account #7
-  6. `Abid Hasan` (`+8801797795624`, UID `8025472383`) — Account #8
-  7. `Abid` (`+8801838268380`, `@Abid_300`, UID `8741547543`) — Account #13
-  8. `Sanzida Shimu` (`+8801774578536`, `@Sanzidashimu`, UID `7487048946`) — Account #12
-- **Purchased Worker Accounts (10 Accounts — Hardened With Numbered Natural Names & Wallet Parity)**:
-  9. `Nancy Davis 2` (`+8801943805617`, `@nancydavis_24`, UID `8881914294`) — Account #2
-  10. `Nathan Miller 5` (`+14302084365`, `@nathan_miller7`, UID `8450010161`) — Account #5
-  11. `Kaitlyn Ross 6` (`+8801867539837`, `@kaitlyn_ross7`, UID `8782429452`) — Account #6
-  12. `Naimur Rahman 9` (`+8801727651288`, `@naimur_rhmn7`, UID `8851426148`) — Account #9
-  13. `Tanvir Ahmed 10` (`+8801729892810`, `@tanvir_ahmed785`, UID `8203342513`) — Account #10
-  14. `Rohan Sharma 14` (`+918930504750`, `@rohan_sharma7`, UID `8727040932`) — Account #14
-  15. `Tasnim Farhana 15` (`+8801906045479`, `@tasnim_farhana7`, UID `7749125802`) — Account #15
-  16. `Rashedul Islam 16` (`+8801304151082`, `@rashedul_islam7`, UID `7954290138`) — Account #16
-  17. `Kawsar Mahmud 17` (`+8801879273559`, `@kawsar_mahmud7`, UID `8841038141`) — Account #17
-  18. `Mehedi Hasan 18` (`+8801839716506`, `@mehedi_hasan783`, UID `8975442879`) — Account #18
+  1. `Arif Hossain` (`+8801317342850`, `@Arif2743aaa`, UID `6727787768`) — Primary Master Account (Account #01)
+  2. `Koram Shah` (`+8801790208077`, `@Koram_Shah`, UID `7648254021`) — Account #02
+  3. `Arif` (`+8801575842094`, `@Arif2743_a`, UID `8826375659`) — Account #03
+  4. `Abid Hasan (1)` (`+8801718056423`, `@Abidhasan222`, UID `7734849205`) — Account #06
+  5. `Abid Hasan (2)` (`+8801797795624`, UID `8025472383`) — Account #07
+  6. `MD Arif Hossain` (`+8801571089931`, `@aaamah222`, UID `8190649727`) — Account #10
+  7. `Sanzida Shimu` (`+8801774578536`, `@SanzidaShimu`, UID `7487048946`) — Account #11
+  8. `Abid (3)` (`+8801838268380`, `@Abid_300`, UID `8741547543`) — Account #12
+- **Worker & Expansion Accounts (15 Accounts — Dedicated Isolated Wallets & 100% Ground Truth)**:
+  9. `Nadim` (`+14302084365`, `@nathan_miller7`, UID `8450010161`) — Account #04
+  10. `Kaitlyn` (`+8801867539837`, `@kaitlyn_ross7`, UID `8782429452`) — Account #05
+  11. `Naimur Rahman` (`+8801727651288`, `@naimur_rhmn7`, UID `8851426148`) — Account #08
+  12. `Tanvir Ahmed` (`+8801729892810`, `@tanvir_ahmed785`, UID `8203342513`) — Account #09
+  13. `Rohan Sharma` (`+918930504750`, `@rohan_sharma7`, UID `8727040932`) — Account #13
+  14. `Tasnim Farhana` (`+8801906045479`, `@tasnim_farhana7`, UID `7749125802`) — Account #14
+  15. `Rashedul Islam` (`+8801304151082`, `@rashedul_islam7`, UID `7954290138`) — Account #15
+  16. `Kawsar Mahmud` (`+8801879273559`, `@kawsar_mahmud7`, UID `8841038141`) — Account #16
+  17. `Mehedi Hasan` (`+8801839716506`, `@mehedi_hasan783`, UID `8975442879`) — Account #17
+  18. `Adil H` (`+8801804723069`, `@AdilHassain`, UID `8937908003`) — Account #18
+  19. `Asaduzzaman Sarker` (`+8801312863569`, `@Asaduzzamansarkar`, UID `8609131528`) — Account #19
+  20. `AAA201` (`+8801913962342`, `@AAA201AAA`, UID `8669217201`) — Account #20
+  21. `AAA 22` (`+8801732100769`, `@aaa022a`, UID `9272631973`) — Account #21
+  22. `Abid Hasan (4)` (`+8801788601627`, `@aaa023aa`, UID `9106746905`) — Account #22
+  23. `AAA 24` (`+8801794783852`, `@aaa024a`, UID `8972499908`) — Account #23
+- **Permanently Retired Accounts**:
+  - `Nancy Davis 2` (`+8801943805617`, UID `8881914294`): Eradicated from all active fleet rosters and loops. Archived safely in `retired_accounts_archive.json`.
 
 ### Non-Custodial Multi-Chain Wallet Isolation & Strict Immutability Guard
 To prevent Sybil detection, anti-farming bans, and wallet clustering, each account is provisioned with **dedicated, isolated addresses** stored in JSON registries:

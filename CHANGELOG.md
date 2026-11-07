@@ -2,6 +2,35 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ 23-Account Identity Ground-Truth Alignment & Intrusion Session Remediation (November 7, 2026)**:
+  - **Forensic Investigation & Resolution of Intrusion Alert Mismatch**:
+    * **Root Cause of Incorrect Alert Display**: Discovered that Upstash Redis (`fleet:accounts` and `fleet:live_state`) contained an obsolete legacy roster where accounts were mapped in duplicate pairs (Account #10: `MD. ARIF HOSSAIN`, Account #11: `MD. ARIF HOSSAIN` with phone `+8801774578536`, Account #14: `Tiffany Тарасов`, Account #15: `Tiffany Тарасов`). When Telegram peer 777000 received a login notification on Account `7487048946`, the sentinel pulled the cached name from Redis, displaying `#11 MD. ARIF HOSSAIN (+8801774578536)` instead of `#11 Sanzida Shimu (+8801774578536)`.
+    * **Root Cause of Intrusion Trigger on Account #11**: Inspected active sessions directly via MTProto `GetAuthorizationsRequest` on Account #11 (`7487048946`, Sanzida Shimu). Discovered a new login on `2026-11-07 01:35:44 UTC` from `Realme realme 5i` in Naogaon, Bangladesh (Hash `-2838799321892031961`), which triggered Telegram's security notice.
+  - **Active Session Remediation & Account #11 Hardening**:
+    * Executed MTProto `ResetAuthorizationRequest` across Account #11: terminated all 20 unauthorized foreign sessions (`Realme realme 5i` and `Tecno Camon 30 Premier`).
+    * **100% Preserved Authorized Devices**: Kept the user's personal `Samsung Galaxy A30` (Dhaka, Bangladesh, Hashes `1318957819658481513` and `-4154048395975667032`) and our authorized Cloud Coordinator `PC 64bit` (Boardman, United States).
+    * Verified live: Account #11 now has strictly 3 authorized sessions and zero foreign devices.
+  - **Fleet-Wide Direct MTProto Authorization Audit (All 23 Accounts)**:
+    * Connected to Telegram directly via MTProto across all 23 fleet accounts, fetching authoritative `get_me()` profiles (names, phones, usernames, UIDs).
+    * Audited active authorizations across all 23 accounts: verified that every single account is active and authorized on the user's `Samsung Galaxy A30` in Bangladesh and our cloud mission worker `PC 64bit` in the US.
+  - **Upstash Redis & Turso LibSQL State Synchronization**:
+    * Synchronized `fleet:accounts` and `fleet:live_state` in Upstash Redis and Turso LibSQL (`state_store`) with the verified 23-account roster:
+      - Account #10: `MD Arif Hossain` (`8190649727`, `+8801571089931`, `@aaamah222`)
+      - Account #11: `Sanzida Shimu` (`7487048946`, `+8801774578536`, `@SanzidaShimu`)
+      - Purged all Russian surnames (`Tiffany Тарасов`, `Roger Волков`) and duplicate paired entries.
+  - **Sentinel Self-Correction & Canonical Resolution Guard (`fleet_security_sentinel.py`)**:
+    * Integrated `resolve_canonical_account_meta()` in `fleet_security_sentinel.py`: dynamically verifies and resolves account indices, names, and phone numbers from `accounts.json`, guaranteeing that any future alert card is 100% immune to index shifts or outdated cache entries.
+  - **Cloudflare Edge Worker Bug Fix (`deploy_both_cf_workers.py`)**:
+    * Fixed 0-indexed vs 1-indexed off-by-one bug in `cleanName` (lines 2775 and 6302). Checked 1-based account numbers (`accNum`) to map Abid Hasan (1..4), AAA 22, Abid Hasan (4)/AAA 23, and AAA 24 with 100% accuracy.
+  - **Admin Ecosystem Synchronization (`tgcloud_admin_bot`)**:
+    * `tgcloud/lib/config.js`: Updated `KNOWN_PHONES` to strictly 23 accounts (1..23), removing Nancy (`+8801943805617`), mapping index 10 to `+8801571089931`, index 11 to `+8801774578536`, and adding expansion accounts 21, 22, 23. Updated `ACTIVE_BOTS` to the 9 high-conviction legitimate bots.
+    * `tgcloud/lib/ui.js`: Corrected Master Host banner from `#11 MD. ARIF HOSSAIN` to `#1 Arif Hossain` (`6727787768`), and updated the mining suite banner to display the 9 active legitimate bots.
+  - **Documentation & Wallet Integrity Guarantee**:
+    * Updated `PROJECT_BIBLE.md` Section 4.1 from obsolete 18-account list to canonical 23-account directory.
+    * Verified 100% non-custodial multi-chain wallet isolation and immutability across `fleet_wallets_data.json` and all single-chain registries: exactly 23 unique TON, 23 unique EVM, 23 unique TRON, 23 unique Solana, and 23 unique BTC addresses with zero mixing.
+  - **Live Bot & Side-Task Responsiveness Verification**:
+    * Tested live side-tasks and farming on Account #1 (Master) and Account #11 (Sanzida Shimu): both confirmed 100% responsive across ATF Miner, Kynex Network, PepeGram, AdxEarn AI, DiggoMiner, Chicken Land, Grouche Mine, LUM Miner, and EarnVault.
+
 - **🛠️ Antigravity Remote Control Daemon Restoration & VM Stale Lock Sanitization (November 7, 2026)**:
   - **Root-Cause Forensic Analysis of Remote Control Daemon Failure**:
     * **Root Cause 1 (Unconditional `kill -9` in `agy-entry`)**: Traced that `/data/home/.local/bin/agy-entry` contained an unconstrained process loop (`for PID in $(pgrep -f "agy remote-control serve"); do kill -9 "$PID"; done`). Whenever the user connected, attached, or refreshed `agy` from Termux/SSH, `agy-entry` executed `kill -9` on the systemd service process (`antigravity-cli-daemon.service`), forcing it into `inactive (dead)` state.

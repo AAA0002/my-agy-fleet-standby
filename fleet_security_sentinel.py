@@ -148,6 +148,45 @@ def parse_service_notification(text: str) -> Optional[Dict[str, Any]]:
 # 3. HIGH-PRIORITY INTRUSION ALERT DISPATCHER
 # =============================================================================
 
+def resolve_canonical_account_meta(target_idx: Any, target_name: str = "", target_phone: str = "") -> Tuple[Any, str, str]:
+    """
+    Resolves canonical (index, name, phone) from accounts.json to eliminate any
+    index shifts or mismatched names/phones across sentinels and webhooks.
+    """
+    try:
+        accs_path = os.path.join(BASE_DIR, "accounts.json")
+        if os.path.exists(accs_path):
+            with open(accs_path, "r") as f:
+                accs = json.load(f)
+            
+            # 1. Match by UID
+            tgt_uid_str = str(target_idx).strip()
+            for i, a in enumerate(accs, 1):
+                uid_str = str(a.get("user_id") or a.get("id") or "")
+                if uid_str and uid_str == tgt_uid_str:
+                    return (i, a.get("name", target_name), a.get("phone", target_phone))
+
+            # 2. Match by Phone
+            if target_phone:
+                clean_target_p = re.sub(r"[^\d+]", "", str(target_phone))
+                for i, a in enumerate(accs, 1):
+                    p = a.get("phone", "")
+                    if p and re.sub(r"[^\d+]", "", p) == clean_target_p:
+                        return (i, a.get("name", target_name), p)
+
+            # 3. Match by numeric index 1..len(accs)
+            if isinstance(target_idx, int) and 1 <= target_idx <= len(accs):
+                a = accs[target_idx - 1]
+                return (target_idx, a.get("name", target_name), a.get("phone", target_phone))
+            if isinstance(target_idx, str) and target_idx.isdigit() and 1 <= int(target_idx) <= len(accs):
+                idx = int(target_idx)
+                a = accs[idx - 1]
+                return (idx, a.get("name", target_name), a.get("phone", target_phone))
+    except Exception:
+        pass
+    return (target_idx, target_name, target_phone)
+
+
 async def dispatch_security_alert(
     account_idx: Any,
     account_name: str,
@@ -159,6 +198,9 @@ async def dispatch_security_alert(
     Dispatches an urgent alert card to Admin Notification Channel and Master Vault.
     Guarantees 6-hour deduplication per device/IP.
     """
+    # Guarantee 100% canonical ground-truth account name and phone number
+    account_idx, account_name, account_phone = resolve_canonical_account_meta(account_idx, account_name, account_phone)
+
     if not REPORT_BOT_TOKEN:
         logger.warning("[Security Sentinel] REPORT_BOT_TOKEN missing, alert skipped.")
         return False

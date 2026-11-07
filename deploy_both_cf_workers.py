@@ -2781,9 +2781,10 @@ const cleanName = (acc, idx) => {
   } else if (acc.user_id) {
     i = DEFAULT_FLEET_ACCOUNTS.findIndex(d => String(d.user_id) === String(acc.user_id));
   }
+  const accNum = (i >= 0 ? i + 1 : (Number(acc.index) || 0));
   const defName = (i >= 0 && DEFAULT_FLEET_ACCOUNTS[i]) ? DEFAULT_FLEET_ACCOUNTS[i].name : "";
   let n = (acc.name || "").trim();
-  if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${(i >= 0 ? i : 0) + 1}`;
+  if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${accNum || 1}`;
   if (n.includes("Никитин") || n.startsWith("Nathan")) return "Nadim";
   if (n.includes("Морозов") || n.startsWith("Kaitlyn")) return "Kaitlyn";
   if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman";
@@ -2795,12 +2796,12 @@ const cleanName = (acc, idx) => {
   if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
   if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
   if (n === "Aaaa201") return "AAA201";
-  if (n === "AAA" && i === 21) return "AAA 22";
-  if ((n === "AAA" || n === "AAA24") && i === 23) return "AAA 24";
-  if (n === "Abid Hasan" && i === 6) return "Abid Hasan (1)";
-  if (n === "Abid Hasan" && i === 7) return "Abid Hasan (2)";
-  if ((n === "Abid" || n === "Abid Hasan") && i === 12) return "Abid (3)";
-  if (n === "Abid Hasan" && i === 22) return "Abid Hasan (4)";
+  if (accNum === 21 && (n === "AAA" || n === "AAA 22")) return "AAA 22";
+  if (accNum === 22 && (n === "AAA" || n === "AAA 23" || n === "Abid Hasan" || n === "Abid Hasan (4)")) return "Abid Hasan (4)";
+  if (accNum === 23 && (n === "AAA" || n === "AAA24" || n === "AAA 24")) return "AAA 24";
+  if (accNum === 6 && (n === "Abid Hasan" || n === "Abid Hasan (1)")) return "Abid Hasan (1)";
+  if (accNum === 7 && (n === "Abid Hasan" || n === "Abid Hasan (2)")) return "Abid Hasan (2)";
+  if (accNum === 12 && (n === "Abid" || n === "Abid Hasan" || n === "Abid (3)")) return "Abid (3)";
   return n;
 };
 
@@ -6303,9 +6304,10 @@ fi
           const i = (typeof idx === "number" && idx >= 0 && idx < DEFAULT_FLEET_ACCOUNTS.length)
             ? idx
             : (acc.index ? Number(acc.index) - 1 : -1);
+          const accNum = (i >= 0 ? i + 1 : (Number(acc.index) || 0));
           const defName = (i >= 0 && DEFAULT_FLEET_ACCOUNTS[i]) ? DEFAULT_FLEET_ACCOUNTS[i].name : "";
           let n = (acc.name || "").trim();
-          if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${(i >= 0 ? i : 0) + 1}`;
+          if (!n || n === "N/A" || n === "Unknown") return defName || `Account #${accNum || 1}`;
           if (n.includes("Никитин") || n.startsWith("Nathan")) return "Nadim";
           if (n.includes("Морозов") || n.startsWith("Kaitlyn")) return "Kaitlyn";
           if (n.includes("Соколов") || n.startsWith("Tg") || n.startsWith("Node 9")) return "Naimur Rahman";
@@ -6315,13 +6317,14 @@ fi
           if (n.includes("Волков") || n.includes("Roger")) return "Rashedul Islam";
           if (n.includes("Смирнов") || n.includes("Kevin")) return "Kawsar Mahmud";
           if (n.includes("Каримов") || n.includes("Mary")) return "Mehedi Hasan";
-                  if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
+          if (n === "MD. ARIF HOSSAIN" || n === "MD. Arif Hossain") return "MD Arif Hossain";
           if (n === "Aaaa201") return "AAA201";
-          if (n === "AAA" && i === 21) return "AAA 22";
-          if (n === "Abid Hasan" && i === 6) return "Abid Hasan (1)";
-          if (n === "Abid Hasan" && i === 7) return "Abid Hasan (2)";
-          if ((n === "Abid" || n === "Abid Hasan") && i === 12) return "Abid (3)";
-          if (n === "Abid Hasan" && i === 22) return "Abid Hasan (4)";
+          if (accNum === 21 && (n === "AAA" || n === "AAA 22")) return "AAA 22";
+          if (accNum === 22 && (n === "AAA" || n === "AAA 23" || n === "Abid Hasan" || n === "Abid Hasan (4)")) return "Abid Hasan (4)";
+          if (accNum === 23 && (n === "AAA" || n === "AAA24" || n === "AAA 24")) return "AAA 24";
+          if (accNum === 6 && (n === "Abid Hasan" || n === "Abid Hasan (1)")) return "Abid Hasan (1)";
+          if (accNum === 7 && (n === "Abid Hasan" || n === "Abid Hasan (2)")) return "Abid Hasan (2)";
+          if (accNum === 12 && (n === "Abid" || n === "Abid Hasan" || n === "Abid (3)")) return "Abid (3)";
           return n;
         };
 

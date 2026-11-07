@@ -267,21 +267,22 @@ export function buildDashboardBanner(live = {}) {
 📡 *STATUS:* \`🟢 ONLINE • NOMINAL\`
 ☁️ *PLATFORM:* \`Telegram Serverless Edge\`
 💾 *DB:* \`Native SQLite WAL + Upstash\`
-🌐 *CLUSTER:* \`Render Frankfurt (Coordinator)\`
+🌐 *CLUSTER:* \`Render Oregon (Node 3 Coordinator)\`
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📊 *FLEET HEALTH: ${active}/${total} (${pct}%)*
 ${healthBar}
 • 🟢 *Active Sessions:* \`${active} Online\`
 • 🔴 *Revoked Sessions:* \`${revoked} Offline\`
-• 👑 *Master Host:* \`#11 MD. ARIF HOSSAIN\`
+• 👑 *Master Host:* \`#1 Arif Hossain\`
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🤖 *8-BOT AUTONOMOUS MINING SUITE*
-◈ ⚡ MRG Miner      ◈ 🪙 ATF Miner
-◈ 🏢 Victor's Co.   ◈ 🌐 Kynex Net
+🤖 *9-BOT AUTONOMOUS MINING SUITE*
+◈ 🪙 ATF Miner      ◈ 🌐 Kynex Net
 ◈ ⛏️ DiggoMiner     ◈ 🐸 PepeGram
 ◈ 🤖 AdxEarn AI     ◈ 🐔 Chicken Land
+◈ 🍐 Grouche Mine   ◈ 💎 LUM Miner
+◈ 🏦 EarnVault
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💼 *TREASURY:* \`TON • EVM • TRX • SOL • BTC\`
