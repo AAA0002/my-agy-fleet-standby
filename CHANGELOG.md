@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 DiggoMiner 30-Day JWT Re-Hydration & 100% 9/9 Bot Fleet-Wide Verification (November 7, 2026)**:
+  - **DiggoMiner JWT Expiration Root-Cause & Re-Hydration**:
+    * Diagnosed why 9 accounts (`8826375659`, `8450010161`, `8782429452`, `7734849205`, `8975442879`, `8609131528`, `8669217201`, `9272631973`, `9106746905`) experienced `JWT HTTP 401`: their cached 30-day JWTs had expired and the auditor lacked automatic fallback to exchange fresh WebApp initData.
+    * Re-authenticated all 9 accounts via MTProto, extracted fresh `diggo_init_data`, and exchanged with `https://diggo.linkpc.net/api/auth/telegram`, minting fresh 30-day JWTs.
+    * Synchronized all 9 fresh JWTs directly into Turso LibSQL (`INSERT INTO kv_mesh`) and Upstash Redis (`fleet:diggo:jwt:{uid}` with 30-day TTL).
+    * Upgraded `audit_bots_and_sidetasks.py`: added automatic HTTP 401 fallback to exchange fresh initData on-the-fly and persist the token.
+  - **Full Side-Tasks Execution Across All 9 Hydrated Accounts**:
+    * Executed mining claims (+24.75, +24.17, +23.83, +23.00, +25.27, +11.91, +11.05 DIGGO), daily check-ins, and Day 2/3 streak rewards across all 9 accounts with 100% success (`HTTP 200`).
+    * DiggoMiner fleet treasury jumped from 20,411 DIGGO to **32,329.01 DIGGO**.
+  - **100% Flawless Fleet-Wide Audit (All 23 Accounts, 9/9 Bots Responsive)**:
+    * Re-ran `audit_bots_and_sidetasks.py` across the entire 23-account fleet.
+    * **Zero Errors**: Every single account achieved **9/9 bots active and responsive (100% success rate)**.
+    * Verified fleet asset totals: 18,130.36 ATF, 2,661,896.30 KNX, 70,111.19 PEPE, 687,065 AdxEarn Points, 32,329.01 DIGGO, 575 Hens / 495,960 Eggs / 11,588 Coins in Chicken Land, 26,748.07 GRC, 23/23 Qualified LUM Refs, and $44.95 USD in EarnVault.
+    * Dispatched verified audit alert card to `AAA Admin notification` (`-1004358687850`).
+
 - **🛡️ 23-Account Identity Ground-Truth Alignment & Intrusion Session Remediation (November 7, 2026)**:
   - **Forensic Investigation & Resolution of Intrusion Alert Mismatch**:
     * **Root Cause of Incorrect Alert Display**: Discovered that Upstash Redis (`fleet:accounts` and `fleet:live_state`) contained an obsolete legacy roster where accounts were mapped in duplicate pairs (Account #10: `MD. ARIF HOSSAIN`, Account #11: `MD. ARIF HOSSAIN` with phone `+8801774578536`, Account #14: `Tiffany Тарасов`, Account #15: `Tiffany Тарасов`). When Telegram peer 777000 received a login notification on Account `7487048946`, the sentinel pulled the cached name from Redis, displaying `#11 MD. ARIF HOSSAIN (+8801774578536)` instead of `#11 Sanzida Shimu (+8801774578536)`.

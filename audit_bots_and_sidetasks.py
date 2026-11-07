@@ -608,6 +608,20 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                                 async with session.post("https://diggo.linkpc.net/api/streak/claim", json={"day": d_day}, headers={**d_h, "Idempotency-Key": str(uuid.uuid4())}, timeout=aiohttp.ClientTimeout(total=6)) as sr:
                                     s_txt = "Claimed (+15)" if sr.status in (200, 201) else f"HTTP {sr.status}"
                                     b_rep["side_tasks"].append(f"Day {d_day} Reward: {s_txt}")
+                    elif r.status in (401, 403) and diggo_init:
+                        # Fallback: re-exchange fresh initData if JWT expired
+                        d_init_clean = urllib.parse.unquote(diggo_init) if "%3D" in diggo_init else diggo_init
+                        d_auth_h = {**headers, "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
+                        async with session.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init_clean}, headers=d_auth_h, timeout=aiohttp.ClientTimeout(total=8)) as ar:
+                            if ar.status == 200:
+                                ad = await ar.json()
+                                new_tok = ad.get("token")
+                                if new_tok:
+                                    if UPSTASH_URL and UPSTASH_TOKEN:
+                                        await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=new_tok, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+                                    b_rep["core"]["status"] = "Re-exchanged JWT Successfully ✅"
+                            else:
+                                b_rep["core"]["status"] = f"JWT HTTP {r.status} (Re-auth HTTP {ar.status})"
                     else:
                         b_rep["core"]["status"] = f"JWT HTTP {r.status}"
             except Exception as e:
@@ -616,7 +630,8 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         elif diggo_init:
             d_h = {**headers, "Origin": "https://diggo.linkpc.net", "Referer": "https://diggo.linkpc.net/"}
             try:
-                async with session.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": diggo_init}, headers=d_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                d_init_clean = urllib.parse.unquote(diggo_init) if "%3D" in diggo_init else diggo_init
+                async with session.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": d_init_clean}, headers=d_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status == 200:
                         ad = await r.json()
                         tok = ad.get("token")
